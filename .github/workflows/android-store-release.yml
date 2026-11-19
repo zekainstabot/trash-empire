@@ -1,0 +1,98 @@
+name: Build Store Release (APK + AAB)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build_release:
+    name: Export signed Android store packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.1" "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;28.1.13356709"
+
+      - name: Download Godot 4.5.1 and matching export templates
+        shell: bash
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
+          unzip -q Godot_v4.5.1-stable_linux.x86_64.zip
+          chmod +x Godot_v4.5.1-stable_linux.x86_64
+          echo "GODOT_BIN=$PWD/Godot_v4.5.1-stable_linux.x86_64" >> "$GITHUB_ENV"
+          wget -q https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_export_templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
+          unzip -q Godot_v4.5.1-stable_export_templates.tpz -d /tmp/godot-templates
+          cp -R /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.5.1.stable/"
+
+      - name: Configure permanent release signing key
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_RELEASE_KEYSTORE_BASE64" || (echo "Missing secret: ANDROID_RELEASE_KEYSTORE_BASE64" && exit 1)
+          test -n "$ANDROID_RELEASE_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_RELEASE_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$ANDROID_RELEASE_KEY_ALIAS" || (echo "Missing secret: ANDROID_RELEASE_KEY_ALIAS" && exit 1)
+          echo "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/trash-empire-release.keystore"
+          keytool -list -keystore "$RUNNER_TEMP/trash-empire-release.keystore" -storepass "$ANDROID_RELEASE_KEYSTORE_PASSWORD" -alias "$ANDROID_RELEASE_KEY_ALIAS" >/dev/null
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/trash-empire-release.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$ANDROID_RELEASE_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$ANDROID_RELEASE_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Import project resources
+        run: "$GODOT_BIN --headless --editor --path . --quit"
+
+      - name: Export signed APK for Myket and similar stores
+        shell: bash
+        run: |
+          mkdir -p build
+          "$GODOT_BIN" --headless --path . --export-release "Android Release APK" build/TrashEmpire-release.apk
+          test -s build/TrashEmpire-release.apk
+          jarsigner -verify -verbose -certs build/TrashEmpire-release.apk
+
+      - name: Export signed AAB for Google Play
+        shell: bash
+        run: |
+          "$GODOT_BIN" --headless --path . --export-release "Android Release AAB" build/TrashEmpire-release.aab
+          test -s build/TrashEmpire-release.aab
+          jarsigner -verify -verbose -certs build/TrashEmpire-release.aab
+
+      - name: Upload signed store packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trash-Empire-Store-Release
+          path: |
+            build/TrashEmpire-release.apk
+            build/TrashEmpire-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-build-${{ github.run_number }}
+          name: Trash Empire 1.0.0 (Build ${{ github.run_number }})
+          generate_release_notes: true
+          files: |
+            build/TrashEmpire-release.apk
+            build/TrashEmpire-release.aab
