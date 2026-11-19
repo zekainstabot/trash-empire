@@ -227,7 +227,7 @@ func _input(event: InputEvent) -> void:
 			joystick_touch = -1
 			player.call("set_touch_move", Vector2.ZERO)
 	elif event is InputEventScreenDrag and event.index == joystick_touch:
-		var movement := ((event.position - joystick_center) / 75.0).limit_length(1.0)
+		var movement: Vector2 = ((event.position - joystick_center) / 75.0).limit_length(1.0)
 		player.call("set_touch_move", movement)
 
 func _collect_nearby() -> void:
@@ -454,7 +454,7 @@ func _mat(color: Color) -> StandardMaterial3D:
 	material.roughness = 0.82
 	return material
 
-func _label(value: String, pos: Vector2, font_size: int, parent: Control) -> Label:
+func _label(value: String, pos: Vector2, font_size: int, parent: Node) -> Label:
 	var result := Label.new()
 	result.text = value
 	result.position = pos
@@ -463,7 +463,7 @@ func _label(value: String, pos: Vector2, font_size: int, parent: Control) -> Lab
 	parent.add_child(result)
 	return result
 
-func _button(value: String, pos: Vector2, size: Vector2, parent: Control) -> Button:
+func _button(value: String, pos: Vector2, size: Vector2, parent: Node) -> Button:
 	var result := Button.new()
 	result.text = value
 	result.position = pos
