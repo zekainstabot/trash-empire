@@ -5,11 +5,13 @@ const TRASH_SCRIPT = preload("res://Scripts/trash.gd")
 
 var player: CharacterBody3D
 var camera: Camera3D
+var camera_pivot: Node3D
 var money := 0
 var carried := 0
 var capacity := 5
 var collection_range := 2.5
 var upgrade_level := 1
+var speed_upgrade_level := 1
 var trash_nodes: Array[Node3D] = []
 var money_label: Label
 var bag_label: Label
@@ -21,11 +23,16 @@ const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(7.5, 0.0, -6.5)
 
 func _ready() -> void:
+	_load_game()
 	_build_world()
 	_build_player()
 	_build_trash()
 	_build_ui()
 	_update_ui()
+
+func _process(_delta: float) -> void:
+	if is_instance_valid(player) and is_instance_valid(camera_pivot):
+		camera_pivot.global_position = player.global_position + Vector3(0, 5.4, 8.5)
 
 func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
@@ -103,7 +110,7 @@ func _build_player() -> void:
 	player.name = "Player"
 	player.set_script(PLAYER_SCRIPT)
 	player.position = Vector3(0, 0.05, 7)
-	player.set("move_speed", 5.0)
+	player.set("move_speed", 5.0 + float(speed_upgrade_level - 1) * 0.8)
 	add_child(player)
 
 	var body := MeshInstance3D.new()
@@ -149,16 +156,17 @@ func _build_player() -> void:
 	collision.position.y = 0.85
 	player.add_child(collision)
 
-	var pivot := Node3D.new()
-	pivot.position = Vector3(0, 5.4, 8.5)
-	player.add_child(pivot)
+	camera_pivot = Node3D.new()
+	camera_pivot.name = "CameraFollow"
+	camera_pivot.global_position = player.global_position + Vector3(0, 5.4, 8.5)
+	add_child(camera_pivot)
 	camera = Camera3D.new()
 	camera.position = Vector3.ZERO
-	camera.rotation_degrees = Vector3(-22, 0, 0)
+	camera.rotation_degrees = Vector3(22, 0, 0)
 	camera.current = true
 	camera.fov = 68
-	pivot.add_child(camera)
-	player.set("camera_pivot", pivot)
+	camera_pivot.add_child(camera)
+	player.set("camera_pivot", camera_pivot)
 
 func _build_trash() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -195,10 +203,15 @@ func _build_ui() -> void:
 	_anchor_bottom_right(sell)
 	sell.pressed.connect(_sell_trash)
 
-	var upgrade := _button("BAG UPGRADE  $50", Vector2(18, -82), Vector2(225, 58), layer)
+	var upgrade := _button("BAG +3  $50", Vector2(18, -82), Vector2(190, 58), layer)
 	upgrade.anchor_top = 1.0
 	upgrade.anchor_bottom = 1.0
 	upgrade.pressed.connect(_upgrade_bag)
+
+	var speed_upgrade := _button("SPEED +  $75", Vector2(18, -150), Vector2(190, 58), layer)
+	speed_upgrade.anchor_top = 1.0
+	speed_upgrade.anchor_bottom = 1.0
+	speed_upgrade.pressed.connect(_upgrade_speed)
 
 	var hint := _label("DRAG LEFT SIDE TO MOVE  •  WASD / ARROWS", Vector2(20, -36), 14, layer)
 	hint.anchor_top = 1.0
@@ -207,7 +220,7 @@ func _build_ui() -> void:
 func _input(event: InputEvent) -> void:
 	var screen_size := get_viewport().get_visible_rect().size
 	if event is InputEventScreenTouch:
-		if event.pressed and event.position.x < screen_size.x * 0.55 and joystick_touch == -1:
+		if event.pressed and event.position.x < screen_size.x * 0.55 and event.position.y < screen_size.y - 125 and joystick_touch == -1:
 			joystick_touch = event.index
 			joystick_center = event.position
 		elif not event.pressed and event.index == joystick_touch:
@@ -249,6 +262,7 @@ func _sell_trash() -> void:
 	money += earned
 	carried = 0
 	_update_ui()
+	_save_game()
 	_set_message("Load recycled! You earned $%d." % earned)
 	_spawn_trash(6)
 
@@ -261,7 +275,39 @@ func _upgrade_bag() -> void:
 	capacity += 3
 	upgrade_level += 1
 	_update_ui()
+	_save_game()
 	_set_message("Upgrade purchased! New bag capacity: %d." % capacity)
+
+func _upgrade_speed() -> void:
+	var cost := 75 * speed_upgrade_level
+	if money < cost:
+		_set_message("You need $%d for the speed upgrade." % cost)
+		return
+	money -= cost
+	speed_upgrade_level += 1
+	player.set("move_speed", 5.0 + float(speed_upgrade_level - 1) * 0.8)
+	_update_ui()
+	_save_game()
+	_set_message("Movement speed upgraded!")
+
+func _save_game() -> void:
+	var save := ConfigFile.new()
+	save.set_value("progress", "money", money)
+	save.set_value("progress", "carried", carried)
+	save.set_value("progress", "capacity", capacity)
+	save.set_value("progress", "bag_level", upgrade_level)
+	save.set_value("progress", "speed_level", speed_upgrade_level)
+	save.save("user://trash_empire.save")
+
+func _load_game() -> void:
+	var save := ConfigFile.new()
+	if save.load("user://trash_empire.save") != OK:
+		return
+	money = int(save.get_value("progress", "money", 0))
+	carried = int(save.get_value("progress", "carried", 0))
+	capacity = int(save.get_value("progress", "capacity", 5))
+	upgrade_level = int(save.get_value("progress", "bag_level", 1))
+	speed_upgrade_level = int(save.get_value("progress", "speed_level", 1))
 
 func _spawn_trash(amount: int) -> void:
 	var rng := RandomNumberGenerator.new()
