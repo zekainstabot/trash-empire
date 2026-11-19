@@ -45,7 +45,7 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
           unzip -q Godot_v4.5.1-stable_export_templates.tpz -d /tmp/godot-templates
           cp -R /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.5.1.stable/"
-          test -s "$HOME/.local/share/godot/export_templates/4.5.1.stable/android_source.zip" || { echo "Godot Android Gradle build template is missing from export templates."; find /tmp/godot-templates -maxdepth 3 -type f; exit 1; }
+          test -s "$HOME/.local/share/godot/export_templates/4.5.1.stable/android_source.zip"
 
       - name: Configure permanent release signing key
         shell: bash
@@ -58,7 +58,6 @@ jobs:
           test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing secret: ANDROID_KEYSTORE_BASE64" && exit 1)
           test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_KEYSTORE_PASSWORD" && exit 1)
           test -n "$ANDROID_KEY_ALIAS" || (echo "Missing secret: ANDROID_KEY_ALIAS" && exit 1)
-          # Accept wrapped lines or harmless copied characters; keytool below validates the actual keystore.
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$RUNNER_TEMP/trash-empire-release.keystore"
           test -s "$RUNNER_TEMP/trash-empire-release.keystore"
           keytool -list -keystore "$RUNNER_TEMP/trash-empire-release.keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
@@ -66,10 +65,13 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
 
-      - name: Import project resources and install Android Gradle build template
+      - name: Import resources and install Android Gradle build template
+        shell: bash
         run: |
+          set -euo pipefail
           "$GODOT_BIN" --headless --editor --path . --quit
-          "$GODOT_BIN" --headless --editor --path . --install-android-build-template --quit
+          mkdir -p android/build
+          unzip -q "$HOME/.local/share/godot/export_templates/4.5.1.stable/android_source.zip" -d android/build
           test -f android/build/build.gradle
 
       - name: Export signed APK for Myket and similar stores
