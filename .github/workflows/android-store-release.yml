@@ -34,6 +34,7 @@ jobs:
         shell: bash
         run: |
           sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.1" "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;28.1.13356709"
+          yes | sdkmanager --licenses
 
       - name: Download Godot 4.5.1 and matching export templates
         shell: bash
