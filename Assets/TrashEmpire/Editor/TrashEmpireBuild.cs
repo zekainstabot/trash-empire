@@ -2,11 +2,10 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public static class TrashEmpireBuild
 {
-    // Called by the CI workflow. Generates a clean entry scene and builds an Android APK.
+    // Generates the entry scene in CI, then builds an Android APK.
     public static void BuildAndroid()
     {
         const string sceneDir = "Assets/TrashEmpire/Scenes";
@@ -22,7 +21,7 @@ public static class TrashEmpireBuild
         PlayerSettings.companyName = "Zeka Games";
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.zekagames.trashempire");
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
-        PlayerSettings.Android.minSdkVersion = Android最低Sdk();
+        PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.Android.bundleVersionCode = 1;
@@ -38,10 +37,5 @@ public static class TrashEmpireBuild
         var report = BuildPipeline.BuildPlayer(options);
         if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
             throw new System.Exception("Android build failed: " + report.summary.result);
-    }
-
-    private static AndroidSdkVersions Android最低Sdk()
-    {
-        return AndroidSdkVersions.AndroidApiLevel23;
     }
 }
