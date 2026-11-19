@@ -54,14 +54,17 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
 
-      - name: Import project resources
-        run: "$GODOT_BIN --headless --editor --path . --quit"
+      - name: Import project resources and install Android Gradle build template
+        run: |
+          "$GODOT_BIN" --headless --editor --path . --quit
+          "$GODOT_BIN" --headless --editor --path . --install-android-build-template --quit
+          test -f android/build/build.gradle
 
       - name: Export debug APK
         shell: bash
         run: |
           mkdir -p build
-          "$GODOT_BIN" --headless --path . --export-debug "Android" build/TrashEmpire.apk
+          "$GODOT_BIN" --headless --path . --export-debug "Android Debug" build/TrashEmpire.apk
           test -s build/TrashEmpire.apk
 
       - name: Upload APK
