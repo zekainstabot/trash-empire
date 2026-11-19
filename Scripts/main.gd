@@ -53,7 +53,7 @@ func _build_player() -> void:
 	player.name = "Player"
 	player.set_script(PLAYER_SCRIPT)
 	player.position = Vector3(0, 1, 5)
-	player.move_speed = 5.0
+	player.set("move_speed", 5.0)
 	add_child(player)
 	var capsule := CapsuleMesh.new()
 	capsule.radius = 0.42
@@ -78,7 +78,7 @@ func _build_player() -> void:
 	camera.rotation_degrees = Vector3(-22, 0, 0)
 	camera.current = true
 	pivot.add_child(camera)
-	player.camera_pivot = pivot
+	player.set("camera_pivot", pivot)
 
 func _build_trash() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -133,10 +133,10 @@ func _input(event: InputEvent) -> void:
 		elif not event.pressed and event.index == joystick_touch:
 			joystick_touch = -1
 			joystick_value = Vector2.ZERO
-			player.set_touch_move(Vector2.ZERO)
+			player.call("set_touch_move", Vector2.ZERO)
 	elif event is InputEventScreenDrag and event.index == joystick_touch:
 		joystick_value = ((event.position - joystick_center) / 70.0).limit_length(1.0)
-		player.set_touch_move(joystick_value)
+		player.call("set_touch_move", joystick_value)
 
 func _collect_nearby() -> void:
 	if carried >= capacity:
