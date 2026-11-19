@@ -247,6 +247,7 @@ func _collect_nearby() -> void:
 		trash_nodes.erase(nearest)
 		carried += 1
 		_update_ui()
+		_save_game()
 		_set_message("Collected! Keep cleaning the yard.")
 	else:
 		_set_message("Get closer to a piece of trash.")
