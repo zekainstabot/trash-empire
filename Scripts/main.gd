@@ -102,7 +102,7 @@ func _build_player() -> void:
 	player = CharacterBody3D.new()
 	player.name = "Player"
 	player.set_script(PLAYER_SCRIPT)
-	player.position = Vector3(0, 1, 7)
+	player.position = Vector3(0, 0.05, 7)
 	player.set("move_speed", 5.0)
 	add_child(player)
 
