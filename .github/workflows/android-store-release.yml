@@ -1,4 +1,4 @@
-name: Build Store Release (APK + AAB)
+name: انتشار بازی (APK + AAB)
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build_release:
-    name: Export signed Android store packages
+    name: Build, sign, and publish Trash Empire
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
