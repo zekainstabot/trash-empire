@@ -1,41 +1,36 @@
 # Trash Empire
 
-A 3D, third-person recycling simulator for Android, built with Unity.
+A 3D collection, recycling, and upgrade simulator built with **Godot 4**.
 
-## Current prototype
-- Third-person character movement (keyboard/gamepad fallback and mobile touch joystick)
-- Collectible trash with limited carrying capacity
-- Recycling drop-off zone and cash rewards
-- Upgradeable movement speed and carrying capacity
-- Runtime-generated prototype environment (no imported art required)
+## Current playable prototype
+- Procedurally generated 3D recycling yard
+- Third-person player and follow camera
+- WASD / arrow-key movement on PC
+- Touch-drag movement on the left side of Android screens
+- Collect nearby trash, carry it in a limited-capacity bag, and sell it at the recycling station
+- Earn money and upgrade bag capacity
+- New trash spawns after each sale
 
-## Unity
-- Unity 6 (6000.0.XXf1)
-- Android Build Support (SDK & NDK Tools + OpenJDK)
-- Project is designed to be edited in Unity Editor, while source and Android builds can be managed through GitHub.
+## Run the game
+1. Install Godot 4.5.1 or a compatible Godot 4 release.
+2. Open Godot and import `project.godot` from this repository.
+3. Press **F5** to run the project.
 
-## Open locally
-1. Install Unity Hub and Unity 6 with Android Build Support.
-2. Clone this repository.
-3. Open the repository folder in Unity Hub.
-4. Open the generated **Trash Empire** scene (or press Play; the bootstrap creates the prototype world).
+No external art assets are required for this first prototype.
 
-## GitHub Actions Android build
-The workflow at `.github/workflows/android-build.yml` uses GameCI. Add the Unity license secrets to the repository before running it:
-- `UNITY_LICENSE` — the contents of your Unity license file (Personal license activation file or serial-based license file, as appropriate).
-- For serial-based licenses, also configure `UNITY_EMAIL`, `UNITY_PASSWORD`, and `UNITY_SERIAL` as repository secrets.
+## Controls
+- **PC:** WASD or arrow keys to move
+- **Android:** drag on the left side of the screen to move
+- **Collect:** tap the Collect button when near trash
+- **Sell:** stand beside the green recycling station and tap Sell
+- **Upgrade:** buy extra bag capacity with earned money
 
-Then open **Actions → Build Android APK → Run workflow**. The APK is uploaded as a workflow artifact.
+## Planned next milestones
+- Improve character animations, camera, and touch controls
+- Add different waste types and sorting
+- Unlock recycling machines and conveyor belts
+- Hire workers and automate collection
+- Add save/load and balanced progression
+- Configure Android export and APK delivery
 
-> Unity licensing and build availability depend on your Unity plan and current Unity terms. Never commit license files, passwords, serials, keystores, or signing credentials.
-
-## Prototype controls
-- Desktop: WASD / arrow keys to move; E to collect nearby trash; Space to interact with the recycling station.
-- Mobile: use the on-screen joystick; tap **COLLECT** near trash and **SELL** in the recycling area.
-- Upgrade buttons spend in-game cash.
-
-## Project layout
-- `Assets/TrashEmpire/Scripts` — gameplay code
-- `Assets/TrashEmpire/Editor` — editor build setup
-- `ProjectSettings` — Unity project configuration
-- `.github/workflows` — CI build workflow
+The project is built with Godot. A Unity account or Unity license is not required.
