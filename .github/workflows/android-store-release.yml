@@ -45,6 +45,7 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
           unzip -q Godot_v4.5.1-stable_export_templates.tpz -d /tmp/godot-templates
           cp -R /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.5.1.stable/"
+          test -s "$HOME/.local/share/godot/export_templates/4.5.1.stable/android_source.zip" || { echo "Godot Android Gradle build template is missing from export templates."; find /tmp/godot-templates -maxdepth 3 -type f; exit 1; }
 
       - name: Configure permanent release signing key
         shell: bash
