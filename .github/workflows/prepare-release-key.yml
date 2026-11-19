@@ -1,0 +1,47 @@
+name: Prepare Trash Empire Release Signing Key
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  create_key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate permanent release keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-key
+          PASSWORD="$(openssl rand -hex 24)"
+          ALIAS="trash-empire-release"
+          keytool -genkeypair -v \
+            -keystore release-key/trash-empire-release.keystore \
+            -storepass "$PASSWORD" \
+            -keypass "$PASSWORD" \
+            -alias "$ALIAS" \
+            -dname "CN=Trash Empire, O=Zeka, C=US" \
+            -keyalg RSA -keysize 3072 -validity 10000
+          base64 -w 0 release-key/trash-empire-release.keystore > release-key/ANDROID_RELEASE_KEYSTORE_BASE64.txt
+          cat > release-key/credentials.txt <<EOF
+          ANDROID_RELEASE_KEYSTORE_PASSWORD=$PASSWORD
+          ANDROID_RELEASE_KEY_ALIAS=$ALIAS
+          EOF
+          cat > release-key/README.txt <<'EOF'
+          KEEP THIS PACKAGE PRIVATE AND BACK IT UP SAFELY.
+          Add the following three GitHub Actions repository secrets:
+          1) ANDROID_RELEASE_KEYSTORE_BASE64: paste the entire contents of ANDROID_RELEASE_KEYSTORE_BASE64.txt
+          2) ANDROID_RELEASE_KEYSTORE_PASSWORD: copy the value from credentials.txt
+          3) ANDROID_RELEASE_KEY_ALIAS: copy the value from credentials.txt
+          Do not lose this keystore or its password. All future updates must use this exact key.
+          EOF
+
+      - name: Upload private signing-key package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trash-Empire-PERMANENT-Release-Key
+          path: release-key/
+          if-no-files-found: error
+          retention-days: 1
