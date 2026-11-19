@@ -1,33 +1,19 @@
-# Unity generated
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Mm]emoryCaptures/
-UserSettings/
-.vs/
+# Godot
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# Mono / C#
+.mono/
+data_*/
+
+# IDE
+.vscode/
 .idea/
-.gradle/
-ExportedObj/
-*.csproj
-*.sln
-*.user
-*.pidb
-*.booproj
-*.svd
-*.pdb
-*.mdb
-*.opendb
-*.VC.db
+*.tmp
+*.bak
+
+# OS
 .DS_Store
 Thumbs.db
-
-# Never commit credentials
-*.keystore
-*.jks
-*.p12
-*.mobileprovision
-*.license
-Unity_*.ulf
