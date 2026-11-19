@@ -66,8 +66,11 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
 
-      - name: Import project resources
-        run: "$GODOT_BIN --headless --editor --path . --quit"
+      - name: Import project resources and install Android Gradle build template
+        run: |
+          "$GODOT_BIN" --headless --editor --path . --quit
+          "$GODOT_BIN" --headless --editor --path . --install-android-build-template --quit
+          test -f android/build/build.gradle
 
       - name: Export signed APK for Myket and similar stores
         shell: bash
