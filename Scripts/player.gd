@@ -11,7 +11,7 @@ func _physics_process(_delta: float) -> void:
 		input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := Vector3(input_dir.x, 0.0, input_dir.y)
 	if camera_pivot:
-		direction = camera_pivot.global_basis.x * direction.x + camera_pivot.global_basis.z * direction.z
+		direction = camera_pivot.global_basis.x * direction.x - camera_pivot.global_basis.z * direction.z
 	direction.y = 0.0
 	direction = direction.normalized()
 	velocity.x = direction.x * move_speed
