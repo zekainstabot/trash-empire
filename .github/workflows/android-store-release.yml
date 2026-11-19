@@ -89,18 +89,26 @@ jobs:
           unzip -q "$HOME/.local/share/godot/export_templates/4.5.1.stable/android_source.zip" -d android/build
           test -f android/build/build.gradle
 
-      - name: Export signed APK for Myket and similar stores
+      - name: Diagnose Android export preset configuration
         shell: bash
         run: |
+          set +e
           mkdir -p build
-          "$GODOT_BIN" --headless --path . --export-release "Android Release APK" build/TrashEmpire-release.apk
+          "$GODOT_BIN" --headless --verbose --path . --export-release "Android Release APK" build/TrashEmpire-release.apk 2>&1 | tee build/android-export-diagnostics.log
+          export_status=${PIPESTATUS[0]}
+          echo "Godot export exit code: $export_status"
+          echo "---- Android export diagnostics ----"
+          grep -Ein -C 5 "error|invalid|missing|not found|keystore|sdk|jdk|gradle|template|preset|warning" build/android-export-diagnostics.log | tail -n 240 || true
+          if [ "$export_status" -ne 0 ]; then
+            exit "$export_status"
+          fi
           test -s build/TrashEmpire-release.apk
           jarsigner -verify -verbose -certs build/TrashEmpire-release.apk
 
       - name: Export signed AAB for Google Play
         shell: bash
         run: |
-          "$GODOT_BIN" --headless --path . --export-release "Android Release AAB" build/TrashEmpire-release.aab
+          "$GODOT_BIN" --headless --verbose --path . --export-release "Android Release AAB" build/TrashEmpire-release.aab
           test -s build/TrashEmpire-release.aab
           jarsigner -verify -verbose -certs build/TrashEmpire-release.aab
 
