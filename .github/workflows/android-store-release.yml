@@ -54,20 +54,20 @@ jobs:
       - name: Configure permanent release signing key
         shell: bash
         env:
-          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
-          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
-          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -euo pipefail
-          test -n "$ANDROID_RELEASE_KEYSTORE_BASE64" || (echo "Missing secret: ANDROID_RELEASE_KEYSTORE_BASE64" && exit 1)
-          test -n "$ANDROID_RELEASE_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_RELEASE_KEYSTORE_PASSWORD" && exit 1)
-          test -n "$ANDROID_RELEASE_KEY_ALIAS" || (echo "Missing secret: ANDROID_RELEASE_KEY_ALIAS" && exit 1)
-          printf '%s' "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$RUNNER_TEMP/trash-empire-release.keystore"
+          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing secret: ANDROID_KEYSTORE_BASE64" && exit 1)
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$ANDROID_KEY_ALIAS" || (echo "Missing secret: ANDROID_KEY_ALIAS" && exit 1)
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$RUNNER_TEMP/trash-empire-release.keystore"
           test -s "$RUNNER_TEMP/trash-empire-release.keystore"
-          keytool -list -keystore "$RUNNER_TEMP/trash-empire-release.keystore" -storepass "$ANDROID_RELEASE_KEYSTORE_PASSWORD" -alias "$ANDROID_RELEASE_KEY_ALIAS" >/dev/null
+          keytool -list -keystore "$RUNNER_TEMP/trash-empire-release.keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/trash-empire-release.keystore" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$ANDROID_RELEASE_KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$ANDROID_RELEASE_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Configure Godot Android SDK and Java paths
         shell: bash
