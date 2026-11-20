@@ -344,6 +344,10 @@ func _process_factory_build(delta: float) -> void:
 		factory_build_paid = 0.0
 		factory_build_save_timer = 0.0
 		_build_factory_expansion()
+		# Move the player clear of the newly spawned machine collision immediately.
+		player.global_position = Vector3(3.5, maxf(player.global_position.y, 0.0), z_positions[factory_stage] + 2.8)
+		player.velocity = Vector3.ZERO
+		player.reset_physics_interpolation()
 		_refresh_factory_upgrade_button()
 		_update_ui()
 		_save_game()
