@@ -436,22 +436,31 @@ func _build_ui() -> void:
 	upgrades_button.anchor_right = 1.0
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
 
+	# Full-screen skill tree overlay, sized to the device viewport.
 	upgrade_panel = Panel.new()
-	upgrade_panel.set_anchors_preset(Control.PRESET_CENTER)
-	upgrade_panel.position = Vector2(-175, -270)
-	upgrade_panel.size = Vector2(350, 540)
-	upgrade_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.055, 0.065, 0.98)))
+	upgrade_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	upgrade_panel.offset_left = 0
+	upgrade_panel.offset_top = 0
+	upgrade_panel.offset_right = 0
+	upgrade_panel.offset_bottom = 0
+	upgrade_panel.z_index = 10
+	upgrade_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.055, 0.065, 0.995)))
 	upgrade_panel.visible = false
 	layer.add_child(upgrade_panel)
 
 	_label("SKILL TREE", Vector2(20, 14), 25, upgrade_panel)
 	_label("Unlock stronger skills branch by branch", Vector2(20, 47), 12, upgrade_panel)
-	var close_upgrades := _button("X", Vector2(294, 12), Vector2(40, 40), upgrade_panel)
+	var close_upgrades := _button("X", Vector2(-58, 12), Vector2(44, 44), upgrade_panel)
+	close_upgrades.anchor_left = 1.0
+	close_upgrades.anchor_right = 1.0
 	close_upgrades.pressed.connect(_toggle_upgrade_panel)
 
 	var skill_scroll := ScrollContainer.new()
-	skill_scroll.position = Vector2(14, 82)
-	skill_scroll.size = Vector2(322, 440)
+	skill_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	skill_scroll.offset_left = 14
+	skill_scroll.offset_top = 82
+	skill_scroll.offset_right = -14
+	skill_scroll.offset_bottom = -14
 	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	skill_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	upgrade_panel.add_child(skill_scroll)
