@@ -709,7 +709,6 @@ func _build_ui() -> void:
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
 	_build_main_menu(layer, screen)
-	menu_toggle_button.text = "✕"
 
 
 func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
