@@ -288,7 +288,7 @@ func _build_factory_expansion() -> void:
 	for stage in range(factory_built_stage + 1, factory_stage + 1):
 		var first_new_child := get_child_count()
 		_build_factory_module(stage)
-		var start_z := -5.15 if stage == 2 else (1.05 if stage == 3 else (6.55 if stage == 4 else 11.0))
+		var start_z := -5.15 if stage == 2 else (1.05 if stage == 3 else (6.55 if stage == 4 else 8.95))
 		var end_z := -2.05 if stage == 2 else (3.45 if stage == 3 else (8.95 if stage == 4 else 14.5))
 		_build_factory_link(start_z, end_z)
 		var new_nodes: Array[Node] = []
