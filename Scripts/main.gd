@@ -598,7 +598,7 @@ func _build_ui() -> void:
 	upgrade_panel.add_child(skill_scroll)
 	var skill_map := Control.new()
 	skill_map.custom_minimum_size = Vector2(680, 1900)
-	skill_map.size = Vector2(680, 1580)
+	skill_map.size = Vector2(680, 1900)
 	skill_scroll.add_child(skill_map)
 	_build_skill_tree(skill_map)
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
@@ -707,6 +707,7 @@ func _start_new_world() -> void:
 	magnet_power_level = 1
 	drone_level = 0
 	drone_timer = 0.0
+	_refresh_helper_drone_visibility()
 	auto_pickup_timer = 0.0
 	recycling_bonus = 1.0
 	collection_range = 2.0
