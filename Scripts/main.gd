@@ -114,11 +114,33 @@ func _build_world() -> void:
 	_label_3d("UNLOAD HERE", Vector3(1.35, 0.12, -7.45), 0.28)
 
 	# Conveyor and recycling machine.
-	_box("MachineBase", Vector3(7.5, 0.65, -6.5), Vector3(4.4, 1.3, 3.2), Color(0.12, 0.27, 0.34), true)
-	_box("MachineBody", Vector3(7.5, 1.65, -6.5), Vector3(3.3, 1.0, 2.5), Color(0.12, 0.48, 0.55), true)
-	_box("MachineTop", Vector3(7.5, 2.22, -6.5), Vector3(3.6, 0.18, 2.8), Color(0.23, 0.68, 0.69), false)
-	_box("ConveyorFrame", Vector3(4.0, 0.85, -6.5), Vector3(3.0, 0.28, 1.5), Color(0.12, 0.15, 0.16), true)
-	_box("ConveyorBelt", Vector3(4.0, 1.03, -6.5), Vector3(2.9, 0.08, 1.35), Color(0.07, 0.09, 0.10), false)
+	# Industrial recycling press: layered steel housing, feed hopper and control panel.
+	_box("MachineBase", Vector3(7.5, 0.65, -6.5), Vector3(4.4, 1.3, 3.2), Color(0.075, 0.12, 0.15), true)
+	_box("MachineLowerTrim", Vector3(7.5, 1.18, -6.5), Vector3(4.25, 0.12, 3.05), Color(0.88, 0.53, 0.12), false)
+	_box("MachineBody", Vector3(7.5, 1.72, -6.5), Vector3(3.3, 1.0, 2.5), Color(0.10, 0.38, 0.43), true)
+	_box("MachineTop", Vector3(7.5, 2.25, -6.5), Vector3(3.65, 0.18, 2.85), Color(0.18, 0.55, 0.57), false)
+	_box("PressFrontDoor", Vector3(7.5, 1.72, -5.22), Vector3(1.8, 0.62, 0.08), Color(0.055, 0.16, 0.19), false)
+	_box("PressWindow", Vector3(7.5, 1.78, -5.16), Vector3(0.92, 0.28, 0.035), Color(0.12, 0.75, 0.72), false)
+	_box("HopperRear", Vector3(7.5, 2.85, -7.35), Vector3(2.35, 0.16, 1.55), Color(0.23, 0.29, 0.30), false)
+	var hopper_left := _box("HopperLeft", Vector3(6.35, 2.62, -6.65), Vector3(0.14, 0.75, 1.55), Color(0.38, 0.44, 0.43), false)
+	hopper_left.rotation_degrees.z = -18
+	var hopper_right := _box("HopperRight", Vector3(8.65, 2.62, -6.65), Vector3(0.14, 0.75, 1.55), Color(0.38, 0.44, 0.43), false)
+	hopper_right.rotation_degrees.z = 18
+	_box("ControlPanel", Vector3(9.18, 1.95, -5.17), Vector3(0.72, 0.78, 0.16), Color(0.045, 0.09, 0.11), false)
+	_box("ControlScreen", Vector3(9.18, 2.06, -5.075), Vector3(0.48, 0.28, 0.035), Color(0.12, 0.82, 0.66), false)
+	for i in range(3):
+		_cylinder("ControlButton", Vector3(8.98 + i * 0.20, 1.72, -5.06), 0.055, 0.035, [Color(0.85, 0.18, 0.12), Color(0.92, 0.68, 0.12), Color(0.18, 0.78, 0.38)][i], false)
+	for x in [6.0, 9.0]:
+		for z in [-7.65, -5.35]:
+			_cylinder("MachineBolt", Vector3(x, 1.75, z), 0.055, 0.035, Color(0.68, 0.73, 0.72), false)
+	_box("ConveyorFrame", Vector3(4.0, 0.85, -6.5), Vector3(3.0, 0.28, 1.5), Color(0.09, 0.12, 0.13), true)
+	_box("ConveyorBelt", Vector3(4.0, 1.03, -6.5), Vector3(2.9, 0.08, 1.35), Color(0.035, 0.05, 0.055), false)
+	for z in [-7.22, -5.78]:
+		_box("ConveyorSideRail", Vector3(4.0, 1.25, z), Vector3(3.0, 0.42, 0.10), Color(0.48, 0.53, 0.51), false)
+	for x in [2.75, 5.25]:
+		for z in [-7.05, -5.95]:
+			var support := _box("ConveyorLeg", Vector3(x, 0.43, z), Vector3(0.12, 0.82, 0.12), Color(0.22, 0.27, 0.28), true)
+			var foot := _box("ConveyorFoot", Vector3(x, 0.06, z), Vector3(0.38, 0.10, 0.30), Color(0.12, 0.16, 0.17), false)
 	for x in [2.8, 3.6, 4.4, 5.2]:
 		var roller := _cylinder("ConveyorRoller", Vector3(x, 0.88, -6.5), 0.12, 1.55, Color(0.48, 0.52, 0.52), true)
 		conveyor_rollers.append(roller)
@@ -659,23 +681,40 @@ func _spawn_conveyor_item() -> void:
 	travel.tween_callback(item.queue_free)
 
 func _make_bin(pos: Vector3, color: Color, label_text: String) -> void:
-	_box("RecyclingBin", pos + Vector3(0, 0.7, 0), Vector3(1.7, 1.4, 1.7), color, true)
-	_box("BinLid", pos + Vector3(0, 1.48, 0), Vector3(1.85, 0.16, 1.85), Color(0.10, 0.14, 0.15), false)
-	_label_3d(label_text, pos + Vector3(0, 1.0, 0.88), 0.22)
+	# Wheeled commercial recycling container with sloped lid, molded ribs and handle.
+	_box("BinBody", pos + Vector3(0, 0.72, 0), Vector3(1.42, 1.42, 1.35), color, true)
+	_box("BinFrontPanel", pos + Vector3(0, 0.83, -0.69), Vector3(1.12, 0.86, 0.045), color.lightened(0.12), false)
+	for x in [-0.52, -0.26, 0.0, 0.26, 0.52]:
+		_box("BinMoldedRib", pos + Vector3(x, 0.72, -0.725), Vector3(0.035, 1.05, 0.035), color.darkened(0.18), false)
+	var lid := _box("BinLid", pos + Vector3(0, 1.48, 0.02), Vector3(1.58, 0.18, 1.48), Color(0.075, 0.11, 0.12), false)
+	lid.rotation_degrees.x = -4
+	_box("BinLidGrip", pos + Vector3(0, 1.60, -0.48), Vector3(0.55, 0.09, 0.16), Color(0.18, 0.22, 0.22), false)
+	for x in [-0.53, 0.53]:
+		_cylinder("BinWheel", pos + Vector3(x, 0.20, 0.57), 0.23, 0.16, Color(0.035, 0.045, 0.05), true)
+		_cylinder("BinAxleCap", pos + Vector3(x, 0.20, 0.48), 0.075, 0.18, Color(0.48, 0.52, 0.50), true)
+	_box("BinLabelPlate", pos + Vector3(0, 1.02, -0.755), Vector3(0.88, 0.30, 0.035), Color(0.035, 0.08, 0.09), false)
+	_label_3d(label_text, pos + Vector3(0, 1.02, -0.79), 0.18)
 
 func _make_pallet(pos: Vector3) -> void:
 	for z in [-0.55, 0.0, 0.55]:
-		_box("PalletBoard", pos + Vector3(0, 0.12, z), Vector3(2.2, 0.22, 0.28), Color(0.43, 0.29, 0.17), false)
+		_box("PalletDeckBoard", pos + Vector3(0, 0.14, z), Vector3(2.2, 0.20, 0.30), Color(0.48, 0.32, 0.18), false)
 	for x in [-0.75, 0.0, 0.75]:
-		_box("PalletSupport", pos + Vector3(x, 0.0, 0), Vector3(0.28, 0.16, 1.45), Color(0.29, 0.20, 0.13), false)
-	_box("Crate", pos + Vector3(0, 0.9, 0), Vector3(1.45, 1.4, 1.25), Color(0.56, 0.39, 0.22), true)
-	for y in [0.35, 1.35]:
-		_box("CrateSlat", pos + Vector3(0, y, 0.64), Vector3(1.5, 0.08, 0.08), Color(0.34, 0.23, 0.14), false)
+		_box("PalletBlock", pos + Vector3(x, 0.0, 0), Vector3(0.30, 0.18, 1.45), Color(0.30, 0.21, 0.14), false)
+	_box("Crate", pos + Vector3(0, 0.9, 0), Vector3(1.45, 1.4, 1.25), Color(0.52, 0.35, 0.19), true)
+	for y in [0.30, 0.68, 1.06, 1.44]:
+		_box("CrateFrontSlat", pos + Vector3(0, y, 0.64), Vector3(1.48, 0.07, 0.07), Color(0.34, 0.23, 0.14), false)
+	for x in [-0.68, 0.68]:
+		_box("CrateCornerBrace", pos + Vector3(x, 0.9, 0.68), Vector3(0.09, 1.38, 0.08), Color(0.27, 0.19, 0.12), false)
+	_box("CrateMetalLabel", pos + Vector3(0, 0.92, 0.70), Vector3(0.46, 0.24, 0.035), Color(0.16, 0.20, 0.19), false)
 
 func _make_barrel(pos: Vector3, color: Color) -> void:
-	_cylinder("Barrel", pos + Vector3(0, 0.58, 0), 0.48, 1.16, color, false)
-	for y in [0.25, 0.9]:
-		_cylinder("BarrelRim", pos + Vector3(0, y, 0), 0.5, 0.07, Color(0.18, 0.20, 0.20), false)
+	_cylinder("BarrelBody", pos + Vector3(0, 0.60, 0), 0.47, 1.20, color, false)
+	_cylinder("BarrelTop", pos + Vector3(0, 1.22, 0), 0.45, 0.055, Color(0.24, 0.28, 0.28), false)
+	for y in [0.22, 0.48, 0.88, 1.08]:
+		_cylinder("BarrelReinforcementRing", pos + Vector3(0, y, 0), 0.495, 0.055, Color(0.20, 0.24, 0.24), false)
+	_cylinder("BarrelCap", pos + Vector3(0.18, 1.27, 0.08), 0.09, 0.035, Color(0.72, 0.75, 0.70), false)
+	_cylinder("BarrelPlug", pos + Vector3(-0.16, 1.27, -0.08), 0.065, 0.035, Color(0.12, 0.16, 0.17), false)
+	_box("BarrelHazardStripe", pos + Vector3(0, 0.68, -0.475), Vector3(0.48, 0.13, 0.025), Color(0.95, 0.76, 0.16), false)
 
 func _make_tire_stack(pos: Vector3) -> void:
 	for i in range(3):
