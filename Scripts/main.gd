@@ -15,6 +15,9 @@ var speed_upgrade_level := 1
 var unload_upgrade_level := 1
 var unload_timer := 0.0
 var upgrade_panel: Panel
+var bag_upgrade_button: Button
+var movement_upgrade_button: Button
+var unload_upgrade_button: Button
 var trash_nodes: Array[Node3D] = []
 var money_label: Label
 var bag_label: Label
@@ -332,12 +335,13 @@ func _build_ui() -> void:
 	var upgrade_title := _label("UPGRADE STORE", Vector2(24, 20), 24, upgrade_panel)
 	var close_upgrades := _button("X", Vector2(282, 14), Vector2(42, 42), upgrade_panel)
 	close_upgrades.pressed.connect(_toggle_upgrade_panel)
-	var bag_upgrade := _button("BAG CAPACITY +3  |  $%d" % (50 * upgrade_level), Vector2(20, 92), Vector2(300, 58), upgrade_panel)
-	bag_upgrade.pressed.connect(_upgrade_bag)
-	var movement_upgrade := _button("MOVE SPEED  |  $%d" % (75 * speed_upgrade_level), Vector2(20, 164), Vector2(300, 58), upgrade_panel)
-	movement_upgrade.pressed.connect(_upgrade_speed)
-	var unload_upgrade := _button("UNLOAD SPEED  |  $%d" % (100 * unload_upgrade_level), Vector2(20, 236), Vector2(300, 58), upgrade_panel)
-	unload_upgrade.pressed.connect(_upgrade_unload)
+	bag_upgrade_button = _button("BAG CAPACITY +3", Vector2(20, 92), Vector2(300, 58), upgrade_panel)
+	bag_upgrade_button.pressed.connect(_upgrade_bag)
+	movement_upgrade_button = _button("MOVE SPEED", Vector2(20, 164), Vector2(300, 58), upgrade_panel)
+	movement_upgrade_button.pressed.connect(_upgrade_speed)
+	unload_upgrade_button = _button("UNLOAD SPEED", Vector2(20, 236), Vector2(300, 58), upgrade_panel)
+	unload_upgrade_button.pressed.connect(_upgrade_unload)
+	_refresh_upgrade_prices()
 
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
 	hint.anchor_top = 1.0
@@ -415,7 +419,7 @@ func _toggle_upgrade_panel() -> void:
 		upgrade_panel.visible = not upgrade_panel.visible
 
 func _upgrade_bag() -> void:
-	var cost := 50 * upgrade_level
+	var cost := _upgrade_cost(50, upgrade_level)
 	if money < cost:
 		_set_message("You need $%d for the next bag upgrade." % cost)
 		return
@@ -423,11 +427,12 @@ func _upgrade_bag() -> void:
 	capacity += 3
 	upgrade_level += 1
 	_update_ui()
+	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Upgrade purchased! New bag capacity: %d." % capacity)
 
 func _upgrade_speed() -> void:
-	var cost := 75 * speed_upgrade_level
+	var cost := _upgrade_cost(75, speed_upgrade_level)
 	if money < cost:
 		_set_message("You need $%d for the speed upgrade." % cost)
 		return
@@ -435,19 +440,33 @@ func _upgrade_speed() -> void:
 	speed_upgrade_level += 1
 	player.set("move_speed", 5.0 + float(speed_upgrade_level - 1) * 0.8)
 	_update_ui()
+	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Movement speed upgraded!")
 
 func _upgrade_unload() -> void:
-	var cost := 100 * unload_upgrade_level
+	var cost := _upgrade_cost(100, unload_upgrade_level)
 	if money < cost:
 		_set_message("You need $%d for faster unloading." % cost)
 		return
 	money -= cost
 	unload_upgrade_level += 1
 	_update_ui()
+	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Unloading speed upgraded!")
+
+func _upgrade_cost(base_cost: int, level: int) -> int:
+	# Each upgrade category compounds its own price by 25% per purchase.
+	return int(ceil(float(base_cost) * pow(1.25, float(level - 1))))
+
+func _refresh_upgrade_prices() -> void:
+	if is_instance_valid(bag_upgrade_button):
+		bag_upgrade_button.text = "BAG CAPACITY +3  |  $%d" % _upgrade_cost(50, upgrade_level)
+	if is_instance_valid(movement_upgrade_button):
+		movement_upgrade_button.text = "MOVE SPEED  |  $%d" % _upgrade_cost(75, speed_upgrade_level)
+	if is_instance_valid(unload_upgrade_button):
+		unload_upgrade_button.text = "UNLOAD SPEED  |  $%d" % _upgrade_cost(100, unload_upgrade_level)
 
 func _save_game() -> void:
 	var save := ConfigFile.new()
