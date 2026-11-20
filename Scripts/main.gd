@@ -578,7 +578,7 @@ func _refresh_upgrade_prices() -> void:
 			button.disabled = true
 			button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.38, 0.27)))
 		elif available:
-			var base_cost := {"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"supply":175,"auto":250}.get(branch, 50)
+			var base_cost: int = int({"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"supply":175,"auto":250}.get(branch, 50))
 			var price_level := level if branch != "auto" else level
 			button.text = "%s\nLEVEL %d  •  $%d" % [node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
