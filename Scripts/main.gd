@@ -21,6 +21,7 @@ var auto_pickup_timer := 0.0
 var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
 var skill_branch_panels: Array[PanelContainer] = []
+var skill_node_data: Array[Dictionary] = []
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -451,56 +452,141 @@ func _build_ui() -> void:
 	var skill_scroll := ScrollContainer.new()
 	skill_scroll.position = Vector2(14, 82)
 	skill_scroll.size = Vector2(322, 440)
-	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	skill_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	upgrade_panel.add_child(skill_scroll)
-	var skill_list := VBoxContainer.new()
-	skill_list.custom_minimum_size = Vector2(300, 0)
-	skill_list.add_theme_constant_override("separation", 10)
-	skill_scroll.add_child(skill_list)
-
-	_add_skill_branch(skill_list, "01  CAPACITY", "Bigger bag • +3 trash per level", "BAG CAPACITY", Callable(self, "_upgrade_bag"))
-	_add_skill_branch(skill_list, "02  SPEED", "Move faster around the yard", "MOVEMENT SPEED", Callable(self, "_upgrade_speed"))
-	_add_skill_branch(skill_list, "03  RECYCLING", "Unload trash faster", "UNLOAD SPEED", Callable(self, "_upgrade_unload"))
-	_add_skill_branch(skill_list, "04  PICKUP RANGE", "Reach litter farther away • +0.75m per level", "PICKUP RANGE", Callable(self, "_upgrade_equipment"))
-	_add_skill_branch(skill_list, "05  TECHNOLOGY", "Earn more cash from every item", "RECYCLING VALUE", Callable(self, "_upgrade_technology"))
-	_add_skill_branch(skill_list, "06  TRASH SUPPLY", "More litter appears each time you pull to refill", "REFILL CAPACITY", Callable(self, "_upgrade_spawn"))
-	_add_skill_branch(skill_list, "07  AUTO PICKUP", "Automatically collect nearby litter while you move", "AUTO COLLECT", Callable(self, "_upgrade_auto_pickup"))
-	_refresh_upgrade_prices()
-
+	var skill_map := Control.new()
+	skill_map.custom_minimum_size = Vector2(680, 1120)
+	skill_map.size = Vector2(680, 1120)
+	skill_scroll.add_child(skill_map)
+	_build_skill_tree(skill_map)
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
 
-func _add_skill_branch(parent: VBoxContainer, branch_title: String, description: String, skill_name: String, action: Callable) -> void:
-	var branch := PanelContainer.new()
-	branch.custom_minimum_size = Vector2(296, 126)
-	branch.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.105, 0.11, 0.98)))
-	parent.add_child(branch)
-	skill_branch_panels.append(branch)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 4)
-	branch.add_child(content)
-	var heading := Label.new()
-	heading.text = branch_title
-	heading.add_theme_font_size_override("font_size", 15)
-	heading.add_theme_color_override("font_color", Color(0.48, 0.95, 0.75))
-	content.add_child(heading)
-	var detail := Label.new()
-	detail.text = description
-	detail.add_theme_font_size_override("font_size", 11)
-	detail.add_theme_color_override("font_color", Color(0.78, 0.86, 0.84))
-	content.add_child(detail)
-	var node_button := Button.new()
-	node_button.custom_minimum_size = Vector2(276, 48)
-	node_button.text = skill_name
-	node_button.add_theme_font_size_override("font_size", 13)
-	node_button.add_theme_color_override("font_color", Color.WHITE)
-	node_button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.34, 0.29)))
-	node_button.add_theme_stylebox_override("hover", _button_style(Color(0.12, 0.46, 0.37)))
-	node_button.add_theme_stylebox_override("pressed", _button_style(Color(0.05, 0.24, 0.22)))
-	node_button.pressed.connect(action)
-	content.add_child(node_button)
-	skill_buttons.append(node_button)
+func _build_skill_tree(parent: Control) -> void:
+	# Three purchase nodes per skill. The first skill opens three independent paths.
+	var nodes := [
+		{"branch":"capacity","level":1,"title":"CAPACITY","x":250.0,"y":35.0},
+		{"branch":"capacity","level":2,"title":"CAPACITY","x":250.0,"y":145.0},
+		{"branch":"capacity","level":3,"title":"CAPACITY","x":250.0,"y":255.0},
+		{"branch":"speed","level":1,"title":"SPEED","x":20.0,"y":455.0},
+		{"branch":"speed","level":2,"title":"SPEED","x":20.0,"y":565.0},
+		{"branch":"speed","level":3,"title":"SPEED","x":20.0,"y":675.0},
+		{"branch":"range","level":1,"title":"PICKUP RANGE","x":250.0,"y":455.0},
+		{"branch":"range","level":2,"title":"PICKUP RANGE","x":250.0,"y":565.0},
+		{"branch":"range","level":3,"title":"PICKUP RANGE","x":250.0,"y":675.0},
+		{"branch":"unload","level":1,"title":"RECYCLING","x":480.0,"y":455.0},
+		{"branch":"unload","level":2,"title":"RECYCLING","x":480.0,"y":565.0},
+		{"branch":"unload","level":3,"title":"RECYCLING","x":480.0,"y":675.0},
+		{"branch":"technology","level":1,"title":"TECHNOLOGY","x":20.0,"y":875.0},
+		{"branch":"technology","level":2,"title":"TECHNOLOGY","x":20.0,"y":985.0},
+		{"branch":"technology","level":3,"title":"TECHNOLOGY","x":20.0,"y":1095.0},
+		{"branch":"supply","level":1,"title":"TRASH SUPPLY","x":250.0,"y":875.0},
+		{"branch":"supply","level":2,"title":"TRASH SUPPLY","x":250.0,"y":985.0},
+		{"branch":"supply","level":3,"title":"TRASH SUPPLY","x":250.0,"y":1095.0},
+		{"branch":"auto","level":1,"title":"AUTO PICKUP","x":480.0,"y":875.0},
+		{"branch":"auto","level":2,"title":"AUTO PICKUP","x":480.0,"y":985.0},
+		{"branch":"auto","level":3,"title":"AUTO PICKUP","x":480.0,"y":1095.0}
+	]
+	# Draw connecting paths first, behind the skill nodes.
+	_add_skill_connection(parent, Vector2(340, 111), Vector2(340, 145))
+	_add_skill_connection(parent, Vector2(340, 221), Vector2(340, 255))
+	_add_skill_connection(parent, Vector2(340, 331), Vector2(340, 390))
+	_add_skill_connection(parent, Vector2(340, 390), Vector2(110, 455))
+	_add_skill_connection(parent, Vector2(340, 390), Vector2(340, 455))
+	_add_skill_connection(parent, Vector2(340, 390), Vector2(570, 455))
+	for x in [110.0, 340.0, 570.0]:
+		_add_skill_connection(parent, Vector2(x, 531), Vector2(x, 565))
+		_add_skill_connection(parent, Vector2(x, 641), Vector2(x, 675))
+	_add_skill_connection(parent, Vector2(110, 751), Vector2(110, 810))
+	_add_skill_connection(parent, Vector2(110, 810), Vector2(110, 875))
+	_add_skill_connection(parent, Vector2(340, 751), Vector2(340, 810))
+	_add_skill_connection(parent, Vector2(340, 810), Vector2(340, 875))
+	_add_skill_connection(parent, Vector2(570, 751), Vector2(570, 810))
+	_add_skill_connection(parent, Vector2(570, 810), Vector2(570, 875))
+	for x in [110.0, 340.0, 570.0]:
+		_add_skill_connection(parent, Vector2(x, 951), Vector2(x, 985))
+		_add_skill_connection(parent, Vector2(x, 1061), Vector2(x, 1095))
+	for node in nodes:
+		var button := Button.new()
+		button.position = Vector2(float(node.x), float(node.y))
+		button.size = Vector2(180, 76)
+		button.custom_minimum_size = Vector2(180, 76)
+		button.add_theme_font_size_override("font_size", 13)
+		button.add_theme_color_override("font_color", Color.WHITE)
+		button.pressed.connect(_purchase_skill_node.bind(String(node.branch), int(node.level)))
+		parent.add_child(button)
+		skill_node_data.append({"button":button,"branch":String(node.branch),"level":int(node.level),"title":String(node.title)})
+	_refresh_upgrade_prices()
+
+func _add_skill_connection(parent: Control, from_point: Vector2, to_point: Vector2) -> void:
+	var line := ColorRect.new()
+	var difference := to_point - from_point
+	line.size = Vector2(difference.length(), 5.0)
+	line.position = (from_point + to_point) * 0.5 - Vector2(line.size.x * 0.5, 2.5)
+	line.rotation = difference.angle()
+	line.color = Color(0.24, 0.62, 0.48, 0.9)
+	parent.add_child(line)
+
+func _skill_level(branch: String) -> int:
+	match branch:
+		"capacity": return upgrade_level - 1
+		"speed": return speed_upgrade_level - 1
+		"unload": return unload_upgrade_level - 1
+		"range": return equipment_upgrade_level - 1
+		"technology": return technology_upgrade_level - 1
+		"supply": return spawn_upgrade_level - 1
+		"auto": return auto_pickup_level
+	return 0
+
+func _skill_branch_unlocked(branch: String) -> bool:
+	match branch:
+		"capacity": return true
+		"speed", "range", "unload": return upgrade_level >= 4
+		"technology": return speed_upgrade_level >= 4
+		"supply": return equipment_upgrade_level >= 4
+		"auto": return unload_upgrade_level >= 4
+	return false
+
+func _purchase_skill_node(branch: String, level: int) -> void:
+	if not _skill_branch_unlocked(branch):
+		_set_message("This skill path is still locked. Upgrade its connected path first.")
+		return
+	if level != _skill_level(branch) + 1 or level > 3:
+		_set_message("Unlock the connected previous skill level first.")
+		return
+	match branch:
+		"capacity": _upgrade_bag()
+		"speed": _upgrade_speed()
+		"unload": _upgrade_unload()
+		"range": _upgrade_equipment()
+		"technology": _upgrade_technology()
+		"supply": _upgrade_spawn()
+		"auto": _upgrade_auto_pickup()
+
+func _refresh_upgrade_prices() -> void:
+	for node in skill_node_data:
+		var branch := String(node.branch)
+		var level := int(node.level)
+		var current := _skill_level(branch)
+		var available := _skill_branch_unlocked(branch) and level == current + 1 and level <= 3
+		var owned := current >= level
+		var button := node.button as Button
+		if owned:
+			button.text = "%s\nLEVEL %d  ✓" % [node.title, level]
+			button.disabled = true
+			button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.38, 0.27)))
+		elif available:
+			var base_cost := {"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"supply":175,"auto":250}.get(branch, 50)
+			var price_level := level if branch != "auto" else level
+			button.text = "%s\nLEVEL %d  •  $%d" % [node.title, level, _upgrade_cost(base_cost, price_level)]
+			button.disabled = false
+			button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.34, 0.29)))
+		else:
+			button.text = "%s\nLEVEL %d  🔒" % [node.title, level]
+			button.disabled = true
+			button.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.15, 0.16)))
 
 func _input(event: InputEvent) -> void:
 	if not is_instance_valid(player):
