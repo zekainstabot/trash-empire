@@ -18,6 +18,8 @@ var technology_upgrade_level := 1
 var trash_value_upgrade_level := 1
 var spawn_upgrade_level := 1
 var auto_pickup_level := 0
+var luck_upgrade_level := 1
+var magnet_power_level := 1
 var auto_pickup_timer := 0.0
 var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
@@ -580,8 +582,8 @@ func _build_ui() -> void:
 	skill_scroll.scroll_vertical_custom_step = 42
 	upgrade_panel.add_child(skill_scroll)
 	var skill_map := Control.new()
-	skill_map.custom_minimum_size = Vector2(680, 1540)
-	skill_map.size = Vector2(680, 1540)
+	skill_map.custom_minimum_size = Vector2(680, 1580)
+	skill_map.size = Vector2(680, 1580)
 	skill_scroll.add_child(skill_map)
 	_build_skill_tree(skill_map)
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
@@ -686,6 +688,8 @@ func _start_new_world() -> void:
 	trash_value_upgrade_level = 1
 	spawn_upgrade_level = 1
 	auto_pickup_level = 0
+	luck_upgrade_level = 1
+	magnet_power_level = 1
 	auto_pickup_timer = 0.0
 	recycling_bonus = 1.0
 	collection_range = 2.0
@@ -734,6 +738,12 @@ func _build_skill_tree(parent: Control) -> void:
 		{"branch":"value","level":1,"title":"TRASH VALUE","x":20.0,"y":1205.0},
 		{"branch":"value","level":2,"title":"TRASH VALUE","x":20.0,"y":1315.0},
 		{"branch":"value","level":3,"title":"TRASH VALUE","x":20.0,"y":1425.0},
+		{"branch":"luck","level":1,"title":"LUCKY FINDS","x":250.0,"y":1205.0},
+		{"branch":"luck","level":2,"title":"LUCKY FINDS","x":250.0,"y":1315.0},
+		{"branch":"luck","level":3,"title":"LUCKY FINDS","x":250.0,"y":1425.0},
+		{"branch":"magnet_power","level":1,"title":"MAGNET POWER","x":480.0,"y":1205.0},
+		{"branch":"magnet_power","level":2,"title":"MAGNET POWER","x":480.0,"y":1315.0},
+		{"branch":"magnet_power","level":3,"title":"MAGNET POWER","x":480.0,"y":1425.0},
 		{"branch":"supply","level":1,"title":"TRASH SUPPLY","x":250.0,"y":875.0},
 		{"branch":"supply","level":2,"title":"TRASH SUPPLY","x":250.0,"y":985.0},
 		{"branch":"supply","level":3,"title":"TRASH SUPPLY","x":250.0,"y":1095.0},
@@ -763,6 +773,12 @@ func _build_skill_tree(parent: Control) -> void:
 	_add_skill_connection(parent, Vector2(110, 1197), Vector2(110, 1205))
 	_add_skill_connection(parent, Vector2(110, 1307), Vector2(110, 1315))
 	_add_skill_connection(parent, Vector2(110, 1417), Vector2(110, 1425))
+	for x in [340.0, 570.0]:
+		_add_skill_connection(parent, Vector2(x, 1197), Vector2(x, 1205))
+		_add_skill_connection(parent, Vector2(x, 1307), Vector2(x, 1315))
+		_add_skill_connection(parent, Vector2(x, 1417), Vector2(x, 1425))
+	_add_skill_connection(parent, Vector2(340, 1170), Vector2(340, 1197))
+	_add_skill_connection(parent, Vector2(570, 1170), Vector2(570, 1197))
 	for node in nodes:
 		var button := Button.new()
 		# Circular skill nodes, arranged as connected paths rather than rectangular menu cards.
@@ -830,6 +846,8 @@ func _skill_level(branch: String) -> int:
 		"value": return trash_value_upgrade_level - 1
 		"supply": return spawn_upgrade_level - 1
 		"auto": return auto_pickup_level
+		"luck": return luck_upgrade_level - 1
+		"magnet_power": return magnet_power_level - 1
 	return 0
 
 func _skill_branch_unlocked(branch: String) -> bool:
@@ -840,6 +858,8 @@ func _skill_branch_unlocked(branch: String) -> bool:
 		"value": return technology_upgrade_level >= 4
 		"supply": return equipment_upgrade_level >= 4
 		"auto": return unload_upgrade_level >= 4
+		"luck": return spawn_upgrade_level >= 4
+		"magnet_power": return auto_pickup_level >= 3
 	return false
 
 func _purchase_skill_node(branch: String, level: int) -> void:
@@ -858,6 +878,8 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"value": _upgrade_trash_value()
 		"supply": _upgrade_spawn()
 		"auto": _upgrade_auto_pickup()
+		"luck": _upgrade_luck()
+		"magnet_power": _upgrade_magnet_power()
 
 func _refresh_upgrade_prices() -> void:
 	for node in skill_node_data:
@@ -874,7 +896,7 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.25, 0.20)))
 			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.30, 0.23)))
 		elif available:
-			var base_cost: int = int({"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"value":225,"supply":175,"auto":250}.get(branch, 50))
+			var base_cost: int = int({"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"value":225,"supply":175,"auto":250,"luck":300,"magnet_power":325}.get(branch, 50))
 			var price_level := level
 			button.text = "%s\nLEVEL %d  •  $%d" % [node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
@@ -971,8 +993,8 @@ func _process_auto_pickup(delta: float) -> void:
 		return
 
 	# A visible magnet effect: nearby litter glides toward the player before collection.
-	var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85
-	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65
+	var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85 + float(magnet_power_level - 1) * 0.7
+	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65 + float(magnet_power_level - 1) * 1.1
 	for item in trash_nodes:
 		if not is_instance_valid(item):
 			continue
@@ -1027,10 +1049,13 @@ func _process_auto_sell(delta: float) -> void:
 		unload_timer = 0.0
 		carried -= 1
 		_spawn_conveyor_item()
-		money += 0.1 * recycling_bonus * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)
+		var item_value := 0.1 * recycling_bonus * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)
+		if randf() < float(luck_upgrade_level - 1) * 0.10:
+			item_value *= 2.0
+		money += item_value
 		_update_ui()
 		_save_game()
-		_set_message("Conveyor recycling... +$%.2f" % (0.1 * recycling_bonus * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)))
+		_set_message("Conveyor recycling... +$%.2f" % item_value)
 		if carried == 0:
 			_set_message("Bag emptied! Money added.")
 
@@ -1101,6 +1126,30 @@ func _upgrade_technology() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Recycling value increased!")
+
+func _upgrade_luck() -> void:
+	var cost := _upgrade_cost(300, luck_upgrade_level)
+	if money < cost:
+		_set_message("You need $%d for the lucky finds upgrade." % cost)
+		return
+	money -= cost
+	luck_upgrade_level += 1
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Lucky finds chance increased by 10%!")
+
+func _upgrade_magnet_power() -> void:
+	var cost := _upgrade_cost(325, magnet_power_level)
+	if money < cost:
+		_set_message("You need $%d for magnet power." % cost)
+		return
+	money -= cost
+	magnet_power_level += 1
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Magnet pull power increased!")
 
 func _upgrade_trash_value() -> void:
 	var cost := _upgrade_cost(225, trash_value_upgrade_level)
@@ -1204,6 +1253,8 @@ func _save_game() -> void:
 	save.set_value("progress", "trash_value_level", trash_value_upgrade_level)
 	save.set_value("progress", "spawn_level", spawn_upgrade_level)
 	save.set_value("progress", "auto_pickup_level", auto_pickup_level)
+	save.set_value("progress", "luck_level", luck_upgrade_level)
+	save.set_value("progress", "magnet_power_level", magnet_power_level)
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.save("user://trash_empire.save")
 
@@ -1222,6 +1273,8 @@ func _load_game() -> void:
 	trash_value_upgrade_level = int(save.get_value("progress", "trash_value_level", 1))
 	spawn_upgrade_level = int(save.get_value("progress", "spawn_level", 1))
 	auto_pickup_level = int(save.get_value("progress", "auto_pickup_level", 0))
+	luck_upgrade_level = int(save.get_value("progress", "luck_level", 1))
+	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
