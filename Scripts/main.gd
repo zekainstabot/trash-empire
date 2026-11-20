@@ -1039,7 +1039,9 @@ func _close_main_menu() -> void:
 		var ui_layer := main_menu_panel.get_parent()
 		if is_instance_valid(ui_layer):
 			for child in ui_layer.get_children():
-				if child != main_menu_panel:
+				if child == upgrade_panel:
+					child.hide()
+				elif child != main_menu_panel:
 					child.show()
 	if is_instance_valid(player):
 		player.set_process(true)
