@@ -200,14 +200,8 @@ func _build_world() -> void:
 	_add_invisible_barrier("DistrictTwoFrontSafety", Vector3(32, 1.0, 20.0), Vector3(32, 2.0, 0.5))
 	_add_invisible_barrier("DistrictThreeFrontSafety", Vector3(64, 1.0, 20.0), Vector3(32, 2.0, 0.5))
 
-	# Recycling shed with a loading bay.
-	_box("ShedBody", Vector3(8.5, 2.0, -12.2), Vector3(11.0, 4.0, 5.0), Color(0.31, 0.38, 0.40), true)
-	_box("ShedRoof", Vector3(8.5, 4.15, -12.2), Vector3(11.7, 0.35, 5.7), Color(0.16, 0.21, 0.24), true)
-	_box("ShedDoor", Vector3(8.5, 1.55, -9.63), Vector3(4.2, 2.8, 0.12), Color(0.13, 0.18, 0.20), false)
-	for x in [6.8, 8.5, 10.2]:
-		_box("DoorRib", Vector3(x, 1.55, -9.53), Vector3(0.07, 2.65, 0.08), Color(0.39, 0.45, 0.45), false)
-	_box("ShedSign", Vector3(8.5, 3.25, -9.5), Vector3(5.0, 0.65, 0.16), Color(0.08, 0.48, 0.34), false)
-	_label_3d("RECYCLING", Vector3(8.5, 3.25, -9.38), 0.42)
+	# Residential building: moved to the quiet west edge, away from the factory line.
+	_build_apartment_block()
 
 	# Clearly marked unloading pad directly in front of the conveyor intake.
 	_box("UnloadPad", Vector3(1.35, 0.018, -6.5), Vector3(3.5, 0.035, 3.2), Color(0.95, 0.66, 0.12), false)
@@ -256,8 +250,6 @@ func _build_world() -> void:
 	_make_bin(Vector3(12.4, 0, -4.5), Color(0.12, 0.42, 0.78), "PLASTIC")
 	_make_bin(Vector3(12.4, 0, -7.7), Color(0.78, 0.56, 0.12), "METAL")
 	_make_bin(Vector3(12.4, 0, -10.9), Color(0.18, 0.58, 0.34), "PAPER")
-	_make_pallet(Vector3(-11.0, 0, -9.0))
-	_make_pallet(Vector3(-11.0, 0, -5.8))
 	_make_barrel(Vector3(-12.2, 0, 3.5), Color(0.76, 0.31, 0.16))
 	_make_barrel(Vector3(-10.8, 0, 4.1), Color(0.18, 0.43, 0.67))
 	_make_tire_stack(Vector3(12.0, 0, 4.5))
@@ -267,12 +259,85 @@ func _build_world() -> void:
 	_make_tree(Vector3(-13.0, 0, 1.0))
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 18.5), 0.65)
+	_build_first_district_details()
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
+
+func _build_apartment_block() -> void:
+	# Compact three-storey apartment block with a clear residential silhouette.
+	var center := Vector3(-12.8, 0.0, -10.4)
+	_box("ApartmentFoundation", center + Vector3(0, 0.18, 0), Vector3(4.9, 0.36, 5.4), Color(0.23, 0.27, 0.28), true)
+	_box("ApartmentMainFacade", center + Vector3(0, 2.45, 0), Vector3(4.55, 4.55, 5.05), Color(0.72, 0.66, 0.53), true)
+	_box("ApartmentLeftWing", center + Vector3(-1.65, 2.35, 0.02), Vector3(1.1, 4.35, 5.12), Color(0.61, 0.57, 0.49), false)
+	_box("ApartmentRoofSlab", center + Vector3(0, 4.82, 0), Vector3(4.95, 0.24, 5.48), Color(0.16, 0.21, 0.23), true)
+	_box("ApartmentRoofParapetFront", center + Vector3(0, 5.12, 2.58), Vector3(4.9, 0.42, 0.16), Color(0.27, 0.32, 0.33), false)
+	_box("ApartmentRoofParapetBack", center + Vector3(0, 5.12, -2.58), Vector3(4.9, 0.42, 0.16), Color(0.27, 0.32, 0.33), false)
+	_box("ApartmentRoofParapetLeft", center + Vector3(-2.42, 5.12, 0), Vector3(0.16, 0.42, 5.1), Color(0.27, 0.32, 0.33), false)
+	_box("ApartmentRoofParapetRight", center + Vector3(2.42, 5.12, 0), Vector3(0.16, 0.42, 5.1), Color(0.27, 0.32, 0.33), false)
+	# Three floors of windows, trim and balconies facing the main yard.
+	for floor in range(3):
+		var y := 0.95 + float(floor) * 1.42
+		_box("ApartmentFloorBand", center + Vector3(0, y + 0.58, 2.57), Vector3(4.58, 0.10, 0.08), Color(0.88, 0.81, 0.66), false)
+		for x in [-1.35, 0.0, 1.35]:
+			_box("ApartmentWindowFrame", center + Vector3(x, y, 2.57), Vector3(0.82, 0.88, 0.10), Color(0.19, 0.27, 0.30), false)
+			_box("ApartmentWindowGlass", center + Vector3(x, y, 2.635), Vector3(0.65, 0.70, 0.035), Color(0.30, 0.57, 0.66), false)
+			_box("ApartmentWindowMullion", center + Vector3(x, y, 2.61), Vector3(0.055, 0.72, 0.025), Color(0.76, 0.79, 0.73), false)
+			_box("ApartmentBalconyFloor", center + Vector3(x, y - 0.48, 2.92), Vector3(1.08, 0.12, 0.72), Color(0.43, 0.46, 0.43), false)
+			_box("ApartmentBalconyRail", center + Vector3(x, y - 0.12, 3.25), Vector3(1.08, 0.48, 0.055), Color(0.14, 0.20, 0.22), false)
+			for rail_x in [-0.48, -0.16, 0.16, 0.48]:
+				_box("ApartmentBalconyBar", center + Vector3(x + rail_x, y - 0.12, 3.25), Vector3(0.035, 0.48, 0.06), Color(0.62, 0.67, 0.64), false)
+	# Main entrance and small canopy.
+	_box("ApartmentEntranceFrame", center + Vector3(0, 0.92, 2.59), Vector3(1.12, 1.85, 0.16), Color(0.19, 0.24, 0.25), false)
+	_box("ApartmentEntranceDoor", center + Vector3(0, 0.83, 2.70), Vector3(0.82, 1.62, 0.08), Color(0.38, 0.24, 0.15), false)
+	_box("ApartmentDoorGlass", center + Vector3(0, 1.16, 2.755), Vector3(0.48, 0.55, 0.035), Color(0.30, 0.58, 0.65), false)
+	_box("ApartmentCanopy", center + Vector3(0, 1.92, 2.92), Vector3(1.55, 0.14, 0.75), Color(0.13, 0.38, 0.36), false)
+	_box("ApartmentNamePlate", center + Vector3(0, 2.18, 2.62), Vector3(1.65, 0.28, 0.08), Color(0.10, 0.22, 0.23), false)
+	_label_3d("RESIDENCE 01", center + Vector3(0, 2.18, 2.70), 0.18)
+	# Rooftop utility room, water tank and air-conditioning units.
+	_box("ApartmentRoofUtility", center + Vector3(1.35, 5.55, -1.45), Vector3(1.35, 0.75, 1.25), Color(0.42, 0.46, 0.44), false)
+	_cylinder("ApartmentWaterTank", center + Vector3(-1.25, 5.62, -1.55), 0.48, 0.95, Color(0.42, 0.53, 0.55), false)
+	for x in [-1.55, 1.55]:
+		_box("ApartmentAC", center + Vector3(x, 2.0, -2.62), Vector3(0.72, 0.55, 0.32), Color(0.72, 0.76, 0.73), false)
+		_box("ApartmentACGrill", center + Vector3(x, 2.0, -2.43), Vector3(0.42, 0.30, 0.035), Color(0.18, 0.24, 0.25), false)
+
+func _build_first_district_details() -> void:
+	# Cleaner pedestrian edge and a more lived-in entrance plaza.
+	_box("ResidentialSidewalk", Vector3(-4.0, 0.025, -10.2), Vector3(7.0, 0.05, 2.0), Color(0.53, 0.55, 0.51), false)
+	_box("MainWalkway", Vector3(-2.8, 0.035, -2.2), Vector3(2.1, 0.07, 10.0), Color(0.47, 0.49, 0.45), false)
+	for x in [-3.72, -2.85, -1.98]:
+		_box("WalkwayPaverJoint", Vector3(x, 0.075, -2.2), Vector3(0.035, 0.012, 9.8), Color(0.29, 0.33, 0.32), false)
+	# Raised planters, shrubs and low decorative edging.
+	for pos in [Vector3(-5.1, 0, -13.6), Vector3(-5.1, 0, -6.8), Vector3(2.2, 0, 10.5), Vector3(5.4, 0, 10.5)]:
+		_box("PlanterBase", pos + Vector3(0, 0.22, 0), Vector3(2.1, 0.44, 1.25), Color(0.30, 0.34, 0.31), true)
+		_box("PlanterSoil", pos + Vector3(0, 0.46, 0), Vector3(1.92, 0.08, 1.08), Color(0.24, 0.18, 0.12), false)
+		for shrub_x in [-0.58, 0.0, 0.58]:
+			var shrub := MeshInstance3D.new()
+			var shrub_mesh := SphereMesh.new()
+			shrub_mesh.radius = 0.38
+			shrub_mesh.height = 0.68
+			shrub.mesh = shrub_mesh
+			shrub.position = pos + Vector3(shrub_x, 0.82, 0)
+			shrub.material_override = _mat(Color(0.18, 0.38, 0.23))
+			add_child(shrub)
+	# Seating and waste sorting beside the entrance plaza.
+	_box("BenchSeat", Vector3(-2.6, 0.62, 4.2), Vector3(2.0, 0.16, 0.55), Color(0.42, 0.27, 0.16), false)
+	_box("BenchBack", Vector3(-2.6, 1.05, 4.45), Vector3(2.0, 0.72, 0.13), Color(0.42, 0.27, 0.16), false)
+	for x in [-3.35, -1.85]:
+		_box("BenchLeg", Vector3(x, 0.32, 4.2), Vector3(0.12, 0.58, 0.48), Color(0.16, 0.20, 0.21), false)
+	_make_bin(Vector3(0.8, 0, 11.0), Color(0.16, 0.48, 0.38), "WASTE")
+	# Marked pedestrian crossing and a small information board.
+	for i in range(5):
+		_box("PedestrianCrossingStripe", Vector3(-8.0, 0.055, -1.0 + float(i) * 0.72), Vector3(4.5, 0.035, 0.32), Color(0.82, 0.84, 0.78), false)
+	_box("DistrictInfoBoard", Vector3(5.8, 1.25, 11.2), Vector3(1.5, 2.5, 0.18), Color(0.10, 0.26, 0.27), true)
+	_box("DistrictInfoHeader", Vector3(5.8, 2.05, 11.09), Vector3(1.32, 0.38, 0.05), Color(0.84, 0.61, 0.20), false)
+	_label_3d("CITY\nCENTER", Vector3(5.8, 1.25, 11.05), 0.20)
+	# Extra warm lighting around the starting area.
+	_make_lamp(Vector3(5.5, 0, 7.5))
+	_make_lamp(Vector3(-5.0, 0, 13.0))
 
 func _upgrade_factory() -> void:
 	if factory_stage >= 5:
