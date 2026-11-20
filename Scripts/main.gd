@@ -333,7 +333,7 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 	return root
 
 func _on_pull_lever_input(_camera: Node, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_index: int, action: Callable, pivot: Node3D) -> void:
-	var activated := (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
+	var activated: bool = (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
 	if not activated or not is_instance_valid(pivot):
 		return
 	if pivot.has_meta("pulling") and bool(pivot.get_meta("pulling")):
