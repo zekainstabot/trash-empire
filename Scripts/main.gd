@@ -154,6 +154,84 @@ func _build_player() -> void:
 	backpack.material_override = _mat(Color(0.12, 0.27, 0.31))
 	player.add_child(backpack)
 
+	# Give the cleaner a more recognizable, friendly personality.
+	# Bright safety vest with reflective front stripes.
+	var vest := MeshInstance3D.new()
+	var vest_mesh := BoxMesh.new()
+	vest_mesh.size = Vector3(0.68, 0.62, 0.12)
+	vest.mesh = vest_mesh
+	vest.position = Vector3(0, 1.02, -0.205)
+	vest.material_override = _mat(Color(0.08, 0.48, 0.34))
+	player.add_child(vest)
+	for stripe_x in [-0.22, 0.22]:
+		var stripe := MeshInstance3D.new()
+		var stripe_mesh := BoxMesh.new()
+		stripe_mesh.size = Vector3(0.075, 0.56, 0.025)
+		stripe.mesh = stripe_mesh
+		stripe.position = Vector3(stripe_x, 1.02, -0.276)
+		stripe.material_override = _mat(Color(0.94, 0.85, 0.35))
+		player.add_child(stripe)
+
+	# Friendly face: expressive eyes, brows, nose and a small smile.
+	for eye_x in [-0.085, 0.085]:
+		var eye := MeshInstance3D.new()
+		var eye_mesh := SphereMesh.new()
+		eye_mesh.radius = 0.035
+		eye_mesh.height = 0.07
+		eye.mesh = eye_mesh
+		eye.position = Vector3(eye_x, 1.86, -0.205)
+		eye.material_override = _mat(Color(0.08, 0.10, 0.11))
+		player.add_child(eye)
+		var brow := MeshInstance3D.new()
+		var brow_mesh := BoxMesh.new()
+		brow_mesh.size = Vector3(0.09, 0.018, 0.025)
+		brow.mesh = brow_mesh
+		brow.position = Vector3(eye_x, 1.925, -0.205)
+		brow.material_override = _mat(Color(0.35, 0.22, 0.15))
+		player.add_child(brow)
+	var nose := MeshInstance3D.new()
+	var nose_mesh := SphereMesh.new()
+	nose_mesh.radius = 0.035
+	nose_mesh.height = 0.05
+	nose.mesh = nose_mesh
+	nose.position = Vector3(0, 1.79, -0.225)
+	nose.material_override = _mat(Color(0.63, 0.39, 0.29))
+	player.add_child(nose)
+	var smile := MeshInstance3D.new()
+	var smile_mesh := BoxMesh.new()
+	smile_mesh.size = Vector3(0.095, 0.018, 0.018)
+	smile.mesh = smile_mesh
+	smile.position = Vector3(0, 1.735, -0.215)
+	smile.material_override = _mat(Color(0.25, 0.12, 0.10))
+	player.add_child(smile)
+
+	# Arms, gloves, trousers and sturdy work boots make the silhouette clearer.
+	for side in [-1.0, 1.0]:
+		var arm := MeshInstance3D.new()
+		var arm_mesh := CapsuleMesh.new()
+		arm_mesh.radius = 0.12
+		arm_mesh.height = 0.62
+		arm.mesh = arm_mesh
+		arm.position = Vector3(side * 0.43, 1.0, 0)
+		arm.rotation_degrees.z = side * -12.0
+		arm.material_override = _mat(Color(0.90, 0.43, 0.11))
+		player.add_child(arm)
+		var glove := MeshInstance3D.new()
+		var glove_mesh := SphereMesh.new()
+		glove_mesh.radius = 0.13
+		glove_mesh.height = 0.22
+		glove.mesh = glove_mesh
+		glove.position = Vector3(side * 0.48, 0.67, -0.015)
+		glove.material_override = _mat(Color(0.16, 0.23, 0.22))
+		player.add_child(glove)
+		var boot := MeshInstance3D.new()
+		var boot_mesh := BoxMesh.new()
+		boot_mesh.size = Vector3(0.29, 0.22, 0.42)
+		boot.mesh = boot_mesh
+		boot.position = Vector3(side * 0.19, 0.13, -0.055)
+		boot.material_override = _mat(Color(0.12, 0.15, 0.16))
+		player.add_child(boot)
+
 	var collision := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
 	shape.radius = 0.38
