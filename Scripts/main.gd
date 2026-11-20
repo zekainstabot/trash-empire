@@ -23,6 +23,13 @@ var joystick_pad: Panel
 var joystick_knob: Panel
 var joystick_touch := -1
 var joystick_max_radius := 58.0
+var robot_visual: Node3D
+var robot_left_arm: Node3D
+var robot_right_arm: Node3D
+var robot_left_leg: Node3D
+var robot_right_leg: Node3D
+var robot_head: Node3D
+var robot_anim_time := 0.0
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(7.5, 0.0, -6.5)
@@ -38,6 +45,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
+	_animate_robot(delta)
 	_process_auto_sell(delta)
 
 func _build_world() -> void:
@@ -119,118 +127,34 @@ func _build_player() -> void:
 	player.set("move_speed", 5.0 + float(speed_upgrade_level - 1) * 0.8)
 	add_child(player)
 
-	var body := MeshInstance3D.new()
-	var capsule := CapsuleMesh.new()
-	capsule.radius = 0.38
-	capsule.height = 1.65
-	body.mesh = capsule
-	body.position.y = 0.85
-	body.material_override = _mat(Color(0.92, 0.48, 0.13))
-	player.add_child(body)
+	# Compact friendly recycling robot with animated joints.
+	robot_visual = Node3D.new()
+	robot_visual.name = "RecyclerBot"
+	player.add_child(robot_visual)
 
-	var head := MeshInstance3D.new()
-	var head_mesh := SphereMesh.new()
-	head_mesh.radius = 0.23
-	head_mesh.height = 0.46
-	head.mesh = head_mesh
-	head.position = Vector3(0, 1.82, 0)
-	head.material_override = _mat(Color(0.76, 0.55, 0.39))
-	player.add_child(head)
+	_add_robot_box(robot_visual, "Torso", Vector3(0, 1.05, 0), Vector3(0.72, 0.82, 0.48), Color(0.16, 0.30, 0.34))
+	_add_robot_box(robot_visual, "ChestPanel", Vector3(0, 1.12, -0.252), Vector3(0.48, 0.42, 0.035), Color(0.08, 0.55, 0.48))
+	_add_robot_box(robot_visual, "ChestLight", Vector3(0, 1.12, -0.278), Vector3(0.19, 0.08, 0.025), Color(0.35, 1.0, 0.78))
+	_add_robot_box(robot_visual, "Belt", Vector3(0, 0.62, 0), Vector3(0.76, 0.13, 0.5), Color(0.08, 0.13, 0.16))
 
-	var helmet := MeshInstance3D.new()
-	var helmet_mesh := SphereMesh.new()
-	helmet_mesh.radius = 0.27
-	helmet_mesh.height = 0.22
-	helmet.mesh = helmet_mesh
-	helmet.position = Vector3(0, 2.04, 0)
-	helmet.material_override = _mat(Color(0.96, 0.77, 0.12))
-	player.add_child(helmet)
+	robot_head = Node3D.new()
+	robot_head.position = Vector3(0, 1.78, 0)
+	robot_visual.add_child(robot_head)
+	_add_robot_box(robot_head, "HeadShell", Vector3.ZERO, Vector3(0.68, 0.55, 0.52), Color(0.76, 0.84, 0.82))
+	_add_robot_box(robot_head, "FaceScreen", Vector3(0, -0.015, -0.273), Vector3(0.53, 0.30, 0.035), Color(0.035, 0.10, 0.14))
+	for eye_x in [-0.14, 0.14]:
+		_add_robot_sphere(robot_head, "GlowingEye", Vector3(eye_x, 0.025, -0.302), 0.055, Color(0.18, 0.95, 1.0))
+	_add_robot_box(robot_head, "Smile", Vector3(0, -0.105, -0.305), Vector3(0.13, 0.018, 0.018), Color(0.35, 1.0, 0.78))
+	_add_robot_box(robot_head, "AntennaStem", Vector3(0, 0.34, 0), Vector3(0.055, 0.20, 0.055), Color(0.30, 0.42, 0.44))
+	_add_robot_sphere(robot_head, "AntennaGlow", Vector3(0, 0.46, 0), 0.09, Color(0.20, 1.0, 0.65))
 
-	var backpack := MeshInstance3D.new()
-	var pack_mesh := BoxMesh.new()
-	pack_mesh.size = Vector3(0.58, 0.68, 0.32)
-	backpack.mesh = pack_mesh
-	backpack.position = Vector3(0, 1.0, 0.34)
-	backpack.material_override = _mat(Color(0.12, 0.27, 0.31))
-	player.add_child(backpack)
+	robot_left_arm = _robot_limb(robot_visual, "LeftArm", Vector3(-0.48, 1.30, 0), Color(0.22, 0.43, 0.48))
+	robot_right_arm = _robot_limb(robot_visual, "RightArm", Vector3(0.48, 1.30, 0), Color(0.22, 0.43, 0.48))
+	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.20, 0.52, 0))
+	robot_right_leg = _robot_leg(robot_visual, "RightLeg", Vector3(0.20, 0.52, 0))
 
-	# Give the cleaner a more recognizable, friendly personality.
-	# Bright safety vest with reflective front stripes.
-	var vest := MeshInstance3D.new()
-	var vest_mesh := BoxMesh.new()
-	vest_mesh.size = Vector3(0.68, 0.62, 0.12)
-	vest.mesh = vest_mesh
-	vest.position = Vector3(0, 1.02, -0.205)
-	vest.material_override = _mat(Color(0.08, 0.48, 0.34))
-	player.add_child(vest)
-	for stripe_x in [-0.22, 0.22]:
-		var stripe := MeshInstance3D.new()
-		var stripe_mesh := BoxMesh.new()
-		stripe_mesh.size = Vector3(0.075, 0.56, 0.025)
-		stripe.mesh = stripe_mesh
-		stripe.position = Vector3(stripe_x, 1.02, -0.276)
-		stripe.material_override = _mat(Color(0.94, 0.85, 0.35))
-		player.add_child(stripe)
-
-	# Friendly face: expressive eyes, brows, nose and a small smile.
-	for eye_x in [-0.085, 0.085]:
-		var eye := MeshInstance3D.new()
-		var eye_mesh := SphereMesh.new()
-		eye_mesh.radius = 0.035
-		eye_mesh.height = 0.07
-		eye.mesh = eye_mesh
-		eye.position = Vector3(eye_x, 1.86, -0.205)
-		eye.material_override = _mat(Color(0.08, 0.10, 0.11))
-		player.add_child(eye)
-		var brow := MeshInstance3D.new()
-		var brow_mesh := BoxMesh.new()
-		brow_mesh.size = Vector3(0.09, 0.018, 0.025)
-		brow.mesh = brow_mesh
-		brow.position = Vector3(eye_x, 1.925, -0.205)
-		brow.material_override = _mat(Color(0.35, 0.22, 0.15))
-		player.add_child(brow)
-	var nose := MeshInstance3D.new()
-	var nose_mesh := SphereMesh.new()
-	nose_mesh.radius = 0.035
-	nose_mesh.height = 0.05
-	nose.mesh = nose_mesh
-	nose.position = Vector3(0, 1.79, -0.225)
-	nose.material_override = _mat(Color(0.63, 0.39, 0.29))
-	player.add_child(nose)
-	var smile := MeshInstance3D.new()
-	var smile_mesh := BoxMesh.new()
-	smile_mesh.size = Vector3(0.095, 0.018, 0.018)
-	smile.mesh = smile_mesh
-	smile.position = Vector3(0, 1.735, -0.215)
-	smile.material_override = _mat(Color(0.25, 0.12, 0.10))
-	player.add_child(smile)
-
-	# Arms, gloves, trousers and sturdy work boots make the silhouette clearer.
-	for side in [-1.0, 1.0]:
-		var arm := MeshInstance3D.new()
-		var arm_mesh := CapsuleMesh.new()
-		arm_mesh.radius = 0.12
-		arm_mesh.height = 0.62
-		arm.mesh = arm_mesh
-		arm.position = Vector3(side * 0.43, 1.0, 0)
-		arm.rotation_degrees.z = side * -12.0
-		arm.material_override = _mat(Color(0.90, 0.43, 0.11))
-		player.add_child(arm)
-		var glove := MeshInstance3D.new()
-		var glove_mesh := SphereMesh.new()
-		glove_mesh.radius = 0.13
-		glove_mesh.height = 0.22
-		glove.mesh = glove_mesh
-		glove.position = Vector3(side * 0.48, 0.67, -0.015)
-		glove.material_override = _mat(Color(0.16, 0.23, 0.22))
-		player.add_child(glove)
-		var boot := MeshInstance3D.new()
-		var boot_mesh := BoxMesh.new()
-		boot_mesh.size = Vector3(0.29, 0.22, 0.42)
-		boot.mesh = boot_mesh
-		boot.position = Vector3(side * 0.19, 0.13, -0.055)
-		boot.material_override = _mat(Color(0.12, 0.15, 0.16))
-		player.add_child(boot)
+	var backpack := _add_robot_box(robot_visual, "BatteryPack", Vector3(0, 1.03, 0.34), Vector3(0.55, 0.62, 0.28), Color(0.12, 0.22, 0.26))
+	_add_robot_box(robot_visual, "BatteryStripe", Vector3(0, 1.04, 0.495), Vector3(0.34, 0.08, 0.025), Color(0.28, 0.95, 0.67))
 
 	var collision := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
@@ -251,6 +175,70 @@ func _build_player() -> void:
 	camera.fov = 58
 	camera_pivot.add_child(camera)
 	player.set("camera_pivot", camera_pivot)
+
+	# Short entrance animation when the game starts.
+	robot_visual.scale = Vector3(0.15, 0.15, 0.15)
+	robot_visual.position.y = -0.45
+	var intro := create_tween()
+	intro.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	intro.tween_property(robot_visual, "scale", Vector3.ONE, 0.7)
+	intro.parallel().tween_property(robot_visual, "position:y", 0.0, 0.7)
+
+func _animate_robot(delta: float) -> void:
+	if not is_instance_valid(robot_visual):
+		return
+	robot_anim_time += delta
+	var moving := Vector2(player.velocity.x, player.velocity.z).length() > 0.25
+	var stride := sin(robot_anim_time * 10.0) if moving else 0.0
+	var bob := absf(stride) * 0.055 if moving else sin(robot_anim_time * 2.2) * 0.025
+	robot_visual.position.y = bob
+	robot_visual.rotation.z = sin(robot_anim_time * 5.0) * 0.025 if moving else sin(robot_anim_time * 1.5) * 0.012
+	robot_left_arm.rotation.x = stride * 0.65
+	robot_right_arm.rotation.x = -stride * 0.65
+	robot_left_leg.rotation.x = -stride * 0.48
+	robot_right_leg.rotation.x = stride * 0.48
+	robot_head.rotation.y = sin(robot_anim_time * 1.3) * 0.045
+
+func _add_robot_box(parent: Node3D, part_name: String, pos: Vector3, dimensions: Vector3, color: Color) -> MeshInstance3D:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	part.mesh = mesh
+	part.position = pos
+	part.material_override = _mat(color)
+	parent.add_child(part)
+	return part
+
+func _add_robot_sphere(parent: Node3D, part_name: String, pos: Vector3, radius: float, color: Color) -> MeshInstance3D:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	part.mesh = mesh
+	part.position = pos
+	part.material_override = _mat(color)
+	parent.add_child(part)
+	return part
+
+func _robot_limb(parent: Node3D, part_name: String, pos: Vector3, color: Color) -> Node3D:
+	var pivot := Node3D.new()
+	pivot.name = part_name
+	pivot.position = pos
+	parent.add_child(pivot)
+	_add_robot_box(pivot, "UpperArm", Vector3(0, -0.19, 0), Vector3(0.22, 0.43, 0.24), color)
+	_add_robot_sphere(pivot, "Hand", Vector3(0, -0.43, -0.015), 0.14, Color(0.12, 0.22, 0.25))
+	return pivot
+
+func _robot_leg(parent: Node3D, part_name: String, pos: Vector3) -> Node3D:
+	var pivot := Node3D.new()
+	pivot.name = part_name
+	pivot.position = pos
+	parent.add_child(pivot)
+	_add_robot_box(pivot, "Shin", Vector3(0, -0.20, 0), Vector3(0.24, 0.40, 0.25), Color(0.25, 0.36, 0.39))
+	_add_robot_box(pivot, "Boot", Vector3(0, -0.42, -0.09), Vector3(0.34, 0.16, 0.43), Color(0.07, 0.12, 0.15))
+	return pivot
 
 func _build_trash() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -309,7 +297,7 @@ func _build_ui() -> void:
 	joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.48, 0.38, 0.96)))
 	joystick_pad.add_child(joystick_knob)
 
-	var upgrades_button := _button("UPGRADES", Vector2(-174, -108), Vector2(156, 58), layer)
+	var upgrades_button := _button("UPGRADES", Vector2(-174, -250), Vector2(156, 58), layer)
 	_anchor_bottom_right(upgrades_button)
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
 
