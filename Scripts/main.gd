@@ -29,7 +29,11 @@ var skill_buttons: Array[Button] = []
 var skill_branch_panels: Array[PanelContainer] = []
 var skill_node_data: Array[Dictionary] = []
 var skill_scroll_container: ScrollContainer
+var skill_map: Control
+var skill_zoom := 1.0
 var skill_drag_touch := -1
+var skill_touch_points: Dictionary = {}
+var skill_pinch_distance := 0.0
 var skill_scroll_velocity := 0.0
 var unload_timer := 0.0
 var upgrade_panel: Panel
@@ -697,11 +701,23 @@ func _build_ui() -> void:
 	skill_scroll.scroll_deadzone = 8
 	skill_scroll.scroll_vertical_custom_step = 42
 	upgrade_panel.add_child(skill_scroll)
-	var skill_map := Control.new()
+	skill_map = Control.new()
+	skill_map.name = "SkillGalaxyMap"
 	skill_map.custom_minimum_size = Vector2(3400, 3400)
 	skill_map.size = Vector2(3400, 3400)
 	skill_scroll.add_child(skill_map)
 	_build_skill_tree(skill_map)
+	var zoom_out := _button("−", Vector2(-166, 66), Vector2(42, 42), upgrade_panel)
+	zoom_out.anchor_left = 1.0
+	zoom_out.anchor_right = 1.0
+	zoom_out.pressed.connect(func() -> void: _set_skill_zoom(skill_zoom - 0.15))
+	var zoom_in := _button("+", Vector2(-116, 66), Vector2(42, 42), upgrade_panel)
+	zoom_in.anchor_left = 1.0
+	zoom_in.anchor_right = 1.0
+	zoom_in.pressed.connect(func() -> void: _set_skill_zoom(skill_zoom + 0.15))
+	var zoom_label := _label("ZOOM", Vector2(-218, 76), 10, upgrade_panel)
+	zoom_label.anchor_left = 1.0
+	zoom_label.anchor_right = 1.0
 	# Open the tree focused on its central capacity core.
 	skill_scroll.set_deferred("scroll_horizontal", 1400)
 	skill_scroll.set_deferred("scroll_vertical", 1300)
@@ -1087,21 +1103,44 @@ func _notification(what: int) -> void:
 func _input(event: InputEvent) -> void:
 	if main_menu_open:
 		return
-	# Give the skill tree its own touch-drag scrolling with momentum.
+	# Skill tree: one-finger drag, two-finger pinch zoom and smooth momentum.
 	if upgrade_panel != null and upgrade_panel.visible and is_instance_valid(skill_scroll_container):
 		var scroll_rect := skill_scroll_container.get_global_rect()
 		if event is InputEventScreenTouch:
-			if event.pressed and skill_drag_touch == -1 and scroll_rect.has_point(event.position):
-				skill_drag_touch = event.index
-				skill_scroll_velocity = 0.0
-			elif not event.pressed and event.index == skill_drag_touch:
-				skill_drag_touch = -1
-			elif event.pressed == false:
-				skill_drag_touch = -1
-		elif event is InputEventScreenDrag and event.index == skill_drag_touch:
-			skill_scroll_container.scroll_vertical = maxi(0, skill_scroll_container.scroll_vertical - int(event.relative.y))
-			skill_scroll_velocity = -event.relative.y * 12.0
-			get_viewport().set_input_as_handled()
+			if event.pressed and scroll_rect.has_point(event.position):
+				skill_touch_points[event.index] = event.position
+				if skill_touch_points.size() == 1:
+					skill_drag_touch = event.index
+					skill_scroll_velocity = 0.0
+				elif skill_touch_points.size() == 2:
+					var points: Array = skill_touch_points.values()
+					skill_pinch_distance = points[0].distance_to(points[1])
+					skill_drag_touch = -1
+				get_viewport().set_input_as_handled()
+			elif not event.pressed:
+				skill_touch_points.erase(event.index)
+				if event.index == skill_drag_touch:
+					skill_drag_touch = -1
+				if skill_touch_points.size() == 1:
+					var remaining_index = skill_touch_points.keys()[0]
+					skill_drag_touch = int(remaining_index)
+				else:
+					skill_pinch_distance = 0.0
+				get_viewport().set_input_as_handled()
+		elif event is InputEventScreenDrag:
+			if skill_touch_points.has(event.index):
+				skill_touch_points[event.index] = event.position
+				if skill_touch_points.size() >= 2:
+					var points: Array = skill_touch_points.values()
+					var distance: float = points[0].distance_to(points[1])
+					if skill_pinch_distance > 0.0:
+						_set_skill_zoom(skill_zoom * (distance / skill_pinch_distance))
+					skill_pinch_distance = distance
+					skill_drag_touch = -1
+				elif event.index == skill_drag_touch:
+					skill_scroll_velocity = -event.relative.y * 18.0
+					skill_scroll_container.scroll_vertical = maxi(0, skill_scroll_container.scroll_vertical - int(event.relative.y))
+				get_viewport().set_input_as_handled()
 		return
 	if not is_instance_valid(player):
 		return
@@ -1118,7 +1157,7 @@ func _input(event: InputEvent) -> void:
 func _process_skill_scroll(delta: float) -> void:
 	if skill_drag_touch != -1 or not is_instance_valid(skill_scroll_container):
 		return
-	if absf(skill_scroll_velocity) < 8.0:
+	if absf(skill_scroll_velocity) < 4.0:
 		skill_scroll_velocity = 0.0
 		return
 	var max_scroll := maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
@@ -1127,7 +1166,23 @@ func _process_skill_scroll(delta: float) -> void:
 	if next_scroll == 0 or next_scroll == max_scroll:
 		skill_scroll_velocity = 0.0
 	else:
-		skill_scroll_velocity *= exp(-5.5 * delta)
+		skill_scroll_velocity *= exp(-3.2 * delta)
+
+func _set_skill_zoom(value: float) -> void:
+	if not is_instance_valid(skill_map) or not is_instance_valid(skill_scroll_container):
+		return
+	var old_zoom := skill_zoom
+	skill_zoom = clampf(value, 0.55, 1.65)
+	if is_equal_approx(old_zoom, skill_zoom):
+		return
+	var view_center := Vector2(skill_scroll_container.scroll_horizontal, skill_scroll_container.scroll_vertical) + skill_scroll_container.size * 0.5
+	var map_center := view_center / old_zoom
+	skill_map.scale = Vector2.ONE * skill_zoom
+	skill_map.custom_minimum_size = Vector2(3400.0, 3400.0) * skill_zoom
+	skill_map.size = skill_map.custom_minimum_size
+	await get_tree().process_frame
+	skill_scroll_container.scroll_horizontal = clampi(int(map_center.x * skill_zoom - skill_scroll_container.size.x * 0.5), 0, int(skill_scroll_container.get_h_scroll_bar().max_value - skill_scroll_container.get_h_scroll_bar().page))
+	skill_scroll_container.scroll_vertical = clampi(int(map_center.y * skill_zoom - skill_scroll_container.size.y * 0.5), 0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
 
 func _update_joystick(touch_position: Vector2) -> void:
 	var center := joystick_pad.get_global_rect().get_center()
