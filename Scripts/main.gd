@@ -738,38 +738,6 @@ func _upgrade_cost(base_cost: int, level: int) -> int:
 	# Each upgrade category compounds its own price by 25% per purchase.
 	return int(ceil(float(base_cost) * pow(1.25, float(level - 1))))
 
-func _refresh_upgrade_prices() -> void:
-	if skill_buttons.size() < 7 or skill_branch_panels.size() < 7:
-		return
-	# Show only the first skill at the beginning. Each purchase reveals the next branch.
-	# Every branch needs three purchases before the next branch is revealed.
-	var unlocked := [
-		true,
-		upgrade_level >= 4,
-		speed_upgrade_level >= 4,
-		unload_upgrade_level >= 4,
-		equipment_upgrade_level >= 4,
-		technology_upgrade_level >= 4,
-		spawn_upgrade_level >= 4
-	]
-	for i in range(skill_branch_panels.size()):
-		skill_branch_panels[i].visible = unlocked[i]
-	# One button per skill: repeated purchases raise its level. The next branch
-	# appears after three purchases in the current branch.
-	var bag_progress := mini(upgrade_level - 1, 3)
-	var speed_progress := mini(speed_upgrade_level - 1, 3)
-	var unload_progress := mini(unload_upgrade_level - 1, 3)
-	var range_progress := mini(equipment_upgrade_level - 1, 3)
-	var tech_progress := mini(technology_upgrade_level - 1, 3)
-	var supply_progress := mini(spawn_upgrade_level - 1, 3)
-	skill_buttons[0].text = "BAG +3  |  LV %d  |  %d/3  |  $%d" % [upgrade_level, bag_progress, _upgrade_cost(50, upgrade_level)]
-	skill_buttons[1].text = "SPEED  |  LV %d  |  %d/3  |  $%d" % [speed_upgrade_level, speed_progress, _upgrade_cost(75, speed_upgrade_level)]
-	skill_buttons[2].text = "UNLOAD  |  LV %d  |  %d/3  |  $%d" % [unload_upgrade_level, unload_progress, _upgrade_cost(100, unload_upgrade_level)]
-	skill_buttons[3].text = "RANGE +0.75M  |  LV %d  |  %d/3  |  $%d" % [equipment_upgrade_level, range_progress, _upgrade_cost(125, equipment_upgrade_level)]
-	skill_buttons[4].text = "VALUE  |  LV %d  |  %d/3  |  $%d" % [technology_upgrade_level, tech_progress, _upgrade_cost(150, technology_upgrade_level)]
-	skill_buttons[5].text = "REFILL +6  |  LV %d  |  %d/3  |  $%d" % [spawn_upgrade_level, supply_progress, _upgrade_cost(175, spawn_upgrade_level)]
-	skill_buttons[6].text = "AUTO PICKUP  |  LV %d  |  $%d" % [auto_pickup_level, _upgrade_cost(250, auto_pickup_level + 1)]
-
 func _upgrade_spawn() -> void:
 	var cost := _upgrade_cost(175, spawn_upgrade_level)
 	if money < cost:
