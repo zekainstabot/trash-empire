@@ -22,6 +22,9 @@ var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
 var skill_branch_panels: Array[PanelContainer] = []
 var skill_node_data: Array[Dictionary] = []
+var skill_scroll_container: ScrollContainer
+var skill_drag_touch := -1
+var skill_scroll_velocity := 0.0
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -64,6 +67,7 @@ func _ready() -> void:
 	_update_ui()
 
 func _process(delta: float) -> void:
+	_process_skill_scroll(delta)
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
 	_animate_robot(delta)
@@ -455,7 +459,8 @@ func _build_ui() -> void:
 	close_upgrades.anchor_right = 1.0
 	close_upgrades.pressed.connect(_toggle_upgrade_panel)
 
-	var skill_scroll := ScrollContainer.new()
+	skill_scroll_container = ScrollContainer.new()
+	var skill_scroll := skill_scroll_container
 	skill_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	skill_scroll.offset_left = 14
 	skill_scroll.offset_top = 82
@@ -463,6 +468,8 @@ func _build_ui() -> void:
 	skill_scroll.offset_bottom = -14
 	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	skill_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	skill_scroll.scroll_deadzone = 8
+	skill_scroll.scroll_vertical_custom_step = 42
 	upgrade_panel.add_child(skill_scroll)
 	var skill_map := Control.new()
 	skill_map.custom_minimum_size = Vector2(680, 1200)
@@ -598,6 +605,22 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.15, 0.16)))
 
 func _input(event: InputEvent) -> void:
+	# Give the skill tree its own touch-drag scrolling with momentum.
+	if upgrade_panel != null and upgrade_panel.visible and is_instance_valid(skill_scroll_container):
+		var scroll_rect := skill_scroll_container.get_global_rect()
+		if event is InputEventScreenTouch:
+			if event.pressed and skill_drag_touch == -1 and scroll_rect.has_point(event.position):
+				skill_drag_touch = event.index
+				skill_scroll_velocity = 0.0
+			elif not event.pressed and event.index == skill_drag_touch:
+				skill_drag_touch = -1
+			elif event.pressed == false:
+				skill_drag_touch = -1
+		elif event is InputEventScreenDrag and event.index == skill_drag_touch:
+			skill_scroll_container.scroll_vertical = maxi(0, skill_scroll_container.scroll_vertical - int(event.relative.y))
+			skill_scroll_velocity = -event.relative.y * 12.0
+			get_viewport().set_input_as_handled()
+		return
 	if not is_instance_valid(player):
 		return
 	if event is InputEventScreenTouch:
@@ -609,6 +632,20 @@ func _input(event: InputEvent) -> void:
 			_reset_joystick()
 	elif event is InputEventScreenDrag and event.index == joystick_touch:
 		_update_joystick(event.position)
+
+func _process_skill_scroll(delta: float) -> void:
+	if skill_drag_touch != -1 or not is_instance_valid(skill_scroll_container):
+		return
+	if absf(skill_scroll_velocity) < 8.0:
+		skill_scroll_velocity = 0.0
+		return
+	var max_scroll := maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
+	var next_scroll := clampi(skill_scroll_container.scroll_vertical + int(skill_scroll_velocity * delta), 0, max_scroll)
+	skill_scroll_container.scroll_vertical = next_scroll
+	if next_scroll == 0 or next_scroll == max_scroll:
+		skill_scroll_velocity = 0.0
+	else:
+		skill_scroll_velocity *= exp(-5.5 * delta)
 
 func _update_joystick(touch_position: Vector2) -> void:
 	var center := joystick_pad.get_global_rect().get_center()
