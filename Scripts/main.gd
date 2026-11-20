@@ -17,6 +17,8 @@ var equipment_upgrade_level := 1
 var technology_upgrade_level := 1
 var trash_value_upgrade_level := 1
 var spawn_upgrade_level := 1
+var respawn_level := 0
+var respawn_timer := 0.0
 var auto_pickup_level := 0
 var bulk_pickup_level := 0
 var luck_upgrade_level := 1
@@ -137,6 +139,7 @@ func _process(delta: float) -> void:
 	_process_teddy_shipping(delta)
 	_process_auto_pickup(delta)
 	_process_helper_drones(delta)
+	_process_trash_respawn(delta)
 
 func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
@@ -975,6 +978,8 @@ func _start_new_world() -> void:
 	technology_upgrade_level = 1
 	trash_value_upgrade_level = 1
 	spawn_upgrade_level = 1
+	respawn_level = 0
+	respawn_timer = 0.0
 	auto_pickup_level = 0
 	bulk_pickup_level = 0
 	luck_upgrade_level = 1
@@ -1071,6 +1076,7 @@ func _build_skill_tree(parent: Control) -> void:
 		{"branch":"supply","title":"TRASH SUPPLY","depth":2,"angle":270.0},
 		{"branch":"auto","title":"AUTO PICKUP","depth":2,"angle":330.0},
 		{"branch":"bulk_pickup","title":"MULTI PICKUP","depth":3,"angle":300.0},
+		{"branch":"respawn","title":"AUTO RESPAWN","depth":3,"angle":270.0},
 		# Ring 3: turn better tools into better earnings.
 		{"branch":"value","title":"TRASH VALUE","depth":3,"angle":210.0},
 		{"branch":"luck","title":"LUCKY FINDS","depth":3,"angle":270.0},
@@ -1091,7 +1097,7 @@ func _build_skill_tree(parent: Control) -> void:
 	var branch_layout := {
 		"speed": Vector2(-1.0, -0.85), "range": Vector2(-1.0, 0.0), "unload": Vector2(-1.0, 0.85),
 		"technology": Vector2(-0.72, -1.0), "supply": Vector2(0.0, -1.0), "auto": Vector2(0.72, -1.0),
-		"bulk_pickup": Vector2(1.0, -0.35), "value": Vector2(-0.45, -0.8), "luck": Vector2(0.0, 0.85),
+		"bulk_pickup": Vector2(1.0, -0.35), "respawn": Vector2(0.0, -1.0), "value": Vector2(-0.45, -0.8), "luck": Vector2(0.0, 0.85),
 		"magnet_power": Vector2(0.45, -0.8), "drones": Vector2(0.0, 1.0),
 		"dispatch": Vector2(-0.75, 0.65), "fleet": Vector2(0.75, 0.65),
 		"packaging": Vector2(-0.85, 0.35), "truck_capacity": Vector2(0.85, 0.35)
@@ -1114,7 +1120,7 @@ func _build_skill_tree(parent: Control) -> void:
 	var dependencies := [
 		["capacity_3", "speed_1"], ["capacity_3", "range_1"], ["capacity_3", "unload_1"],
 		["speed_3", "technology_1"], ["technology_3", "value_1"],
-		["range_3", "supply_1"], ["supply_3", "luck_1"],
+		["range_3", "supply_1"], ["supply_3", "luck_1"], ["supply_3", "respawn_1"],
 		["unload_3", "auto_1"], ["auto_3", "magnet_power_1"], ["range_3", "bulk_pickup_1"],
 		["luck_3", "drones_1"],
 		["drones_3", "dispatch_1"], ["drones_3", "fleet_1"],
@@ -1164,6 +1170,7 @@ func _add_skill_orbit(parent: Control, center: Vector2, radius: float) -> void:
 func _skill_branch_color(branch: String) -> Color:
 	match branch:
 		"capacity": return Color(0.12, 0.62, 0.48)
+		"respawn": return Color(0.24, 0.78, 0.48)
 		"speed": return Color(0.20, 0.52, 0.88)
 		"range": return Color(0.65, 0.48, 0.90)
 		"unload": return Color(0.88, 0.57, 0.18)
@@ -1183,6 +1190,7 @@ func _skill_branch_color(branch: String) -> Color:
 func _skill_icon(branch: String) -> String:
 	match branch:
 		"capacity": return "🎒"
+		"respawn": return "♻"
 		"speed": return "⚡"
 		"range": return "🧤"
 		"unload": return "♻"
@@ -1238,6 +1246,7 @@ func _skill_level(branch: String) -> int:
 		"technology": return technology_upgrade_level - 1
 		"value": return trash_value_upgrade_level - 1
 		"supply": return spawn_upgrade_level - 1
+		"respawn": return respawn_level
 		"auto": return auto_pickup_level
 		"bulk_pickup": return bulk_pickup_level
 		"luck": return luck_upgrade_level - 1
@@ -1258,6 +1267,7 @@ func _skill_branch_unlocked(branch: String) -> bool:
 		"supply": return equipment_upgrade_level >= 4
 		"auto": return unload_upgrade_level >= 4
 		"luck": return spawn_upgrade_level >= 4
+		"respawn": return spawn_upgrade_level >= 4
 		"magnet_power": return auto_pickup_level >= 3
 		"bulk_pickup": return equipment_upgrade_level >= 4
 		"drones": return luck_upgrade_level >= 2
@@ -1281,6 +1291,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"technology": _upgrade_technology()
 		"value": _upgrade_trash_value()
 		"supply": _upgrade_spawn()
+		"respawn": _upgrade_respawn()
 		"auto": _upgrade_auto_pickup()
 		"bulk_pickup": _upgrade_bulk_pickup()
 		"luck": _upgrade_luck()
@@ -1746,6 +1757,44 @@ func _upgrade_spawn() -> void:
 	_save_game()
 	_set_message("Trash supply upgraded! +6 trash on every manual refill.")
 
+func _upgrade_respawn() -> void:
+	var cost := _upgrade_cost(55.0, respawn_level + 1)
+	if money < cost:
+		_set_message("You need $%.1f to complete this purchase." % cost)
+		return
+	if not await _pay_gradually(cost):
+		return
+	respawn_level = mini(respawn_level + 1, 3)
+	respawn_timer = 0.0
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Automatic trash respawn set to every %.0f minutes!" % _trash_respawn_interval_minutes())
+
+func _trash_respawn_interval_minutes() -> float:
+	return [0.0, 5.0, 4.0, 3.0][clampi(respawn_level, 0, 3)]
+
+func _process_trash_respawn(delta: float) -> void:
+	if respawn_level <= 0:
+		return
+	respawn_timer += delta
+	if respawn_timer < _trash_respawn_interval_minutes() * 60.0:
+		return
+	respawn_timer = 0.0
+	var target_count := 24
+	if yard_stage >= 2:
+		target_count += 48
+	if yard_stage >= 3:
+		target_count += 48
+	var alive_count := 0
+	for item in trash_nodes:
+		if is_instance_valid(item):
+			alive_count += 1
+	var amount := maxi(0, target_count - alive_count)
+	if amount > 0:
+		_spawn_trash(amount)
+		_set_message("Trash automatically respawned: %d new pieces." % amount)
+
 func _upgrade_bulk_pickup() -> void:
 	var cost := _upgrade_cost(30.0, bulk_pickup_level + 1)
 	if money < cost:
@@ -1968,6 +2017,7 @@ func _save_game() -> void:
 	save.set_value("progress", "technology_level", technology_upgrade_level)
 	save.set_value("progress", "trash_value_level", trash_value_upgrade_level)
 	save.set_value("progress", "spawn_level", spawn_upgrade_level)
+	save.set_value("progress", "respawn_level", respawn_level)
 	save.set_value("progress", "auto_pickup_level", auto_pickup_level)
 	save.set_value("progress", "bulk_pickup_level", bulk_pickup_level)
 	save.set_value("progress", "luck_level", luck_upgrade_level)
@@ -1998,6 +2048,7 @@ func _load_game() -> void:
 	technology_upgrade_level = int(save.get_value("progress", "technology_level", 1))
 	trash_value_upgrade_level = int(save.get_value("progress", "trash_value_level", 1))
 	spawn_upgrade_level = int(save.get_value("progress", "spawn_level", 1))
+	respawn_level = clampi(int(save.get_value("progress", "respawn_level", 0)), 0, 3)
 	auto_pickup_level = int(save.get_value("progress", "auto_pickup_level", 0))
 	bulk_pickup_level = clampi(int(save.get_value("progress", "bulk_pickup_level", 0)), 0, 3)
 	luck_upgrade_level = int(save.get_value("progress", "luck_level", 1))
