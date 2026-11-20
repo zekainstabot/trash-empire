@@ -808,16 +808,34 @@ func _build_skill_tree(parent: Control) -> void:
 	_add_skill_connection(parent, Vector2(570, 1480), Vector2(340, 1535))
 	_add_skill_connection(parent, Vector2(340, 1611), Vector2(340, 1645))
 	_add_skill_connection(parent, Vector2(340, 1721), Vector2(340, 1755))
+	# Subtle section dividers make the long mobile tree easier to scan.
+	for section in [
+		{"y":405.0,"title":"CORE OPERATIONS"},
+		{"y":825.0,"title":"YARD & SUPPLY"},
+		{"y":1155.0,"title":"PROFIT & AUTOMATION"},
+		{"y":1505.0,"title":"ADVANCED SYSTEMS"}
+	]:
+		var divider := ColorRect.new()
+		divider.position = Vector2(22, float(section.y))
+		divider.size = Vector2(636, 2)
+		divider.color = Color(0.30, 0.63, 0.52, 0.32)
+		parent.add_child(divider)
+		var heading := Label.new()
+		heading.text = String(section.title)
+		heading.position = Vector2(24, float(section.y) - 25.0)
+		heading.add_theme_font_size_override("font_size", 13)
+		heading.add_theme_color_override("font_color", Color(0.55, 0.78, 0.70))
+		parent.add_child(heading)
 	for node in nodes:
 		var button := Button.new()
-		# Circular skill nodes, arranged as connected paths rather than rectangular menu cards.
-		button.position = Vector2(float(node.x) + 38.0, float(node.y) - 14.0)
-		button.size = Vector2(116, 116)
-		button.custom_minimum_size = Vector2(116, 116)
+		# Premium compact skill cards, centered precisely on their connection paths.
+		button.position = Vector2(float(node.x) + 22.0, float(node.y) - 4.0)
+		button.size = Vector2(136, 96)
+		button.custom_minimum_size = Vector2(136, 96)
 		button.add_theme_font_size_override("font_size", 12)
-		button.add_theme_constant_override("h_separation", 2)
-		button.add_theme_color_override("font_color", Color(0.94, 0.98, 0.96))
+		button.add_theme_color_override("font_color", Color(0.95, 0.98, 0.96))
 		button.add_theme_color_override("font_hover_color", Color.WHITE)
+		button.add_theme_color_override("font_disabled_color", Color(0.68, 0.74, 0.72))
 		button.add_theme_constant_override("outline_size", 1)
 		button.focus_mode = Control.FOCUS_NONE
 		button.pressed.connect(_purchase_skill_node.bind(String(node.branch), int(node.level)))
@@ -839,24 +857,39 @@ func _skill_branch_color(branch: String) -> Color:
 		"drones": return Color(0.65, 0.78, 0.30)
 	return Color(0.25, 0.45, 0.42)
 
+func _skill_icon(branch: String) -> String:
+	match branch:
+		"capacity": return "🎒"
+		"speed": return "⚡"
+		"range": return "🧤"
+		"unload": return "♻"
+		"technology": return "⚙"
+		"value": return "💰"
+		"supply": return "🗑"
+		"auto": return "🧲"
+		"luck": return "🍀"
+		"magnet_power": return "🧲"
+		"drones": return "🚁"
+	return "◆"
+
 func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
-	style.corner_radius_top_left = 58
-	style.corner_radius_top_right = 58
-	style.corner_radius_bottom_left = 58
-	style.corner_radius_bottom_right = 58
+	style.corner_radius_top_left = 20
+	style.corner_radius_top_right = 20
+	style.corner_radius_bottom_left = 20
+	style.corner_radius_bottom_right = 20
 	style.border_width_left = 2
 	style.border_width_right = 2
 	style.border_width_top = 2
-	style.border_width_bottom = 4
-	style.border_color = color.lightened(0.28) if not locked else Color(0.22, 0.27, 0.28)
-	style.shadow_color = Color(0, 0, 0, 0.28)
-	style.shadow_size = 5
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 10
+	style.border_width_bottom = 5
+	style.border_color = color.lightened(0.48) if not locked else Color(0.20, 0.27, 0.28)
+	style.shadow_color = Color(0, 0, 0, 0.42)
+	style.shadow_size = 8
+	style.content_margin_left = 7
+	style.content_margin_right = 7
+	style.content_margin_top = 7
+	style.content_margin_bottom = 9
 	return style
 
 func _add_skill_connection(parent: Control, from_point: Vector2, to_point: Vector2) -> void:
@@ -925,23 +958,24 @@ func _refresh_upgrade_prices() -> void:
 		var owned := current >= level
 		var button := node.button as Button
 		var accent := _skill_branch_color(branch)
+		var icon := _skill_icon(branch)
 		if owned:
-			button.text = "✓  %s\nLEVEL %d  •  UNLOCKED" % [node.title, level]
+			button.text = "%s  %s\nLEVEL %d\n✓  INSTALLED" % [icon, node.title, level]
 			button.disabled = true
-			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.25, 0.20)))
-			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.30, 0.23)))
+			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.29, 0.22)))
+			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.35, 0.26)))
 		elif available:
 			var base_cost: int = int({"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"value":225,"supply":175,"auto":250,"luck":300,"magnet_power":325,"drones":400}.get(branch, 50))
 			var price_level := level
-			button.text = "%s\nLEVEL %d  •  $%d" % [node.title, level, _upgrade_cost(base_cost, price_level)]
+			button.text = "%s  %s\nLEVEL %d\n$%d  •  UNLOCK" % [icon, node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
 			button.add_theme_stylebox_override("normal", _skill_node_style(accent.darkened(0.55)))
-			button.add_theme_stylebox_override("hover", _skill_node_style(accent.darkened(0.38)))
+			button.add_theme_stylebox_override("hover", _skill_node_style(accent.darkened(0.35)))
 			button.add_theme_stylebox_override("pressed", _skill_node_style(accent.darkened(0.68)))
 		else:
-			button.text = "🔒  %s\nLEVEL %d  •  LOCKED" % [node.title, level]
+			button.text = "🔒  %s\nLEVEL %d\nLOCKED" % [node.title, level]
 			button.disabled = true
-			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.09, 0.12, 0.13), true))
+			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.075, 0.095, 0.105), true))
 
 func _input(event: InputEvent) -> void:
 	if main_menu_open:
