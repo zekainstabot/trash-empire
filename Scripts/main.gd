@@ -1018,7 +1018,10 @@ func _collect_nearby() -> void:
 		carried += 1
 		_update_ui()
 		_save_game()
-		_set_message("Collected! Keep cleaning the yard.")
+		if carried >= capacity:
+			_set_message("BACKPACK FULL! Return to the recycling station.")
+		else:
+			_set_message("Collected! Keep cleaning the yard.")
 	else:
 		_set_message("Get closer to a piece of trash.")
 
@@ -1514,7 +1517,14 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 
 func _update_ui() -> void:
 	money_label.text = "CASH  $%.1f" % money
-	bag_label.text = "BAG  %d / %d" % [carried, capacity]
+	bag_label.text = "BACKPACK  %d / %d" % [carried, capacity]
+	var is_full := carried >= capacity
+	var bag_color := Color(1.0, 0.20, 0.16) if is_full else Color(0.88, 0.96, 0.92)
+	bag_label.add_theme_color_override("font_color", bag_color)
+	bag_label.add_theme_color_override("font_outline_color", Color(0.20, 0.015, 0.01) if is_full else Color(0.015, 0.035, 0.03))
+	bag_label.add_theme_constant_override("outline_size", 5 if is_full else 2)
+	if is_full:
+		bag_label.text += "  FULL!"
 
 func _set_message(value: String) -> void:
 	message_label.text = value
