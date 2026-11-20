@@ -77,6 +77,11 @@ var district_build_paid := 0.0
 var district_build_save_timer := 0.0
 var district_no_money_notified := false
 var payment_active := false
+var teddy_stock_values: Array[float] = []
+var shipping_active := false
+var truck_at_dock := false
+var truck_load_count := 0
+var delivery_truck: Node3D
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -107,6 +112,7 @@ func _process(delta: float) -> void:
 	_animate_robot(delta)
 	_animate_conveyor(delta)
 	_process_auto_sell(delta)
+	_process_teddy_shipping(delta)
 	_process_auto_pickup(delta)
 	_process_helper_drones(delta)
 
@@ -243,10 +249,10 @@ func _build_world() -> void:
 	_refresh_factory_upgrade_button()
 
 func _upgrade_factory() -> void:
-	if factory_stage >= 4:
+	if factory_stage >= 5:
 		_set_message("Factory production line is fully upgraded!")
 		return
-	var costs := [0.0, 12.0, 35.0, 80.0]
+	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
 	var cost: float = costs[factory_stage]
 	if money < cost:
 		_set_message("You need $%.0f to add the next factory machine." % cost)
@@ -267,11 +273,11 @@ func _refresh_factory_upgrade_button() -> void:
 	var label := factory_upgrade_button.get_node_or_null("WorldButtonLabel") as Label3D
 	if not is_instance_valid(label):
 		return
-	if factory_stage >= 4:
-		label.text = "FACTORY MAX\nTEDDY BEAR FACTORY"
+	if factory_stage >= 5:
+		label.text = "FACTORY MAX\nDELIVERY LINE"
 	else:
-		var costs := [0.0, 12.0, 35.0, 80.0]
-		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD TEDDY BEAR FACTORY"]
+		var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
+		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD TEDDY BEAR FACTORY", "ADD PACKAGING + TRUCK"]
 		label.text = "%s\n$%.0f" % [names[factory_stage + 1], costs[factory_stage]]
 
 func _build_factory_expansion() -> void:
@@ -282,8 +288,8 @@ func _build_factory_expansion() -> void:
 	for stage in range(factory_built_stage + 1, factory_stage + 1):
 		var first_new_child := get_child_count()
 		_build_factory_module(stage)
-		var start_z := -5.15 if stage == 2 else (1.05 if stage == 3 else 6.55)
-		var end_z := -2.05 if stage == 2 else (3.45 if stage == 3 else 8.95)
+		var start_z := -5.15 if stage == 2 else (1.05 if stage == 3 else (6.55 if stage == 4 else 11.0))
+		var end_z := -2.05 if stage == 2 else (3.45 if stage == 3 else (8.95 if stage == 4 else 14.5))
 		_build_factory_link(start_z, end_z)
 		var new_nodes: Array[Node] = []
 		for child_index in range(first_new_child, get_child_count()):
@@ -301,9 +307,9 @@ func _refresh_factory_build_zones() -> void:
 	factory_build_zones_root.name = "FactoryBuildZones"
 	add_child(factory_build_zones_root)
 	factory_build_label = null
-	if factory_stage >= 4:
+	if factory_stage >= 5:
 		return
-	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
+	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5, 16.0]
 	var stage := factory_stage + 1
 	var z: float = z_positions[stage]
 	var first_new_child := get_child_count()
@@ -330,15 +336,15 @@ func _refresh_factory_build_zones() -> void:
 	_update_factory_build_label()
 
 func _process_factory_build(delta: float) -> void:
-	if payment_active or factory_stage >= 4 or not is_instance_valid(player):
+	if payment_active or factory_stage >= 5 or not is_instance_valid(player):
 		return
-	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
+	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5, 16.0]
 	var stage := factory_stage + 1
 	var target := Vector3(7.5, 0.0, z_positions[stage])
 	var player_flat := Vector2(player.global_position.x, player.global_position.z)
 	if player_flat.distance_to(Vector2(target.x, target.z)) > 2.15:
 		return
-	var costs := [0.0, 12.0, 35.0, 80.0]
+	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
 	var cost: float = costs[factory_stage]
 	var payment := minf(money, minf(delta * _spending_speed_multiplier(), cost - factory_build_paid))
 	if payment > 0.0:
@@ -362,21 +368,21 @@ func _process_factory_build(delta: float) -> void:
 		_refresh_factory_upgrade_button()
 		_update_ui()
 		_save_game()
-		var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY"]
+		var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY", "PACKAGING + DELIVERY"]
 		_set_message("%s COMPLETED! Connected to the conveyor." % names[factory_stage])
 
 func _update_factory_build_label() -> void:
-	if not is_instance_valid(factory_build_label) or factory_stage >= 4:
+	if not is_instance_valid(factory_build_label) or factory_stage >= 5:
 		return
-	var costs := [0.0, 12.0, 35.0, 80.0]
-	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY"]
+	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
+	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY", "PACKAGING + TRUCK"]
 	var cost: float = costs[factory_stage]
 	factory_build_label.text = "BUILD %s\n$%.1f / $%.0f\nSTAY HERE TO PAY" % [names[factory_stage + 1], factory_build_paid, cost]
 
 func _build_factory_module(stage: int) -> void:
-	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
+	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5, 16.0]
 	var z: float = z_positions[stage]
-	var colors := [Color.WHITE, Color.WHITE, Color(0.82, 0.48, 0.16), Color(0.20, 0.56, 0.72), Color(0.18, 0.62, 0.39)]
+	var colors := [Color.WHITE, Color.WHITE, Color(0.82, 0.48, 0.16), Color(0.20, 0.56, 0.72), Color(0.18, 0.62, 0.39), Color(0.86, 0.60, 0.16)]
 	var accent: Color = colors[stage]
 	_box("FactoryModule%dBase" % stage, Vector3(7.5, 0.42, z), Vector3(4.2, 0.84, 3.2), Color(0.055, 0.09, 0.11), true)
 	_box("FactoryModule%dBody" % stage, Vector3(7.5, 1.55, z), Vector3(3.35, 1.55, 2.65), accent.darkened(0.35), true)
@@ -393,14 +399,67 @@ func _build_factory_module(stage: int) -> void:
 		_label_3d("PLASTIC GRANULATOR", Vector3(7.5, 3.0, z), 0.24)
 		_box("GranulatorHopper", Vector3(7.5, 2.95, z - 0.15), Vector3(2.1, 0.65, 1.45), Color(0.32, 0.39, 0.40), false)
 		_box("GranulatorOutlet", Vector3(7.5, 0.95, z + 1.38), Vector3(1.2, 0.65, 0.42), accent.lightened(0.2), false)
-	else:
+	elif stage == 4:
 		_label_3d("TEDDY BEAR FACTORY", Vector3(7.5, 3.0, z), 0.22)
 		_box("ProductChute", Vector3(7.5, 0.95, z + 1.48), Vector3(1.8, 0.42, 0.72), Color(0.28, 0.34, 0.34), false)
 		for x in [6.25, 8.75]:
 			_box("TeddyShippingBox", Vector3(x, 0.48, z + 1.65), Vector3(0.72, 0.82, 0.72), Color(0.72, 0.52, 0.27), false)
 		_label_3d("RECYCLED TEDDY BEARS", Vector3(7.5, 2.85, z + 1.75), 0.16)
+	else:
+		_label_3d("AUTO PACKAGING & SHIPPING", Vector3(7.5, 3.0, z), 0.20)
+		_box("PackagingFeed", Vector3(7.5, 1.0, z - 1.7), Vector3(1.5, 0.45, 0.8), Color(0.24, 0.31, 0.34), false)
+		_box("PackagingArchTop", Vector3(7.5, 2.15, z), Vector3(2.4, 0.18, 0.22), accent.lightened(0.25), false)
+		for x in [6.4, 8.6]:
+			_box("PackagingArchLeg", Vector3(x, 1.45, z), Vector3(0.18, 1.45, 0.22), accent, false)
+		_box("PackagingOutput", Vector3(9.45, 0.95, z + 0.1), Vector3(1.2, 0.18, 1.1), Color(0.10, 0.13, 0.14), false)
+		_label_3d("PACKED TEDDY BEARS", Vector3(9.3, 2.2, z + 0.7), 0.15)
+		# Delivery truck waits outside the yard and drives to the loading bay.
+		delivery_truck = Node3D.new()
+		delivery_truck.name = "TeddyDeliveryTruck"
+		delivery_truck.position = Vector3(17.4, 0.0, z + 0.2)
+		add_child(delivery_truck)
+		var cargo := MeshInstance3D.new()
+		var cargo_mesh := BoxMesh.new()
+		cargo_mesh.size = Vector3(3.5, 1.8, 3.0)
+		cargo.mesh = cargo_mesh
+		cargo.position = Vector3(0.0, 1.45, 0.0)
+		cargo.material_override = _mat(Color(0.88, 0.88, 0.78))
+		delivery_truck.add_child(cargo)
+		var cab := MeshInstance3D.new()
+		var cab_mesh := BoxMesh.new()
+		cab_mesh.size = Vector3(1.65, 1.65, 2.8)
+		cab.mesh = cab_mesh
+		cab.position = Vector3(-2.1, 1.35, 0.0)
+		cab.material_override = _mat(Color(0.82, 0.22, 0.12))
+		delivery_truck.add_child(cab)
+		var windshield := MeshInstance3D.new()
+		var windshield_mesh := BoxMesh.new()
+		windshield_mesh.size = Vector3(0.06, 0.72, 1.55)
+		windshield.mesh = windshield_mesh
+		windshield.position = Vector3(-3.0, 1.65, 0.0)
+		windshield.material_override = _mat(Color(0.12, 0.23, 0.29))
+		delivery_truck.add_child(windshield)
+		for wheel_x in [-2.5, 0.0, 2.4]:
+			for wheel_z in [-1.45, 1.45]:
+				var wheel := MeshInstance3D.new()
+				var wheel_mesh := CylinderMesh.new()
+				wheel_mesh.top_radius = 0.48
+				wheel_mesh.bottom_radius = 0.48
+				wheel_mesh.height = 0.22
+				wheel.mesh = wheel_mesh
+				wheel.position = Vector3(wheel_x, 0.48, wheel_z)
+				wheel.rotation_degrees.x = 90.0
+				wheel.material_override = _mat(Color(0.035, 0.04, 0.045))
+				delivery_truck.add_child(wheel)
+		var truck_sign := Label3D.new()
+		truck_sign.text = "ZEKA TOYS"
+		truck_sign.position = Vector3(0.0, 2.45, 1.52)
+		truck_sign.font_size = 22
+		truck_sign.pixel_size = 0.012
+		truck_sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		truck_sign.modulate = Color(0.12, 0.20, 0.18)
+		delivery_truck.add_child(truck_sign)
 	_box("FactoryModule%dStatus" % stage, Vector3(9.25, 2.0, z - 0.75), Vector3(0.42, 0.42, 0.10), Color(0.10, 0.95, 0.56), false)
-
 func _build_factory_link(start_z: float, end_z: float) -> void:
 	var middle := (start_z + end_z) * 0.5
 	var length := absf(end_z - start_z)
@@ -945,6 +1004,11 @@ func _start_new_world() -> void:
 	yard_stage = 1
 	factory_stage = 1
 	factory_built_stage = 1
+	teddy_stock_values.clear()
+	shipping_active = false
+	truck_at_dock = false
+	truck_load_count = 0
+	delivery_truck = null
 	factory_build_paid = 0.0
 	factory_build_save_timer = 0.0
 	if is_instance_valid(factory_visual_root):
@@ -1460,16 +1524,19 @@ func _process_auto_sell(delta: float) -> void:
 	if unload_timer >= seconds_per_item:
 		unload_timer = 0.0
 		carried -= 1
-		_spawn_conveyor_item()
 		var factory_multipliers := [1.0, 2.0, 4.0, 8.0]
 		var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
 		var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)
 		if randf() < float(luck_upgrade_level - 1) * 0.10:
 			item_value *= 2.0
-		money += item_value
-		_update_ui()
-		_save_game()
-		_set_message("Conveyor recycling... +$%.2f" % item_value)
+		_spawn_conveyor_item(item_value)
+		if factory_stage < 4:
+			money += item_value
+			_update_ui()
+			_save_game()
+			_set_message("Conveyor recycling... +$%.2f" % item_value)
+		else:
+			_set_message("Teddy bear made! Waiting for packaging and truck delivery...")
 		if carried == 0:
 			_set_message("Bag emptied! Money added.")
 
@@ -1834,6 +1901,7 @@ func _save_game() -> void:
 	save.set_value("progress", "district_build_paid", district_build_paid)
 	save.set_value("progress", "factory_stage", factory_stage)
 	save.set_value("progress", "factory_build_paid", factory_build_paid)
+	save.set_value("progress", "teddy_stock_values", teddy_stock_values)
 	save.save("user://trash_empire.save")
 
 func _load_game() -> void:
@@ -1856,8 +1924,11 @@ func _load_game() -> void:
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	district_build_paid = clampf(float(save.get_value("progress", "district_build_paid", 0.0)), 0.0, 60.0)
-	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 4)
-	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0][factory_stage])
+	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
+	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0, 160.0][factory_stage])
+	teddy_stock_values.clear()
+	for stored_value in save.get_value("progress", "teddy_stock_values", []):
+		teddy_stock_values.append(float(stored_value))
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 
@@ -1994,7 +2065,7 @@ func _animate_conveyor(delta: float) -> void:
 			var x := 2.65 + fposmod(float(i) * 0.38 + conveyor_time * 1.15, 3.04)
 			slat.position.x = x
 
-func _spawn_conveyor_item() -> void:
+func _spawn_conveyor_item(item_value: float) -> void:
 	# One piece of collected litter travels through each unlocked recycling stage.
 	var item := Node3D.new()
 	item.name = "ConveyorRecyclingItem"
@@ -2113,12 +2184,79 @@ func _spawn_conveyor_item() -> void:
 		)
 		travel.tween_property(teddy, "scale", Vector3.ONE, 0.35)
 		travel.tween_property(teddy, "rotation:y", TAU, 0.55)
+		travel.tween_callback(func():
+			teddy_stock_values.append(item_value)
+			_save_game()
+			_set_message("Teddy bear ready for packaging! %d waiting." % teddy_stock_values.size())
+		)
 	travel.tween_callback(func():
 		item.queue_free()
 		bale.queue_free()
 		flakes.queue_free()
 		pellets.queue_free()
 		teddy.queue_free()
+	)
+
+func _process_teddy_shipping(_delta: float) -> void:
+	if factory_stage < 5 or teddy_stock_values.is_empty() or shipping_active or not is_instance_valid(delivery_truck):
+		return
+	shipping_active = true
+	if not truck_at_dock:
+		var arrive := create_tween()
+		arrive.set_trans(Tween.TRANS_SINE)
+		arrive.set_ease(Tween.EASE_OUT)
+		arrive.tween_property(delivery_truck, "position:x", 12.2, 1.8)
+		arrive.tween_callback(func():
+			truck_at_dock = true
+			_load_next_teddy_package()
+		)
+	else:
+		_load_next_teddy_package()
+
+func _load_next_teddy_package() -> void:
+	if teddy_stock_values.is_empty() or not is_instance_valid(delivery_truck):
+		shipping_active = false
+		return
+	var package := Node3D.new()
+	package.name = "TeddyShippingPackage"
+	package.position = Vector3(9.45, 1.05, 16.1)
+	var carton := MeshInstance3D.new()
+	var carton_mesh := BoxMesh.new()
+	carton_mesh.size = Vector3(0.72, 0.62, 0.62)
+	carton.mesh = carton_mesh
+	carton.material_override = _mat(Color(0.72, 0.49, 0.25))
+	package.add_child(carton)
+	var tape := MeshInstance3D.new()
+	var tape_mesh := BoxMesh.new()
+	tape_mesh.size = Vector3(0.12, 0.64, 0.64)
+	tape.mesh = tape_mesh
+	tape.material_override = _mat(Color(0.93, 0.80, 0.48))
+	package.add_child(tape)
+	add_child(package)
+	var load_tween := create_tween()
+	load_tween.set_trans(Tween.TRANS_SINE)
+	load_tween.set_ease(Tween.EASE_IN_OUT)
+	load_tween.tween_property(package, "position", Vector3(12.1, 2.0, 16.1), 1.15)
+	load_tween.tween_callback(func():
+		package.queue_free()
+		var sold_value: float = teddy_stock_values.pop_front()
+		money += sold_value
+		truck_load_count += 1
+		_update_ui()
+		_save_game()
+		_set_message("Truck loaded a teddy bear! +$%.2f" % sold_value)
+		if truck_load_count >= 5:
+			var depart := create_tween()
+			depart.set_trans(Tween.TRANS_SINE)
+			depart.set_ease(Tween.EASE_IN)
+			depart.tween_property(delivery_truck, "position:x", 17.4, 2.0)
+			depart.tween_callback(func():
+				truck_at_dock = false
+				truck_load_count = 0
+				shipping_active = false
+			)
+		else:
+			shipping_active = false
 	)
 
 func _add_teddy_part(parent: Node3D, part_name: String, part_position: Vector3, part_size: Vector3, part_color: Color) -> void:
