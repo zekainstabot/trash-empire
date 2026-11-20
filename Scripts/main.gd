@@ -754,7 +754,7 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	new_game_button.pressed.connect(_confirm_new_game)
 	var exit_button := _button("EXIT GAME", Vector2(button_x, screen.y * 0.47 + 158), Vector2(button_width, 52), main_menu_panel)
 	exit_button.add_theme_stylebox_override("normal", _button_style(Color(0.19, 0.25, 0.26)))
-	exit_button.pressed.connect(func() -> void: get_tree().quit())
+	exit_button.pressed.connect(_confirm_exit_game)
 	var footer := Label.new()
 	footer.text = "RECYCLE • UPGRADE • EXPAND"
 	footer.position = Vector2(button_x, screen.y * 0.65)
@@ -768,6 +768,19 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 		if child != main_menu_panel:
 			child.visible = false
 
+
+func _confirm_exit_game() -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "EXIT TRASH EMPIRE?"
+	dialog.dialog_text = "Are you sure you want to leave the factory?"
+	dialog.ok_button_text = "EXIT"
+	dialog.cancel_button_text = "CANCEL"
+	dialog.confirmed.connect(func() -> void: get_tree().quit())
+	add_child(dialog)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
+	dialog.popup_centered(Vector2i(420, 190))
 
 func _confirm_new_game() -> void:
 	var confirm_panel := Panel.new()
@@ -1080,6 +1093,10 @@ func _refresh_upgrade_prices() -> void:
 			button.text = "🔒  %s\nLEVEL %d\nLOCKED" % [node.title, level]
 			button.disabled = true
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.075, 0.095, 0.105), true))
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		_confirm_exit_game()
 
 func _input(event: InputEvent) -> void:
 	if main_menu_open:
