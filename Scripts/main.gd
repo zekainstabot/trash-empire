@@ -64,6 +64,9 @@ var factory_stage := 1
 var factory_built_stage := 1
 var factory_visual_root: Node3D
 var factory_build_zones_root: Node3D
+var factory_build_label: Label3D
+var factory_build_paid := 0.0
+var factory_build_save_timer := 0.0
 var factory_upgrade_button: Node3D
 var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
@@ -91,6 +94,7 @@ func _process(delta: float) -> void:
 		return
 	_process_skill_scroll(delta)
 	_process_expansion_zone()
+	_process_factory_build(delta)
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
 	_animate_robot(delta)
@@ -225,7 +229,6 @@ func _build_world() -> void:
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
-	factory_upgrade_button = _create_world_action_button("FactoryExpansionButton", "EXPAND FACTORY", Vector3(13.0, 0.0, 7.0), Vector3(2.8, 0.5, 1.25), Callable(self, "_upgrade_factory"), Color(0.12, 0.55, 0.38))
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
 
@@ -286,23 +289,74 @@ func _refresh_factory_build_zones() -> void:
 	factory_build_zones_root = Node3D.new()
 	factory_build_zones_root.name = "FactoryBuildZones"
 	add_child(factory_build_zones_root)
+	factory_build_label = null
+	if factory_stage >= 4:
+		return
 	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
-	for stage in range(factory_stage + 1, 5):
-		var z: float = z_positions[stage]
-		var first_new_child := get_child_count()
-		_box("BuildSlot%dFloor" % stage, Vector3(7.5, 0.025, z), Vector3(4.65, 0.035, 3.65), Color(0.43, 0.36, 0.16), false)
-		var edge_color := Color(1.0, 0.76, 0.18)
-		_box("BuildSlot%dFront" % stage, Vector3(7.5, 0.065, z + 1.82), Vector3(4.7, 0.07, 0.12), edge_color, false)
-		_box("BuildSlot%dBack" % stage, Vector3(7.5, 0.065, z - 1.82), Vector3(4.7, 0.07, 0.12), edge_color, false)
-		_box("BuildSlot%dLeft" % stage, Vector3(5.18, 0.065, z), Vector3(0.12, 0.07, 3.65), edge_color, false)
-		_box("BuildSlot%dRight" % stage, Vector3(9.82, 0.065, z), Vector3(0.12, 0.07, 3.65), edge_color, false)
-		_label_3d("BUILD AREA %d" % stage, Vector3(7.5, 0.18, z + 1.15), 0.22)
-		var new_nodes: Array[Node] = []
-		for child_index in range(first_new_child, get_child_count()):
-			new_nodes.append(get_child(child_index))
-		for new_node in new_nodes:
-			remove_child(new_node)
-			factory_build_zones_root.add_child(new_node)
+	var stage := factory_stage + 1
+	var z: float = z_positions[stage]
+	var first_new_child := get_child_count()
+	_box("BuildSlotFloor", Vector3(7.5, 0.025, z), Vector3(4.65, 0.035, 3.65), Color(0.43, 0.36, 0.16), false)
+	var edge_color := Color(1.0, 0.76, 0.18)
+	_box("BuildSlotFront", Vector3(7.5, 0.065, z + 1.82), Vector3(4.7, 0.07, 0.12), edge_color, false)
+	_box("BuildSlotBack", Vector3(7.5, 0.065, z - 1.82), Vector3(4.7, 0.07, 0.12), edge_color, false)
+	_box("BuildSlotLeft", Vector3(5.18, 0.065, z), Vector3(0.12, 0.07, 3.65), edge_color, false)
+	_box("BuildSlotRight", Vector3(9.82, 0.065, z), Vector3(0.12, 0.07, 3.65), edge_color, false)
+	factory_build_label = Label3D.new()
+	factory_build_label.name = "FactoryBuildProgressLabel"
+	factory_build_label.position = Vector3(7.5, 0.45, z + 0.55)
+	factory_build_label.font_size = 30
+	factory_build_label.pixel_size = 0.01
+	factory_build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	factory_build_label.modulate = Color(1.0, 0.95, 0.68)
+	factory_build_zones_root.add_child(factory_build_label)
+	var new_nodes: Array[Node] = []
+	for child_index in range(first_new_child, get_child_count()):
+		new_nodes.append(get_child(child_index))
+	for new_node in new_nodes:
+		remove_child(new_node)
+		factory_build_zones_root.add_child(new_node)
+	_update_factory_build_label()
+
+func _process_factory_build(delta: float) -> void:
+	if factory_stage >= 4 or not is_instance_valid(player):
+		return
+	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
+	var stage := factory_stage + 1
+	var target := Vector3(7.5, 0.0, z_positions[stage])
+	var player_flat := Vector2(player.global_position.x, player.global_position.z)
+	if player_flat.distance_to(Vector2(target.x, target.z)) > 2.15:
+		return
+	var costs := [0.0, 12.0, 35.0, 80.0]
+	var cost: float = costs[factory_stage]
+	var payment := minf(money, minf(delta, cost - factory_build_paid))
+	if payment > 0.0:
+		money -= payment
+		factory_build_paid += payment
+		_update_ui()
+		factory_build_save_timer += delta
+		if factory_build_save_timer >= 1.0:
+			factory_build_save_timer = 0.0
+			_save_game()
+		_update_factory_build_label()
+	if factory_build_paid >= cost - 0.001:
+		factory_stage += 1
+		factory_build_paid = 0.0
+		factory_build_save_timer = 0.0
+		_build_factory_expansion()
+		_refresh_factory_upgrade_button()
+		_update_ui()
+		_save_game()
+		var names := ["", "", "SHREDDER", "GRANULATOR", "CONSUMER GOODS LINE"]
+		_set_message("%s COMPLETED! Connected to the conveyor." % names[factory_stage])
+
+func _update_factory_build_label() -> void:
+	if not is_instance_valid(factory_build_label) or factory_stage >= 4:
+		return
+	var costs := [0.0, 12.0, 35.0, 80.0]
+	var names := ["", "", "SHREDDER", "GRANULATOR", "GOODS LINE"]
+	var cost: float = costs[factory_stage]
+	factory_build_label.text = "BUILD %s\n$%.1f / $%.0f\nSTAY HERE TO PAY" % [names[factory_stage + 1], factory_build_paid, cost]
 
 func _build_factory_module(stage: int) -> void:
 	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
@@ -875,6 +929,8 @@ func _start_new_world() -> void:
 	yard_stage = 1
 	factory_stage = 1
 	factory_built_stage = 1
+	factory_build_paid = 0.0
+	factory_build_save_timer = 0.0
 	if is_instance_valid(factory_visual_root):
 		for factory_child in factory_visual_root.get_children():
 			factory_visual_root.remove_child(factory_child)
@@ -890,6 +946,7 @@ func _start_new_world() -> void:
 	_refresh_upgrade_prices()
 	_refresh_expansion_world_button()
 	_refresh_factory_upgrade_button()
+	_refresh_factory_build_zones()
 	_save_game()
 	_set_message("NEW WORLD STARTED!")
 	_close_main_menu()
@@ -1670,6 +1727,7 @@ func _save_game() -> void:
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.set_value("progress", "factory_stage", factory_stage)
+	save.set_value("progress", "factory_build_paid", factory_build_paid)
 	save.save("user://trash_empire.save")
 
 func _load_game() -> void:
@@ -1692,6 +1750,7 @@ func _load_game() -> void:
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 4)
+	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0][factory_stage])
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 
