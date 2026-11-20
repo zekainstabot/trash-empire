@@ -51,6 +51,7 @@ const SELL_POINT := Vector3(1.35, 0.0, -6.5)
 func _ready() -> void:
 	_load_game()
 	_build_world()
+	_apply_unlocked_districts()
 	_build_player()
 	_build_trash()
 	_build_ui()
@@ -96,7 +97,8 @@ func _build_world() -> void:
 	var first_gate := _box("ExpansionGateOne", Vector3(15.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
 	expansion_gates.append(first_gate)
 	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 32), Color(0.29, 0.34, 0.32), true)
-	_box("DistrictTwoOuterWall", Vector3(47.5, 2.0, 0), Vector3(0.5, 4, 32), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictTwoOuterWallNorth", Vector3(47.5, 2.0, -9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictTwoOuterWallSouth", Vector3(47.5, 2.0, 9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoBackWall", Vector3(32, 2.0, -15.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoFrontFence", Vector3(32, 1.5, 15.5), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 32), Color(0.32, 0.34, 0.29), true)
@@ -587,6 +589,12 @@ func _refresh_upgrade_prices() -> void:
 	skill_buttons[2].text = "UNLOAD SPEED  |  LV %d  |  $%d" % [unload_upgrade_level, _upgrade_cost(100, unload_upgrade_level)]
 	skill_buttons[3].text = "MAGNET RANGE  |  LV %d  |  $%d" % [equipment_upgrade_level, _upgrade_cost(125, equipment_upgrade_level)]
 	skill_buttons[4].text = "RECYCLING VALUE  |  LV %d  |  $%d" % [technology_upgrade_level, _upgrade_cost(150, technology_upgrade_level)]
+
+func _apply_unlocked_districts() -> void:
+	for index in range(mini(yard_stage - 1, expansion_gates.size())):
+		var gate := expansion_gates[index]
+		if is_instance_valid(gate):
+			gate.queue_free()
 
 func _buy_next_stage() -> void:
 	if yard_stage >= 3:
