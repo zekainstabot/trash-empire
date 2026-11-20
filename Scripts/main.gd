@@ -255,7 +255,7 @@ func _refresh_factory_upgrade_button() -> void:
 	if factory_stage >= 4:
 		label.text = "FACTORY MAX\nGOODS LINE"
 	else:
-		var costs := [0, 15, 60, 180]
+		var costs := [0.0, 0.8, 3.0, 9.0]
 		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD GOODS LINE"]
 		label.text = "%s\n$%d" % [names[factory_stage + 1], costs[factory_stage]]
 
@@ -1485,9 +1485,9 @@ func _upgrade_trash_value() -> void:
 	_save_game()
 	_set_message("Trash sale value increased by 25%!")
 
-func _upgrade_cost(base_cost: int, level: int) -> int:
-	# Each upgrade category compounds its own price by 25% per purchase.
-	return int(ceil(float(base_cost) * pow(1.35, float(level - 1))))
+func _upgrade_cost(base_cost: float, level: int) -> float:
+	# Prices scale with the $0.10 value of each recycled item.
+	return ceil(base_cost * pow(1.45, float(level - 1)) * 10.0) / 10.0
 
 func _upgrade_spawn() -> void:
 	var cost := _upgrade_cost(1.5, spawn_upgrade_level)
@@ -1558,7 +1558,7 @@ func _create_expansion_zone() -> void:
 	zone.add_child(ring)
 	var label := Label3D.new()
 	label.name = "UnlockZoneLabel"
-	label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$800"
+	label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$8.0"
 	label.position = Vector3(0, 2.2, 0)
 	label.font_size = 34
 	label.pixel_size = 0.006
@@ -1618,7 +1618,7 @@ func _refresh_expansion_world_button() -> void:
 		zone.position = Vector3(45.15, 0.0, 0.0)
 		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 		if is_instance_valid(label):
-			label.text = "STEP HERE\nUNLOCK DISTRICT 3\n$3000"
+			label.text = "STEP HERE\nUNLOCK DISTRICT 3\n$30.0"
 	expansion_zone_blocked = false
 
 func _expansion_button_label(value: String) -> void:
