@@ -668,12 +668,20 @@ func _refresh_upgrade_prices() -> void:
 	]
 	for i in range(skill_branch_panels.size()):
 		skill_branch_panels[i].visible = unlocked[i]
-	skill_buttons[0].text = "BAG CAPACITY +3  |  LV %d  |  $%d" % [upgrade_level, _upgrade_cost(50, upgrade_level)]
-	skill_buttons[1].text = "MOVE SPEED  |  LV %d  |  $%d" % [speed_upgrade_level, _upgrade_cost(75, speed_upgrade_level)]
-	skill_buttons[2].text = "UNLOAD SPEED  |  LV %d  |  $%d" % [unload_upgrade_level, _upgrade_cost(100, unload_upgrade_level)]
-	skill_buttons[3].text = "PICKUP RANGE +0.75M  |  LV %d  |  $%d" % [equipment_upgrade_level, _upgrade_cost(125, equipment_upgrade_level)]
-	skill_buttons[4].text = "RECYCLING VALUE  |  LV %d  |  $%d" % [technology_upgrade_level, _upgrade_cost(150, technology_upgrade_level)]
-	skill_buttons[5].text = "TRASH PER REFILL +6  |  LV %d  |  $%d" % [spawn_upgrade_level, _upgrade_cost(175, spawn_upgrade_level)]
+	# One button per skill: repeated purchases raise its level. The next branch
+	# appears after three purchases in the current branch.
+	var bag_progress := mini(upgrade_level - 1, 3)
+	var speed_progress := mini(speed_upgrade_level - 1, 3)
+	var unload_progress := mini(unload_upgrade_level - 1, 3)
+	var range_progress := mini(equipment_upgrade_level - 1, 3)
+	var tech_progress := mini(technology_upgrade_level - 1, 3)
+	var supply_progress := mini(spawn_upgrade_level - 1, 3)
+	skill_buttons[0].text = "BAG CAPACITY +3  |  LV %d  |  %d/3 TO NEXT  |  $%d" % [upgrade_level, bag_progress, _upgrade_cost(50, upgrade_level)]
+	skill_buttons[1].text = "MOVE SPEED  |  LV %d  |  %d/3 TO NEXT  |  $%d" % [speed_upgrade_level, speed_progress, _upgrade_cost(75, speed_upgrade_level)]
+	skill_buttons[2].text = "UNLOAD SPEED  |  LV %d  |  %d/3 TO NEXT  |  $%d" % [unload_upgrade_level, unload_progress, _upgrade_cost(100, unload_upgrade_level)]
+	skill_buttons[3].text = "PICKUP RANGE +0.75M  |  LV %d  |  %d/3 TO NEXT  |  $%d" % [equipment_upgrade_level, range_progress, _upgrade_cost(125, equipment_upgrade_level)]
+	skill_buttons[4].text = "RECYCLING VALUE  |  LV %d  |  %d/3 TO NEXT  |  $%d" % [technology_upgrade_level, tech_progress, _upgrade_cost(150, technology_upgrade_level)]
+	skill_buttons[5].text = "TRASH PER REFILL +6  |  LV %d  |  %d/3 TO NEXT  |  $%d" % [spawn_upgrade_level, supply_progress, _upgrade_cost(175, spawn_upgrade_level)]
 	skill_buttons[6].text = "AUTO PICKUP  |  LV %d  |  $%d" % [auto_pickup_level, _upgrade_cost(250, auto_pickup_level + 1)]
 
 func _upgrade_spawn() -> void:
