@@ -12,6 +12,9 @@ var capacity := 5
 var collection_range := 2.5
 var upgrade_level := 1
 var speed_upgrade_level := 1
+var unload_upgrade_level := 1
+var unload_timer := 0.0
+var upgrade_panel: Panel
 var trash_nodes: Array[Node3D] = []
 var money_label: Label
 var bag_label: Label
@@ -32,9 +35,10 @@ func _ready() -> void:
 	_build_ui()
 	_update_ui()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
+	_process_auto_sell(delta)
 
 func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
@@ -204,9 +208,6 @@ func _build_ui() -> void:
 	_anchor_bottom_right(collect)
 	collect.pressed.connect(_collect_nearby)
 
-	var sell := _button("SELL LOAD", Vector2(-174, -108), Vector2(156, 58), layer)
-	_anchor_bottom_right(sell)
-	sell.pressed.connect(_sell_trash)
 
 	# Fixed four-way virtual joystick on the lower-left.
 	joystick_pad = Panel.new()
@@ -230,16 +231,26 @@ func _build_ui() -> void:
 	joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.48, 0.38, 0.96)))
 	joystick_pad.add_child(joystick_knob)
 
-	# Keep upgrades clear of the movement area.
-	var upgrade := _button("BAG +3  $50", Vector2(-190, 18), Vector2(172, 48), layer)
-	upgrade.anchor_left = 1.0
-	upgrade.anchor_right = 1.0
-	upgrade.pressed.connect(_upgrade_bag)
+	var upgrades_button := _button("UPGRADES", Vector2(-174, -108), Vector2(156, 58), layer)
+	_anchor_bottom_right(upgrades_button)
+	upgrades_button.pressed.connect(_toggle_upgrade_panel)
 
-	var speed_upgrade := _button("SPEED +  $75", Vector2(-190, 76), Vector2(172, 48), layer)
-	speed_upgrade.anchor_left = 1.0
-	speed_upgrade.anchor_right = 1.0
-	speed_upgrade.pressed.connect(_upgrade_speed)
+	upgrade_panel = Panel.new()
+	upgrade_panel.set_anchors_preset(Control.PRESET_CENTER)
+	upgrade_panel.position = Vector2(-170, -170)
+	upgrade_panel.size = Vector2(340, 340)
+	upgrade_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.075, 0.08, 0.97)))
+	upgrade_panel.visible = false
+	layer.add_child(upgrade_panel)
+	var upgrade_title := _label("UPGRADE STORE", Vector2(24, 20), 24, upgrade_panel)
+	var close_upgrades := _button("X", Vector2(282, 14), Vector2(42, 42), upgrade_panel)
+	close_upgrades.pressed.connect(_toggle_upgrade_panel)
+	var bag_upgrade := _button("BAG CAPACITY +3  |  $%d" % (50 * upgrade_level), Vector2(20, 92), Vector2(300, 58), upgrade_panel)
+	bag_upgrade.pressed.connect(_upgrade_bag)
+	var movement_upgrade := _button("MOVE SPEED  |  $%d" % (75 * speed_upgrade_level), Vector2(20, 164), Vector2(300, 58), upgrade_panel)
+	movement_upgrade.pressed.connect(_upgrade_speed)
+	var unload_upgrade := _button("UNLOAD SPEED  |  $%d" % (100 * unload_upgrade_level), Vector2(20, 236), Vector2(300, 58), upgrade_panel)
+	unload_upgrade.pressed.connect(_upgrade_unload)
 
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
 	hint.anchor_top = 1.0
@@ -291,20 +302,29 @@ func _collect_nearby() -> void:
 	else:
 		_set_message("Get closer to a piece of trash.")
 
-func _sell_trash() -> void:
-	if player.global_position.distance_to(SELL_POINT) > 5.0:
-		_set_message("Take your bag to the green recycling station.")
+func _process_auto_sell(delta: float) -> void:
+	if not is_instance_valid(player):
 		return
-	if carried == 0:
-		_set_message("Your bag is empty.")
+	var inside_zone := player.global_position.distance_to(SELL_POINT) <= 5.0
+	if not inside_zone or carried <= 0:
+		unload_timer = 0.0
 		return
-	var earned := carried * 10
-	money += earned
-	carried = 0
-	_update_ui()
-	_save_game()
-	_set_message("Load recycled! You earned $%d." % earned)
-	_spawn_trash(6)
+	unload_timer += delta
+	var seconds_per_item := maxf(0.25, 1.5 - float(unload_upgrade_level - 1) * 0.2)
+	if unload_timer >= seconds_per_item:
+		unload_timer = 0.0
+		carried -= 1
+		money += 10
+		_update_ui()
+		_save_game()
+		_set_message("Recycling... +$10")
+		if carried == 0:
+			_set_message("Bag emptied! Money added.")
+			_spawn_trash(6)
+
+func _toggle_upgrade_panel() -> void:
+	if is_instance_valid(upgrade_panel):
+		upgrade_panel.visible = not upgrade_panel.visible
 
 func _upgrade_bag() -> void:
 	var cost := 50 * upgrade_level
@@ -330,6 +350,17 @@ func _upgrade_speed() -> void:
 	_save_game()
 	_set_message("Movement speed upgraded!")
 
+func _upgrade_unload() -> void:
+	var cost := 100 * unload_upgrade_level
+	if money < cost:
+		_set_message("You need $%d for faster unloading." % cost)
+		return
+	money -= cost
+	unload_upgrade_level += 1
+	_update_ui()
+	_save_game()
+	_set_message("Unloading speed upgraded!")
+
 func _save_game() -> void:
 	var save := ConfigFile.new()
 	save.set_value("progress", "money", money)
@@ -337,6 +368,7 @@ func _save_game() -> void:
 	save.set_value("progress", "capacity", capacity)
 	save.set_value("progress", "bag_level", upgrade_level)
 	save.set_value("progress", "speed_level", speed_upgrade_level)
+	save.set_value("progress", "unload_level", unload_upgrade_level)
 	save.save("user://trash_empire.save")
 
 func _load_game() -> void:
@@ -348,6 +380,7 @@ func _load_game() -> void:
 	capacity = int(save.get_value("progress", "capacity", 5))
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
 	speed_upgrade_level = int(save.get_value("progress", "speed_level", 1))
+	unload_upgrade_level = int(save.get_value("progress", "unload_level", 1))
 
 func _spawn_trash(amount: int) -> void:
 	var rng := RandomNumberGenerator.new()
