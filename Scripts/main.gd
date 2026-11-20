@@ -628,11 +628,6 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	play.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.62, 0.43)))
 	play.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.72, 0.51)))
 	play.pressed.connect(_close_main_menu)
-	var skills := _button("⚙   SKILL TREE", Vector2(button_x, screen.y * 0.55 + 84), Vector2(button_width, 58), main_menu_panel)
-	skills.pressed.connect(func() -> void:
-		_close_main_menu()
-		upgrade_panel.visible = true
-	)
 	var exit_button := _button("EXIT GAME", Vector2(button_x, screen.y * 0.55 + 158), Vector2(button_width, 52), main_menu_panel)
 	exit_button.add_theme_stylebox_override("normal", _button_style(Color(0.19, 0.25, 0.26)))
 	exit_button.pressed.connect(func() -> void: get_tree().quit())
