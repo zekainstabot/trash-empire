@@ -92,25 +92,21 @@ var main_menu_open := true
 var new_game_button: Button
 var main_menu_play_button: Button
 var skill_tree_built := false
+var world_initialized := false
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
 
 func _ready() -> void:
-	# Show a usable screen and establish the camera before generating the factory.
+	# Render the title menu before creating the 3D world. On slower Android
+	# devices, building the complete factory during startup can stall the
+	# first frame and leave only the clear-color visible.
 	_load_game()
-	_build_player()
-	_build_trash()
 	_build_ui()
 	_update_ui()
-	if is_instance_valid(main_menu_play_button):
-		main_menu_play_button.disabled = true
-	await get_tree().create_timer(0.2).timeout
-	_build_world()
-	_refresh_delivery_fleet()
-	_apply_unlocked_districts()
-	if is_instance_valid(main_menu_play_button):
-		main_menu_play_button.disabled = false
+	main_menu_open = true
+	set_process(true)
+	set_physics_process(true)
 
 func _process(delta: float) -> void:
 	if main_menu_open:
@@ -1006,6 +1002,21 @@ func _start_new_world() -> void:
 	_close_main_menu()
 
 func _close_main_menu() -> void:
+	# Build the heavy 3D scene only after the title menu has been rendered
+	# and the player explicitly starts the game.
+	if not world_initialized:
+		if is_instance_valid(main_menu_play_button):
+			main_menu_play_button.disabled = true
+		_set_message("BUILDING YOUR RECYCLING YARD...")
+		await get_tree().process_frame
+		_build_player()
+		_build_trash()
+		_build_world()
+		_refresh_delivery_fleet()
+		_apply_unlocked_districts()
+		world_initialized = true
+		if is_instance_valid(main_menu_play_button):
+			main_menu_play_button.disabled = false
 	# Explicitly activate gameplay and reveal every HUD/world overlay hidden by the title menu.
 	main_menu_open = false
 	set_process(true)
