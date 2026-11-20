@@ -1977,8 +1977,9 @@ func _spawn_conveyor_item() -> void:
 	var cash_tween := create_tween()
 	cash_tween.set_trans(Tween.TRANS_SINE)
 	cash_tween.set_ease(Tween.EASE_IN)
-	cash_tween.tween_property(money_drop, "position", Vector3(7.5, 1.15, -6.5), 1.45)
-	cash_tween.parallel().tween_property(money_drop, "scale", Vector3.ONE * 0.18, 1.45)
+	var cash_drop_duration := maxf(0.35, 1.45 - float(unload_upgrade_level - 1) * 0.15)
+	cash_tween.tween_property(money_drop, "position", Vector3(7.5, 1.15, -6.5), cash_drop_duration)
+	cash_tween.parallel().tween_property(money_drop, "scale", Vector3.ONE * 0.18, cash_drop_duration)
 	cash_tween.tween_callback(func(): money_drop.queue_free())
 
 	# Stage 1 output: compressed, strapped bale.
