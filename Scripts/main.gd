@@ -878,7 +878,7 @@ func _build_ui() -> void:
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
 
 	# Always-visible pause/menu control in the gameplay HUD.
-	var menu_button := _button("☰", Vector2(-62, 24), Vector2(48, 58), layer)
+	var menu_button := _button("☰", Vector2(-232, 24), Vector2(48, 58), layer)
 	menu_button.anchor_left = 1.0
 	menu_button.anchor_right = 1.0
 	menu_button.add_theme_font_size_override("font_size", 24)
