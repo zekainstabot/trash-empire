@@ -34,7 +34,7 @@ var skill_zoom := 1.0
 var skill_drag_touch := -1
 var skill_touch_points: Dictionary = {}
 var skill_pinch_distance := 0.0
-var skill_scroll_velocity := 0.0
+var skill_scroll_velocity := Vector2.ZERO
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -1237,8 +1237,12 @@ func _input(event: InputEvent) -> void:
 					skill_pinch_distance = distance
 					skill_drag_touch = -1
 				elif event.index == skill_drag_touch:
-					skill_scroll_velocity = -event.relative.y * 18.0
-					skill_scroll_container.scroll_vertical = maxi(0, skill_scroll_container.scroll_vertical - int(event.relative.y))
+					# Follow the finger on both axes; retain a little velocity for natural inertia.
+					skill_scroll_velocity = -event.relative * 42.0
+					var max_h := maxi(0, int(skill_scroll_container.get_h_scroll_bar().max_value - skill_scroll_container.get_h_scroll_bar().page))
+					var max_v := maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
+					skill_scroll_container.scroll_horizontal = clampi(skill_scroll_container.scroll_horizontal - int(event.relative.x), 0, max_h)
+					skill_scroll_container.scroll_vertical = clampi(skill_scroll_container.scroll_vertical - int(event.relative.y), 0, max_v)
 				get_viewport().set_input_as_handled()
 		return
 	if not is_instance_valid(player):
@@ -1256,16 +1260,20 @@ func _input(event: InputEvent) -> void:
 func _process_skill_scroll(delta: float) -> void:
 	if skill_drag_touch != -1 or not is_instance_valid(skill_scroll_container):
 		return
-	if absf(skill_scroll_velocity) < 4.0:
-		skill_scroll_velocity = 0.0
+	if skill_scroll_velocity.length() < 8.0:
+		skill_scroll_velocity = Vector2.ZERO
 		return
-	var max_scroll := maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
-	var next_scroll := clampi(skill_scroll_container.scroll_vertical + int(skill_scroll_velocity * delta), 0, max_scroll)
-	skill_scroll_container.scroll_vertical = next_scroll
-	if next_scroll == 0 or next_scroll == max_scroll:
-		skill_scroll_velocity = 0.0
-	else:
-		skill_scroll_velocity *= exp(-3.2 * delta)
+	var max_h := maxi(0, int(skill_scroll_container.get_h_scroll_bar().max_value - skill_scroll_container.get_h_scroll_bar().page))
+	var max_v := maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
+	var next_h := clampi(skill_scroll_container.scroll_horizontal + int(skill_scroll_velocity.x * delta), 0, max_h)
+	var next_v := clampi(skill_scroll_container.scroll_vertical + int(skill_scroll_velocity.y * delta), 0, max_v)
+	skill_scroll_container.scroll_horizontal = next_h
+	skill_scroll_container.scroll_vertical = next_v
+	if next_h == 0 or next_h == max_h:
+		skill_scroll_velocity.x = 0.0
+	if next_v == 0 or next_v == max_v:
+		skill_scroll_velocity.y = 0.0
+	skill_scroll_velocity *= exp(-4.0 * delta)
 
 func _set_skill_zoom(value: float) -> void:
 	if not is_instance_valid(skill_map) or not is_instance_valid(skill_scroll_container):
