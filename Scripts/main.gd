@@ -13,6 +13,10 @@ var collection_range := 2.5
 var upgrade_level := 1
 var speed_upgrade_level := 1
 var unload_upgrade_level := 1
+var equipment_upgrade_level := 1
+var technology_upgrade_level := 1
+var recycling_bonus := 1.0
+var skill_buttons: Array[Button] = []
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -327,25 +331,67 @@ func _build_ui() -> void:
 
 	upgrade_panel = Panel.new()
 	upgrade_panel.set_anchors_preset(Control.PRESET_CENTER)
-	upgrade_panel.position = Vector2(-170, -170)
-	upgrade_panel.size = Vector2(340, 340)
-	upgrade_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.075, 0.08, 0.97)))
+	upgrade_panel.position = Vector2(-175, -270)
+	upgrade_panel.size = Vector2(350, 540)
+	upgrade_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.055, 0.065, 0.98)))
 	upgrade_panel.visible = false
 	layer.add_child(upgrade_panel)
-	var upgrade_title := _label("SKILL TREE", Vector2(24, 20), 24, upgrade_panel)
-	var close_upgrades := _button("X", Vector2(282, 14), Vector2(42, 42), upgrade_panel)
+
+	_label("SKILL TREE", Vector2(20, 14), 25, upgrade_panel)
+	_label("Unlock stronger skills branch by branch", Vector2(20, 47), 12, upgrade_panel)
+	var close_upgrades := _button("X", Vector2(294, 12), Vector2(40, 40), upgrade_panel)
 	close_upgrades.pressed.connect(_toggle_upgrade_panel)
-	bag_upgrade_button = _button("BAG CAPACITY +3", Vector2(20, 92), Vector2(300, 58), upgrade_panel)
-	bag_upgrade_button.pressed.connect(_upgrade_bag)
-	movement_upgrade_button = _button("MOVE SPEED", Vector2(20, 164), Vector2(300, 58), upgrade_panel)
-	movement_upgrade_button.pressed.connect(_upgrade_speed)
-	unload_upgrade_button = _button("UNLOAD SPEED", Vector2(20, 236), Vector2(300, 58), upgrade_panel)
-	unload_upgrade_button.pressed.connect(_upgrade_unload)
+
+	var skill_scroll := ScrollContainer.new()
+	skill_scroll.position = Vector2(14, 82)
+	skill_scroll.size = Vector2(322, 440)
+	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	upgrade_panel.add_child(skill_scroll)
+	var skill_list := VBoxContainer.new()
+	skill_list.custom_minimum_size = Vector2(300, 760)
+	skill_list.add_theme_constant_override("separation", 10)
+	skill_scroll.add_child(skill_list)
+
+	_add_skill_branch(skill_list, "01  CAPACITY", "Bigger bag • +3 trash per level", "BAG CAPACITY", Callable(self, "_upgrade_bag"))
+	_add_skill_branch(skill_list, "02  SPEED", "Move faster around the yard", "MOVEMENT SPEED", Callable(self, "_upgrade_speed"))
+	_add_skill_branch(skill_list, "03  RECYCLING", "Unload trash faster", "UNLOAD SPEED", Callable(self, "_upgrade_unload"))
+	_add_skill_branch(skill_list, "04  EQUIPMENT", "Collect trash from farther away", "MAGNET RANGE", Callable(self, "_upgrade_equipment"))
+	_add_skill_branch(skill_list, "05  TECHNOLOGY", "Earn more cash from every item", "RECYCLING VALUE", Callable(self, "_upgrade_technology"))
 	_refresh_upgrade_prices()
 
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
+
+func _add_skill_branch(parent: VBoxContainer, branch_title: String, description: String, skill_name: String, action: Callable) -> void:
+	var branch := PanelContainer.new()
+	branch.custom_minimum_size = Vector2(296, 126)
+	branch.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.105, 0.11, 0.98)))
+	parent.add_child(branch)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 4)
+	branch.add_child(content)
+	var heading := Label.new()
+	heading.text = branch_title
+	heading.add_theme_font_size_override("font_size", 15)
+	heading.add_theme_color_override("font_color", Color(0.48, 0.95, 0.75))
+	content.add_child(heading)
+	var detail := Label.new()
+	detail.text = description
+	detail.add_theme_font_size_override("font_size", 11)
+	detail.add_theme_color_override("font_color", Color(0.78, 0.86, 0.84))
+	content.add_child(detail)
+	var node_button := Button.new()
+	node_button.custom_minimum_size = Vector2(276, 48)
+	node_button.text = skill_name
+	node_button.add_theme_font_size_override("font_size", 13)
+	node_button.add_theme_color_override("font_color", Color.WHITE)
+	node_button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.34, 0.29)))
+	node_button.add_theme_stylebox_override("hover", _button_style(Color(0.12, 0.46, 0.37)))
+	node_button.add_theme_stylebox_override("pressed", _button_style(Color(0.05, 0.24, 0.22)))
+	node_button.pressed.connect(action)
+	content.add_child(node_button)
+	skill_buttons.append(node_button)
 
 func _input(event: InputEvent) -> void:
 	if not is_instance_valid(joystick_pad) or not is_instance_valid(player):
@@ -406,10 +452,10 @@ func _process_auto_sell(delta: float) -> void:
 		unload_timer = 0.0
 		carried -= 1
 		_spawn_conveyor_item()
-		money += 10
+		money += int(round(10.0 * recycling_bonus))
 		_update_ui()
 		_save_game()
-		_set_message("Conveyor recycling... +$10")
+		_set_message("Conveyor recycling... +$%d" % int(round(10.0 * recycling_bonus)))
 		if carried == 0:
 			_set_message("Bag emptied! Money added.")
 			_spawn_trash(6)
@@ -456,17 +502,44 @@ func _upgrade_unload() -> void:
 	_save_game()
 	_set_message("Unloading speed upgraded!")
 
+func _upgrade_equipment() -> void:
+	var cost := _upgrade_cost(125, equipment_upgrade_level)
+	if money < cost:
+		_set_message("You need $%d for the magnet upgrade." % cost)
+		return
+	money -= cost
+	equipment_upgrade_level += 1
+	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.55
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Magnet range increased!")
+
+func _upgrade_technology() -> void:
+	var cost := _upgrade_cost(150, technology_upgrade_level)
+	if money < cost:
+		_set_message("You need $%d for the technology upgrade." % cost)
+		return
+	money -= cost
+	technology_upgrade_level += 1
+	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Recycling value increased!")
+
 func _upgrade_cost(base_cost: int, level: int) -> int:
 	# Each upgrade category compounds its own price by 25% per purchase.
 	return int(ceil(float(base_cost) * pow(1.25, float(level - 1))))
 
 func _refresh_upgrade_prices() -> void:
-	if is_instance_valid(bag_upgrade_button):
-		bag_upgrade_button.text = "BAG CAPACITY +3  |  $%d" % _upgrade_cost(50, upgrade_level)
-	if is_instance_valid(movement_upgrade_button):
-		movement_upgrade_button.text = "MOVE SPEED  |  $%d" % _upgrade_cost(75, speed_upgrade_level)
-	if is_instance_valid(unload_upgrade_button):
-		unload_upgrade_button.text = "UNLOAD SPEED  |  $%d" % _upgrade_cost(100, unload_upgrade_level)
+	if skill_buttons.size() < 5:
+		return
+	skill_buttons[0].text = "BAG CAPACITY +3  |  LV %d  |  $%d" % [upgrade_level, _upgrade_cost(50, upgrade_level)]
+	skill_buttons[1].text = "MOVE SPEED  |  LV %d  |  $%d" % [speed_upgrade_level, _upgrade_cost(75, speed_upgrade_level)]
+	skill_buttons[2].text = "UNLOAD SPEED  |  LV %d  |  $%d" % [unload_upgrade_level, _upgrade_cost(100, unload_upgrade_level)]
+	skill_buttons[3].text = "MAGNET RANGE  |  LV %d  |  $%d" % [equipment_upgrade_level, _upgrade_cost(125, equipment_upgrade_level)]
+	skill_buttons[4].text = "RECYCLING VALUE  |  LV %d  |  $%d" % [technology_upgrade_level, _upgrade_cost(150, technology_upgrade_level)]
 
 func _save_game() -> void:
 	var save := ConfigFile.new()
@@ -476,6 +549,8 @@ func _save_game() -> void:
 	save.set_value("progress", "bag_level", upgrade_level)
 	save.set_value("progress", "speed_level", speed_upgrade_level)
 	save.set_value("progress", "unload_level", unload_upgrade_level)
+	save.set_value("progress", "equipment_level", equipment_upgrade_level)
+	save.set_value("progress", "technology_level", technology_upgrade_level)
 	save.save("user://trash_empire.save")
 
 func _load_game() -> void:
@@ -488,6 +563,10 @@ func _load_game() -> void:
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
 	speed_upgrade_level = int(save.get_value("progress", "speed_level", 1))
 	unload_upgrade_level = int(save.get_value("progress", "unload_level", 1))
+	equipment_upgrade_level = int(save.get_value("progress", "equipment_level", 1))
+	technology_upgrade_level = int(save.get_value("progress", "technology_level", 1))
+	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.55
+	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 
 func _spawn_trash(amount: int) -> void:
 	var rng := RandomNumberGenerator.new()
