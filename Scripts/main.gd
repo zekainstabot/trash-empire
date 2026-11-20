@@ -72,6 +72,9 @@ var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
 var expansion_world_button: Node3D
 var expansion_zone_blocked := false
+var district_build_active := false
+var district_build_paid := 0.0
+var district_build_save_timer := 0.0
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -93,8 +96,10 @@ func _process(delta: float) -> void:
 	if main_menu_open:
 		return
 	_process_skill_scroll(delta)
-	_process_expansion_zone()
+	_process_expansion_zone(delta)
 	_process_factory_build(delta)
+	if is_instance_valid(player) and player.global_position.y < -3.0:
+		_recover_player()
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
 	_animate_robot(delta)
@@ -122,29 +127,29 @@ func _build_world() -> void:
 	add_child(sun)
 
 	# Main concrete yard and worn work zones.
-	_box("ConcreteYard", Vector3(0, -0.3, 0), Vector3(32, 0.6, 32), Color(0.34, 0.37, 0.35), true)
+	_box("ConcreteYard", Vector3(0, -0.3, 0), Vector3(32, 0.6, 40), Color(0.34, 0.37, 0.35), true)
 	_box("RoadLane", Vector3(-8.0, 0.012, 1.0), Vector3(5.0, 0.025, 27.0), Color(0.19, 0.22, 0.22), false)
 	for z in range(-11, 13, 4):
 		_box("RoadDash", Vector3(-8.0, 0.03, z), Vector3(0.13, 0.025, 1.7), Color(0.88, 0.77, 0.38), false)
 	_box("PlayerStartZone", Vector3(0, 0.02, 7), Vector3(7, 0.04, 5), Color(0.39, 0.40, 0.35), false)
 
 	# Perimeter walls, fencing, and gate.
-	_box("BackWall", Vector3(0, 2.0, -15.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
-	_box("LeftWall", Vector3(-15.5, 2.0, 0), Vector3(0.5, 4, 32), Color(0.28, 0.32, 0.31), true)
-	_box("RightWallNorth", Vector3(15.5, 2.0, -9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
-	_box("RightWallSouth", Vector3(15.5, 2.0, 9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
+	_box("BackWall", Vector3(0, 2.0, -19.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
+	_box("LeftWall", Vector3(-15.5, 2.0, 0), Vector3(0.5, 4, 40), Color(0.28, 0.32, 0.31), true)
+	_box("RightWallNorth", Vector3(15.5, 2.0, -11.0), Vector3(0.5, 4, 18.0), Color(0.28, 0.32, 0.31), true)
+	_box("RightWallSouth", Vector3(15.5, 2.0, 11.0), Vector3(0.5, 4, 18.0), Color(0.28, 0.32, 0.31), true)
 	var first_gate := _box("ExpansionGateOne", Vector3(15.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
 	expansion_gates.append(first_gate)
-	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 32), Color(0.20, 0.43, 0.22), true)
+	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 40), Color(0.20, 0.43, 0.22), true)
 	_box("DistrictTwoGrassPatch", Vector3(32, 0.012, 0), Vector3(29.5, 0.025, 28.5), Color(0.25, 0.50, 0.22), false)
-	_box("DistrictTwoOuterWallNorth", Vector3(47.5, 2.0, -9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictTwoOuterWallSouth", Vector3(47.5, 2.0, 9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictTwoBackWall", Vector3(32, 2.0, -15.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictTwoFrontFence", Vector3(32, 1.5, 15.5), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
+	_box("DistrictTwoOuterWallNorth", Vector3(47.5, 2.0, -11.0), Vector3(0.5, 4, 18.0), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictTwoOuterWallSouth", Vector3(47.5, 2.0, 11.0), Vector3(0.5, 4, 18.0), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictTwoBackWall", Vector3(32, 2.0, -19.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictTwoFrontFence", Vector3(32, 1.5, 19.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 32), Color(0.32, 0.34, 0.29), true)
-	_box("DistrictThreeOuterWall", Vector3(79.5, 2.0, 0), Vector3(0.5, 4, 32), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictThreeBackWall", Vector3(64, 2.0, -15.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictThreeFrontFence", Vector3(64, 1.5, 15.5), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
+	_box("DistrictThreeOuterWall", Vector3(79.5, 2.0, 0), Vector3(0.5, 4, 40), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictThreeBackWall", Vector3(64, 2.0, -19.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictThreeFrontFence", Vector3(64, 1.5, 19.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	var second_gate := _box("ExpansionGateTwo", Vector3(47.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
 	expansion_gates.append(second_gate)
 	_box("DistrictTwoSign", Vector3(32, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.08, 0.38, 0.31), false)
@@ -152,11 +157,14 @@ func _build_world() -> void:
 	_box("DistrictThreeSign", Vector3(64, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.42, 0.30, 0.10), false)
 	_label_3d("DISTRICT 3", Vector3(64, 2.2, -13.35), 0.35)
 	for x in range(-14, 15, 2):
-		_box("FencePost", Vector3(x, 1.35, 15.0), Vector3(0.16, 2.7, 0.16), Color(0.20, 0.24, 0.24), true)
-	_box("FenceRailTop", Vector3(0, 2.45, 15.0), Vector3(30, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-	_box("FenceRailBottom", Vector3(0, 0.45, 15.0), Vector3(30, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-	_box("GateLeft", Vector3(-4.2, 1.3, 15.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
-	_box("GateRight", Vector3(4.2, 1.3, 15.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
+		_box("FencePost", Vector3(x, 1.35, 19.0), Vector3(0.16, 2.7, 0.16), Color(0.20, 0.24, 0.24), true)
+	_box("FenceRailTop", Vector3(0, 2.45, 19.0), Vector3(30, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
+	_box("FenceRailBottom", Vector3(0, 0.45, 19.0), Vector3(30, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
+	_box("GateLeft", Vector3(-4.2, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
+	_box("GateRight", Vector3(4.2, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
+	_add_invisible_barrier("MainFrontSafety", Vector3(0, 1.0, 20.0), Vector3(32, 2.0, 0.5))
+	_add_invisible_barrier("DistrictTwoFrontSafety", Vector3(32, 1.0, 20.0), Vector3(32, 2.0, 0.5))
+	_add_invisible_barrier("DistrictThreeFrontSafety", Vector3(64, 1.0, 20.0), Vector3(32, 2.0, 0.5))
 
 	# Recycling shed with a loading bay.
 	_box("ShedBody", Vector3(8.5, 2.0, -12.2), Vector3(11.0, 4.0, 5.0), Color(0.31, 0.38, 0.40), true)
@@ -224,7 +232,7 @@ func _build_world() -> void:
 	_make_tree(Vector3(-13.0, 0, 9.0))
 	_make_tree(Vector3(-13.0, 0, 1.0))
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
-	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 14.55), 0.65)
+	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 18.5), 0.65)
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
@@ -1662,29 +1670,49 @@ func _create_expansion_zone() -> void:
 	label.modulate = Color(1.0, 0.96, 0.78)
 	zone.add_child(label)
 
-func _process_expansion_zone() -> void:
+func _process_expansion_zone(delta: float) -> void:
 	if not is_instance_valid(player) or yard_stage >= 3:
 		expansion_zone_blocked = false
+		district_build_active = false
 		return
 	var target_x := 13.15 if yard_stage == 1 else 45.15
 	var distance := Vector2(player.global_position.x - target_x, player.global_position.z).length()
 	if distance > 2.7:
 		expansion_zone_blocked = false
+		district_build_active = false
+		district_build_save_timer = 0.0
 		return
-	if expansion_zone_blocked:
-		return
-	expansion_zone_blocked = true
-	_buy_next_stage()
-
-func _buy_next_stage() -> void:
-	if yard_stage >= 3:
-		_set_message("All districts unlocked!")
-		return
+	if not district_build_active:
+		district_build_active = true
+		expansion_zone_blocked = true
 	var cost := 25.0 if yard_stage == 1 else 60.0
-	if money < cost:
-		_set_message("You need $%.0f to unlock the next district." % cost)
+	var remaining := maxf(0.0, cost - district_build_paid)
+	if remaining <= 0.001:
+		_complete_district_unlock()
 		return
-	money -= cost
+	var payment := minf(money, minf((cost / 3.0) * delta, remaining))
+	if payment > 0.0:
+		money -= payment
+		district_build_paid += payment
+		_update_ui()
+		district_build_save_timer += delta
+		if district_build_save_timer >= 0.75:
+			district_build_save_timer = 0.0
+			_save_game()
+		var zone := get_node_or_null("DistrictUnlockZone") as Node3D
+		if is_instance_valid(zone):
+			var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
+			if is_instance_valid(label):
+				label.text = "UNLOCKING DISTRICT %d\\n$%.1f / $%.0f" % [yard_stage + 1, district_build_paid, cost]
+	if district_build_paid >= cost - 0.001:
+		_complete_district_unlock()
+	elif money <= 0.001:
+		_set_message("Need $%.1f more to unlock this district. Stay here to continue." % (cost - district_build_paid))
+
+func _complete_district_unlock() -> void:
+	district_build_active = false
+	district_build_paid = 0.0
+	district_build_save_timer = 0.0
 	yard_stage += 1
 	var gate_index := yard_stage - 2
 	if gate_index >= 0 and gate_index < expansion_gates.size():
@@ -1699,6 +1727,19 @@ func _buy_next_stage() -> void:
 	_refresh_expansion_world_button()
 	_save_game()
 	_set_message("DISTRICT %d UNLOCKED!" % yard_stage)
+
+func _recover_player() -> void:
+	if not is_instance_valid(player):
+		return
+	var max_x := 11.5
+	if yard_stage == 2:
+		max_x = 43.5
+	elif yard_stage >= 3:
+		max_x = 75.5
+	player.global_position = Vector3(clampf(player.global_position.x, -11.5, max_x), 0.05, clampf(player.global_position.z, -13.0, 13.0))
+	player.velocity = Vector3.ZERO
+	player.reset_physics_interpolation()
+	_set_message("Safety system: returned to the yard.")
 
 func _refresh_expansion_world_button() -> void:
 	var zone := get_node_or_null("DistrictUnlockZone") as Node3D
@@ -1739,6 +1780,7 @@ func _save_game() -> void:
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "yard_stage", yard_stage)
+	save.set_value("progress", "district_build_paid", district_build_paid)
 	save.set_value("progress", "factory_stage", factory_stage)
 	save.set_value("progress", "factory_build_paid", factory_build_paid)
 	save.save("user://trash_empire.save")
@@ -1762,6 +1804,7 @@ func _load_game() -> void:
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
+	district_build_paid = clampf(float(save.get_value("progress", "district_build_paid", 0.0)), 0.0, 60.0)
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 4)
 	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0][factory_stage])
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
@@ -1845,6 +1888,17 @@ func _anchor_bottom_right(control: Control) -> void:
 	control.anchor_top = 1.0
 	control.anchor_bottom = 1.0
 
+func _add_invisible_barrier(node_name: String, pos: Vector3, size: Vector3) -> void:
+	var body := StaticBody3D.new()
+	body.name = node_name
+	body.position = pos
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
+
 func _box(node_name: String, pos: Vector3, size: Vector3, color: Color, solid: bool) -> Node3D:
 	var body: Node3D = StaticBody3D.new() if solid else Node3D.new()
 	body.name = node_name
@@ -1897,6 +1951,26 @@ func _spawn_conveyor_item() -> void:
 	item.position = Vector3(2.55, 1.22, -6.5 + randf_range(-0.32, 0.32))
 	item.scale = Vector3.ONE * 0.72
 	add_child(item)
+
+	# Visual money token follows the same item cycle and unload-upgrade cadence.
+	var money_drop := MeshInstance3D.new()
+	money_drop.name = "MoneyDropToken"
+	var money_mesh := CylinderMesh.new()
+	money_mesh.top_radius = 0.16
+	money_mesh.bottom_radius = 0.16
+	money_mesh.height = 0.07
+	money_mesh.radial_segments = 16
+	money_drop.mesh = money_mesh
+	money_drop.position = Vector3(2.55, 1.52, -6.5 + randf_range(-0.32, 0.32))
+	money_drop.rotation_degrees.x = 90.0
+	money_drop.material_override = _mat(Color(1.0, 0.76, 0.12))
+	add_child(money_drop)
+	var cash_tween := create_tween()
+	cash_tween.set_trans(Tween.TRANS_SINE)
+	cash_tween.set_ease(Tween.EASE_IN)
+	cash_tween.tween_property(money_drop, "position", Vector3(7.5, 1.15, -6.5), 1.45)
+	cash_tween.parallel().tween_property(money_drop, "scale", Vector3.ONE * 0.18, 1.45)
+	cash_tween.tween_callback(func(): money_drop.queue_free())
 
 	# Stage 1 output: compressed, strapped bale.
 	var bale := Node3D.new()
