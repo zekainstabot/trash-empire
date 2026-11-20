@@ -76,6 +76,7 @@ var district_build_active := false
 var district_build_paid := 0.0
 var district_build_save_timer := 0.0
 var district_no_money_notified := false
+var payment_active := false
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -250,7 +251,8 @@ func _upgrade_factory() -> void:
 	if money < cost:
 		_set_message("You need $%.0f to add the next factory machine." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	factory_stage += 1
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
@@ -328,7 +330,7 @@ func _refresh_factory_build_zones() -> void:
 	_update_factory_build_label()
 
 func _process_factory_build(delta: float) -> void:
-	if factory_stage >= 4 or not is_instance_valid(player):
+	if payment_active or factory_stage >= 4 or not is_instance_valid(player):
 		return
 	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
 	var stage := factory_stage + 1
@@ -338,7 +340,7 @@ func _process_factory_build(delta: float) -> void:
 		return
 	var costs := [0.0, 12.0, 35.0, 80.0]
 	var cost: float = costs[factory_stage]
-	var payment := minf(money, minf(delta, cost - factory_build_paid))
+	var payment := minf(money, minf(delta * _spending_speed_multiplier(), cost - factory_build_paid))
 	if payment > 0.0:
 		money -= payment
 		factory_build_paid += payment
@@ -1478,9 +1480,10 @@ func _toggle_upgrade_panel() -> void:
 func _upgrade_bag() -> void:
 	var cost := _upgrade_cost(5.0, upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f for the next bag upgrade." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	capacity += 3
 	upgrade_level += 1
 	_update_ui()
@@ -1491,9 +1494,10 @@ func _upgrade_bag() -> void:
 func _upgrade_speed() -> void:
 	var cost := _upgrade_cost(7.0, speed_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f for the speed upgrade." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	speed_upgrade_level += 1
 	player.set("move_speed", 4.5 + float(speed_upgrade_level - 1) * 0.75)
 	_update_ui()
@@ -1504,9 +1508,10 @@ func _upgrade_speed() -> void:
 func _upgrade_unload() -> void:
 	var cost := _upgrade_cost(6.0, unload_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f for faster unloading." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	unload_upgrade_level += 1
 	_update_ui()
 	_refresh_upgrade_prices()
@@ -1516,9 +1521,10 @@ func _upgrade_unload() -> void:
 func _upgrade_equipment() -> void:
 	var cost := _upgrade_cost(8.0, equipment_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f for the magnet upgrade." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	equipment_upgrade_level += 1
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	_update_ui()
@@ -1529,9 +1535,10 @@ func _upgrade_equipment() -> void:
 func _upgrade_technology() -> void:
 	var cost := _upgrade_cost(8.0, technology_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f for the technology upgrade." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	technology_upgrade_level += 1
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 	_update_ui()
@@ -1542,9 +1549,10 @@ func _upgrade_technology() -> void:
 func _upgrade_luck() -> void:
 	var cost := _upgrade_cost(6.0, luck_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f for the lucky finds upgrade." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	luck_upgrade_level += 1
 	_update_ui()
 	_refresh_upgrade_prices()
@@ -1554,9 +1562,10 @@ func _upgrade_luck() -> void:
 func _upgrade_drones() -> void:
 	var cost := _upgrade_cost(25.0, drone_level + 1)
 	if money < cost:
-		_set_message("You need $%.1f for helper drones." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	drone_level += 1
 	_refresh_helper_drone_visibility()
 	_update_ui()
@@ -1567,9 +1576,10 @@ func _upgrade_drones() -> void:
 func _upgrade_magnet_power() -> void:
 	var cost := _upgrade_cost(15.0, magnet_power_level)
 	if money < cost:
-		_set_message("You need $%.1f for magnet power." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	magnet_power_level += 1
 	if is_instance_valid(magnet_tool):
 		magnet_tool.visible = true
@@ -1581,9 +1591,10 @@ func _upgrade_magnet_power() -> void:
 func _upgrade_trash_value() -> void:
 	var cost := _upgrade_cost(12.0, trash_value_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f for the trash value upgrade." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	trash_value_upgrade_level += 1
 	_update_ui()
 	_refresh_upgrade_prices()
@@ -1597,9 +1608,10 @@ func _upgrade_cost(base_cost: float, level: int) -> float:
 func _upgrade_spawn() -> void:
 	var cost := _upgrade_cost(6.0, spawn_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f for the trash supply upgrade." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	spawn_upgrade_level += 1
 	_update_ui()
 	_refresh_upgrade_prices()
@@ -1609,9 +1621,10 @@ func _upgrade_spawn() -> void:
 func _upgrade_auto_pickup() -> void:
 	var cost := _upgrade_cost(20.0, auto_pickup_level + 1)
 	if money < cost:
-		_set_message("You need $%.1f for automatic pickup." % cost)
+		_set_message("You need $%.1f to complete this purchase." % cost)
 		return
-	money -= cost
+	if not await _pay_gradually(cost):
+		return
 	auto_pickup_level += 1
 	_update_ui()
 	_refresh_upgrade_prices()
@@ -1671,8 +1684,37 @@ func _create_expansion_zone() -> void:
 	label.modulate = Color(1.0, 0.96, 0.78)
 	zone.add_child(label)
 
+func _spending_speed_multiplier() -> float:
+	var seconds_per_item := maxf(0.35, 1.8 - float(unload_upgrade_level - 1) * 0.18)
+	return 1.8 / seconds_per_item
+
+func _pay_gradually(cost: float) -> bool:
+	if payment_active or money < cost:
+		return false
+	payment_active = true
+	var paid := 0.0
+	_set_message("Payment in progress...")
+	while paid < cost - 0.001:
+		await get_tree().process_frame
+		if not is_inside_tree():
+			payment_active = false
+			return false
+		var delta := get_process_delta_time()
+		var amount := minf(cost - paid, money, (cost / 3.0) * _spending_speed_multiplier() * delta)
+		if amount <= 0.0:
+			payment_active = false
+			_set_message("Payment stopped: not enough money.")
+			return false
+		money -= amount
+		paid += amount
+		_update_ui()
+	_update_ui()
+	_save_game()
+	payment_active = false
+	return true
+
 func _process_expansion_zone(delta: float) -> void:
-	if not is_instance_valid(player) or yard_stage >= 3:
+	if payment_active or not is_instance_valid(player) or yard_stage >= 3:
 		expansion_zone_blocked = false
 		district_build_active = false
 		return
@@ -1696,7 +1738,7 @@ func _process_expansion_zone(delta: float) -> void:
 	if remaining <= 0.001:
 		_complete_district_unlock()
 		return
-	var payment := minf(money, minf((cost / 3.0) * delta, remaining))
+	var payment := minf(money, minf((cost / 3.0) * _spending_speed_multiplier() * delta, remaining))
 	if payment > 0.0:
 		district_no_money_notified = false
 		money -= payment
@@ -1960,27 +2002,6 @@ func _spawn_conveyor_item() -> void:
 	item.position = Vector3(2.55, 1.22, -6.5 + randf_range(-0.32, 0.32))
 	item.scale = Vector3.ONE * 0.72
 	add_child(item)
-
-	# Visual money token follows the same item cycle and unload-upgrade cadence.
-	var money_drop := MeshInstance3D.new()
-	money_drop.name = "MoneyDropToken"
-	var money_mesh := CylinderMesh.new()
-	money_mesh.top_radius = 0.16
-	money_mesh.bottom_radius = 0.16
-	money_mesh.height = 0.07
-	money_mesh.radial_segments = 16
-	money_drop.mesh = money_mesh
-	money_drop.position = Vector3(2.55, 1.52, -6.5 + randf_range(-0.32, 0.32))
-	money_drop.rotation_degrees.x = 90.0
-	money_drop.material_override = _mat(Color(1.0, 0.76, 0.12))
-	add_child(money_drop)
-	var cash_tween := create_tween()
-	cash_tween.set_trans(Tween.TRANS_SINE)
-	cash_tween.set_ease(Tween.EASE_IN)
-	var cash_drop_duration := maxf(0.35, 1.45 - float(unload_upgrade_level - 1) * 0.15)
-	cash_tween.tween_property(money_drop, "position", Vector3(7.5, 1.15, -6.5), cash_drop_duration)
-	cash_tween.parallel().tween_property(money_drop, "scale", Vector3.ONE * 0.18, cash_drop_duration)
-	cash_tween.tween_callback(func(): money_drop.queue_free())
 
 	# Stage 1 output: compressed, strapped bale.
 	var bale := Node3D.new()
