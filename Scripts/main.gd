@@ -1889,27 +1889,64 @@ func _animate_conveyor(delta: float) -> void:
 			slat.position.x = x
 
 func _spawn_conveyor_item() -> void:
-	# Reuse the detailed bottle/can/cup/wrapper models instead of sending a plain cube.
+	# Feed a recognizable piece of litter into the first press.
 	var item := Node3D.new()
 	item.name = "ConveyorRecyclingItem"
 	item.set_script(TRASH_SCRIPT)
 	item.position = Vector3(2.55, 1.22, -6.5 + randf_range(-0.32, 0.32))
 	item.scale = Vector3.ONE * 0.72
 	add_child(item)
+
+	# The first machine visibly compresses loose trash into a strapped recycling bale.
+	var bale := Node3D.new()
+	bale.name = "CompressedRecyclingBale"
+	bale.position = Vector3(7.5, 1.25, -5.0)
+	bale.scale = Vector3.ONE * 0.12
+	bale.visible = false
+	add_child(bale)
+	var core := MeshInstance3D.new()
+	var core_mesh := BoxMesh.new()
+	core_mesh.size = Vector3(0.82, 0.48, 0.72)
+	core.mesh = core_mesh
+	core.material_override = _mat(Color(0.20, 0.43, 0.37))
+	bale.add_child(core)
+	for x in [-0.29, 0.29]:
+		var strap := MeshInstance3D.new()
+		var strap_mesh := BoxMesh.new()
+		strap_mesh.size = Vector3(0.075, 0.53, 0.76)
+		strap.mesh = strap_mesh
+		strap.position.x = x
+		strap.material_override = _mat(Color(0.78, 0.69, 0.43))
+		bale.add_child(strap)
+	var top_mark := MeshInstance3D.new()
+	var mark_mesh := BoxMesh.new()
+	mark_mesh.size = Vector3(0.38, 0.025, 0.24)
+	top_mark.mesh = mark_mesh
+	top_mark.position.y = 0.25
+	top_mark.material_override = _mat(Color(0.31, 0.66, 0.55))
+	bale.add_child(top_mark)
+
 	var travel := create_tween()
 	travel.set_trans(Tween.TRANS_SINE)
 	travel.set_ease(Tween.EASE_IN_OUT)
 	travel.tween_property(item, "position", Vector3(5.35, 1.25, item.position.z), 1.0)
 	travel.parallel().tween_property(item, "rotation:y", item.rotation.y + TAU, 1.0)
 	travel.tween_property(item, "position", Vector3(7.5, 1.25, -6.5), 0.55)
-	travel.tween_property(item, "position", Vector3(7.5, 1.25, -5.0), 0.45)
+	travel.tween_property(item, "scale", Vector3.ONE * 0.22, 0.55)
+	travel.parallel().tween_property(item, "position", Vector3(7.5, 1.25, -5.0), 0.45)
+	travel.tween_callback(func():
+		item.visible = false
+		bale.visible = true
+	)
+	travel.tween_property(bale, "scale", Vector3.ONE, 0.22)
 	if factory_stage >= 2:
-		travel.tween_property(item, "position", Vector3(7.5, 1.25, -2.0), 0.9)
+		travel.tween_property(bale, "position", Vector3(7.5, 1.25, -2.0), 0.9)
 	if factory_stage >= 3:
-		travel.tween_property(item, "position", Vector3(7.5, 1.25, 3.45), 1.1)
+		travel.tween_property(bale, "position", Vector3(7.5, 1.25, 3.45), 1.1)
 	if factory_stage >= 4:
-		travel.tween_property(item, "position", Vector3(7.5, 1.25, 8.95), 1.1)
+		travel.tween_property(bale, "position", Vector3(7.5, 1.25, 8.95), 1.1)
 	travel.tween_callback(item.queue_free)
+	travel.tween_callback(bale.queue_free)
 
 func _make_bin(pos: Vector3, color: Color, label_text: String) -> void:
 	# Wheeled commercial recycling container with sloped lid, molded ribs and handle.
