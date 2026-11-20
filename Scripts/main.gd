@@ -20,6 +20,9 @@ var spawn_upgrade_level := 1
 var auto_pickup_level := 0
 var luck_upgrade_level := 1
 var magnet_power_level := 1
+var drone_level := 0
+var drone_timer := 0.0
+var helper_drones: Array[Node3D] = []
 var auto_pickup_timer := 0.0
 var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
@@ -83,6 +86,7 @@ func _process(delta: float) -> void:
 	_animate_conveyor(delta)
 	_process_auto_sell(delta)
 	_process_auto_pickup(delta)
+	_process_helper_drones(delta)
 
 func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
@@ -286,17 +290,17 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 
 	var pivot := Node3D.new()
 	pivot.name = "LeverHinge"
-	pivot.position = Vector3(0, 0.52, 0)
+	pivot.position = Vector3(0, 0.46, 0)
 	root.add_child(pivot)
 
 	var rod := MeshInstance3D.new()
 	var rod_mesh := CylinderMesh.new()
 	rod_mesh.top_radius = 0.075
 	rod_mesh.bottom_radius = 0.095
-	rod_mesh.height = 2.15
+	rod_mesh.height = 1.55
 	rod_mesh.radial_segments = 16
 	rod.mesh = rod_mesh
-	rod.position.y = 1.02
+	rod.position.y = 0.76
 	rod.material_override = _mat(Color(0.62, 0.68, 0.68))
 	pivot.add_child(rod)
 
@@ -305,7 +309,7 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 	grip_mesh.radius = 0.23
 	grip_mesh.height = 0.46
 	grip.mesh = grip_mesh
-	grip.position = Vector3(0, 2.12, 0)
+	grip.position = Vector3(0, 1.56, 0)
 	grip.material_override = _mat(Color(0.86, 0.20, 0.12))
 	pivot.add_child(grip)
 
@@ -316,13 +320,13 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 	cap_mesh.height = 0.10
 	cap_mesh.radial_segments = 20
 	grip_cap.mesh = cap_mesh
-	grip_cap.position = Vector3(0, 2.12, 0)
+	grip_cap.position = Vector3(0, 1.56, 0)
 	grip_cap.material_override = _mat(Color(0.98, 0.66, 0.20))
 	pivot.add_child(grip_cap)
 
 	var label := Label3D.new()
 	label.text = "PULL TO RESPAWN"
-	label.position = Vector3(0, 2.85, 0)
+	label.position = Vector3(0, 2.20, 0)
 	label.font_size = 26
 	label.pixel_size = 0.006
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -405,6 +409,7 @@ func _build_player() -> void:
 	magnet_tool.visible = auto_pickup_level > 0
 	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.20, 0.52, 0))
 	robot_right_leg = _robot_leg(robot_visual, "RightLeg", Vector3(0.20, 0.52, 0))
+	_build_helper_drones()
 
 	var backpack := _add_robot_box(robot_visual, "BatteryPack", Vector3(0, 1.03, 0.34), Vector3(0.55, 0.62, 0.28), Color(0.12, 0.22, 0.26))
 	_add_robot_box(robot_visual, "BatteryStripe", Vector3(0, 1.04, 0.495), Vector3(0.34, 0.08, 0.025), Color(0.28, 0.95, 0.67))
@@ -592,7 +597,7 @@ func _build_ui() -> void:
 	skill_scroll.scroll_vertical_custom_step = 42
 	upgrade_panel.add_child(skill_scroll)
 	var skill_map := Control.new()
-	skill_map.custom_minimum_size = Vector2(680, 1580)
+	skill_map.custom_minimum_size = Vector2(680, 1900)
 	skill_map.size = Vector2(680, 1580)
 	skill_scroll.add_child(skill_map)
 	_build_skill_tree(skill_map)
@@ -700,6 +705,8 @@ func _start_new_world() -> void:
 	auto_pickup_level = 0
 	luck_upgrade_level = 1
 	magnet_power_level = 1
+	drone_level = 0
+	drone_timer = 0.0
 	auto_pickup_timer = 0.0
 	recycling_bonus = 1.0
 	collection_range = 2.0
@@ -754,6 +761,9 @@ func _build_skill_tree(parent: Control) -> void:
 		{"branch":"magnet_power","level":1,"title":"MAGNET POWER","x":480.0,"y":1205.0},
 		{"branch":"magnet_power","level":2,"title":"MAGNET POWER","x":480.0,"y":1315.0},
 		{"branch":"magnet_power","level":3,"title":"MAGNET POWER","x":480.0,"y":1425.0},
+		{"branch":"drones","level":1,"title":"HELPER DRONES","x":250.0,"y":1535.0},
+		{"branch":"drones","level":2,"title":"HELPER DRONES","x":250.0,"y":1645.0},
+		{"branch":"drones","level":3,"title":"HELPER DRONES","x":250.0,"y":1755.0},
 		{"branch":"supply","level":1,"title":"TRASH SUPPLY","x":250.0,"y":875.0},
 		{"branch":"supply","level":2,"title":"TRASH SUPPLY","x":250.0,"y":985.0},
 		{"branch":"supply","level":3,"title":"TRASH SUPPLY","x":250.0,"y":1095.0},
@@ -789,6 +799,9 @@ func _build_skill_tree(parent: Control) -> void:
 		_add_skill_connection(parent, Vector2(x, 1417), Vector2(x, 1425))
 	_add_skill_connection(parent, Vector2(340, 1170), Vector2(340, 1197))
 	_add_skill_connection(parent, Vector2(570, 1170), Vector2(570, 1197))
+	_add_skill_connection(parent, Vector2(570, 1480), Vector2(340, 1535))
+	_add_skill_connection(parent, Vector2(340, 1611), Vector2(340, 1645))
+	_add_skill_connection(parent, Vector2(340, 1721), Vector2(340, 1755))
 	for node in nodes:
 		var button := Button.new()
 		# Circular skill nodes, arranged as connected paths rather than rectangular menu cards.
@@ -817,6 +830,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"auto": return Color(0.30, 0.72, 0.38)
 		"luck": return Color(0.92, 0.72, 0.20)
 		"magnet_power": return Color(0.20, 0.78, 0.88)
+		"drones": return Color(0.65, 0.78, 0.30)
 	return Color(0.25, 0.45, 0.42)
 
 func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
@@ -860,6 +874,7 @@ func _skill_level(branch: String) -> int:
 		"auto": return auto_pickup_level
 		"luck": return luck_upgrade_level - 1
 		"magnet_power": return magnet_power_level - 1
+		"drones": return drone_level
 	return 0
 
 func _skill_branch_unlocked(branch: String) -> bool:
@@ -872,6 +887,7 @@ func _skill_branch_unlocked(branch: String) -> bool:
 		"auto": return unload_upgrade_level >= 4
 		"luck": return spawn_upgrade_level >= 4
 		"magnet_power": return auto_pickup_level >= 3
+		"drones": return luck_upgrade_level >= 2
 	return false
 
 func _purchase_skill_node(branch: String, level: int) -> void:
@@ -892,6 +908,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"auto": _upgrade_auto_pickup()
 		"luck": _upgrade_luck()
 		"magnet_power": _upgrade_magnet_power()
+		"drones": _upgrade_drones()
 
 func _refresh_upgrade_prices() -> void:
 	for node in skill_node_data:
@@ -908,7 +925,7 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.25, 0.20)))
 			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.30, 0.23)))
 		elif available:
-			var base_cost: int = int({"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"value":225,"supply":175,"auto":250,"luck":300,"magnet_power":325}.get(branch, 50))
+			var base_cost: int = int({"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"value":225,"supply":175,"auto":250,"luck":300,"magnet_power":325,"drones":400}.get(branch, 50))
 			var price_level := level
 			button.text = "%s\nLEVEL %d  •  $%d" % [node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
@@ -1048,6 +1065,65 @@ func _process_auto_pickup(delta: float) -> void:
 	if carried >= capacity:
 		_set_message("Bag full! Return to the recycling station.")
 
+func _build_helper_drones() -> void:
+	helper_drones.clear()
+	for i in range(3):
+		var drone := Node3D.new()
+		drone.name = "HelperDrone%d" % (i + 1)
+		player.add_child(drone)
+		_add_robot_box(drone, "DroneBody", Vector3.ZERO, Vector3(0.34, 0.20, 0.30), Color(0.70, 0.78, 0.78))
+		_add_robot_box(drone, "DroneFront", Vector3(0, -0.015, -0.16), Vector3(0.20, 0.10, 0.035), Color(0.12, 0.82, 0.68))
+		_add_robot_sphere(drone, "DroneEye", Vector3(0, 0.02, -0.19), 0.045, Color(0.35, 1.0, 0.78))
+		for side in [-1.0, 1.0]:
+			_add_robot_box(drone, "DroneRotorArm", Vector3(side * 0.27, 0.04, 0), Vector3(0.25, 0.035, 0.06), Color(0.25, 0.32, 0.34))
+			_add_robot_sphere(drone, "DroneRotor", Vector3(side * 0.40, 0.10, 0), 0.10, Color(0.16, 0.22, 0.24))
+		drone.visible = i < drone_level
+		helper_drones.append(drone)
+
+func _refresh_helper_drone_visibility() -> void:
+	for i in range(helper_drones.size()):
+		if is_instance_valid(helper_drones[i]):
+			helper_drones[i].visible = i < drone_level
+
+func _process_helper_drones(delta: float) -> void:
+	if drone_level <= 0 or not is_instance_valid(player):
+		return
+	drone_timer += delta
+	for i in range(helper_drones.size()):
+		var drone := helper_drones[i]
+		if not is_instance_valid(drone) or not drone.visible:
+			continue
+		var angle := robot_anim_time * 1.25 + float(i) * TAU / float(maxi(drone_level, 1))
+		drone.position = Vector3(cos(angle) * 1.35, 2.25 + sin(robot_anim_time * 3.0 + float(i)) * 0.10, sin(angle) * 1.15)
+		drone.rotation.y = -angle
+	var interval := maxf(0.75, 3.2 - float(drone_level - 1) * 0.65)
+	if drone_timer < interval or carried >= capacity:
+		return
+	drone_timer = 0.0
+	var collected := 0
+	for i in range(drone_level):
+		if carried >= capacity:
+			break
+		var nearest: Node3D
+		var best_distance := 5.0 + float(drone_level - 1) * 2.0
+		for item in trash_nodes:
+			if not is_instance_valid(item):
+				continue
+			var distance := player.global_position.distance_to(item.global_position)
+			if distance < best_distance:
+				best_distance = distance
+				nearest = item
+		if nearest == null:
+			break
+		nearest.queue_free()
+		trash_nodes.erase(nearest)
+		carried += 1
+		collected += 1
+	if collected > 0:
+		_update_ui()
+		_save_game()
+		_set_message("HELPER DRONES  +%d" % collected)
+
 func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
@@ -1150,6 +1226,19 @@ func _upgrade_luck() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Lucky finds chance increased by 10%!")
+
+func _upgrade_drones() -> void:
+	var cost := _upgrade_cost(400, drone_level + 1)
+	if money < cost:
+		_set_message("You need $%d for helper drones." % cost)
+		return
+	money -= cost
+	drone_level += 1
+	_refresh_helper_drone_visibility()
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Helper drone upgraded! %d drone(s) now collect trash automatically." % drone_level)
 
 func _upgrade_magnet_power() -> void:
 	var cost := _upgrade_cost(325, magnet_power_level)
@@ -1269,6 +1358,7 @@ func _save_game() -> void:
 	save.set_value("progress", "auto_pickup_level", auto_pickup_level)
 	save.set_value("progress", "luck_level", luck_upgrade_level)
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
+	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.save("user://trash_empire.save")
 
@@ -1289,6 +1379,7 @@ func _load_game() -> void:
 	auto_pickup_level = int(save.get_value("progress", "auto_pickup_level", 0))
 	luck_upgrade_level = int(save.get_value("progress", "luck_level", 1))
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
+	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
