@@ -15,6 +15,7 @@ var speed_upgrade_level := 1
 var unload_upgrade_level := 1
 var equipment_upgrade_level := 1
 var technology_upgrade_level := 1
+var spawn_upgrade_level := 1
 var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
 var unload_timer := 0.0
@@ -413,7 +414,7 @@ func _build_ui() -> void:
 	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	upgrade_panel.add_child(skill_scroll)
 	var skill_list := VBoxContainer.new()
-	skill_list.custom_minimum_size = Vector2(300, 760)
+	skill_list.custom_minimum_size = Vector2(300, 920)
 	skill_list.add_theme_constant_override("separation", 10)
 	skill_scroll.add_child(skill_list)
 
@@ -422,6 +423,7 @@ func _build_ui() -> void:
 	_add_skill_branch(skill_list, "03  RECYCLING", "Unload trash faster", "UNLOAD SPEED", Callable(self, "_upgrade_unload"))
 	_add_skill_branch(skill_list, "04  EQUIPMENT", "Collect trash from farther away", "MAGNET RANGE", Callable(self, "_upgrade_equipment"))
 	_add_skill_branch(skill_list, "05  TECHNOLOGY", "Earn more cash from every item", "RECYCLING VALUE", Callable(self, "_upgrade_technology"))
+	_add_skill_branch(skill_list, "06  TRASH SUPPLY", "More litter appears each time you pull to refill", "REFILL CAPACITY", Callable(self, "_upgrade_spawn"))
 	_refresh_upgrade_prices()
 
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
@@ -630,13 +632,26 @@ func _upgrade_cost(base_cost: int, level: int) -> int:
 	return int(ceil(float(base_cost) * pow(1.25, float(level - 1))))
 
 func _refresh_upgrade_prices() -> void:
-	if skill_buttons.size() < 5:
+	if skill_buttons.size() < 6:
 		return
 	skill_buttons[0].text = "BAG CAPACITY +3  |  LV %d  |  $%d" % [upgrade_level, _upgrade_cost(50, upgrade_level)]
 	skill_buttons[1].text = "MOVE SPEED  |  LV %d  |  $%d" % [speed_upgrade_level, _upgrade_cost(75, speed_upgrade_level)]
 	skill_buttons[2].text = "UNLOAD SPEED  |  LV %d  |  $%d" % [unload_upgrade_level, _upgrade_cost(100, unload_upgrade_level)]
 	skill_buttons[3].text = "MAGNET RANGE  |  LV %d  |  $%d" % [equipment_upgrade_level, _upgrade_cost(125, equipment_upgrade_level)]
 	skill_buttons[4].text = "RECYCLING VALUE  |  LV %d  |  $%d" % [technology_upgrade_level, _upgrade_cost(150, technology_upgrade_level)]
+	skill_buttons[5].text = "TRASH PER REFILL +6  |  LV %d  |  $%d" % [spawn_upgrade_level, _upgrade_cost(175, spawn_upgrade_level)]
+
+func _upgrade_spawn() -> void:
+	var cost := _upgrade_cost(175, spawn_upgrade_level)
+	if money < cost:
+		_set_message("You need $%d for the trash supply upgrade." % cost)
+		return
+	money -= cost
+	spawn_upgrade_level += 1
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Trash supply upgraded! +6 trash on every manual refill.")
 
 func _apply_unlocked_districts() -> void:
 	for index in range(mini(yard_stage - 1, expansion_gates.size())):
@@ -685,6 +700,7 @@ func _save_game() -> void:
 	save.set_value("progress", "unload_level", unload_upgrade_level)
 	save.set_value("progress", "equipment_level", equipment_upgrade_level)
 	save.set_value("progress", "technology_level", technology_upgrade_level)
+	save.set_value("progress", "spawn_level", spawn_upgrade_level)
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.save("user://trash_empire.save")
 
@@ -700,6 +716,7 @@ func _load_game() -> void:
 	unload_upgrade_level = int(save.get_value("progress", "unload_level", 1))
 	equipment_upgrade_level = int(save.get_value("progress", "equipment_level", 1))
 	technology_upgrade_level = int(save.get_value("progress", "technology_level", 1))
+	spawn_upgrade_level = int(save.get_value("progress", "spawn_level", 1))
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.55
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
@@ -719,7 +736,8 @@ func _refill_first_district() -> void:
 	for item in trash_nodes:
 		if is_instance_valid(item) and item.global_position.x >= -15.0 and item.global_position.x <= 15.0:
 			existing_first_district += 1
-	var amount := maxi(0, 24 - existing_first_district)
+	var refill_target := 24 + (spawn_upgrade_level - 1) * 6
+	var amount := maxi(0, refill_target - existing_first_district)
 	if amount == 0:
 		_set_message("First district is already full of trash!")
 		return
