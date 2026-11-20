@@ -1059,7 +1059,7 @@ func _close_main_menu() -> void:
 func _build_skill_tree(parent: Control) -> void:
 	# Progression is arranged in five readable rings, from basic collection
 	# through processing and automation to the final shipping line.
-	var center := Vector2(1700, 1700)
+	var center := Vector2(1200, 1200)
 	var node_size := Vector2(150, 88)
 	var branch_defs := [
 		# Ring 1: improve the basic work loop.
@@ -1086,15 +1086,24 @@ func _build_skill_tree(parent: Control) -> void:
 	var positions: Dictionary = {}
 	for level in range(1, 4):
 		positions["capacity_%d" % level] = center + Vector2(0, float(level - 3) * 112.0)
-	# Each ring is spaced consistently so the dependency paths read outward.
+	# Compact radial layout: branches fan out around the core, with levels
+	# staggered locally rather than placed on distant concentric rings.
+	var branch_layout := {
+		"speed": Vector2(-1.0, -0.85), "range": Vector2(-1.0, 0.0), "unload": Vector2(-1.0, 0.85),
+		"technology": Vector2(-0.72, -1.0), "supply": Vector2(0.0, -1.0), "auto": Vector2(0.72, -1.0),
+		"bulk_pickup": Vector2(1.0, -0.35), "value": Vector2(-0.45, -0.8), "luck": Vector2(0.0, 0.85),
+		"magnet_power": Vector2(0.45, -0.8), "drones": Vector2(0.0, 1.0),
+		"dispatch": Vector2(-0.75, 0.65), "fleet": Vector2(0.75, 0.65),
+		"packaging": Vector2(-0.85, 0.35), "truck_capacity": Vector2(0.85, 0.35)
+	}
 	for branch_data in branch_defs:
-		var direction := Vector2.from_angle(deg_to_rad(float(branch_data.angle)))
-		var base_radius := 300.0 + (int(branch_data.depth) - 1) * 255.0
+		var direction: Vector2 = branch_layout[String(branch_data.branch)].normalized()
+		var base_radius := 270.0 + (int(branch_data.depth) - 1) * 110.0
 		for level in range(1, 4):
-			var radius := base_radius + float(level - 1) * 90.0
-			positions["%s_%d" % [branch_data.branch, level]] = center + direction * radius
-	for radius in [300.0, 555.0, 810.0, 1065.0, 1320.0]:
-		_add_skill_orbit(parent, center, radius)
+			var offset := (level - 1) * 72.0
+			positions["%s_%d" % [branch_data.branch, level]] = center + direction * (base_radius + offset)
+	# Decorative circles are removed so branches and nodes form a compact,
+	# readable network instead of an enormous empty skill map.
 	# Draw prerequisite links behind the skill buttons.
 	for level in range(1, 3):
 		_add_skill_connection(parent, positions["capacity_%d" % level], positions["capacity_%d" % (level + 1)])
