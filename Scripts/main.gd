@@ -698,10 +698,13 @@ func _build_ui() -> void:
 	skill_scroll.scroll_vertical_custom_step = 42
 	upgrade_panel.add_child(skill_scroll)
 	var skill_map := Control.new()
-	skill_map.custom_minimum_size = Vector2(680, 1900)
-	skill_map.size = Vector2(680, 1900)
+	skill_map.custom_minimum_size = Vector2(3400, 3400)
+	skill_map.size = Vector2(3400, 3400)
 	skill_scroll.add_child(skill_map)
 	_build_skill_tree(skill_map)
+	# Open the tree focused on its central capacity core.
+	skill_scroll.set_deferred("scroll_horizontal", 1400)
+	skill_scroll.set_deferred("scroll_vertical", 1300)
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
@@ -858,107 +861,91 @@ func _close_main_menu() -> void:
 
 
 func _build_skill_tree(parent: Control) -> void:
-	# Three purchase nodes per skill. The first skill opens three independent paths.
-	var nodes := [
-		{"branch":"capacity","level":1,"title":"CAPACITY","x":250.0,"y":35.0},
-		{"branch":"capacity","level":2,"title":"CAPACITY","x":250.0,"y":145.0},
-		{"branch":"capacity","level":3,"title":"CAPACITY","x":250.0,"y":255.0},
-		{"branch":"speed","level":1,"title":"SPEED","x":20.0,"y":455.0},
-		{"branch":"speed","level":2,"title":"SPEED","x":20.0,"y":565.0},
-		{"branch":"speed","level":3,"title":"SPEED","x":20.0,"y":675.0},
-		{"branch":"range","level":1,"title":"PICKUP RANGE","x":250.0,"y":455.0},
-		{"branch":"range","level":2,"title":"PICKUP RANGE","x":250.0,"y":565.0},
-		{"branch":"range","level":3,"title":"PICKUP RANGE","x":250.0,"y":675.0},
-		{"branch":"unload","level":1,"title":"RECYCLING","x":480.0,"y":455.0},
-		{"branch":"unload","level":2,"title":"RECYCLING","x":480.0,"y":565.0},
-		{"branch":"unload","level":3,"title":"RECYCLING","x":480.0,"y":675.0},
-		{"branch":"technology","level":1,"title":"TECHNOLOGY","x":20.0,"y":875.0},
-		{"branch":"technology","level":2,"title":"TECHNOLOGY","x":20.0,"y":985.0},
-		{"branch":"technology","level":3,"title":"TECHNOLOGY","x":20.0,"y":1095.0},
-		{"branch":"value","level":1,"title":"TRASH VALUE","x":20.0,"y":1205.0},
-		{"branch":"value","level":2,"title":"TRASH VALUE","x":20.0,"y":1315.0},
-		{"branch":"value","level":3,"title":"TRASH VALUE","x":20.0,"y":1425.0},
-		{"branch":"luck","level":1,"title":"LUCKY FINDS","x":250.0,"y":1205.0},
-		{"branch":"luck","level":2,"title":"LUCKY FINDS","x":250.0,"y":1315.0},
-		{"branch":"luck","level":3,"title":"LUCKY FINDS","x":250.0,"y":1425.0},
-		{"branch":"magnet_power","level":1,"title":"MAGNET POWER","x":480.0,"y":1205.0},
-		{"branch":"magnet_power","level":2,"title":"MAGNET POWER","x":480.0,"y":1315.0},
-		{"branch":"magnet_power","level":3,"title":"MAGNET POWER","x":480.0,"y":1425.0},
-		{"branch":"drones","level":1,"title":"HELPER DRONES","x":250.0,"y":1535.0},
-		{"branch":"drones","level":2,"title":"HELPER DRONES","x":250.0,"y":1645.0},
-		{"branch":"drones","level":3,"title":"HELPER DRONES","x":250.0,"y":1755.0},
-		{"branch":"supply","level":1,"title":"TRASH SUPPLY","x":250.0,"y":875.0},
-		{"branch":"supply","level":2,"title":"TRASH SUPPLY","x":250.0,"y":985.0},
-		{"branch":"supply","level":3,"title":"TRASH SUPPLY","x":250.0,"y":1095.0},
-		{"branch":"auto","level":1,"title":"AUTO PICKUP","x":480.0,"y":875.0},
-		{"branch":"auto","level":2,"title":"AUTO PICKUP","x":480.0,"y":985.0},
-		{"branch":"auto","level":3,"title":"AUTO PICKUP","x":480.0,"y":1095.0}
+	# Circular skill galaxy: each branch occupies its own radial lane.
+	var center := Vector2(1700, 1700)
+	var node_size := Vector2(150, 88)
+	var branch_defs := [
+		{"branch":"speed","title":"SPEED","depth":1,"angle":210.0},
+		{"branch":"range","title":"PICKUP RANGE","depth":1,"angle":270.0},
+		{"branch":"unload","title":"RECYCLING","depth":1,"angle":330.0},
+		{"branch":"technology","title":"TECHNOLOGY","depth":2,"angle":210.0},
+		{"branch":"supply","title":"TRASH SUPPLY","depth":2,"angle":270.0},
+		{"branch":"auto","title":"AUTO PICKUP","depth":2,"angle":330.0},
+		{"branch":"value","title":"TRASH VALUE","depth":3,"angle":210.0},
+		{"branch":"luck","title":"LUCKY FINDS","depth":3,"angle":270.0},
+		{"branch":"magnet_power","title":"MAGNET POWER","depth":3,"angle":330.0},
+		{"branch":"drones","title":"HELPER DRONES","depth":4,"angle":270.0}
 	]
-	# Draw connecting paths first, behind the skill nodes.
-	_add_skill_connection(parent, Vector2(340, 111), Vector2(340, 145))
-	_add_skill_connection(parent, Vector2(340, 221), Vector2(340, 255))
-	_add_skill_connection(parent, Vector2(340, 331), Vector2(340, 390))
-	_add_skill_connection(parent, Vector2(340, 390), Vector2(110, 455))
-	_add_skill_connection(parent, Vector2(340, 390), Vector2(340, 455))
-	_add_skill_connection(parent, Vector2(340, 390), Vector2(570, 455))
-	for x in [110.0, 340.0, 570.0]:
-		_add_skill_connection(parent, Vector2(x, 531), Vector2(x, 565))
-		_add_skill_connection(parent, Vector2(x, 641), Vector2(x, 675))
-	_add_skill_connection(parent, Vector2(110, 751), Vector2(110, 810))
-	_add_skill_connection(parent, Vector2(110, 810), Vector2(110, 875))
-	_add_skill_connection(parent, Vector2(340, 751), Vector2(340, 810))
-	_add_skill_connection(parent, Vector2(340, 810), Vector2(340, 875))
-	_add_skill_connection(parent, Vector2(570, 751), Vector2(570, 810))
-	_add_skill_connection(parent, Vector2(570, 810), Vector2(570, 875))
-	for x in [110.0, 340.0, 570.0]:
-		_add_skill_connection(parent, Vector2(x, 951), Vector2(x, 985))
-		_add_skill_connection(parent, Vector2(x, 1061), Vector2(x, 1095))
-	_add_skill_connection(parent, Vector2(110, 1197), Vector2(110, 1205))
-	_add_skill_connection(parent, Vector2(110, 1307), Vector2(110, 1315))
-	_add_skill_connection(parent, Vector2(110, 1417), Vector2(110, 1425))
-	for x in [340.0, 570.0]:
-		_add_skill_connection(parent, Vector2(x, 1197), Vector2(x, 1205))
-		_add_skill_connection(parent, Vector2(x, 1307), Vector2(x, 1315))
-		_add_skill_connection(parent, Vector2(x, 1417), Vector2(x, 1425))
-	_add_skill_connection(parent, Vector2(340, 1170), Vector2(340, 1197))
-	_add_skill_connection(parent, Vector2(570, 1170), Vector2(570, 1197))
-	_add_skill_connection(parent, Vector2(570, 1480), Vector2(340, 1535))
-	_add_skill_connection(parent, Vector2(340, 1611), Vector2(340, 1645))
-	_add_skill_connection(parent, Vector2(340, 1721), Vector2(340, 1755))
-	# Subtle section dividers make the long mobile tree easier to scan.
-	for section in [
-		{"y":405.0,"title":"CORE OPERATIONS"},
-		{"y":825.0,"title":"YARD & SUPPLY"},
-		{"y":1155.0,"title":"PROFIT & AUTOMATION"},
-		{"y":1505.0,"title":"ADVANCED SYSTEMS"}
-	]:
-		var divider := ColorRect.new()
-		divider.position = Vector2(22, float(section.y))
-		divider.size = Vector2(636, 2)
-		divider.color = Color(0.30, 0.63, 0.52, 0.32)
-		parent.add_child(divider)
-		var heading := Label.new()
-		heading.text = String(section.title)
-		heading.position = Vector2(24, float(section.y) - 25.0)
-		heading.add_theme_font_size_override("font_size", 13)
-		heading.add_theme_color_override("font_color", Color(0.55, 0.78, 0.70))
-		parent.add_child(heading)
-	for node in nodes:
-		var button := Button.new()
-		# Premium compact skill cards, centered precisely on their connection paths.
-		button.position = Vector2(float(node.x) + 22.0, float(node.y) - 4.0)
-		button.size = Vector2(136, 96)
-		button.custom_minimum_size = Vector2(136, 96)
-		button.add_theme_font_size_override("font_size", 12)
-		button.add_theme_color_override("font_color", Color(0.95, 0.98, 0.96))
-		button.add_theme_color_override("font_hover_color", Color.WHITE)
-		button.add_theme_color_override("font_disabled_color", Color(0.68, 0.74, 0.72))
-		button.add_theme_constant_override("outline_size", 1)
-		button.focus_mode = Control.FOCUS_NONE
-		button.pressed.connect(_purchase_skill_node.bind(String(node.branch), int(node.level)))
-		parent.add_child(button)
-		skill_node_data.append({"button":button,"branch":String(node.branch),"level":int(node.level),"title":String(node.title)})
+	var positions: Dictionary = {}
+	# The core capacity skill sits in the middle of the galaxy.
+	for level in range(1, 4):
+		positions["capacity_%d" % level] = center + Vector2(0, float(level - 3) * 120.0)
+	# Place every other skill along a clean radial lane.
+	for branch_data in branch_defs:
+		var direction := Vector2.from_angle(deg_to_rad(float(branch_data.angle)))
+		var base_radius := 360.0 + (int(branch_data.depth) - 1) * 300.0
+		for level in range(1, 4):
+			var radius := base_radius + float(level - 1) * 105.0
+			positions["%s_%d" % [branch_data.branch, level]] = center + direction * radius
+	# Faint orbital guides make the circular layout easy to read.
+	for radius in [360.0, 660.0, 960.0, 1260.0]:
+		_add_skill_orbit(parent, center, radius)
+	# Draw all dependency lines before the buttons so they stay behind the nodes.
+	for level in range(1, 3):
+		_add_skill_connection(parent, positions["capacity_%d" % level], positions["capacity_%d" % (level + 1)])
+	for branch_data in branch_defs:
+		var branch := String(branch_data.branch)
+		for level in range(1, 3):
+			_add_skill_connection(parent, positions["%s_%d" % [branch, level]], positions["%s_%d" % [branch, level + 1]])
+	var dependencies := [
+		["capacity_3", "speed_1"], ["capacity_3", "range_1"], ["capacity_3", "unload_1"],
+		["speed_3", "technology_1"], ["technology_3", "value_1"],
+		["range_3", "supply_1"], ["supply_3", "luck_1"],
+		["unload_3", "auto_1"], ["auto_3", "magnet_power_1"],
+		["luck_3", "drones_1"]
+	]
+	for dependency in dependencies:
+		_add_skill_connection(parent, positions[dependency[0]], positions[dependency[1]])
+	# Add circular skill nodes.
+	var all_nodes := [{"branch":"capacity","title":"CAPACITY"}]
+	for branch_data in branch_defs:
+		all_nodes.append({"branch":String(branch_data.branch),"title":String(branch_data.title)})
+	for node_data in all_nodes:
+		var branch := String(node_data.branch)
+		for level in range(1, 4):
+			var button := Button.new()
+			var point: Vector2 = positions["%s_%d" % [branch, level]]
+			button.position = point - node_size * 0.5
+			button.size = node_size
+			button.custom_minimum_size = node_size
+			button.add_theme_font_size_override("font_size", 11)
+			button.add_theme_color_override("font_color", Color(0.95, 0.98, 0.96))
+			button.add_theme_color_override("font_hover_color", Color.WHITE)
+			button.add_theme_color_override("font_disabled_color", Color(0.68, 0.74, 0.72))
+			button.focus_mode = Control.FOCUS_NONE
+			button.pressed.connect(_purchase_skill_node.bind(branch, level))
+			parent.add_child(button)
+			skill_node_data.append({"button":button,"branch":branch,"level":level,"title":String(node_data.title)})
+	# A small glowing core marker anchors the circular map.
+	var core := Label.new()
+	core.text = "✦  SKILL CORE  ✦"
+	core.position = center + Vector2(-72, 92)
+	core.size = Vector2(144, 28)
+	core.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	core.add_theme_font_size_override("font_size", 11)
+	core.add_theme_color_override("font_color", Color(0.42, 0.92, 0.72))
+	parent.add_child(core)
 	_refresh_upgrade_prices()
+
+func _add_skill_orbit(parent: Control, center: Vector2, radius: float) -> void:
+	var orbit := Line2D.new()
+	orbit.width = 2.0
+	orbit.default_color = Color(0.22, 0.55, 0.48, 0.22)
+	orbit.antialiased = true
+	for step in range(97):
+		var angle := TAU * float(step) / 96.0
+		orbit.add_point(center + Vector2(cos(angle), sin(angle)) * radius)
+	parent.add_child(orbit)
 
 func _skill_branch_color(branch: String) -> Color:
 	match branch:
@@ -1012,10 +999,10 @@ func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
 func _add_skill_connection(parent: Control, from_point: Vector2, to_point: Vector2) -> void:
 	var line := ColorRect.new()
 	var difference := to_point - from_point
-	line.size = Vector2(difference.length(), 5.0)
+	line.size = Vector2(difference.length(), 4.0)
 	line.position = (from_point + to_point) * 0.5 - Vector2(line.size.x * 0.5, 2.5)
 	line.rotation = difference.angle()
-	line.color = Color(0.24, 0.62, 0.48, 0.9)
+	line.color = Color(0.28, 0.78, 0.62, 0.82)
 	parent.add_child(line)
 
 func _skill_level(branch: String) -> int:
