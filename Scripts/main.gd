@@ -971,9 +971,6 @@ func _start_new_world() -> void:
 	factory_built_stage = 1
 	teddy_stock_values.clear()
 	shipping_active = false
-	truck_at_dock = false
-	truck_load_count = 0
-	delivery_truck = null
 	factory_build_paid = 0.0
 	factory_build_save_timer = 0.0
 	if is_instance_valid(factory_visual_root):
@@ -2353,52 +2350,6 @@ func _upgrade_fleet() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("A new delivery truck hired! Fleet size: %d." % _truck_fleet_size())
-func _load_next_teddy_package() -> void:
-	if teddy_stock_values.is_empty() or not is_instance_valid(delivery_truck):
-		shipping_active = false
-		return
-	var package := Node3D.new()
-	package.name = "TeddyShippingPackage"
-	package.position = Vector3(9.45, 1.05, 16.1)
-	var carton := MeshInstance3D.new()
-	var carton_mesh := BoxMesh.new()
-	carton_mesh.size = Vector3(0.72, 0.62, 0.62)
-	carton.mesh = carton_mesh
-	carton.material_override = _mat(Color(0.72, 0.49, 0.25))
-	package.add_child(carton)
-	var tape := MeshInstance3D.new()
-	var tape_mesh := BoxMesh.new()
-	tape_mesh.size = Vector3(0.12, 0.64, 0.64)
-	tape.mesh = tape_mesh
-	tape.material_override = _mat(Color(0.93, 0.80, 0.48))
-	package.add_child(tape)
-	add_child(package)
-	var load_tween := create_tween()
-	load_tween.set_trans(Tween.TRANS_SINE)
-	load_tween.set_ease(Tween.EASE_IN_OUT)
-	load_tween.tween_property(package, "position", Vector3(12.1, 2.0, 16.1), 1.15)
-	load_tween.tween_callback(func():
-		package.queue_free()
-		var sold_value: float = teddy_stock_values.pop_front()
-		money += sold_value
-		truck_load_count += 1
-		_update_ui()
-		_save_game()
-		_set_message("Truck loaded a teddy bear! +$%.2f" % sold_value)
-		if truck_load_count >= 5:
-			var depart := create_tween()
-			depart.set_trans(Tween.TRANS_SINE)
-			depart.set_ease(Tween.EASE_IN)
-			depart.tween_property(delivery_truck, "position:x", 17.4, 2.0)
-			depart.tween_callback(func():
-				truck_at_dock = false
-				truck_load_count = 0
-				shipping_active = false
-			)
-		else:
-			shipping_active = false
-	)
-
 func _add_teddy_part(parent: Node3D, part_name: String, part_position: Vector3, part_size: Vector3, part_color: Color) -> void:
 	var part := MeshInstance3D.new()
 	part.name = part_name
