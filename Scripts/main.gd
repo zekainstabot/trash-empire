@@ -199,7 +199,7 @@ func _build_world() -> void:
 
 	expansion_world_button = _create_world_action_button("ExpansionPurchase", "OPEN DISTRICT 2  $500", Vector3(15.0, 0.0, 2.6), Vector3(2.8, 1.25, 0.35), Callable(self, "_buy_next_stage"), Color(0.88, 0.56, 0.12))
 	_refresh_expansion_world_button()
-	refill_world_button = _create_world_action_button("TrashRefillButton", "REFILL TRASH", Vector3(10.2, 0.0, -4.25), Vector3(1.9, 0.9, 0.35), Callable(self, "_refill_first_district"), Color(0.10, 0.58, 0.40))
+	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
 
 func _create_world_action_button(node_name: String, title: String, world_position: Vector3, dimensions: Vector3, action: Callable, color: Color) -> Node3D:
 	var root := Node3D.new()
@@ -243,6 +243,80 @@ func _create_world_action_button(node_name: String, title: String, world_positio
 	label.modulate = Color.WHITE
 	root.add_child(label)
 
+	area.input_event.connect(_on_world_action_input.bind(action))
+	return root
+
+func _create_gear_refill_button(world_position: Vector3, action: Callable) -> Node3D:
+	var root := Node3D.new()
+	root.name = "TrashRespawnGear"
+	root.position = world_position
+	add_child(root)
+
+	var gear_material := _mat(Color(0.08, 0.48, 0.34))
+	var edge_material := _mat(Color(0.035, 0.18, 0.15))
+	var gear := MeshInstance3D.new()
+	var gear_mesh := CylinderMesh.new()
+	gear_mesh.top_radius = 0.72
+	gear_mesh.bottom_radius = 0.72
+	gear_mesh.height = 0.24
+	gear_mesh.radial_segments = 12
+	gear.mesh = gear_mesh
+	gear.position.y = 0.22
+	gear.material_override = edge_material
+	root.add_child(gear)
+
+	for i in range(10):
+		var angle := TAU * float(i) / 10.0
+		var tooth := MeshInstance3D.new()
+		var tooth_mesh := BoxMesh.new()
+		tooth_mesh.size = Vector3(0.34, 0.24, 0.25)
+		tooth.mesh = tooth_mesh
+		tooth.position = Vector3(cos(angle) * 0.70, 0.22, sin(angle) * 0.70)
+		tooth.rotation.y = -angle
+		tooth.material_override = gear_material
+		root.add_child(tooth)
+
+	var hub := MeshInstance3D.new()
+	var hub_mesh := CylinderMesh.new()
+	hub_mesh.top_radius = 0.43
+	hub_mesh.bottom_radius = 0.43
+	hub_mesh.height = 0.28
+	hub_mesh.radial_segments = 32
+	hub.mesh = hub_mesh
+	hub.position.y = 0.25
+	hub.material_override = _mat(Color(0.12, 0.68, 0.46))
+	root.add_child(hub)
+
+	var center := MeshInstance3D.new()
+	var center_mesh := CylinderMesh.new()
+	center_mesh.top_radius = 0.22
+	center_mesh.bottom_radius = 0.22
+	center_mesh.height = 0.30
+	center_mesh.radial_segments = 32
+	center.mesh = center_mesh
+	center.position.y = 0.27
+	center.material_override = _mat(Color(0.035, 0.12, 0.11))
+	root.add_child(center)
+
+	var label := Label3D.new()
+	label.text = "↻  RESPAWN"
+	label.position = Vector3(0, 0.72, 0)
+	label.font_size = 26
+	label.pixel_size = 0.006
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.modulate = Color(0.92, 1.0, 0.95)
+	root.add_child(label)
+
+	var area := Area3D.new()
+	area.name = "RespawnGearArea"
+	area.position.y = 0.25
+	var collision := CollisionShape3D.new()
+	var hit_shape := CylinderShape3D.new()
+	hit_shape.radius = 1.05
+	hit_shape.height = 0.8
+	collision.shape = hit_shape
+	area.add_child(collision)
+	root.add_child(area)
 	area.input_event.connect(_on_world_action_input.bind(action))
 	return root
 
@@ -526,15 +600,49 @@ func _build_skill_tree(parent: Control) -> void:
 		_add_skill_connection(parent, Vector2(x, 1061), Vector2(x, 1095))
 	for node in nodes:
 		var button := Button.new()
-		button.position = Vector2(float(node.x), float(node.y))
-		button.size = Vector2(180, 76)
-		button.custom_minimum_size = Vector2(180, 76)
-		button.add_theme_font_size_override("font_size", 13)
-		button.add_theme_color_override("font_color", Color.WHITE)
+		button.position = Vector2(float(node.x) - 10.0, float(node.y))
+		button.size = Vector2(200, 76)
+		button.custom_minimum_size = Vector2(200, 76)
+		button.add_theme_font_size_override("font_size", 14)
+		button.add_theme_color_override("font_color", Color(0.94, 0.98, 0.96))
+		button.add_theme_color_override("font_hover_color", Color.WHITE)
+		button.add_theme_constant_override("outline_size", 1)
+		button.focus_mode = Control.FOCUS_NONE
 		button.pressed.connect(_purchase_skill_node.bind(String(node.branch), int(node.level)))
 		parent.add_child(button)
 		skill_node_data.append({"button":button,"branch":String(node.branch),"level":int(node.level),"title":String(node.title)})
 	_refresh_upgrade_prices()
+
+func _skill_branch_color(branch: String) -> Color:
+	match branch:
+		"capacity": return Color(0.12, 0.62, 0.48)
+		"speed": return Color(0.20, 0.52, 0.88)
+		"range": return Color(0.65, 0.48, 0.90)
+		"unload": return Color(0.88, 0.57, 0.18)
+		"technology": return Color(0.18, 0.68, 0.78)
+		"supply": return Color(0.72, 0.48, 0.24)
+		"auto": return Color(0.30, 0.72, 0.38)
+	return Color(0.25, 0.45, 0.42)
+
+func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_width_top = 2
+	style.border_width_bottom = 4
+	style.border_color = color.lightened(0.28) if not locked else Color(0.22, 0.27, 0.28)
+	style.shadow_color = Color(0, 0, 0, 0.28)
+	style.shadow_size = 5
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 7
+	style.content_margin_bottom = 9
+	return style
 
 func _add_skill_connection(parent: Control, from_point: Vector2, to_point: Vector2) -> void:
 	var line := ColorRect.new()
@@ -589,20 +697,24 @@ func _refresh_upgrade_prices() -> void:
 		var available := _skill_branch_unlocked(branch) and level == current + 1 and level <= 3
 		var owned := current >= level
 		var button := node.button as Button
+		var accent := _skill_branch_color(branch)
 		if owned:
-			button.text = "%s\nLEVEL %d  ✓" % [node.title, level]
+			button.text = "✓  %s\nLEVEL %d  •  UNLOCKED" % [node.title, level]
 			button.disabled = true
-			button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.38, 0.27)))
+			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.25, 0.20)))
+			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.30, 0.23)))
 		elif available:
 			var base_cost: int = int({"capacity":50,"speed":75,"unload":100,"range":125,"technology":150,"supply":175,"auto":250}.get(branch, 50))
-			var price_level := level if branch != "auto" else level
+			var price_level := level
 			button.text = "%s\nLEVEL %d  •  $%d" % [node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
-			button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.34, 0.29)))
+			button.add_theme_stylebox_override("normal", _skill_node_style(accent.darkened(0.55)))
+			button.add_theme_stylebox_override("hover", _skill_node_style(accent.darkened(0.38)))
+			button.add_theme_stylebox_override("pressed", _skill_node_style(accent.darkened(0.68)))
 		else:
-			button.text = "%s\nLEVEL %d  🔒" % [node.title, level]
+			button.text = "🔒  %s\nLEVEL %d  •  LOCKED" % [node.title, level]
 			button.disabled = true
-			button.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.15, 0.16)))
+			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.09, 0.12, 0.13), true))
 
 func _input(event: InputEvent) -> void:
 	# Give the skill tree its own touch-drag scrolling with momentum.
@@ -994,16 +1106,16 @@ func _animate_conveyor(delta: float) -> void:
 			slat.position.x = x
 
 func _spawn_conveyor_item() -> void:
-	var item := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.34, 0.20, 0.30)
-	item.mesh = mesh
-	item.position = Vector3(2.55, 1.24, -6.5 + randf_range(-0.32, 0.32))
-	item.rotation = Vector3(randf_range(-0.25, 0.25), randf_range(0.0, TAU), randf_range(-0.2, 0.2))
-	item.material_override = _mat([Color(0.20, 0.62, 0.78), Color(0.82, 0.66, 0.30), Color(0.35, 0.68, 0.38)][randi_range(0, 2)])
+	# Reuse the detailed bottle/can/cup/wrapper models instead of sending a plain cube.
+	var item := Node3D.new()
+	item.name = "ConveyorRecyclingItem"
+	item.set_script(TRASH_SCRIPT)
+	item.position = Vector3(2.55, 1.22, -6.5 + randf_range(-0.32, 0.32))
+	item.scale = Vector3.ONE * 0.72
 	add_child(item)
 	var travel := create_tween()
-	travel.set_trans(Tween.TRANS_LINEAR)
+	travel.set_trans(Tween.TRANS_SINE)
+	travel.set_ease(Tween.EASE_IN_OUT)
 	travel.tween_property(item, "position", Vector3(5.35, 1.25, item.position.z), 1.35)
 	travel.parallel().tween_property(item, "rotation:y", item.rotation.y + TAU, 1.35)
 	travel.tween_callback(item.queue_free)
