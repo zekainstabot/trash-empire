@@ -32,7 +32,7 @@ var robot_head: Node3D
 var robot_anim_time := 0.0
 var conveyor_time := 0.0
 var conveyor_rollers: Array[MeshInstance3D] = []
-var conveyor_slats: Array[MeshInstance3D] = []
+var conveyor_slats: Array[Node3D] = []
 var conveyor_item_count := 0
 
 const YARD_LIMIT := 14.5
@@ -501,7 +501,7 @@ func _anchor_bottom_right(control: Control) -> void:
 	control.anchor_top = 1.0
 	control.anchor_bottom = 1.0
 
-func _box(node_name: String, pos: Vector3, size: Vector3, color: Color, solid: bool) -> void:
+func _box(node_name: String, pos: Vector3, size: Vector3, color: Color, solid: bool) -> Node3D:
 	var body: Node3D = StaticBody3D.new() if solid else Node3D.new()
 	body.name = node_name
 	body.position = pos
@@ -518,6 +518,7 @@ func _box(node_name: String, pos: Vector3, size: Vector3, color: Color, solid: b
 		collision.shape = shape
 		body.add_child(collision)
 	add_child(body)
+	return body
 
 func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, color: Color, horizontal: bool) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
@@ -531,25 +532,6 @@ func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, co
 	if horizontal:
 		mesh.rotation_degrees.z = 90
 	add_child(mesh)
-	return mesh
-
-func _box(node_name: String, pos: Vector3, size: Vector3, color: Color, solid: bool) -> MeshInstance3D:
-	var body: Node3D = StaticBody3D.new() if solid else Node3D.new()
-	body.name = node_name
-	body.position = pos
-	var mesh := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = size
-	mesh.mesh = box
-	mesh.material_override = _mat(color)
-	body.add_child(mesh)
-	if solid:
-		var collision := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = size
-		collision.shape = shape
-		body.add_child(collision)
-	add_child(body)
 	return mesh
 
 func _animate_conveyor(delta: float) -> void:
