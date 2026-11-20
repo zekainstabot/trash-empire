@@ -89,6 +89,22 @@ jobs:
           set -euo pipefail
           timeout 240 "$GODOT_BIN" --headless --editor --verbose --path . --quit
 
+      - name: Validate GDScript and startup scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOG_FILE="$RUNNER_TEMP/godot-validation.log"
+          "$GODOT_BIN" --headless --editor --path . --quit 2>&1 | tee "$LOG_FILE"
+          if grep -E "SCRIPT ERROR:|Parse Error:|Failed to load script|ERROR: Failed to load" "$LOG_FILE"; then
+            echo "Godot reported script or scene loading errors."
+            exit 1
+          fi
+          "$GODOT_BIN" --headless --path . --quit-after 3 2>&1 | tee "$RUNNER_TEMP/godot-startup.log"
+          if grep -E "SCRIPT ERROR:|Parse Error:|Failed to load script|ERROR: Failed to load" "$RUNNER_TEMP/godot-startup.log"; then
+            echo "Main scene failed during startup."
+            exit 1
+          fi
+
       - name: Export debug APK
         shell: bash
         run: |
