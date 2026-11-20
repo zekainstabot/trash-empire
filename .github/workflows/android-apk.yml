@@ -55,27 +55,34 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
 
-      - name: Start Android Debug Bridge
+      - name: Configure Godot Android SDK and Java paths
         shell: bash
         run: |
           set -euo pipefail
-          adb start-server
-          adb devices
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          EOF
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$JAVA_HOME"
 
-      - name: Import resources and install Android Gradle build template
+      - name: Import resources
         shell: bash
+        timeout-minutes: 5
         run: |
           set -euo pipefail
-          "$GODOT_BIN" --headless --editor --path . --install-android-build-template --quit
-          test -f android/build/build.gradle
+          timeout 240 "$GODOT_BIN" --headless --editor --verbose --path . --quit
 
       - name: Export debug APK
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p build
-          "$GODOT_BIN" --headless --path . --export-debug "Android Debug" build/TrashEmpire.apk
+          "$GODOT_BIN" --headless --verbose --path . --install-android-build-template --export-debug "Android Debug" build/TrashEmpire.apk
           test -s build/TrashEmpire.apk
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
