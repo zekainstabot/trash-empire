@@ -213,7 +213,7 @@ func _build_world() -> void:
 	_make_lamp(Vector3(-13.4, 0, -12.5))
 	_make_lamp(Vector3(13.4, 0, 10.5))
 	_make_tree(Vector3(-13.0, 0, 9.0))
-	_make_tree(Vector3(13.0, 0, 1.0))
+	_make_tree(Vector3(-13.0, 0, 1.0))
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 14.55), 0.65)
 
