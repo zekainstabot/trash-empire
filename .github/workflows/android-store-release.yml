@@ -5,7 +5,6 @@ on:
   push:
     branches: [main]
     paths:
-      - .github/workflows/android-store-release.yml
       - export_presets.cfg
       - project.godot
       - Scripts/**
