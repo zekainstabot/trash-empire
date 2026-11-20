@@ -41,6 +41,9 @@ var conveyor_time := 0.0
 var conveyor_rollers: Array[MeshInstance3D] = []
 var conveyor_slats: Array[Node3D] = []
 var conveyor_item_count := 0
+var yard_stage := 1
+var expansion_button: Button
+var expansion_gates: Array[Node3D] = []
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
@@ -88,7 +91,24 @@ func _build_world() -> void:
 	# Perimeter walls, fencing, and gate.
 	_box("BackWall", Vector3(0, 2.0, -15.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("LeftWall", Vector3(-15.5, 2.0, 0), Vector3(0.5, 4, 32), Color(0.28, 0.32, 0.31), true)
-	_box("RightWall", Vector3(15.5, 2.0, 0), Vector3(0.5, 4, 32), Color(0.28, 0.32, 0.31), true)
+	_box("RightWallNorth", Vector3(15.5, 2.0, -9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
+	_box("RightWallSouth", Vector3(15.5, 2.0, 9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
+	var first_gate := _box("ExpansionGateOne", Vector3(15.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
+	expansion_gates.append(first_gate)
+	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 32), Color(0.29, 0.34, 0.32), true)
+	_box("DistrictTwoOuterWall", Vector3(47.5, 2.0, 0), Vector3(0.5, 4, 32), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictTwoBackWall", Vector3(32, 2.0, -15.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictTwoFrontFence", Vector3(32, 1.5, 15.5), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
+	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 32), Color(0.32, 0.34, 0.29), true)
+	_box("DistrictThreeOuterWall", Vector3(79.5, 2.0, 0), Vector3(0.5, 4, 32), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictThreeBackWall", Vector3(64, 2.0, -15.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictThreeFrontFence", Vector3(64, 1.5, 15.5), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
+	var second_gate := _box("ExpansionGateTwo", Vector3(47.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
+	expansion_gates.append(second_gate)
+	_box("DistrictTwoSign", Vector3(32, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.08, 0.38, 0.31), false)
+	_label_3d("DISTRICT 2", Vector3(32, 2.2, -13.35), 0.35)
+	_box("DistrictThreeSign", Vector3(64, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.42, 0.30, 0.10), false)
+	_label_3d("DISTRICT 3", Vector3(64, 2.2, -13.35), 0.35)
 	for x in range(-14, 15, 2):
 		_box("FencePost", Vector3(x, 1.35, 15.0), Vector3(0.16, 2.7, 0.16), Color(0.20, 0.24, 0.24), true)
 	_box("FenceRailTop", Vector3(0, 2.45, 15.0), Vector3(30, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
@@ -350,6 +370,11 @@ func _build_ui() -> void:
 	upgrades_button.anchor_left = 1.0
 	upgrades_button.anchor_right = 1.0
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
+	expansion_button = _button("EXPAND YARD", Vector2(-174, 92), Vector2(156, 52), layer)
+	expansion_button.anchor_left = 1.0
+	expansion_button.anchor_right = 1.0
+	expansion_button.pressed.connect(_buy_next_stage)
+	_refresh_expansion_button()
 
 	upgrade_panel = Panel.new()
 	upgrade_panel.set_anchors_preset(Control.PRESET_CENTER)
@@ -563,6 +588,37 @@ func _refresh_upgrade_prices() -> void:
 	skill_buttons[3].text = "MAGNET RANGE  |  LV %d  |  $%d" % [equipment_upgrade_level, _upgrade_cost(125, equipment_upgrade_level)]
 	skill_buttons[4].text = "RECYCLING VALUE  |  LV %d  |  $%d" % [technology_upgrade_level, _upgrade_cost(150, technology_upgrade_level)]
 
+func _buy_next_stage() -> void:
+	if yard_stage >= 3:
+		_set_message("All districts unlocked!")
+		return
+	var cost := 500 if yard_stage == 1 else 1800
+	if money < cost:
+		_set_message("You need $%d to unlock the next district." % cost)
+		return
+	money -= cost
+	yard_stage += 1
+	var gate_index := yard_stage - 2
+	if gate_index >= 0 and gate_index < expansion_gates.size():
+		var gate := expansion_gates[gate_index]
+		if is_instance_valid(gate):
+			gate.queue_free()
+	_spawn_trash(18 if yard_stage == 2 else 24)
+	_update_ui()
+	_refresh_expansion_button()
+	_save_game()
+	_set_message("DISTRICT %d UNLOCKED!" % yard_stage)
+
+func _refresh_expansion_button() -> void:
+	if not is_instance_valid(expansion_button):
+		return
+	if yard_stage == 1:
+		expansion_button.text = "OPEN DISTRICT 2  $500"
+	elif yard_stage == 2:
+		expansion_button.text = "OPEN DISTRICT 3  $1800"
+	else:
+		expansion_button.text = "ALL DISTRICTS OPEN"
+
 func _save_game() -> void:
 	var save := ConfigFile.new()
 	save.set_value("progress", "money", money)
@@ -573,6 +629,7 @@ func _save_game() -> void:
 	save.set_value("progress", "unload_level", unload_upgrade_level)
 	save.set_value("progress", "equipment_level", equipment_upgrade_level)
 	save.set_value("progress", "technology_level", technology_upgrade_level)
+	save.set_value("progress", "yard_stage", yard_stage)
 	save.save("user://trash_empire.save")
 
 func _load_game() -> void:
@@ -587,6 +644,7 @@ func _load_game() -> void:
 	unload_upgrade_level = int(save.get_value("progress", "unload_level", 1))
 	equipment_upgrade_level = int(save.get_value("progress", "equipment_level", 1))
 	technology_upgrade_level = int(save.get_value("progress", "technology_level", 1))
+	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.55
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 
@@ -601,10 +659,15 @@ func _spawn_trash(amount: int) -> void:
 		trash_nodes.append(item)
 
 func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
-	var point := Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
+	var max_x := 11.5
+	if yard_stage == 2:
+		max_x = 43.5
+	elif yard_stage >= 3:
+		max_x = 75.5
+	var point := Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
 	var attempts := 0
-	while point.distance_to(SELL_POINT) < 4.0 and attempts < 10:
-		point = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
+	while (point.distance_to(SELL_POINT) < 4.0 or (point.x > 15.0 and point.x < 19.0) or (point.x > 47.0 and point.x < 51.0)) and attempts < 20:
+		point = Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
 		attempts += 1
 	return point
 
