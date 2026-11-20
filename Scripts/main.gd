@@ -1017,40 +1017,44 @@ func _close_main_menu() -> void:
 
 
 func _build_skill_tree(parent: Control) -> void:
-	# Circular skill galaxy: each branch occupies its own radial lane.
+	# Progression is arranged in five readable rings, from basic collection
+	# through processing and automation to the final shipping line.
 	var center := Vector2(1700, 1700)
 	var node_size := Vector2(150, 88)
 	var branch_defs := [
-		{"branch":"speed","title":"SPEED","depth":1,"angle":210.0},
+		# Ring 1: improve the basic work loop.
+		{"branch":"speed","title":"MOVEMENT SPEED","depth":1,"angle":210.0},
 		{"branch":"range","title":"PICKUP RANGE","depth":1,"angle":270.0},
-		{"branch":"unload","title":"RECYCLING","depth":1,"angle":330.0},
+		{"branch":"unload","title":"RECYCLING SPEED","depth":1,"angle":330.0},
+		# Ring 2: unlock the tools that support each basic upgrade.
 		{"branch":"technology","title":"TECHNOLOGY","depth":2,"angle":210.0},
 		{"branch":"supply","title":"TRASH SUPPLY","depth":2,"angle":270.0},
 		{"branch":"auto","title":"AUTO PICKUP","depth":2,"angle":330.0},
+		# Ring 3: turn better tools into better earnings.
 		{"branch":"value","title":"TRASH VALUE","depth":3,"angle":210.0},
 		{"branch":"luck","title":"LUCKY FINDS","depth":3,"angle":270.0},
 		{"branch":"magnet_power","title":"MAGNET POWER","depth":3,"angle":330.0},
+		# Ring 4: automation and the start of the delivery business.
 		{"branch":"drones","title":"HELPER DRONES","depth":4,"angle":270.0},
 		{"branch":"dispatch","title":"TRUCK FREQUENCY","depth":4,"angle":210.0},
 		{"branch":"fleet","title":"HIRE TRUCKS","depth":4,"angle":330.0},
-		{"branch":"truck_capacity","title":"TRUCK CAPACITY","depth":4,"angle":150.0},
-		{"branch":"packaging","title":"PACKAGING SPEED","depth":4,"angle":30.0}
+		# Ring 5: improve the two final steps of the teddy-bear supply chain.
+		{"branch":"packaging","title":"PACKAGING SPEED","depth":5,"angle":210.0},
+		{"branch":"truck_capacity","title":"TRUCK CAPACITY","depth":5,"angle":330.0}
 	]
 	var positions: Dictionary = {}
-	# The core capacity skill sits in the middle of the galaxy.
 	for level in range(1, 4):
-		positions["capacity_%d" % level] = center + Vector2(0, float(level - 3) * 120.0)
-	# Place every other skill along a clean radial lane.
+		positions["capacity_%d" % level] = center + Vector2(0, float(level - 3) * 112.0)
+	# Each ring is spaced consistently so the dependency paths read outward.
 	for branch_data in branch_defs:
 		var direction := Vector2.from_angle(deg_to_rad(float(branch_data.angle)))
-		var base_radius := 360.0 + (int(branch_data.depth) - 1) * 300.0
+		var base_radius := 300.0 + (int(branch_data.depth) - 1) * 255.0
 		for level in range(1, 4):
-			var radius := base_radius + float(level - 1) * 105.0
+			var radius := base_radius + float(level - 1) * 90.0
 			positions["%s_%d" % [branch_data.branch, level]] = center + direction * radius
-	# Faint orbital guides make the circular layout easy to read.
-	for radius in [360.0, 660.0, 960.0, 1260.0, 1365.0, 1470.0]:
+	for radius in [300.0, 555.0, 810.0, 1065.0, 1320.0]:
 		_add_skill_orbit(parent, center, radius)
-	# Draw all dependency lines before the buttons so they stay behind the nodes.
+	# Draw prerequisite links behind the skill buttons.
 	for level in range(1, 3):
 		_add_skill_connection(parent, positions["capacity_%d" % level], positions["capacity_%d" % (level + 1)])
 	for branch_data in branch_defs:
@@ -1062,12 +1066,13 @@ func _build_skill_tree(parent: Control) -> void:
 		["speed_3", "technology_1"], ["technology_3", "value_1"],
 		["range_3", "supply_1"], ["supply_3", "luck_1"],
 		["unload_3", "auto_1"], ["auto_3", "magnet_power_1"],
-		["luck_3", "drones_1"], ["drones_3", "dispatch_1"], ["drones_3", "fleet_1"], ["fleet_3", "truck_capacity_1"], ["dispatch_3", "packaging_1"]
+		["luck_3", "drones_1"],
+		["drones_3", "dispatch_1"], ["drones_3", "fleet_1"],
+		["dispatch_3", "packaging_1"], ["fleet_3", "truck_capacity_1"]
 	]
 	for dependency in dependencies:
 		_add_skill_connection(parent, positions[dependency[0]], positions[dependency[1]])
-	# Add circular skill nodes.
-	var all_nodes := [{"branch":"capacity","title":"CAPACITY"}]
+	var all_nodes := [{"branch":"capacity","title":"BACKPACK CAPACITY"}]
 	for branch_data in branch_defs:
 		all_nodes.append({"branch":String(branch_data.branch),"title":String(branch_data.title)})
 	for node_data in all_nodes:
@@ -1086,9 +1091,8 @@ func _build_skill_tree(parent: Control) -> void:
 			button.pressed.connect(_purchase_skill_node.bind(branch, level))
 			parent.add_child(button)
 			skill_node_data.append({"button":button,"branch":branch,"level":level,"title":String(node_data.title)})
-	# A small glowing core marker anchors the circular map.
 	var core := Label.new()
-	core.text = "✦  SKILL CORE  ✦"
+	core.text = "✦  START HERE  ✦"
 	core.position = center + Vector2(-72, 92)
 	core.size = Vector2(144, 28)
 	core.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
