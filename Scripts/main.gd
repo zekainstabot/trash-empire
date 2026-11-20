@@ -829,6 +829,7 @@ func _start_new_world() -> void:
 	_update_ui()
 	_refresh_upgrade_prices()
 	_refresh_expansion_world_button()
+	_refresh_factory_upgrade_button()
 	_save_game()
 	_set_message("NEW WORLD STARTED!")
 	_close_main_menu()
