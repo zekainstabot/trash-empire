@@ -247,75 +247,106 @@ func _create_world_action_button(node_name: String, title: String, world_positio
 	return root
 
 func _create_gear_refill_button(world_position: Vector3, action: Callable) -> Node3D:
-	# This is a large push-button for the respawn action, not a free-standing gear.
+	# Industrial pull lever: a fixed floor mount and a long hinged rod with a grip.
 	var root := Node3D.new()
-	root.name = "TrashRespawnButton"
+	root.name = "TrashRespawnPullLever"
 	root.position = world_position
 	add_child(root)
 
-	var shadow := MeshInstance3D.new()
-	var shadow_mesh := CylinderMesh.new()
-	shadow_mesh.top_radius = 1.0
-	shadow_mesh.bottom_radius = 1.0
-	shadow_mesh.height = 0.18
-	shadow_mesh.radial_segments = 48
-	shadow.mesh = shadow_mesh
-	shadow.position.y = 0.12
-	shadow.material_override = _mat(Color(0.025, 0.07, 0.065))
-	root.add_child(shadow)
+	var base := MeshInstance3D.new()
+	var base_mesh := CylinderMesh.new()
+	base_mesh.top_radius = 0.72
+	base_mesh.bottom_radius = 0.82
+	base_mesh.height = 0.28
+	base_mesh.radial_segments = 32
+	base.mesh = base_mesh
+	base.position.y = 0.14
+	base.material_override = _mat(Color(0.12, 0.18, 0.19))
+	root.add_child(base)
 
-	var rim := MeshInstance3D.new()
-	var rim_mesh := TorusMesh.new()
-	rim_mesh.inner_radius = 0.72
-	rim_mesh.outer_radius = 0.91
-	rim_mesh.rings = 48
-	rim_mesh.ring_segments = 12
-	rim.mesh = rim_mesh
-	rim.position.y = 0.28
-	rim.material_override = _mat(Color(0.95, 0.70, 0.20))
-	root.add_child(rim)
+	var collar := MeshInstance3D.new()
+	var collar_mesh := CylinderMesh.new()
+	collar_mesh.top_radius = 0.30
+	collar_mesh.bottom_radius = 0.36
+	collar_mesh.height = 0.30
+	collar_mesh.radial_segments = 24
+	collar.mesh = collar_mesh
+	collar.position = Vector3(0, 0.39, 0)
+	collar.material_override = _mat(Color(0.72, 0.55, 0.20))
+	root.add_child(collar)
 
-	var face := MeshInstance3D.new()
-	var face_mesh := CylinderMesh.new()
-	face_mesh.top_radius = 0.78
-	face_mesh.bottom_radius = 0.78
-	face_mesh.height = 0.20
-	face_mesh.radial_segments = 48
-	face.mesh = face_mesh
-	face.position.y = 0.30
-	face.material_override = _mat(Color(0.08, 0.52, 0.38))
-	root.add_child(face)
+	var pivot := Node3D.new()
+	pivot.name = "LeverHinge"
+	pivot.position = Vector3(0, 0.52, 0)
+	root.add_child(pivot)
 
-	var icon := Label3D.new()
-	icon.text = "↻"
-	icon.position = Vector3(0, 0.43, 0)
-	icon.font_size = 74
-	icon.pixel_size = 0.006
-	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	icon.modulate = Color(1.0, 1.0, 0.92)
-	root.add_child(icon)
+	var rod := MeshInstance3D.new()
+	var rod_mesh := CylinderMesh.new()
+	rod_mesh.top_radius = 0.075
+	rod_mesh.bottom_radius = 0.095
+	rod_mesh.height = 2.15
+	rod_mesh.radial_segments = 16
+	rod.mesh = rod_mesh
+	rod.position.y = 1.02
+	rod.material_override = _mat(Color(0.62, 0.68, 0.68))
+	pivot.add_child(rod)
+
+	var grip := MeshInstance3D.new()
+	var grip_mesh := SphereMesh.new()
+	grip_mesh.radius = 0.23
+	grip_mesh.height = 0.46
+	grip.mesh = grip_mesh
+	grip.position = Vector3(0, 2.12, 0)
+	grip.material_override = _mat(Color(0.86, 0.20, 0.12))
+	pivot.add_child(grip)
+
+	var grip_cap := MeshInstance3D.new()
+	var cap_mesh := CylinderMesh.new()
+	cap_mesh.top_radius = 0.16
+	cap_mesh.bottom_radius = 0.16
+	cap_mesh.height = 0.10
+	cap_mesh.radial_segments = 20
+	grip_cap.mesh = cap_mesh
+	grip_cap.position = Vector3(0, 2.12, 0)
+	grip_cap.material_override = _mat(Color(0.98, 0.66, 0.20))
+	pivot.add_child(grip_cap)
 
 	var label := Label3D.new()
-	label.text = "RESPAWN TRASH"
-	label.position = Vector3(0, 1.02, 0)
-	label.font_size = 28
+	label.text = "PULL TO RESPAWN"
+	label.position = Vector3(0, 2.85, 0)
+	label.font_size = 26
 	label.pixel_size = 0.006
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(1.0, 0.92, 0.60)
+	label.modulate = Color(1.0, 0.90, 0.58)
 	root.add_child(label)
 
 	var area := Area3D.new()
-	area.name = "RespawnButtonArea"
-	area.position.y = 0.30
+	area.name = "PullLeverArea"
+	area.position = Vector3(0, 1.55, 0)
 	var collision := CollisionShape3D.new()
-	var hit_shape := CylinderShape3D.new()
-	hit_shape.radius = 1.05
-	hit_shape.height = 0.9
+	var hit_shape := SphereShape3D.new()
+	hit_shape.radius = 1.35
 	collision.shape = hit_shape
 	area.add_child(collision)
 	root.add_child(area)
-	area.input_event.connect(_on_world_action_input.bind(action))
+	area.input_event.connect(_on_pull_lever_input.bind(action, pivot))
 	return root
+
+func _on_pull_lever_input(_camera: Node, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_index: int, action: Callable, pivot: Node3D) -> void:
+	var activated := (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
+	if not activated or not is_instance_valid(pivot):
+		return
+	if pivot.has_meta("pulling") and bool(pivot.get_meta("pulling")):
+		return
+	pivot.set_meta("pulling", true)
+	var pull := create_tween()
+	pull.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	pull.tween_property(pivot, "rotation_degrees:z", -58.0, 0.24)
+	pull.tween_callback(action)
+	pull.tween_interval(0.12)
+	pull.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	pull.tween_property(pivot, "rotation_degrees:z", 0.0, 0.62)
+	pull.tween_callback(func() -> void: pivot.set_meta("pulling", false))
 
 func _on_world_action_input(_camera: Node, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_index: int, action: Callable) -> void:
 	if event is InputEventScreenTouch and event.pressed:
