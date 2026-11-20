@@ -656,14 +656,15 @@ func _refresh_upgrade_prices() -> void:
 	if skill_buttons.size() < 7 or skill_branch_panels.size() < 7:
 		return
 	# Show only the first skill at the beginning. Each purchase reveals the next branch.
+	# Every branch needs three purchases before the next branch is revealed.
 	var unlocked := [
 		true,
-		upgrade_level > 1,
-		speed_upgrade_level > 1,
-		unload_upgrade_level > 1,
-		equipment_upgrade_level > 1,
-		technology_upgrade_level > 1,
-		spawn_upgrade_level > 1
+		upgrade_level >= 4,
+		speed_upgrade_level >= 4,
+		unload_upgrade_level >= 4,
+		equipment_upgrade_level >= 4,
+		technology_upgrade_level >= 4,
+		spawn_upgrade_level >= 4
 	]
 	for i in range(skill_branch_panels.size()):
 		skill_branch_panels[i].visible = unlocked[i]
