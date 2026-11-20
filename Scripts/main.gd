@@ -44,6 +44,7 @@ var joystick_max_radius := 58.0
 var robot_visual: Node3D
 var robot_left_arm: Node3D
 var robot_right_arm: Node3D
+var magnet_tool: Node3D
 var robot_left_leg: Node3D
 var robot_right_leg: Node3D
 var robot_head: Node3D
@@ -393,6 +394,15 @@ func _build_player() -> void:
 
 	robot_left_arm = _robot_limb(robot_visual, "LeftArm", Vector3(-0.48, 1.30, 0), Color(0.22, 0.43, 0.48))
 	robot_right_arm = _robot_limb(robot_visual, "RightArm", Vector3(0.48, 1.30, 0), Color(0.22, 0.43, 0.48))
+	magnet_tool = Node3D.new()
+	magnet_tool.name = "UnlockedHandMagnet"
+	magnet_tool.position = Vector3(0.0, -0.56, -0.08)
+	robot_right_arm.add_child(magnet_tool)
+	_add_robot_box(magnet_tool, "MagnetCore", Vector3(0, -0.02, 0), Vector3(0.30, 0.12, 0.16), Color(0.16, 0.22, 0.27))
+	_add_robot_box(magnet_tool, "MagnetLeftPole", Vector3(-0.12, -0.14, 0), Vector3(0.10, 0.22, 0.16), Color(0.88, 0.20, 0.18))
+	_add_robot_box(magnet_tool, "MagnetRightPole", Vector3(0.12, -0.14, 0), Vector3(0.10, 0.22, 0.16), Color(0.18, 0.42, 0.92))
+	_add_robot_box(magnet_tool, "MagnetGrip", Vector3(0, 0.10, 0), Vector3(0.12, 0.10, 0.18), Color(0.65, 0.72, 0.73))
+	magnet_tool.visible = auto_pickup_level > 0
 	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.20, 0.52, 0))
 	robot_right_leg = _robot_leg(robot_visual, "RightLeg", Vector3(0.20, 0.52, 0))
 
@@ -437,7 +447,7 @@ func _animate_robot(delta: float) -> void:
 	robot_visual.position.y = bob
 	robot_visual.rotation.z = sin(robot_anim_time * 5.0) * 0.025 if moving else sin(robot_anim_time * 1.5) * 0.012
 	robot_left_arm.rotation.x = stride * 0.65
-	robot_right_arm.rotation.x = -stride * 0.65
+	robot_right_arm.rotation.x = -stride * 0.65 - (0.18 if auto_pickup_level > 0 else 0.0)
 	robot_left_leg.rotation.x = -stride * 0.48
 	robot_right_leg.rotation.x = stride * 0.48
 	robot_head.rotation.y = sin(robot_anim_time * 1.3) * 0.045
@@ -1188,6 +1198,8 @@ func _upgrade_auto_pickup() -> void:
 		return
 	money -= cost
 	auto_pickup_level += 1
+	if is_instance_valid(magnet_tool):
+		magnet_tool.visible = true
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
