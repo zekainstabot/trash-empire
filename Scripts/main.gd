@@ -805,6 +805,8 @@ func _skill_branch_color(branch: String) -> Color:
 		"technology": return Color(0.18, 0.68, 0.78)
 		"supply": return Color(0.72, 0.48, 0.24)
 		"auto": return Color(0.30, 0.72, 0.38)
+		"luck": return Color(0.92, 0.72, 0.20)
+		"magnet_power": return Color(0.20, 0.78, 0.88)
 	return Color(0.25, 0.45, 0.42)
 
 func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
