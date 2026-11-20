@@ -30,9 +30,13 @@ var robot_left_leg: Node3D
 var robot_right_leg: Node3D
 var robot_head: Node3D
 var robot_anim_time := 0.0
+var conveyor_time := 0.0
+var conveyor_rollers: Array[MeshInstance3D] = []
+var conveyor_slats: Array[MeshInstance3D] = []
+var conveyor_item_count := 0
 
 const YARD_LIMIT := 14.5
-const SELL_POINT := Vector3(7.5, 0.0, -6.5)
+const SELL_POINT := Vector3(1.35, 0.0, -6.5)
 
 func _ready() -> void:
 	_load_game()
@@ -46,6 +50,7 @@ func _process(delta: float) -> void:
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
 	_animate_robot(delta)
+	_animate_conveyor(delta)
 	_process_auto_sell(delta)
 
 func _build_world() -> void:
@@ -71,7 +76,6 @@ func _build_world() -> void:
 	_box("RoadLane", Vector3(-8.0, 0.012, 1.0), Vector3(5.0, 0.025, 27.0), Color(0.19, 0.22, 0.22), false)
 	for z in range(-11, 13, 4):
 		_box("RoadDash", Vector3(-8.0, 0.03, z), Vector3(0.13, 0.025, 1.7), Color(0.88, 0.77, 0.38), false)
-	_box("SortingZone", Vector3(7.5, 0.025, -6.5), Vector3(9.0, 0.05, 8.0), Color(0.24, 0.34, 0.30), false)
 	_box("PlayerStartZone", Vector3(0, 0.02, 7), Vector3(7, 0.04, 5), Color(0.39, 0.40, 0.35), false)
 
 	# Perimeter walls, fencing, and gate.
@@ -94,6 +98,14 @@ func _build_world() -> void:
 	_box("ShedSign", Vector3(8.5, 3.25, -9.5), Vector3(5.0, 0.65, 0.16), Color(0.08, 0.48, 0.34), false)
 	_label_3d("RECYCLING", Vector3(8.5, 3.25, -9.38), 0.42)
 
+	# Clearly marked unloading pad directly in front of the conveyor intake.
+	_box("UnloadPad", Vector3(1.35, 0.018, -6.5), Vector3(3.5, 0.035, 3.2), Color(0.95, 0.66, 0.12), false)
+	_box("UnloadBorderFront", Vector3(1.35, 0.045, -8.12), Vector3(3.55, 0.045, 0.12), Color(1.0, 0.88, 0.28), false)
+	_box("UnloadBorderBack", Vector3(1.35, 0.045, -4.88), Vector3(3.55, 0.045, 0.12), Color(1.0, 0.88, 0.28), false)
+	_box("UnloadBorderLeft", Vector3(-0.43, 0.045, -6.5), Vector3(0.12, 0.045, 3.2), Color(1.0, 0.88, 0.28), false)
+	_box("UnloadBorderRight", Vector3(3.13, 0.045, -6.5), Vector3(0.12, 0.045, 3.2), Color(1.0, 0.88, 0.28), false)
+	_label_3d("UNLOAD HERE", Vector3(1.35, 0.12, -7.45), 0.28)
+
 	# Conveyor and recycling machine.
 	_box("MachineBase", Vector3(7.5, 0.65, -6.5), Vector3(4.4, 1.3, 3.2), Color(0.12, 0.27, 0.34), true)
 	_box("MachineBody", Vector3(7.5, 1.65, -6.5), Vector3(3.3, 1.0, 2.5), Color(0.12, 0.48, 0.55), true)
@@ -101,7 +113,11 @@ func _build_world() -> void:
 	_box("ConveyorFrame", Vector3(4.0, 0.85, -6.5), Vector3(3.0, 0.28, 1.5), Color(0.12, 0.15, 0.16), true)
 	_box("ConveyorBelt", Vector3(4.0, 1.03, -6.5), Vector3(2.9, 0.08, 1.35), Color(0.07, 0.09, 0.10), false)
 	for x in [2.8, 3.6, 4.4, 5.2]:
-		_cylinder("ConveyorRoller", Vector3(x, 0.88, -6.5), 0.12, 1.55, Color(0.48, 0.52, 0.52), true)
+		var roller := _cylinder("ConveyorRoller", Vector3(x, 0.88, -6.5), 0.12, 1.55, Color(0.48, 0.52, 0.52), true)
+		conveyor_rollers.append(roller)
+	for i in range(8):
+		var slat := _box("MovingBeltSlat", Vector3(2.65 + i * 0.38, 1.09, -6.5), Vector3(0.10, 0.025, 1.22), Color(0.30, 0.38, 0.39), false)
+		conveyor_slats.append(slat)
 
 	# Sorting bins and industrial props.
 	_make_bin(Vector3(12.4, 0, -4.5), Color(0.12, 0.42, 0.78), "PLASTIC")
@@ -376,7 +392,7 @@ func _collect_nearby() -> void:
 func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
-	var inside_zone := player.global_position.distance_to(SELL_POINT) <= 5.0
+	var inside_zone := player.global_position.distance_to(SELL_POINT) <= 2.35
 	if not inside_zone or carried <= 0:
 		unload_timer = 0.0
 		return
@@ -385,10 +401,11 @@ func _process_auto_sell(delta: float) -> void:
 	if unload_timer >= seconds_per_item:
 		unload_timer = 0.0
 		carried -= 1
+		_spawn_conveyor_item()
 		money += 10
 		_update_ui()
 		_save_game()
-		_set_message("Recycling... +$10")
+		_set_message("Conveyor recycling... +$10")
 		if carried == 0:
 			_set_message("Bag emptied! Money added.")
 			_spawn_trash(6)
@@ -502,7 +519,7 @@ func _box(node_name: String, pos: Vector3, size: Vector3, color: Color, solid: b
 		body.add_child(collision)
 	add_child(body)
 
-func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, color: Color, horizontal: bool) -> void:
+func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, color: Color, horizontal: bool) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
 	var shape := CylinderMesh.new()
 	shape.top_radius = radius
@@ -514,6 +531,52 @@ func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, co
 	if horizontal:
 		mesh.rotation_degrees.z = 90
 	add_child(mesh)
+	return mesh
+
+func _box(node_name: String, pos: Vector3, size: Vector3, color: Color, solid: bool) -> MeshInstance3D:
+	var body: Node3D = StaticBody3D.new() if solid else Node3D.new()
+	body.name = node_name
+	body.position = pos
+	var mesh := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mesh.mesh = box
+	mesh.material_override = _mat(color)
+	body.add_child(mesh)
+	if solid:
+		var collision := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = size
+		collision.shape = shape
+		body.add_child(collision)
+	add_child(body)
+	return mesh
+
+func _animate_conveyor(delta: float) -> void:
+	conveyor_time += delta
+	for roller in conveyor_rollers:
+		if is_instance_valid(roller):
+			roller.rotate_x(delta * 5.0)
+	for i in range(conveyor_slats.size()):
+		var slat := conveyor_slats[i]
+		if is_instance_valid(slat):
+			var x := 2.65 + fposmod(float(i) * 0.38 + conveyor_time * 1.15, 3.04)
+			slat.position.x = x
+
+func _spawn_conveyor_item() -> void:
+	var item := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.34, 0.20, 0.30)
+	item.mesh = mesh
+	item.position = Vector3(2.55, 1.24, -6.5 + randf_range(-0.32, 0.32))
+	item.rotation = Vector3(randf_range(-0.25, 0.25), randf_range(0.0, TAU), randf_range(-0.2, 0.2))
+	item.material_override = _mat([Color(0.20, 0.62, 0.78), Color(0.82, 0.66, 0.30), Color(0.35, 0.68, 0.38)][randi_range(0, 2)])
+	add_child(item)
+	var travel := create_tween()
+	travel.set_trans(Tween.TRANS_LINEAR)
+	travel.tween_property(item, "position", Vector3(5.35, 1.25, item.position.z), 1.35)
+	travel.parallel().tween_property(item, "rotation:y", item.rotation.y + TAU, 1.35)
+	travel.tween_callback(item.queue_free)
 
 func _make_bin(pos: Vector3, color: Color, label_text: String) -> void:
 	_box("RecyclingBin", pos + Vector3(0, 0.7, 0), Vector3(1.7, 1.4, 1.7), color, true)
