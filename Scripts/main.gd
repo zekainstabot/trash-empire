@@ -31,6 +31,7 @@ var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
 var skill_branch_panels: Array[PanelContainer] = []
 var skill_node_data: Array[Dictionary] = []
+var skill_connection_data: Array[Dictionary] = []
 var skill_scroll_container: ScrollContainer
 var skill_map: Control
 var skill_zoom := 1.0
@@ -1112,11 +1113,11 @@ func _build_skill_tree(parent: Control) -> void:
 	# readable network instead of an enormous empty skill map.
 	# Draw prerequisite links behind the skill buttons.
 	for level in range(1, 3):
-		_add_skill_connection(parent, positions["capacity_%d" % level], positions["capacity_%d" % (level + 1)])
+		_add_skill_connection(parent, positions["capacity_%d" % level], positions["capacity_%d" % (level + 1)], "capacity_%d" % level, "capacity_%d" % (level + 1))
 	for branch_data in branch_defs:
 		var branch := String(branch_data.branch)
 		for level in range(1, 3):
-			_add_skill_connection(parent, positions["%s_%d" % [branch, level]], positions["%s_%d" % [branch, level + 1]])
+			_add_skill_connection(parent, positions["%s_%d" % [branch, level]], positions["%s_%d" % [branch, level + 1]], "%s_%d" % [branch, level], "%s_%d" % [branch, level + 1])
 	var dependencies := [
 		["capacity_3", "speed_1"], ["capacity_3", "range_1"], ["capacity_3", "unload_1"],
 		["speed_3", "technology_1"], ["technology_3", "value_1"],
@@ -1127,7 +1128,7 @@ func _build_skill_tree(parent: Control) -> void:
 		["dispatch_3", "packaging_1"], ["fleet_3", "truck_capacity_1"]
 	]
 	for dependency in dependencies:
-		_add_skill_connection(parent, positions[dependency[0]], positions[dependency[1]])
+		_add_skill_connection(parent, positions[dependency[0]], positions[dependency[1]], String(dependency[0]), String(dependency[1]))
 	var all_nodes := [{"branch":"capacity","title":"BACKPACK CAPACITY"}]
 	for branch_data in branch_defs:
 		all_nodes.append({"branch":String(branch_data.branch),"title":String(branch_data.title)})
@@ -1146,7 +1147,7 @@ func _build_skill_tree(parent: Control) -> void:
 			button.focus_mode = Control.FOCUS_NONE
 			button.pressed.connect(_purchase_skill_node.bind(branch, level))
 			parent.add_child(button)
-			skill_node_data.append({"button":button,"branch":branch,"level":level,"title":String(node_data.title)})
+			skill_node_data.append({"button":button,"branch":branch,"level":level,"title":String(node_data.title),"key":"%s_%d" % [branch, level],"position":point})
 	var core := Label.new()
 	core.text = "✦  START HERE  ✦"
 	core.position = center + Vector2(-72, 92)
@@ -1228,14 +1229,16 @@ func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
 	style.content_margin_bottom = 9
 	return style
 
-func _add_skill_connection(parent: Control, from_point: Vector2, to_point: Vector2) -> void:
+func _add_skill_connection(parent: Control, from_point: Vector2, to_point: Vector2, from_key: String, to_key: String) -> void:
 	var line := Line2D.new()
 	line.width = 5.0
 	line.default_color = Color(0.28, 0.78, 0.62, 0.9)
 	line.antialiased = true
 	line.add_point(from_point)
 	line.add_point(to_point)
+	line.visible = false
 	parent.add_child(line)
+	skill_connection_data.append({"line":line,"from":from_key,"to":to_key})
 
 func _skill_level(branch: String) -> int:
 	match branch:
@@ -1303,13 +1306,33 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"packaging": _upgrade_packaging()
 
 func _refresh_upgrade_prices() -> void:
+	# Fog-of-war skill tree: only the starting node and neighbors of purchased
+	# skills are revealed. Hidden nodes do not occupy the screen until discovered.
+	var revealed: Dictionary = {"capacity_1": true}
+	var changed := true
+	while changed:
+		changed = false
+		for connection in skill_connection_data:
+			var from_key := String(connection.from)
+			var to_key := String(connection.to)
+			if revealed.has(from_key) and _skill_key_owned(from_key) and not revealed.has(to_key):
+				revealed[to_key] = true
+				changed = true
+			if revealed.has(to_key) and _skill_key_owned(to_key) and not revealed.has(from_key):
+				revealed[from_key] = true
+				changed = true
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var level := int(node.level)
+		var key := String(node.key)
+		var visible_node := revealed.has(key)
 		var current := _skill_level(branch)
-		var available := _skill_branch_unlocked(branch) and level == current + 1 and level <= 3
+		var available := visible_node and _skill_branch_unlocked(branch) and level == current + 1 and level <= 3
 		var owned := current >= level
 		var button := node.button as Button
+		button.visible = visible_node
+		if not visible_node:
+			continue
 		var accent := _skill_branch_color(branch)
 		var icon := _skill_icon(branch)
 		if owned:
@@ -1326,9 +1349,18 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("hover", _skill_node_style(accent.darkened(0.35)))
 			button.add_theme_stylebox_override("pressed", _skill_node_style(accent.darkened(0.68)))
 		else:
-			button.text = "🔒  %s\nLEVEL %d\nLOCKED" % [node.title, level]
+			button.text = "%s  %s\nLEVEL %d\nWAITING" % [icon, node.title, level]
 			button.disabled = true
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.075, 0.095, 0.105), true))
+	for connection in skill_connection_data:
+		var line := connection.line as Line2D
+		line.visible = revealed.has(String(connection.from)) and revealed.has(String(connection.to))
+
+func _skill_key_owned(key: String) -> bool:
+	var parts := key.rsplit("_", true, 1)
+	if parts.size() != 2:
+		return false
+	return _skill_level(parts[0]) >= int(parts[1])
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
