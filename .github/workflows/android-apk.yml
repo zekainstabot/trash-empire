@@ -55,6 +55,13 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
 
+      - name: Start Android Debug Bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          adb start-server
+          adb devices
+
       - name: Import resources and install Android Gradle build template
         shell: bash
         run: |
