@@ -12,7 +12,8 @@ func _physics_process(delta: float) -> void:
 	var input_strength := clampf(input_dir.length(), 0.0, 1.0)
 	var direction := Vector3(input_dir.x, 0.0, input_dir.y)
 	if is_instance_valid(camera_pivot):
-		direction = camera_pivot.global_basis.x * direction.x - camera_pivot.global_basis.z * direction.z
+		# Screen-up (negative joystick Y) moves toward the camera's forward direction.
+		direction = camera_pivot.global_basis.x * direction.x + camera_pivot.global_basis.z * direction.z
 	direction.y = 0.0
 	direction = direction.normalized()
 	velocity.x = direction.x * move_speed * input_strength
