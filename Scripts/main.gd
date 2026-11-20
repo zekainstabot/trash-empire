@@ -706,6 +706,7 @@ func _build_ui() -> void:
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
 	_build_main_menu(layer, screen)
+	menu_toggle_button.text = "✕"
 
 
 func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
@@ -743,20 +744,20 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	var button_width := screen.x * 0.76
 	var button_height := 66.0
 	var button_x := screen.x * 0.12
-	var play := _button("▶   PLAY", Vector2(button_x, screen.y * 0.55), Vector2(button_width, button_height), main_menu_panel)
+	var play := _button("▶   PLAY", Vector2(button_x, screen.y * 0.47), Vector2(button_width, button_height), main_menu_panel)
 	play.add_theme_font_size_override("font_size", 24)
 	play.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.62, 0.43)))
 	play.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.72, 0.51)))
 	play.pressed.connect(_close_main_menu)
-	new_game_button = _button("NEW", Vector2(button_x, screen.y * 0.55 + 84), Vector2(button_width, 58), main_menu_panel)
+	new_game_button = _button("NEW", Vector2(button_x, screen.y * 0.47 + 84), Vector2(button_width, 58), main_menu_panel)
 	new_game_button.add_theme_stylebox_override("normal", _button_style(Color(0.18, 0.32, 0.30)))
 	new_game_button.pressed.connect(_confirm_new_game)
-	var exit_button := _button("EXIT GAME", Vector2(button_x, screen.y * 0.55 + 158), Vector2(button_width, 52), main_menu_panel)
+	var exit_button := _button("EXIT GAME", Vector2(button_x, screen.y * 0.47 + 158), Vector2(button_width, 52), main_menu_panel)
 	exit_button.add_theme_stylebox_override("normal", _button_style(Color(0.19, 0.25, 0.26)))
 	exit_button.pressed.connect(func() -> void: get_tree().quit())
 	var footer := Label.new()
 	footer.text = "RECYCLE • UPGRADE • EXPAND"
-	footer.position = Vector2(button_x, screen.y * 0.88)
+	footer.position = Vector2(button_x, screen.y * 0.65)
 	footer.size = Vector2(button_width, 28)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.add_theme_font_size_override("font_size", 12)
