@@ -270,8 +270,12 @@ func _build_ui() -> void:
 	message_label.add_theme_constant_override("shadow_offset_x", 2)
 	message_label.add_theme_constant_override("shadow_offset_y", 2)
 
-	var collect := _button("PICK UP", Vector2(-174, -178), Vector2(156, 58), layer)
+	var collect := _button("PICK UP", Vector2(-106, -208), Vector2(88, 88), layer)
 	_anchor_bottom_right(collect)
+	collect.add_theme_stylebox_override("normal", _circle_button_style(Color(0.08, 0.34, 0.29)))
+	collect.add_theme_stylebox_override("hover", _circle_button_style(Color(0.12, 0.46, 0.37)))
+	collect.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.05, 0.24, 0.22)))
+	collect.add_theme_font_size_override("font_size", 14)
 	collect.pressed.connect(_collect_nearby)
 
 
@@ -297,8 +301,9 @@ func _build_ui() -> void:
 	joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.48, 0.38, 0.96)))
 	joystick_pad.add_child(joystick_knob)
 
-	var upgrades_button := _button("UPGRADES", Vector2(-174, -250), Vector2(156, 58), layer)
-	_anchor_bottom_right(upgrades_button)
+	var upgrades_button := _button("UPGRADES", Vector2(-174, 24), Vector2(156, 58), layer)
+	upgrades_button.anchor_left = 1.0
+	upgrades_button.anchor_right = 1.0
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
 
 	upgrade_panel = Panel.new()
@@ -613,6 +618,17 @@ func _button(value: String, pos: Vector2, size: Vector2, parent: Node) -> Button
 	result.add_theme_stylebox_override("pressed", _button_style(Color(0.05, 0.24, 0.22)))
 	parent.add_child(result)
 	return result
+
+func _circle_button_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.corner_radius_top_left = 44
+	style.corner_radius_top_right = 44
+	style.corner_radius_bottom_left = 44
+	style.corner_radius_bottom_right = 44
+	style.border_width_bottom = 3
+	style.border_color = Color(0.04, 0.17, 0.16)
+	return style
 
 func _button_style(color: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
