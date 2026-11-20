@@ -43,14 +43,9 @@ var conveyor_rollers: Array[MeshInstance3D] = []
 var conveyor_slats: Array[Node3D] = []
 var conveyor_item_count := 0
 var yard_stage := 1
-var expansion_button: Button
 var expansion_gates: Array[Node3D] = []
-var refresh_handle: Button
-var refresh_touch := -1
-var refresh_start_y := 0.0
-var refresh_origin_y := 18.0
-var refresh_pull_distance := 0.0
-var refresh_busy := false
+var expansion_world_button: Node3D
+var refill_world_button: Node3D
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
@@ -192,6 +187,61 @@ func _build_world() -> void:
 	_make_tree(Vector3(13.0, 0, 1.0))
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 14.55), 0.65)
+
+	expansion_world_button = _create_world_action_button("ExpansionPurchase", "OPEN DISTRICT 2  $500", Vector3(15.0, 0.0, 2.6), Vector3(2.8, 1.25, 0.35), Callable(self, "_buy_next_stage"), Color(0.88, 0.56, 0.12))
+	_refresh_expansion_world_button()
+	refill_world_button = _create_world_action_button("TrashRefillButton", "REFILL TRASH", Vector3(10.2, 0.0, -4.25), Vector3(1.9, 0.9, 0.35), Callable(self, "_refill_first_district"), Color(0.10, 0.58, 0.40))
+
+func _create_world_action_button(node_name: String, title: String, world_position: Vector3, dimensions: Vector3, action: Callable, color: Color) -> Node3D:
+	var root := Node3D.new()
+	root.name = node_name
+	root.position = world_position
+	add_child(root)
+
+	var base := MeshInstance3D.new()
+	var base_mesh := BoxMesh.new()
+	base_mesh.size = dimensions + Vector3(0.28, 0.22, 0.18)
+	base.mesh = base_mesh
+	base.position.y = dimensions.y * 0.5
+	base.material_override = _mat(Color(0.055, 0.085, 0.09))
+	root.add_child(base)
+
+	var face := MeshInstance3D.new()
+	var face_mesh := BoxMesh.new()
+	face_mesh.size = dimensions
+	face.mesh = face_mesh
+	face.position.y = dimensions.y * 0.5 + 0.06
+	face.material_override = _mat(color)
+	root.add_child(face)
+
+	var area := Area3D.new()
+	area.name = "WorldButtonArea"
+	area.position.y = dimensions.y * 0.5 + 0.06
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = dimensions + Vector3(0.12, 0.12, 0.25)
+	collision.shape = shape
+	area.add_child(collision)
+	root.add_child(area)
+
+	var label := Label3D.new()
+	label.name = "WorldButtonLabel"
+	label.text = title
+	label.position = Vector3(0, dimensions.y * 0.5 + 0.07, dimensions.z * 0.5 + 0.02)
+	label.font_size = 30
+	label.pixel_size = 0.006
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.modulate = Color.WHITE
+	root.add_child(label)
+
+	area.input_event.connect(_on_world_action_input.bind(action))
+	return root
+
+func _on_world_action_input(_camera: Node, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_index: int, action: Callable) -> void:
+	if event is InputEventScreenTouch and event.pressed:
+		action.call()
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		action.call()
 
 func _build_player() -> void:
 	player = CharacterBody3D.new()
@@ -344,22 +394,23 @@ func _build_ui() -> void:
 	message_label.add_theme_constant_override("shadow_offset_x", 2)
 	message_label.add_theme_constant_override("shadow_offset_y", 2)
 
-	var collect := _button("PICK UP", Vector2(-106, -208), Vector2(88, 88), layer)
+	var collect := _button("PICK UP", Vector2(-124, -150), Vector2(104, 104), layer)
 	_anchor_bottom_right(collect)
-	collect.add_theme_stylebox_override("normal", _circle_button_style(Color(0.08, 0.34, 0.29)))
-	collect.add_theme_stylebox_override("hover", _circle_button_style(Color(0.12, 0.46, 0.37)))
-	collect.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.05, 0.24, 0.22)))
-	collect.add_theme_font_size_override("font_size", 14)
+	collect.add_theme_stylebox_override("normal", _circle_button_style(Color(0.08, 0.34, 0.29, 0.58)))
+	collect.add_theme_stylebox_override("hover", _circle_button_style(Color(0.12, 0.46, 0.37, 0.68)))
+	collect.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.05, 0.24, 0.22, 0.76)))
+	collect.add_theme_color_override("font_color", Color(1, 1, 1, 0.88))
+	collect.add_theme_font_size_override("font_size", 16)
 	collect.pressed.connect(_collect_nearby)
 
 
-	# Fixed four-way virtual joystick on the lower-left.
+	# Fixed four-way virtual joystick on the lower-left, with a translucent touch surface.
 	joystick_pad = Panel.new()
 	joystick_pad.position = Vector2(18, -218)
 	joystick_pad.size = Vector2(184, 184)
 	joystick_pad.anchor_top = 1.0
 	joystick_pad.anchor_bottom = 1.0
-	joystick_pad.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.055, 0.06, 0.58)))
+	joystick_pad.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.055, 0.06, 0.25)))
 	layer.add_child(joystick_pad)
 
 	var up_hint := _label("▲", Vector2(79, 8), 20, joystick_pad)
@@ -372,28 +423,13 @@ func _build_ui() -> void:
 	joystick_knob = Panel.new()
 	joystick_knob.size = Vector2(58, 58)
 	joystick_knob.position = (joystick_pad.size - joystick_knob.size) * 0.5
-	joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.48, 0.38, 0.96)))
+	joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.48, 0.38, 0.58)))
 	joystick_pad.add_child(joystick_knob)
 
 	var upgrades_button := _button("SKILL TREE", Vector2(-174, 24), Vector2(156, 58), layer)
 	upgrades_button.anchor_left = 1.0
 	upgrades_button.anchor_right = 1.0
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
-	expansion_button = _button("EXPAND YARD", Vector2(-174, 92), Vector2(156, 52), layer)
-	expansion_button.anchor_left = 1.0
-	expansion_button.anchor_right = 1.0
-	expansion_button.pressed.connect(_buy_next_stage)
-	_refresh_expansion_button()
-
-	# Pull-down handle for manual trash refill in District 1.
-	refresh_handle = _button("↓  PULL TO REFILL", Vector2.ZERO, Vector2(190, 48), layer)
-	refresh_handle.anchor_left = 0.5
-	refresh_handle.anchor_right = 0.5
-	refresh_handle.position = Vector2(-95, refresh_origin_y)
-	refresh_handle.add_theme_font_size_override("font_size", 14)
-	refresh_handle.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.39, 0.34)))
-	refresh_handle.add_theme_stylebox_override("pressed", _button_style(Color(0.08, 0.29, 0.27)))
-	refresh_handle.pressed.connect(_on_refresh_handle_tap)
 
 	upgrade_panel = Panel.new()
 	upgrade_panel.set_anchors_preset(Control.PRESET_CENTER)
@@ -465,45 +501,13 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			if is_instance_valid(refresh_handle) and refresh_touch == -1 and not refresh_busy and refresh_handle.get_global_rect().has_point(event.position):
-				refresh_touch = event.index
-				refresh_start_y = event.position.y
-				refresh_pull_distance = 0.0
-				refresh_handle.text = "↓  KEEP PULLING"
-				return
 			if is_instance_valid(joystick_pad) and joystick_touch == -1 and joystick_pad.get_global_rect().has_point(event.position):
 				joystick_touch = event.index
 				_update_joystick(event.position)
-		elif event.index == refresh_touch:
-			refresh_touch = -1
-			if refresh_pull_distance >= 78.0:
-				_refill_first_district()
-			_return_refresh_handle()
 		elif event.index == joystick_touch:
 			_reset_joystick()
-	elif event is InputEventScreenDrag:
-		if event.index == refresh_touch:
-			refresh_pull_distance = clampf(event.position.y - refresh_start_y, 0.0, 115.0)
-			refresh_handle.position.y = refresh_origin_y + refresh_pull_distance
-			refresh_handle.text = "↓  RELEASE TO REFILL" if refresh_pull_distance >= 78.0 else "↓  KEEP PULLING"
-		elif event.index == joystick_touch:
-			_update_joystick(event.position)
-
-func _on_refresh_handle_tap() -> void:
-	if refresh_touch == -1 and not refresh_busy:
-		_set_message("Drag the top handle down to refill the first yard.")
-
-func _return_refresh_handle() -> void:
-	if not is_instance_valid(refresh_handle):
-		return
-	refresh_busy = true
-	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(refresh_handle, "position:y", refresh_origin_y, 0.38)
-	tween.tween_callback(func():
-		refresh_handle.text = "↓  PULL TO REFILL"
-		refresh_busy = false
-	)
+	elif event is InputEventScreenDrag and event.index == joystick_touch:
+		_update_joystick(event.position)
 
 func _update_joystick(touch_position: Vector2) -> void:
 	var center := joystick_pad.get_global_rect().get_center()
@@ -676,19 +680,28 @@ func _buy_next_stage() -> void:
 			gate.queue_free()
 	_spawn_trash(18 if yard_stage == 2 else 24)
 	_update_ui()
-	_refresh_expansion_button()
+	_refresh_expansion_world_button()
 	_save_game()
 	_set_message("DISTRICT %d UNLOCKED!" % yard_stage)
 
-func _refresh_expansion_button() -> void:
-	if not is_instance_valid(expansion_button):
+func _refresh_expansion_world_button() -> void:
+	if not is_instance_valid(expansion_world_button):
 		return
+	if yard_stage >= 3:
+		expansion_world_button.visible = false
+		return
+	expansion_world_button.visible = true
 	if yard_stage == 1:
-		expansion_button.text = "OPEN DISTRICT 2  $500"
-	elif yard_stage == 2:
-		expansion_button.text = "OPEN DISTRICT 3  $1800"
+		expansion_world_button.position = Vector3(15.0, 0.0, 2.6)
+		_expansion_button_label("OPEN DISTRICT 2  $500")
 	else:
-		expansion_button.text = "ALL DISTRICTS OPEN"
+		expansion_world_button.position = Vector3(47.0, 0.0, 2.6)
+		_expansion_button_label("OPEN DISTRICT 3  $1800")
+
+func _expansion_button_label(value: String) -> void:
+	var label := expansion_world_button.get_node_or_null("WorldButtonLabel") as Label3D
+	if is_instance_valid(label):
+		label.text = value
 
 func _save_game() -> void:
 	var save := ConfigFile.new()
