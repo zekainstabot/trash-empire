@@ -53,6 +53,8 @@ var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
 var expansion_world_button: Node3D
 var refill_world_button: Node3D
+var main_menu_panel: Control
+var main_menu_open := true
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
@@ -67,6 +69,8 @@ func _ready() -> void:
 	_update_ui()
 
 func _process(delta: float) -> void:
+	if main_menu_open:
+		return
 	_process_skill_scroll(delta)
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
@@ -581,6 +585,78 @@ func _build_ui() -> void:
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
+	_build_main_menu(layer, screen)
+
+
+func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
+	# Polished mobile game front menu with a translucent industrial backdrop.
+	main_menu_panel = Control.new()
+	main_menu_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	main_menu_panel.z_index = 50
+	layer.add_child(main_menu_panel)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.025, 0.045, 0.055, 0.94)
+	main_menu_panel.add_child(shade)
+	var accent := ColorRect.new()
+	accent.position = Vector2(screen.x * 0.08, screen.y * 0.19)
+	accent.size = Vector2(8, screen.y * 0.34)
+	accent.color = Color(0.22, 0.82, 0.57)
+	main_menu_panel.add_child(accent)
+	var title := Label.new()
+	title.text = "TRASH\\nEMPIRE"
+	title.position = Vector2(screen.x * 0.12, screen.y * 0.17)
+	title.size = Vector2(screen.x * 0.82, screen.y * 0.24)
+	title.add_theme_font_size_override("font_size", int(screen.y * 0.065))
+	title.add_theme_color_override("font_color", Color(0.92, 0.98, 0.95))
+	title.add_theme_color_override("font_shadow_color", Color(0,0,0,0.5))
+	title.add_theme_constant_override("shadow_offset_x", 3)
+	title.add_theme_constant_override("shadow_offset_y", 4)
+	main_menu_panel.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "BUILD YOUR RECYCLING BUSINESS"
+	subtitle.position = Vector2(screen.x * 0.12, screen.y * 0.40)
+	subtitle.size = Vector2(screen.x * 0.8, 36)
+	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_color_override("font_color", Color(0.48, 0.83, 0.70))
+	main_menu_panel.add_child(subtitle)
+	var button_width := screen.x * 0.76
+	var button_height := 66.0
+	var button_x := screen.x * 0.12
+	var play := _button("▶   PLAY", Vector2(button_x, screen.y * 0.55), Vector2(button_width, button_height), main_menu_panel)
+	play.add_theme_font_size_override("font_size", 24)
+	play.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.62, 0.43)))
+	play.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.72, 0.51)))
+	play.pressed.connect(_close_main_menu)
+	var skills := _button("⚙   SKILL TREE", Vector2(button_x, screen.y * 0.55 + 84), Vector2(button_width, 58), main_menu_panel)
+	skills.pressed.connect(func() -> void:
+		_close_main_menu()
+		upgrade_panel.visible = true
+	)
+	var exit_button := _button("EXIT GAME", Vector2(button_x, screen.y * 0.55 + 158), Vector2(button_width, 52), main_menu_panel)
+	exit_button.add_theme_stylebox_override("normal", _button_style(Color(0.19, 0.25, 0.26)))
+	exit_button.pressed.connect(func() -> void: get_tree().quit())
+	var footer := Label.new()
+	footer.text = "RECYCLE • UPGRADE • EXPAND"
+	footer.position = Vector2(button_x, screen.y * 0.88)
+	footer.size = Vector2(button_width, 28)
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_color_override("font_color", Color(0.48, 0.58, 0.57))
+	main_menu_panel.add_child(footer)
+	# Keep the gameplay HUD behind the menu but hide it until play is selected.
+	for child in layer.get_children():
+		if child != main_menu_panel:
+			child.visible = false
+
+func _close_main_menu() -> void:
+	main_menu_open = false
+	if is_instance_valid(main_menu_panel):
+		main_menu_panel.visible = false
+	for child in main_menu_panel.get_parent().get_children():
+		if child != main_menu_panel:
+			child.visible = true
+
 
 func _build_skill_tree(parent: Control) -> void:
 	# Three purchase nodes per skill. The first skill opens three independent paths.
@@ -747,6 +823,8 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.09, 0.12, 0.13), true))
 
 func _input(event: InputEvent) -> void:
+	if main_menu_open:
+		return
 	# Give the skill tree its own touch-drag scrolling with momentum.
 	if upgrade_panel != null and upgrade_panel.visible and is_instance_valid(skill_scroll_container):
 		var scroll_rect := skill_scroll_container.get_global_rect()
