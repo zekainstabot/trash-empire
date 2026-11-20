@@ -75,6 +75,7 @@ var expansion_zone_blocked := false
 var district_build_active := false
 var district_build_paid := 0.0
 var district_build_save_timer := 0.0
+var district_no_money_notified := false
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -146,7 +147,7 @@ func _build_world() -> void:
 	_box("DistrictTwoOuterWallSouth", Vector3(47.5, 2.0, 11.0), Vector3(0.5, 4, 18.0), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoBackWall", Vector3(32, 2.0, -19.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoFrontFence", Vector3(32, 1.5, 19.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
-	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 32), Color(0.32, 0.34, 0.29), true)
+	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 40), Color(0.32, 0.34, 0.29), true)
 	_box("DistrictThreeOuterWall", Vector3(79.5, 2.0, 0), Vector3(0.5, 4, 40), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictThreeBackWall", Vector3(64, 2.0, -19.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictThreeFrontFence", Vector3(64, 1.5, 19.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
@@ -1678,12 +1679,17 @@ func _process_expansion_zone(delta: float) -> void:
 	var target_x := 13.15 if yard_stage == 1 else 45.15
 	var distance := Vector2(player.global_position.x - target_x, player.global_position.z).length()
 	if distance > 2.7:
+		if district_build_active and district_build_paid > 0.0:
+			_save_game()
 		expansion_zone_blocked = false
 		district_build_active = false
+		district_no_money_notified = false
 		district_build_save_timer = 0.0
+		_refresh_expansion_world_button()
 		return
 	if not district_build_active:
 		district_build_active = true
+		district_no_money_notified = false
 		expansion_zone_blocked = true
 	var cost := 25.0 if yard_stage == 1 else 60.0
 	var remaining := maxf(0.0, cost - district_build_paid)
@@ -1692,6 +1698,7 @@ func _process_expansion_zone(delta: float) -> void:
 		return
 	var payment := minf(money, minf((cost / 3.0) * delta, remaining))
 	if payment > 0.0:
+		district_no_money_notified = false
 		money -= payment
 		district_build_paid += payment
 		_update_ui()
@@ -1703,14 +1710,16 @@ func _process_expansion_zone(delta: float) -> void:
 		if is_instance_valid(zone):
 			var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 			if is_instance_valid(label):
-				label.text = "UNLOCKING DISTRICT %d\\n$%.1f / $%.0f" % [yard_stage + 1, district_build_paid, cost]
+				label.text = "UNLOCKING DISTRICT %d\n$%.1f / $%.0f" % [yard_stage + 1, district_build_paid, cost]
 	if district_build_paid >= cost - 0.001:
 		_complete_district_unlock()
-	elif money <= 0.001:
+	elif money <= 0.001 and not district_no_money_notified:
+		district_no_money_notified = true
 		_set_message("Need $%.1f more to unlock this district. Stay here to continue." % (cost - district_build_paid))
 
 func _complete_district_unlock() -> void:
 	district_build_active = false
+	district_no_money_notified = false
 	district_build_paid = 0.0
 	district_build_save_timer = 0.0
 	yard_stage += 1
