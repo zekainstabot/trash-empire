@@ -456,8 +456,8 @@ func _build_ui() -> void:
 	skill_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	upgrade_panel.add_child(skill_scroll)
 	var skill_map := Control.new()
-	skill_map.custom_minimum_size = Vector2(680, 1120)
-	skill_map.size = Vector2(680, 1120)
+	skill_map.custom_minimum_size = Vector2(680, 1200)
+	skill_map.size = Vector2(680, 1200)
 	skill_scroll.add_child(skill_map)
 	_build_skill_tree(skill_map)
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
