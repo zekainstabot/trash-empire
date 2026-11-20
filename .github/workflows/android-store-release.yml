@@ -8,6 +8,7 @@ on:
       - .github/workflows/android-store-release.yml
       - export_presets.cfg
       - project.godot
+      - Scripts/**
 
 permissions:
   contents: write
