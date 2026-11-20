@@ -55,6 +55,7 @@ var expansion_world_button: Node3D
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
+var new_game_button: Button
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
@@ -628,6 +629,9 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	play.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.62, 0.43)))
 	play.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.72, 0.51)))
 	play.pressed.connect(_close_main_menu)
+	new_game_button = _button("NEW", Vector2(button_x, screen.y * 0.55 + 84), Vector2(button_width, 58), main_menu_panel)
+	new_game_button.add_theme_stylebox_override("normal", _button_style(Color(0.18, 0.32, 0.30)))
+	new_game_button.pressed.connect(_confirm_new_game)
 	var exit_button := _button("EXIT GAME", Vector2(button_x, screen.y * 0.55 + 158), Vector2(button_width, 52), main_menu_panel)
 	exit_button.add_theme_stylebox_override("normal", _button_style(Color(0.19, 0.25, 0.26)))
 	exit_button.pressed.connect(func() -> void: get_tree().quit())
@@ -643,6 +647,60 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	for child in layer.get_children():
 		if child != main_menu_panel:
 			child.visible = false
+
+
+func _confirm_new_game() -> void:
+	var confirm_panel := Panel.new()
+	confirm_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	confirm_panel.position = Vector2(-150, -110)
+	confirm_panel.size = Vector2(300, 220)
+	confirm_panel.z_index = 100
+	confirm_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.07, 0.12, 0.13, 1.0)))
+	main_menu_panel.add_child(confirm_panel)
+	var message := Label.new()
+	message.text = "DELETE CURRENT WORLD?\\nAll progress will be lost."
+	message.position = Vector2(18, 24)
+	message.size = Vector2(264, 80)
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_font_size_override("font_size", 18)
+	confirm_panel.add_child(message)
+	var cancel := _button("CANCEL", Vector2(15, 135), Vector2(125, 52), confirm_panel)
+	cancel.pressed.connect(confirm_panel.queue_free)
+	var erase := _button("NEW", Vector2(160, 135), Vector2(125, 52), confirm_panel)
+	erase.add_theme_stylebox_override("normal", _button_style(Color(0.65, 0.22, 0.18)))
+	erase.pressed.connect(func() -> void:
+		confirm_panel.queue_free()
+		_start_new_world()
+	)
+
+func _start_new_world() -> void:
+	money = 0
+	carried = 0
+	capacity = 5
+	upgrade_level = 1
+	speed_upgrade_level = 1
+	unload_upgrade_level = 1
+	equipment_upgrade_level = 1
+	technology_upgrade_level = 1
+	spawn_upgrade_level = 1
+	auto_pickup_level = 0
+	auto_pickup_timer = 0.0
+	recycling_bonus = 1.0
+	collection_range = 2.5
+	yard_stage = 1
+	unload_timer = 0.0
+	player.set("move_speed", 5.0)
+	for item in trash_nodes:
+		if is_instance_valid(item): item.queue_free()
+	trash_nodes.clear()
+	_apply_unlocked_districts()
+	_build_trash()
+	_update_ui()
+	_refresh_upgrade_prices()
+	_refresh_expansion_world_button()
+	_save_game()
+	_set_message("NEW WORLD STARTED!")
+	_close_main_menu()
 
 func _close_main_menu() -> void:
 	main_menu_open = false
