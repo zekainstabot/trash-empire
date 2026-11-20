@@ -57,6 +57,8 @@ var conveyor_rollers: Array[MeshInstance3D] = []
 var conveyor_slats: Array[Node3D] = []
 var conveyor_item_count := 0
 var factory_stage := 1
+var factory_built_stage := 1
+var factory_visual_root: Node3D
 var factory_upgrade_button: Node3D
 var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
@@ -254,12 +256,23 @@ func _refresh_factory_upgrade_button() -> void:
 		label.text = "%s\n$%d" % [names[factory_stage + 1], costs[factory_stage]]
 
 func _build_factory_expansion() -> void:
-	for stage in range(2, factory_stage + 1):
+	if not is_instance_valid(factory_visual_root):
+		factory_visual_root = Node3D.new()
+		factory_visual_root.name = "FactoryExpansionVisuals"
+		add_child(factory_visual_root)
+	for stage in range(factory_built_stage + 1, factory_stage + 1):
+		var first_new_child := get_child_count()
 		_build_factory_module(stage)
-	for stage in range(2, factory_stage + 1):
-		var start_z := -5.15 if stage == 2 else ([-999.0, -999.0, 1.05, 6.55][stage])
+		var start_z := -5.15 if stage == 2 else (1.05 if stage == 3 else 6.55)
 		var end_z := -2.05 if stage == 2 else (3.45 if stage == 3 else 8.95)
 		_build_factory_link(start_z, end_z)
+		var new_nodes: Array[Node] = []
+		for child_index in range(first_new_child, get_child_count()):
+			new_nodes.append(get_child(child_index))
+		for new_node in new_nodes:
+			remove_child(new_node)
+			factory_visual_root.add_child(new_node)
+		factory_built_stage = stage
 
 func _build_factory_module(stage: int) -> void:
 	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
@@ -801,6 +814,11 @@ func _start_new_world() -> void:
 	collection_range = 2.0
 	yard_stage = 1
 	factory_stage = 1
+	factory_built_stage = 1
+	if is_instance_valid(factory_visual_root):
+		for factory_child in factory_visual_root.get_children():
+			factory_visual_root.remove_child(factory_child)
+			factory_child.queue_free()
 	unload_timer = 0.0
 	player.set("move_speed", 4.5)
 	for item in trash_nodes:
