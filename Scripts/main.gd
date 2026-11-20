@@ -83,6 +83,8 @@ var truck_dispatch_timer := 0.0
 var dispatch_trucks_remaining := 0
 var dispatch_upgrade_level := 0
 var fleet_upgrade_level := 0
+var truck_capacity_upgrade_level := 0
+var packaging_upgrade_level := 0
 var delivery_trucks: Array[Node3D] = []
 var refill_world_button: Node3D
 var main_menu_panel: Control
@@ -957,6 +959,8 @@ func _start_new_world() -> void:
 	drone_level = 0
 	dispatch_upgrade_level = 0
 	fleet_upgrade_level = 0
+	truck_capacity_upgrade_level = 0
+	packaging_upgrade_level = 0
 	truck_dispatch_timer = 0.0
 	shipping_active = false
 	dispatch_trucks_remaining = 0
@@ -1028,7 +1032,9 @@ func _build_skill_tree(parent: Control) -> void:
 		{"branch":"magnet_power","title":"MAGNET POWER","depth":3,"angle":330.0},
 		{"branch":"drones","title":"HELPER DRONES","depth":4,"angle":270.0},
 		{"branch":"dispatch","title":"TRUCK FREQUENCY","depth":4,"angle":210.0},
-		{"branch":"fleet","title":"HIRE TRUCKS","depth":4,"angle":330.0}
+		{"branch":"fleet","title":"HIRE TRUCKS","depth":4,"angle":330.0},
+		{"branch":"truck_capacity","title":"TRUCK CAPACITY","depth":4,"angle":150.0},
+		{"branch":"packaging","title":"PACKAGING SPEED","depth":4,"angle":30.0}
 	]
 	var positions: Dictionary = {}
 	# The core capacity skill sits in the middle of the galaxy.
@@ -1056,7 +1062,7 @@ func _build_skill_tree(parent: Control) -> void:
 		["speed_3", "technology_1"], ["technology_3", "value_1"],
 		["range_3", "supply_1"], ["supply_3", "luck_1"],
 		["unload_3", "auto_1"], ["auto_3", "magnet_power_1"],
-		["luck_3", "drones_1"], ["drones_3", "dispatch_1"], ["drones_3", "fleet_1"]
+		["luck_3", "drones_1"], ["drones_3", "dispatch_1"], ["drones_3", "fleet_1"], ["fleet_3", "truck_capacity_1"], ["dispatch_3", "packaging_1"]
 	]
 	for dependency in dependencies:
 		_add_skill_connection(parent, positions[dependency[0]], positions[dependency[1]])
@@ -1115,6 +1121,8 @@ func _skill_branch_color(branch: String) -> Color:
 		"drones": return Color(0.65, 0.78, 0.30)
 		"dispatch": return Color(0.16, 0.70, 0.82)
 		"fleet": return Color(0.90, 0.48, 0.22)
+		"truck_capacity": return Color(0.75, 0.52, 0.22)
+		"packaging": return Color(0.72, 0.32, 0.62)
 	return Color(0.25, 0.45, 0.42)
 
 func _skill_icon(branch: String) -> String:
@@ -1132,6 +1140,8 @@ func _skill_icon(branch: String) -> String:
 		"drones": return "🚁"
 		"dispatch": return "⏱️"
 		"fleet": return "🚚"
+		"truck_capacity": return "📦"
+		"packaging": return "🏭"
 	return "◆"
 
 func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
@@ -1178,6 +1188,8 @@ func _skill_level(branch: String) -> int:
 		"drones": return drone_level
 		"dispatch": return dispatch_upgrade_level
 		"fleet": return fleet_upgrade_level
+		"truck_capacity": return truck_capacity_upgrade_level
+		"packaging": return packaging_upgrade_level
 	return 0
 
 func _skill_branch_unlocked(branch: String) -> bool:
@@ -1192,6 +1204,8 @@ func _skill_branch_unlocked(branch: String) -> bool:
 		"magnet_power": return auto_pickup_level >= 3
 		"drones": return luck_upgrade_level >= 2
 		"dispatch", "fleet": return factory_stage >= 5 and drone_level >= 3
+		"truck_capacity": return factory_stage >= 5 and fleet_upgrade_level >= 3
+		"packaging": return factory_stage >= 5 and dispatch_upgrade_level >= 3
 	return false
 
 func _purchase_skill_node(branch: String, level: int) -> void:
@@ -1215,6 +1229,8 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"drones": _upgrade_drones()
 		"dispatch": _upgrade_dispatch()
 		"fleet": _upgrade_fleet()
+		"truck_capacity": _upgrade_truck_capacity()
+		"packaging": _upgrade_packaging()
 
 func _refresh_upgrade_prices() -> void:
 	for node in skill_node_data:
@@ -1232,7 +1248,7 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.29, 0.22)))
 			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.35, 0.26)))
 		elif available:
-			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"dispatch":25.0,"fleet":45.0}.get(branch, 4.0))
+			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0}.get(branch, 4.0))
 			var price_level := level
 			button.text = "%s  %s\nLEVEL %d\n$%.0f  •  UNLOCK" % [icon, node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
@@ -1875,6 +1891,8 @@ func _save_game() -> void:
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
 	save.set_value("progress", "fleet_upgrade_level", fleet_upgrade_level)
+	save.set_value("progress", "truck_capacity_upgrade_level", truck_capacity_upgrade_level)
+	save.set_value("progress", "packaging_upgrade_level", packaging_upgrade_level)
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.set_value("progress", "district_build_paid", district_build_paid)
 	save.set_value("progress", "factory_stage", factory_stage)
@@ -1902,6 +1920,8 @@ func _load_game() -> void:
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
 	fleet_upgrade_level = clampi(int(save.get_value("progress", "fleet_upgrade_level", 0)), 0, 3)
+	truck_capacity_upgrade_level = clampi(int(save.get_value("progress", "truck_capacity_upgrade_level", 0)), 0, 3)
+	packaging_upgrade_level = clampi(int(save.get_value("progress", "packaging_upgrade_level", 0)), 0, 3)
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	district_build_paid = clampf(float(save.get_value("progress", "district_build_paid", 0.0)), 0.0, 60.0)
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
@@ -2198,6 +2218,14 @@ func _truck_dispatch_interval() -> float:
 func _truck_fleet_size() -> int:
 	return clampi(1 + fleet_upgrade_level, 1, 4)
 
+func _truck_box_capacity() -> int:
+	var capacities := [5, 8, 12, 16]
+	return capacities[clampi(truck_capacity_upgrade_level, 0, 3)]
+
+func _packaging_seconds() -> float:
+	var cycle_times := [1.15, 0.85, 0.62, 0.42]
+	return cycle_times[clampi(packaging_upgrade_level, 0, 3)]
+
 func _refresh_delivery_fleet() -> void:
 	if factory_stage < 5 or not is_instance_valid(factory_visual_root):
 		return
@@ -2274,7 +2302,7 @@ func _dispatch_truck_fleet() -> void:
 		arrive.tween_callback(_load_next_teddy_package.bind(index, 0))
 
 func _load_next_teddy_package(truck_index: int, loaded_count: int) -> void:
-	if truck_index >= delivery_trucks.size() or teddy_stock_values.is_empty() or loaded_count >= 5:
+	if truck_index >= delivery_trucks.size() or teddy_stock_values.is_empty() or loaded_count >= _truck_box_capacity():
 		_depart_delivery_truck(truck_index)
 		return
 	var truck := delivery_trucks[truck_index]
@@ -2301,7 +2329,7 @@ func _load_next_teddy_package(truck_index: int, loaded_count: int) -> void:
 	var load_tween := create_tween()
 	load_tween.set_trans(Tween.TRANS_SINE)
 	load_tween.set_ease(Tween.EASE_IN_OUT)
-	load_tween.tween_property(package, "global_position", target, 1.15)
+	load_tween.tween_property(package, "global_position", target, _packaging_seconds())
 	load_tween.tween_callback(func():
 		package.queue_free()
 		if teddy_stock_values.is_empty():
@@ -2352,6 +2380,24 @@ func _upgrade_fleet() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("A new delivery truck hired! Fleet size: %d." % _truck_fleet_size())
+
+func _upgrade_truck_capacity() -> void:
+	var cost := _upgrade_cost(55.0, truck_capacity_upgrade_level + 1)
+	if not await _pay_gradually(cost):
+		return
+	truck_capacity_upgrade_level += 1
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Truck capacity increased to %d boxes!" % _truck_box_capacity())
+
+func _upgrade_packaging() -> void:
+	var cost := _upgrade_cost(40.0, packaging_upgrade_level + 1)
+	if not await _pay_gradually(cost):
+		return
+	packaging_upgrade_level += 1
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Packaging cycle reduced to %.2f seconds!" % _packaging_seconds())
 func _add_teddy_part(parent: Node3D, part_name: String, part_position: Vector3, part_size: Vector3, part_color: Color) -> void:
 	var part := MeshInstance3D.new()
 	part.name = part_name
