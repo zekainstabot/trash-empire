@@ -732,10 +732,12 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	main_menu_panel = Control.new()
 	main_menu_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	main_menu_panel.z_index = 50
+	main_menu_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	layer.add_child(main_menu_panel)
 	var shade := ColorRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.025, 0.045, 0.055, 0.94)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main_menu_panel.add_child(shade)
 	var accent := ColorRect.new()
 	accent.position = Vector2(screen.x * 0.08, screen.y * 0.19)
@@ -867,12 +869,22 @@ func _start_new_world() -> void:
 	_close_main_menu()
 
 func _close_main_menu() -> void:
+	# Explicitly activate gameplay and reveal every HUD/world overlay hidden by the title menu.
 	main_menu_open = false
+	set_process(true)
+	set_physics_process(true)
 	if is_instance_valid(main_menu_panel):
-		main_menu_panel.visible = false
-	for child in main_menu_panel.get_parent().get_children():
-		if child != main_menu_panel:
-			child.visible = true
+		main_menu_panel.hide()
+		main_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var ui_layer := main_menu_panel.get_parent()
+		if is_instance_valid(ui_layer):
+			for child in ui_layer.get_children():
+				if child != main_menu_panel:
+					child.show()
+	if is_instance_valid(player):
+		player.set_process(true)
+		player.set_physics_process(true)
+	_update_ui()
 
 
 func _build_skill_tree(parent: Control) -> void:
