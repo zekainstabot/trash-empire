@@ -32,7 +32,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
-		camera_pivot.global_position = player.global_position + Vector3(0, 5.4, 8.5)
+		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
 
 func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
@@ -158,13 +158,13 @@ func _build_player() -> void:
 
 	camera_pivot = Node3D.new()
 	camera_pivot.name = "CameraFollow"
-	camera_pivot.global_position = player.global_position + Vector3(0, 5.4, 8.5)
+	camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
 	add_child(camera_pivot)
 	camera = Camera3D.new()
 	camera.position = Vector3.ZERO
-	camera.rotation_degrees = Vector3(22, 0, 0)
+	camera.rotation_degrees = Vector3(-30, 0, 0)
 	camera.current = true
-	camera.fov = 68
+	camera.fov = 58
 	camera_pivot.add_child(camera)
 	player.set("camera_pivot", camera_pivot)
 
@@ -182,38 +182,41 @@ func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 
+	var screen := get_viewport().get_visible_rect().size
 	var panel := Panel.new()
 	panel.position = Vector2(18, 18)
-	panel.size = Vector2(285, 104)
+	panel.size = Vector2(245, 100)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.065, 0.075, 0.88)))
 	layer.add_child(panel)
-	money_label = _label("CASH  $0", Vector2(34, 28), 24, layer)
-	bag_label = _label("BAG  0 / 5", Vector2(34, 66), 19, layer)
+	money_label = _label("CASH  $0", Vector2(32, 27), 22, layer)
+	bag_label = _label("BAG  0 / 5", Vector2(32, 64), 18, layer)
 
-	message_label = _label("Collect litter around the yard.", Vector2(325, 24), 18, layer)
+	message_label = _label("Collect litter around the yard.", Vector2(20, 130), 17, layer)
+	message_label.size = Vector2(maxf(280.0, screen.x - 40.0), 48)
+	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	message_label.add_theme_constant_override("shadow_offset_x", 2)
 	message_label.add_theme_constant_override("shadow_offset_y", 2)
 
-	var collect := _button("PICK UP", Vector2(-184, -154), Vector2(164, 62), layer)
+	var collect := _button("PICK UP", Vector2(-174, -178), Vector2(156, 58), layer)
 	_anchor_bottom_right(collect)
 	collect.pressed.connect(_collect_nearby)
 
-	var sell := _button("SELL LOAD", Vector2(-184, -82), Vector2(164, 62), layer)
+	var sell := _button("SELL LOAD", Vector2(-174, -108), Vector2(156, 58), layer)
 	_anchor_bottom_right(sell)
 	sell.pressed.connect(_sell_trash)
 
-	var upgrade := _button("BAG +3  $50", Vector2(18, -82), Vector2(190, 58), layer)
+	var upgrade := _button("BAG +3  $50", Vector2(18, -178), Vector2(174, 54), layer)
 	upgrade.anchor_top = 1.0
 	upgrade.anchor_bottom = 1.0
 	upgrade.pressed.connect(_upgrade_bag)
 
-	var speed_upgrade := _button("SPEED +  $75", Vector2(18, -150), Vector2(190, 58), layer)
+	var speed_upgrade := _button("SPEED +  $75", Vector2(18, -112), Vector2(174, 54), layer)
 	speed_upgrade.anchor_top = 1.0
 	speed_upgrade.anchor_bottom = 1.0
 	speed_upgrade.pressed.connect(_upgrade_speed)
 
-	var hint := _label("DRAG LEFT SIDE TO MOVE  •  WASD / ARROWS", Vector2(20, -36), 14, layer)
+	var hint := _label("DRAG LEFT SIDE TO MOVE", Vector2(18, -30), 13, layer)
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
 
