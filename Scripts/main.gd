@@ -90,19 +90,27 @@ var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
 var new_game_button: Button
+var main_menu_play_button: Button
+var skill_tree_built := false
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
 
 func _ready() -> void:
+	# Show a usable screen and establish the camera before generating the factory.
 	_load_game()
-	_build_world()
-	_refresh_delivery_fleet()
-	_apply_unlocked_districts()
 	_build_player()
 	_build_trash()
 	_build_ui()
 	_update_ui()
+	if is_instance_valid(main_menu_play_button):
+		main_menu_play_button.disabled = true
+	await get_tree().create_timer(0.2).timeout
+	_build_world()
+	_refresh_delivery_fleet()
+	_apply_unlocked_districts()
+	if is_instance_valid(main_menu_play_button):
+		main_menu_play_button.disabled = false
 
 func _process(delta: float) -> void:
 	if main_menu_open:
@@ -822,7 +830,6 @@ func _build_ui() -> void:
 	skill_map.custom_minimum_size = Vector2(3400, 3400)
 	skill_map.size = Vector2(3400, 3400)
 	skill_scroll.add_child(skill_map)
-	_build_skill_tree(skill_map)
 	var zoom_out := _button("−", Vector2(-166, 66), Vector2(42, 42), upgrade_panel)
 	zoom_out.anchor_left = 1.0
 	zoom_out.anchor_right = 1.0
@@ -885,6 +892,7 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	play.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.62, 0.43)))
 	play.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.72, 0.51)))
 	play.pressed.connect(_close_main_menu)
+	main_menu_play_button = play
 	new_game_button = _button("NEW", Vector2(button_x, screen.y * 0.47 + 84), Vector2(button_width, 58), main_menu_panel)
 	new_game_button.add_theme_stylebox_override("normal", _button_style(Color(0.18, 0.32, 0.30)))
 	new_game_button.pressed.connect(_confirm_new_game)
@@ -1538,6 +1546,9 @@ func _process_auto_sell(delta: float) -> void:
 
 func _toggle_upgrade_panel() -> void:
 	if is_instance_valid(upgrade_panel):
+		if not skill_tree_built and is_instance_valid(skill_map):
+			_build_skill_tree(skill_map)
+			skill_tree_built = true
 		upgrade_panel.visible = not upgrade_panel.visible
 
 func _upgrade_bag() -> void:
