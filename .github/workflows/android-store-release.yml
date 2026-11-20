@@ -91,24 +91,12 @@ jobs:
           timeout 240 "$GODOT_BIN" --headless --editor --verbose --path . --quit
           echo "Godot resource import completed"
 
-      - name: Install Android Gradle build template
-        shell: bash
-        timeout-minutes: 5
-        run: |
-          set -euo pipefail
-          echo "Installing Android Gradle build template"
-          timeout 240 "$GODOT_BIN" --headless --editor --verbose --path . --install-android-build-template
-          echo "Checking installed Gradle template"
-          test -f android/build/build.gradle
-          test -f android/build/config.gradle
-          echo "Android Gradle build template installed successfully"
-
       - name: Diagnose Android export preset configuration
         shell: bash
         run: |
           set +e
           mkdir -p build
-          "$GODOT_BIN" --headless --verbose --path . --export-release "Android Release APK" build/TrashEmpire-release.apk 2>&1 | tee build/android-export-diagnostics.log
+          "$GODOT_BIN" --headless --verbose --path . --install-android-build-template --export-release "Android Release APK" build/TrashEmpire-release.apk 2>&1 | tee build/android-export-diagnostics.log
           export_status=${PIPESTATUS[0]}
           echo "Godot export exit code: $export_status"
           echo "---- Android export diagnostics ----"
