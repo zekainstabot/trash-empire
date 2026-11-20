@@ -59,6 +59,7 @@ var conveyor_item_count := 0
 var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
 var expansion_world_button: Node3D
+var expansion_zone_blocked := false
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -80,6 +81,7 @@ func _process(delta: float) -> void:
 	if main_menu_open:
 		return
 	_process_skill_scroll(delta)
+	_process_expansion_zone()
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
 	_animate_robot(delta)
@@ -211,8 +213,7 @@ func _build_world() -> void:
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 14.55), 0.65)
 
-	expansion_world_button = _create_world_action_button("ExpansionPurchase", "OPEN DISTRICT 2  $800", Vector3(15.12, 0.0, 0.0), Vector3(2.8, 1.25, 0.35), Callable(self, "_buy_next_stage"), Color(0.88, 0.56, 0.12))
-	expansion_world_button.rotation.y = PI * 0.5
+	_create_expansion_zone()
 	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
 
@@ -1308,6 +1309,64 @@ func _apply_unlocked_districts() -> void:
 		if is_instance_valid(gate):
 			gate.queue_free()
 
+func _create_expansion_zone() -> void:
+	var zone := Node3D.new()
+	zone.name = "DistrictUnlockZone"
+	zone.position = Vector3(13.15, 0.0, 0.0)
+	add_child(zone)
+	var base := MeshInstance3D.new()
+	var base_mesh := CylinderMesh.new()
+	base_mesh.top_radius = 1.55
+	base_mesh.bottom_radius = 1.70
+	base_mesh.height = 0.12
+	base_mesh.radial_segments = 48
+	base.mesh = base_mesh
+	base.position.y = 0.07
+	base.material_override = _mat(Color(0.10, 0.28, 0.24))
+	zone.add_child(base)
+	var pad := MeshInstance3D.new()
+	var pad_mesh := CylinderMesh.new()
+	pad_mesh.top_radius = 1.30
+	pad_mesh.bottom_radius = 1.30
+	pad_mesh.height = 0.06
+	pad_mesh.radial_segments = 48
+	pad.mesh = pad_mesh
+	pad.position.y = 0.15
+	pad.material_override = _mat(Color(0.20, 0.78, 0.43))
+	zone.add_child(pad)
+	var ring := MeshInstance3D.new()
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = 1.36
+	ring_mesh.outer_radius = 1.48
+	ring_mesh.rings = 48
+	ring.mesh = ring_mesh
+	ring.position.y = 0.20
+	ring.material_override = _mat(Color(0.95, 0.76, 0.20))
+	zone.add_child(ring)
+	var label := Label3D.new()
+	label.name = "UnlockZoneLabel"
+	label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$800"
+	label.position = Vector3(0, 2.2, 0)
+	label.font_size = 34
+	label.pixel_size = 0.006
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.modulate = Color(1.0, 0.96, 0.78)
+	zone.add_child(label)
+
+func _process_expansion_zone() -> void:
+	if not is_instance_valid(player) or yard_stage >= 3:
+		expansion_zone_blocked = false
+		return
+	var target_x := 13.15 if yard_stage == 1 else 45.15
+	var distance := Vector2(player.global_position.x - target_x, player.global_position.z).length()
+	if distance > 2.7:
+		expansion_zone_blocked = false
+		return
+	if expansion_zone_blocked:
+		return
+	expansion_zone_blocked = true
+	_buy_next_stage()
+
 func _buy_next_stage() -> void:
 	if yard_stage >= 3:
 		_set_message("All districts unlocked!")
@@ -1333,18 +1392,21 @@ func _buy_next_stage() -> void:
 	_set_message("DISTRICT %d UNLOCKED!" % yard_stage)
 
 func _refresh_expansion_world_button() -> void:
-	if not is_instance_valid(expansion_world_button):
+	var zone := get_node_or_null("DistrictUnlockZone") as Node3D
+	if not is_instance_valid(zone):
 		return
-	if yard_stage >= 3:
-		expansion_world_button.visible = false
-		return
-	expansion_world_button.visible = true
+	zone.visible = yard_stage < 3
 	if yard_stage == 1:
-		expansion_world_button.position = Vector3(15.12, 0.0, 0.0)
-		_expansion_button_label("OPEN DISTRICT 2  $800")
+		zone.position = Vector3(13.15, 0.0, 0.0)
+		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
+		if is_instance_valid(label):
+			label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$800"
 	else:
-		expansion_world_button.position = Vector3(47.12, 0.0, 0.0)
-		_expansion_button_label("OPEN DISTRICT 3  $3000")
+		zone.position = Vector3(45.15, 0.0, 0.0)
+		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
+		if is_instance_valid(label):
+			label.text = "STEP HERE\nUNLOCK DISTRICT 3\n$3000"
+	expansion_zone_blocked = false
 
 func _expansion_button_label(value: String) -> void:
 	var label := expansion_world_button.get_node_or_null("WorldButtonLabel") as Label3D
