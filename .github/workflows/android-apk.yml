@@ -50,13 +50,23 @@ jobs:
           cp -R /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.5.1.stable/"
           test -s "$HOME/.local/share/godot/export_templates/4.5.1.stable/android_source.zip"
 
-      - name: Create temporary debug signing key
+      - name: Configure permanent release signing key
         shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: \${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: \${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
         run: |
-          keytool -genkeypair -v -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/debug.keystore" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+          set -euo pipefail
+          test -n "$ANDROID_RELEASE_KEYSTORE_BASE64" || (echo "Missing secret: ANDROID_RELEASE_KEYSTORE_BASE64. Run Prepare Trash Empire Release Signing Key and add the generated secrets." && exit 1)
+          test -n "$ANDROID_RELEASE_KEYSTORE_PASSWORD" || (echo "Missing secret: ANDROID_RELEASE_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$ANDROID_RELEASE_KEY_ALIAS" || (echo "Missing secret: ANDROID_RELEASE_KEY_ALIAS" && exit 1)
+          printf '%s' "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$RUNNER_TEMP/trash-empire-release.keystore"
+          test -s "$RUNNER_TEMP/trash-empire-release.keystore"
+          keytool -list -keystore "$RUNNER_TEMP/trash-empire-release.keystore" -storepass "$ANDROID_RELEASE_KEYSTORE_PASSWORD" -alias "$ANDROID_RELEASE_KEY_ALIAS" >/dev/null
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/trash-empire-release.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$ANDROID_RELEASE_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$ANDROID_RELEASE_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Configure Godot Android SDK and Java paths
         shell: bash
@@ -84,7 +94,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build
-          "$GODOT_BIN" --headless --verbose --path . --install-android-build-template --export-debug "Android Debug" build/TrashEmpire.apk
+          "$GODOT_BIN" --headless --verbose --path . --install-android-build-template --export-release "Android Release APK" build/TrashEmpire.apk
           test -s build/TrashEmpire.apk
 
       - name: Upload APK artifact
