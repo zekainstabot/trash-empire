@@ -8,8 +8,8 @@ var camera: Camera3D
 var camera_pivot: Node3D
 var money := 0
 var carried := 0
-var capacity := 5
-var collection_range := 2.5
+var capacity := 4
+var collection_range := 2.0
 var upgrade_level := 1
 var speed_upgrade_level := 1
 var unload_upgrade_level := 1
@@ -202,7 +202,7 @@ func _build_world() -> void:
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 14.55), 0.65)
 
-	expansion_world_button = _create_world_action_button("ExpansionPurchase", "OPEN DISTRICT 2  $500", Vector3(15.0, 0.0, 2.6), Vector3(2.8, 1.25, 0.35), Callable(self, "_buy_next_stage"), Color(0.88, 0.56, 0.12))
+	expansion_world_button = _create_world_action_button("ExpansionPurchase", "OPEN DISTRICT 2  $800", Vector3(15.0, 0.0, 2.6), Vector3(2.8, 1.25, 0.35), Callable(self, "_buy_next_stage"), Color(0.88, 0.56, 0.12))
 	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
 
@@ -364,7 +364,7 @@ func _build_player() -> void:
 	player.name = "Player"
 	player.set_script(PLAYER_SCRIPT)
 	player.position = Vector3(0, 0.05, 7)
-	player.set("move_speed", 5.0 + float(speed_upgrade_level - 1) * 0.8)
+	player.set("move_speed", 4.5 + float(speed_upgrade_level - 1) * 0.75)
 	add_child(player)
 
 	# Compact friendly recycling robot with animated joints.
@@ -676,7 +676,7 @@ func _confirm_new_game() -> void:
 func _start_new_world() -> void:
 	money = 0
 	carried = 0
-	capacity = 5
+	capacity = 4
 	upgrade_level = 1
 	speed_upgrade_level = 1
 	unload_upgrade_level = 1
@@ -686,10 +686,10 @@ func _start_new_world() -> void:
 	auto_pickup_level = 0
 	auto_pickup_timer = 0.0
 	recycling_bonus = 1.0
-	collection_range = 2.5
+	collection_range = 2.0
 	yard_stage = 1
 	unload_timer = 0.0
-	player.set("move_speed", 5.0)
+	player.set("move_speed", 4.5)
 	for item in trash_nodes:
 		if is_instance_valid(item): item.queue_free()
 	trash_nodes.clear()
@@ -1011,15 +1011,15 @@ func _process_auto_sell(delta: float) -> void:
 		unload_timer = 0.0
 		return
 	unload_timer += delta
-	var seconds_per_item := maxf(0.25, 1.5 - float(unload_upgrade_level - 1) * 0.2)
+	var seconds_per_item := maxf(0.35, 1.8 - float(unload_upgrade_level - 1) * 0.18)
 	if unload_timer >= seconds_per_item:
 		unload_timer = 0.0
 		carried -= 1
 		_spawn_conveyor_item()
-		money += int(round(10.0 * recycling_bonus))
+		money += int(round(7.0 * recycling_bonus))
 		_update_ui()
 		_save_game()
-		_set_message("Conveyor recycling... +$%d" % int(round(10.0 * recycling_bonus)))
+		_set_message("Conveyor recycling... +$%d" % int(round(7.0 * recycling_bonus)))
 		if carried == 0:
 			_set_message("Bag emptied! Money added.")
 
@@ -1047,7 +1047,7 @@ func _upgrade_speed() -> void:
 		return
 	money -= cost
 	speed_upgrade_level += 1
-	player.set("move_speed", 5.0 + float(speed_upgrade_level - 1) * 0.8)
+	player.set("move_speed", 4.5 + float(speed_upgrade_level - 1) * 0.75)
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
@@ -1072,7 +1072,7 @@ func _upgrade_equipment() -> void:
 		return
 	money -= cost
 	equipment_upgrade_level += 1
-	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.75
+	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
@@ -1093,7 +1093,7 @@ func _upgrade_technology() -> void:
 
 func _upgrade_cost(base_cost: int, level: int) -> int:
 	# Each upgrade category compounds its own price by 25% per purchase.
-	return int(ceil(float(base_cost) * pow(1.25, float(level - 1))))
+	return int(ceil(float(base_cost) * pow(1.35, float(level - 1))))
 
 func _upgrade_spawn() -> void:
 	var cost := _upgrade_cost(175, spawn_upgrade_level)
@@ -1132,7 +1132,7 @@ func _buy_next_stage() -> void:
 	if yard_stage >= 3:
 		_set_message("All districts unlocked!")
 		return
-	var cost := 500 if yard_stage == 1 else 1800
+	var cost := 800 if yard_stage == 1 else 3000
 	if money < cost:
 		_set_message("You need $%d to unlock the next district." % cost)
 		return
@@ -1161,7 +1161,7 @@ func _refresh_expansion_world_button() -> void:
 		_expansion_button_label("OPEN DISTRICT 2  $500")
 	else:
 		expansion_world_button.position = Vector3(47.0, 0.0, 2.6)
-		_expansion_button_label("OPEN DISTRICT 3  $1800")
+		_expansion_button_label("OPEN DISTRICT 3  $3000")
 
 func _expansion_button_label(value: String) -> void:
 	var label := expansion_world_button.get_node_or_null("WorldButtonLabel") as Label3D
@@ -1189,7 +1189,7 @@ func _load_game() -> void:
 		return
 	money = int(save.get_value("progress", "money", 0))
 	carried = int(save.get_value("progress", "carried", 0))
-	capacity = int(save.get_value("progress", "capacity", 5))
+	capacity = int(save.get_value("progress", "capacity", 4))
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
 	speed_upgrade_level = int(save.get_value("progress", "speed_level", 1))
 	unload_upgrade_level = int(save.get_value("progress", "unload_level", 1))
@@ -1198,7 +1198,7 @@ func _load_game() -> void:
 	spawn_upgrade_level = int(save.get_value("progress", "spawn_level", 1))
 	auto_pickup_level = int(save.get_value("progress", "auto_pickup_level", 0))
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
-	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.75
+	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 
 func _spawn_trash(amount: int) -> void:
@@ -1216,7 +1216,7 @@ func _refill_first_district() -> void:
 	for item in trash_nodes:
 		if is_instance_valid(item) and item.global_position.x >= -15.0 and item.global_position.x <= 15.0:
 			existing_first_district += 1
-	var refill_target := 24 + (spawn_upgrade_level - 1) * 6
+	var refill_target := 18 + (spawn_upgrade_level - 1) * 4
 	var amount := maxi(0, refill_target - existing_first_district)
 	if amount == 0:
 		_set_message("First district is already full of trash!")
