@@ -247,73 +247,70 @@ func _create_world_action_button(node_name: String, title: String, world_positio
 	return root
 
 func _create_gear_refill_button(world_position: Vector3, action: Callable) -> Node3D:
+	# This is a large push-button for the respawn action, not a free-standing gear.
 	var root := Node3D.new()
-	root.name = "TrashRespawnGear"
+	root.name = "TrashRespawnButton"
 	root.position = world_position
 	add_child(root)
 
-	var gear_material := _mat(Color(0.08, 0.48, 0.34))
-	var edge_material := _mat(Color(0.035, 0.18, 0.15))
-	var gear := MeshInstance3D.new()
-	var gear_mesh := CylinderMesh.new()
-	gear_mesh.top_radius = 0.72
-	gear_mesh.bottom_radius = 0.72
-	gear_mesh.height = 0.24
-	gear_mesh.radial_segments = 12
-	gear.mesh = gear_mesh
-	gear.position.y = 0.22
-	gear.material_override = edge_material
-	root.add_child(gear)
+	var shadow := MeshInstance3D.new()
+	var shadow_mesh := CylinderMesh.new()
+	shadow_mesh.top_radius = 1.0
+	shadow_mesh.bottom_radius = 1.0
+	shadow_mesh.height = 0.18
+	shadow_mesh.radial_segments = 48
+	shadow.mesh = shadow_mesh
+	shadow.position.y = 0.12
+	shadow.material_override = _mat(Color(0.025, 0.07, 0.065))
+	root.add_child(shadow)
 
-	for i in range(10):
-		var angle := TAU * float(i) / 10.0
-		var tooth := MeshInstance3D.new()
-		var tooth_mesh := BoxMesh.new()
-		tooth_mesh.size = Vector3(0.34, 0.24, 0.25)
-		tooth.mesh = tooth_mesh
-		tooth.position = Vector3(cos(angle) * 0.70, 0.22, sin(angle) * 0.70)
-		tooth.rotation.y = -angle
-		tooth.material_override = gear_material
-		root.add_child(tooth)
+	var rim := MeshInstance3D.new()
+	var rim_mesh := TorusMesh.new()
+	rim_mesh.inner_radius = 0.72
+	rim_mesh.outer_radius = 0.91
+	rim_mesh.rings = 48
+	rim_mesh.ring_segments = 12
+	rim.mesh = rim_mesh
+	rim.position.y = 0.28
+	rim.material_override = _mat(Color(0.95, 0.70, 0.20))
+	root.add_child(rim)
 
-	var hub := MeshInstance3D.new()
-	var hub_mesh := CylinderMesh.new()
-	hub_mesh.top_radius = 0.43
-	hub_mesh.bottom_radius = 0.43
-	hub_mesh.height = 0.28
-	hub_mesh.radial_segments = 32
-	hub.mesh = hub_mesh
-	hub.position.y = 0.25
-	hub.material_override = _mat(Color(0.12, 0.68, 0.46))
-	root.add_child(hub)
+	var face := MeshInstance3D.new()
+	var face_mesh := CylinderMesh.new()
+	face_mesh.top_radius = 0.78
+	face_mesh.bottom_radius = 0.78
+	face_mesh.height = 0.20
+	face_mesh.radial_segments = 48
+	face.mesh = face_mesh
+	face.position.y = 0.30
+	face.material_override = _mat(Color(0.08, 0.52, 0.38))
+	root.add_child(face)
 
-	var center := MeshInstance3D.new()
-	var center_mesh := CylinderMesh.new()
-	center_mesh.top_radius = 0.22
-	center_mesh.bottom_radius = 0.22
-	center_mesh.height = 0.30
-	center_mesh.radial_segments = 32
-	center.mesh = center_mesh
-	center.position.y = 0.27
-	center.material_override = _mat(Color(0.035, 0.12, 0.11))
-	root.add_child(center)
+	var icon := Label3D.new()
+	icon.text = "↻"
+	icon.position = Vector3(0, 0.43, 0)
+	icon.font_size = 74
+	icon.pixel_size = 0.006
+	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	icon.modulate = Color(1.0, 1.0, 0.92)
+	root.add_child(icon)
 
 	var label := Label3D.new()
-	label.text = "↻  RESPAWN"
-	label.position = Vector3(0, 0.72, 0)
-	label.font_size = 26
+	label.text = "RESPAWN TRASH"
+	label.position = Vector3(0, 1.02, 0)
+	label.font_size = 28
 	label.pixel_size = 0.006
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(0.92, 1.0, 0.95)
+	label.modulate = Color(1.0, 0.92, 0.60)
 	root.add_child(label)
 
 	var area := Area3D.new()
-	area.name = "RespawnGearArea"
-	area.position.y = 0.25
+	area.name = "RespawnButtonArea"
+	area.position.y = 0.30
 	var collision := CollisionShape3D.new()
 	var hit_shape := CylinderShape3D.new()
 	hit_shape.radius = 1.05
-	hit_shape.height = 0.8
+	hit_shape.height = 0.9
 	collision.shape = hit_shape
 	area.add_child(collision)
 	root.add_child(area)
@@ -600,10 +597,12 @@ func _build_skill_tree(parent: Control) -> void:
 		_add_skill_connection(parent, Vector2(x, 1061), Vector2(x, 1095))
 	for node in nodes:
 		var button := Button.new()
-		button.position = Vector2(float(node.x) - 10.0, float(node.y))
-		button.size = Vector2(200, 76)
-		button.custom_minimum_size = Vector2(200, 76)
-		button.add_theme_font_size_override("font_size", 14)
+		# Circular skill nodes, arranged as connected paths rather than rectangular menu cards.
+		button.position = Vector2(float(node.x) + 38.0, float(node.y) - 14.0)
+		button.size = Vector2(116, 116)
+		button.custom_minimum_size = Vector2(116, 116)
+		button.add_theme_font_size_override("font_size", 12)
+		button.add_theme_constant_override("h_separation", 2)
 		button.add_theme_color_override("font_color", Color(0.94, 0.98, 0.96))
 		button.add_theme_color_override("font_hover_color", Color.WHITE)
 		button.add_theme_constant_override("outline_size", 1)
@@ -627,10 +626,10 @@ func _skill_branch_color(branch: String) -> Color:
 func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
-	style.corner_radius_top_left = 16
-	style.corner_radius_top_right = 16
-	style.corner_radius_bottom_left = 16
-	style.corner_radius_bottom_right = 16
+	style.corner_radius_top_left = 58
+	style.corner_radius_top_right = 58
+	style.corner_radius_bottom_left = 58
+	style.corner_radius_bottom_right = 58
 	style.border_width_left = 2
 	style.border_width_right = 2
 	style.border_width_top = 2
@@ -638,10 +637,10 @@ func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
 	style.border_color = color.lightened(0.28) if not locked else Color(0.22, 0.27, 0.28)
 	style.shadow_color = Color(0, 0, 0, 0.28)
 	style.shadow_size = 5
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 7
-	style.content_margin_bottom = 9
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 8
+	style.content_margin_bottom = 10
 	return style
 
 func _add_skill_connection(parent: Control, from_point: Vector2, to_point: Vector2) -> void:
@@ -797,12 +796,50 @@ func _process_auto_pickup(delta: float) -> void:
 	if auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
 		auto_pickup_timer = 0.0
 		return
+
+	# A visible magnet effect: nearby litter glides toward the player before collection.
+	var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85
+	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65
+	for item in trash_nodes:
+		if not is_instance_valid(item):
+			continue
+		var distance := player.global_position.distance_to(item.global_position)
+		if distance <= magnet_range and distance > 0.85:
+			var target := player.global_position + Vector3(0.0, 0.25, 0.0)
+			item.global_position = item.global_position.move_toward(target, pull_speed * delta)
+
 	auto_pickup_timer += delta
-	var interval := maxf(0.35, 1.5 - float(auto_pickup_level - 1) * 0.15)
+	var interval := maxf(0.18, 0.72 - float(auto_pickup_level - 1) * 0.12)
 	if auto_pickup_timer < interval:
 		return
 	auto_pickup_timer = 0.0
-	_collect_nearby()
+
+	# Higher levels collect several nearby pieces per pulse instead of only one.
+	var collect_limit := mini(1 + int(floor(float(auto_pickup_level) / 2.0)), 5)
+	var collected := 0
+	while collected < collect_limit and carried < capacity:
+		var nearest: Node3D
+		var best_distance := collection_range + 1.0 + float(auto_pickup_level - 1) * 0.55
+		for item in trash_nodes:
+			if not is_instance_valid(item):
+				continue
+			var distance := player.global_position.distance_to(item.global_position)
+			if distance < best_distance:
+				best_distance = distance
+				nearest = item
+		if nearest == null:
+			break
+		nearest.queue_free()
+		trash_nodes.erase(nearest)
+		carried += 1
+		collected += 1
+
+	if collected > 0:
+		_update_ui()
+		_save_game()
+		_set_message("AUTO MAGNET  +%d" % collected)
+	if carried >= capacity:
+		_set_message("Bag full! Return to the recycling station.")
 
 func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
