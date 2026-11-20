@@ -188,8 +188,8 @@ func _build_world() -> void:
 			_cylinder("MachineBolt", Vector3(x, 1.75, z), 0.055, 0.035, Color(0.68, 0.73, 0.72), false)
 	_box("ConveyorFrame", Vector3(4.0, 0.85, -6.5), Vector3(3.0, 0.28, 1.5), Color(0.09, 0.12, 0.13), true)
 	_box("ConveyorBelt", Vector3(4.0, 1.03, -6.5), Vector3(2.9, 0.08, 1.35), Color(0.035, 0.05, 0.055), false)
-	for z in [-7.22, -5.78]:
-		_box("ConveyorSideRail", Vector3(4.0, 1.25, z), Vector3(3.0, 0.42, 0.10), Color(0.48, 0.53, 0.51), false)
+	for z in [-7.18, -5.82]:
+		_box("ConveyorSideRail", Vector3(4.0, 1.19, z), Vector3(2.78, 0.28, 0.08), Color(0.20, 0.27, 0.28), false)
 	for x in [2.75, 5.25]:
 		for z in [-7.05, -5.95]:
 			var support := _box("ConveyorLeg", Vector3(x, 0.43, z), Vector3(0.12, 0.82, 0.12), Color(0.22, 0.27, 0.28), true)
