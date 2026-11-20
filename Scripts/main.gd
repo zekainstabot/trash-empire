@@ -63,6 +63,7 @@ var conveyor_item_count := 0
 var factory_stage := 1
 var factory_built_stage := 1
 var factory_visual_root: Node3D
+var factory_build_zones_root: Node3D
 var factory_upgrade_button: Node3D
 var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
@@ -277,6 +278,31 @@ func _build_factory_expansion() -> void:
 			remove_child(new_node)
 			factory_visual_root.add_child(new_node)
 		factory_built_stage = stage
+	_refresh_factory_build_zones()
+
+func _refresh_factory_build_zones() -> void:
+	if is_instance_valid(factory_build_zones_root):
+		factory_build_zones_root.queue_free()
+	factory_build_zones_root = Node3D.new()
+	factory_build_zones_root.name = "FactoryBuildZones"
+	add_child(factory_build_zones_root)
+	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
+	for stage in range(factory_stage + 1, 5):
+		var z: float = z_positions[stage]
+		var first_new_child := get_child_count()
+		_box("BuildSlot%dFloor" % stage, Vector3(7.5, 0.025, z), Vector3(4.65, 0.035, 3.65), Color(0.43, 0.36, 0.16), false)
+		var edge_color := Color(1.0, 0.76, 0.18)
+		_box("BuildSlot%dFront" % stage, Vector3(7.5, 0.065, z + 1.82), Vector3(4.7, 0.07, 0.12), edge_color, false)
+		_box("BuildSlot%dBack" % stage, Vector3(7.5, 0.065, z - 1.82), Vector3(4.7, 0.07, 0.12), edge_color, false)
+		_box("BuildSlot%dLeft" % stage, Vector3(5.18, 0.065, z), Vector3(0.12, 0.07, 3.65), edge_color, false)
+		_box("BuildSlot%dRight" % stage, Vector3(9.82, 0.065, z), Vector3(0.12, 0.07, 3.65), edge_color, false)
+		_label_3d("BUILD AREA %d" % stage, Vector3(7.5, 0.18, z + 1.15), 0.22)
+		var new_nodes: Array[Node] = []
+		for child_index in range(first_new_child, get_child_count()):
+			new_nodes.append(get_child(child_index))
+		for new_node in new_nodes:
+			remove_child(new_node)
+			factory_build_zones_root.add_child(new_node)
 
 func _build_factory_module(stage: int) -> void:
 	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
