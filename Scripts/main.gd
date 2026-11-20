@@ -6,7 +6,7 @@ const TRASH_SCRIPT = preload("res://Scripts/trash.gd")
 var player: CharacterBody3D
 var camera: Camera3D
 var camera_pivot: Node3D
-var money := 0
+var money := 0.0
 var carried := 0
 var capacity := 4
 var collection_range := 2.0
@@ -1016,7 +1016,7 @@ func _process_auto_sell(delta: float) -> void:
 		unload_timer = 0.0
 		carried -= 1
 		_spawn_conveyor_item()
-		money += int(round(7.0 * recycling_bonus))
+		money += 0.1 * recycling_bonus
 		_update_ui()
 		_save_game()
 		_set_message("Conveyor recycling... +$%d" % int(round(7.0 * recycling_bonus)))
@@ -1187,7 +1187,7 @@ func _load_game() -> void:
 	var save := ConfigFile.new()
 	if save.load("user://trash_empire.save") != OK:
 		return
-	money = int(save.get_value("progress", "money", 0))
+	money = float(save.get_value("progress", "money", 0.0))
 	carried = int(save.get_value("progress", "carried", 0))
 	capacity = int(save.get_value("progress", "capacity", 4))
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
@@ -1248,7 +1248,7 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 	return point
 
 func _update_ui() -> void:
-	money_label.text = "CASH  $%d" % money
+	money_label.text = "CASH  $%.1f" % money
 	bag_label.text = "BAG  %d / %d" % [carried, capacity]
 
 func _set_message(value: String) -> void:
