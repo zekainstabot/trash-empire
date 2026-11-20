@@ -236,7 +236,7 @@ func _upgrade_factory() -> void:
 	if factory_stage >= 4:
 		_set_message("Factory production line is fully upgraded!")
 		return
-	var costs := [0.0, 12.0, 24.0, 48.0]
+	var costs := [0.0, 12.0, 35.0, 80.0]
 	var cost: float = costs[factory_stage]
 	if money < cost:
 		_set_message("You need $%.0f to add the next factory machine." % cost)
@@ -259,7 +259,7 @@ func _refresh_factory_upgrade_button() -> void:
 	if factory_stage >= 4:
 		label.text = "FACTORY MAX\nTEDDY BEAR FACTORY"
 	else:
-		var costs := [0.0, 12.0, 24.0, 48.0]
+		var costs := [0.0, 12.0, 35.0, 80.0]
 		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD TEDDY BEAR FACTORY"]
 		label.text = "%s\n$%.0f" % [names[factory_stage + 1], costs[factory_stage]]
 
@@ -327,7 +327,7 @@ func _process_factory_build(delta: float) -> void:
 	var player_flat := Vector2(player.global_position.x, player.global_position.z)
 	if player_flat.distance_to(Vector2(target.x, target.z)) > 2.15:
 		return
-	var costs := [0.0, 12.0, 24.0, 48.0]
+	var costs := [0.0, 12.0, 35.0, 80.0]
 	var cost: float = costs[factory_stage]
 	var payment := minf(money, minf(delta, cost - factory_build_paid))
 	if payment > 0.0:
@@ -357,7 +357,7 @@ func _process_factory_build(delta: float) -> void:
 func _update_factory_build_label() -> void:
 	if not is_instance_valid(factory_build_label) or factory_stage >= 4:
 		return
-	var costs := [0.0, 12.0, 24.0, 48.0]
+	var costs := [0.0, 12.0, 35.0, 80.0]
 	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY"]
 	var cost: float = costs[factory_stage]
 	factory_build_label.text = "BUILD %s\n$%.1f / $%.0f\nSTAY HERE TO PAY" % [names[factory_stage + 1], factory_build_paid, cost]
@@ -1450,7 +1450,7 @@ func _process_auto_sell(delta: float) -> void:
 		unload_timer = 0.0
 		carried -= 1
 		_spawn_conveyor_item()
-		var factory_multipliers := [1.0, 1.5, 2.25, 3.5]
+		var factory_multipliers := [1.0, 2.0, 4.0, 8.0]
 		var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
 		var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)
 		if randf() < float(luck_upgrade_level - 1) * 0.10:
@@ -1763,7 +1763,7 @@ func _load_game() -> void:
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 4)
-	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 24.0, 48.0][factory_stage])
+	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0][factory_stage])
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 
