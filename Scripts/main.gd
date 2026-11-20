@@ -79,9 +79,11 @@ var district_no_money_notified := false
 var payment_active := false
 var teddy_stock_values: Array[float] = []
 var shipping_active := false
-var truck_at_dock := false
-var truck_load_count := 0
-var delivery_truck: Node3D
+var truck_dispatch_timer := 0.0
+var dispatch_trucks_remaining := 0
+var dispatch_upgrade_level := 0
+var fleet_upgrade_level := 0
+var delivery_trucks: Array[Node3D] = []
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -93,6 +95,7 @@ const SELL_POINT := Vector3(1.35, 0.0, -6.5)
 func _ready() -> void:
 	_load_game()
 	_build_world()
+	_refresh_delivery_fleet()
 	_apply_unlocked_districts()
 	_build_player()
 	_build_trash()
@@ -413,52 +416,8 @@ func _build_factory_module(stage: int) -> void:
 			_box("PackagingArchLeg", Vector3(x, 1.45, z), Vector3(0.18, 1.45, 0.22), accent, false)
 		_box("PackagingOutput", Vector3(9.45, 0.95, z + 0.1), Vector3(1.2, 0.18, 1.1), Color(0.10, 0.13, 0.14), false)
 		_label_3d("PACKED TEDDY BEARS", Vector3(9.3, 2.2, z + 0.7), 0.15)
-		# Delivery truck waits outside the yard and drives to the loading bay.
-		delivery_truck = Node3D.new()
-		delivery_truck.name = "TeddyDeliveryTruck"
-		delivery_truck.position = Vector3(17.4, 0.0, z + 0.2)
-		add_child(delivery_truck)
-		var cargo := MeshInstance3D.new()
-		var cargo_mesh := BoxMesh.new()
-		cargo_mesh.size = Vector3(3.5, 1.8, 3.0)
-		cargo.mesh = cargo_mesh
-		cargo.position = Vector3(0.0, 1.45, 0.0)
-		cargo.material_override = _mat(Color(0.88, 0.88, 0.78))
-		delivery_truck.add_child(cargo)
-		var cab := MeshInstance3D.new()
-		var cab_mesh := BoxMesh.new()
-		cab_mesh.size = Vector3(1.65, 1.65, 2.8)
-		cab.mesh = cab_mesh
-		cab.position = Vector3(-2.1, 1.35, 0.0)
-		cab.material_override = _mat(Color(0.82, 0.22, 0.12))
-		delivery_truck.add_child(cab)
-		var windshield := MeshInstance3D.new()
-		var windshield_mesh := BoxMesh.new()
-		windshield_mesh.size = Vector3(0.06, 0.72, 1.55)
-		windshield.mesh = windshield_mesh
-		windshield.position = Vector3(-3.0, 1.65, 0.0)
-		windshield.material_override = _mat(Color(0.12, 0.23, 0.29))
-		delivery_truck.add_child(windshield)
-		for wheel_x in [-2.5, 0.0, 2.4]:
-			for wheel_z in [-1.45, 1.45]:
-				var wheel := MeshInstance3D.new()
-				var wheel_mesh := CylinderMesh.new()
-				wheel_mesh.top_radius = 0.48
-				wheel_mesh.bottom_radius = 0.48
-				wheel_mesh.height = 0.22
-				wheel.mesh = wheel_mesh
-				wheel.position = Vector3(wheel_x, 0.48, wheel_z)
-				wheel.rotation_degrees.x = 90.0
-				wheel.material_override = _mat(Color(0.035, 0.04, 0.045))
-				delivery_truck.add_child(wheel)
-		var truck_sign := Label3D.new()
-		truck_sign.text = "ZEKA TOYS"
-		truck_sign.position = Vector3(0.0, 2.45, 1.52)
-		truck_sign.font_size = 22
-		truck_sign.pixel_size = 0.012
-		truck_sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		truck_sign.modulate = Color(0.12, 0.20, 0.18)
-		delivery_truck.add_child(truck_sign)
+		# The initial delivery truck is joined by additional hired trucks from the skill tree.
+		_create_delivery_truck(0)
 	_box("FactoryModule%dStatus" % stage, Vector3(9.25, 2.0, z - 0.75), Vector3(0.42, 0.42, 0.10), Color(0.10, 0.95, 0.56), false)
 func _build_factory_link(start_z: float, end_z: float) -> void:
 	var middle := (start_z + end_z) * 0.5
@@ -996,6 +955,12 @@ func _start_new_world() -> void:
 	luck_upgrade_level = 1
 	magnet_power_level = 1
 	drone_level = 0
+	dispatch_upgrade_level = 0
+	fleet_upgrade_level = 0
+	truck_dispatch_timer = 0.0
+	shipping_active = false
+	dispatch_trucks_remaining = 0
+	delivery_trucks.clear()
 	drone_timer = 0.0
 	_refresh_helper_drone_visibility()
 	auto_pickup_timer = 0.0
@@ -1064,7 +1029,9 @@ func _build_skill_tree(parent: Control) -> void:
 		{"branch":"value","title":"TRASH VALUE","depth":3,"angle":210.0},
 		{"branch":"luck","title":"LUCKY FINDS","depth":3,"angle":270.0},
 		{"branch":"magnet_power","title":"MAGNET POWER","depth":3,"angle":330.0},
-		{"branch":"drones","title":"HELPER DRONES","depth":4,"angle":270.0}
+		{"branch":"drones","title":"HELPER DRONES","depth":4,"angle":270.0},
+		{"branch":"dispatch","title":"TRUCK FREQUENCY","depth":4,"angle":210.0},
+		{"branch":"fleet","title":"HIRE TRUCKS","depth":4,"angle":330.0}
 	]
 	var positions: Dictionary = {}
 	# The core capacity skill sits in the middle of the galaxy.
@@ -1078,7 +1045,7 @@ func _build_skill_tree(parent: Control) -> void:
 			var radius := base_radius + float(level - 1) * 105.0
 			positions["%s_%d" % [branch_data.branch, level]] = center + direction * radius
 	# Faint orbital guides make the circular layout easy to read.
-	for radius in [360.0, 660.0, 960.0, 1260.0]:
+	for radius in [360.0, 660.0, 960.0, 1260.0, 1365.0, 1470.0]:
 		_add_skill_orbit(parent, center, radius)
 	# Draw all dependency lines before the buttons so they stay behind the nodes.
 	for level in range(1, 3):
@@ -1092,7 +1059,7 @@ func _build_skill_tree(parent: Control) -> void:
 		["speed_3", "technology_1"], ["technology_3", "value_1"],
 		["range_3", "supply_1"], ["supply_3", "luck_1"],
 		["unload_3", "auto_1"], ["auto_3", "magnet_power_1"],
-		["luck_3", "drones_1"]
+		["luck_3", "drones_1"], ["drones_3", "dispatch_1"], ["drones_3", "fleet_1"]
 	]
 	for dependency in dependencies:
 		_add_skill_connection(parent, positions[dependency[0]], positions[dependency[1]])
@@ -1149,6 +1116,8 @@ func _skill_branch_color(branch: String) -> Color:
 		"luck": return Color(0.92, 0.72, 0.20)
 		"magnet_power": return Color(0.20, 0.78, 0.88)
 		"drones": return Color(0.65, 0.78, 0.30)
+		"dispatch": return Color(0.16, 0.70, 0.82)
+		"fleet": return Color(0.90, 0.48, 0.22)
 	return Color(0.25, 0.45, 0.42)
 
 func _skill_icon(branch: String) -> String:
@@ -1164,6 +1133,8 @@ func _skill_icon(branch: String) -> String:
 		"luck": return "🍀"
 		"magnet_power": return "🧲"
 		"drones": return "🚁"
+		"dispatch": return "⏱️"
+		"fleet": return "🚚"
 	return "◆"
 
 func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
@@ -1208,6 +1179,8 @@ func _skill_level(branch: String) -> int:
 		"luck": return luck_upgrade_level - 1
 		"magnet_power": return magnet_power_level - 1
 		"drones": return drone_level
+		"dispatch": return dispatch_upgrade_level
+		"fleet": return fleet_upgrade_level
 	return 0
 
 func _skill_branch_unlocked(branch: String) -> bool:
@@ -1221,6 +1194,7 @@ func _skill_branch_unlocked(branch: String) -> bool:
 		"luck": return spawn_upgrade_level >= 4
 		"magnet_power": return auto_pickup_level >= 3
 		"drones": return luck_upgrade_level >= 2
+		"dispatch", "fleet": return factory_stage >= 5 and drone_level >= 3
 	return false
 
 func _purchase_skill_node(branch: String, level: int) -> void:
@@ -1242,6 +1216,8 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"luck": _upgrade_luck()
 		"magnet_power": _upgrade_magnet_power()
 		"drones": _upgrade_drones()
+		"dispatch": _upgrade_dispatch()
+		"fleet": _upgrade_fleet()
 
 func _refresh_upgrade_prices() -> void:
 	for node in skill_node_data:
@@ -1259,7 +1235,7 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.29, 0.22)))
 			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.35, 0.26)))
 		elif available:
-			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0}.get(branch, 4.0))
+			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"dispatch":25.0,"fleet":45.0}.get(branch, 4.0))
 			var price_level := level
 			button.text = "%s  %s\nLEVEL %d\n$%.0f  •  UNLOCK" % [icon, node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
@@ -1529,14 +1505,17 @@ func _process_auto_sell(delta: float) -> void:
 		var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)
 		if randf() < float(luck_upgrade_level - 1) * 0.10:
 			item_value *= 2.0
-		_spawn_conveyor_item(item_value)
-		if factory_stage < 4:
-			money += item_value
-			_update_ui()
-			_save_game()
-			_set_message("Conveyor recycling... +$%.2f" % item_value)
+		money += item_value
+		if factory_stage >= 4:
+			# The teddy bear sale is a separate bonus; recycling income is still paid now.
+			var teddy_sale_bonus := item_value * 4.0
+			_spawn_conveyor_item(teddy_sale_bonus)
+			_set_message("Recycling +$%.2f | Teddy bear queued for extra sale +$%.2f" % [item_value, teddy_sale_bonus])
 		else:
-			_set_message("Teddy bear made! Waiting for packaging and truck delivery...")
+			_spawn_conveyor_item(item_value)
+			_set_message("Conveyor recycling... +$%.2f" % item_value)
+		_update_ui()
+		_save_game()
 		if carried == 0:
 			_set_message("Bag emptied! Teddy bears are being prepared for delivery." if factory_stage >= 4 else "Bag emptied! Money added.")
 
@@ -1897,6 +1876,8 @@ func _save_game() -> void:
 	save.set_value("progress", "luck_level", luck_upgrade_level)
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
 	save.set_value("progress", "drone_level", drone_level)
+	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
+	save.set_value("progress", "fleet_upgrade_level", fleet_upgrade_level)
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.set_value("progress", "district_build_paid", district_build_paid)
 	save.set_value("progress", "factory_stage", factory_stage)
@@ -1922,6 +1903,8 @@ func _load_game() -> void:
 	luck_upgrade_level = int(save.get_value("progress", "luck_level", 1))
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
+	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
+	fleet_upgrade_level = clampi(int(save.get_value("progress", "fleet_upgrade_level", 0)), 0, 3)
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
 	district_build_paid = clampf(float(save.get_value("progress", "district_build_paid", 0.0)), 0.0, 60.0)
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
@@ -2197,22 +2180,179 @@ func _spawn_conveyor_item(item_value: float) -> void:
 		teddy.queue_free()
 	)
 
-func _process_teddy_shipping(_delta: float) -> void:
-	if factory_stage < 5 or teddy_stock_values.is_empty() or shipping_active or not is_instance_valid(delivery_truck):
+func _process_teddy_shipping(delta: float) -> void:
+	if factory_stage < 5 or delivery_trucks.is_empty():
 		return
+	var interval := _truck_dispatch_interval()
+	truck_dispatch_timer += delta
+	if shipping_active or truck_dispatch_timer < interval:
+		return
+	truck_dispatch_timer = 0.0
+	if teddy_stock_values.is_empty():
+		return
+	_dispatch_truck_fleet()
+
+func _truck_dispatch_interval() -> float:
+	var intervals := [60.0, 45.0, 30.0, 20.0]
+	return intervals[clampi(dispatch_upgrade_level, 0, 3)]
+
+func _truck_fleet_size() -> int:
+	return clampi(1 + fleet_upgrade_level, 1, 4)
+
+func _refresh_delivery_fleet() -> void:
+	if factory_stage < 5 or not is_instance_valid(factory_visual_root):
+		return
+	while delivery_trucks.size() < _truck_fleet_size():
+		_create_delivery_truck(delivery_trucks.size())
+
+func _create_delivery_truck(index: int) -> void:
+	var truck := Node3D.new()
+	truck.name = "TeddyDeliveryTruck%d" % (index + 1)
+	var dock_z := 16.1 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
+	truck.position = Vector3(17.4, 0.0, dock_z)
+	var cargo := MeshInstance3D.new()
+	var cargo_mesh := BoxMesh.new()
+	cargo_mesh.size = Vector3(3.5, 1.8, 3.0)
+	cargo.mesh = cargo_mesh
+	cargo.position = Vector3(0.0, 1.45, 0.0)
+	cargo.material_override = _mat(Color(0.88, 0.88, 0.78))
+	truck.add_child(cargo)
+	var cab := MeshInstance3D.new()
+	var cab_mesh := BoxMesh.new()
+	cab_mesh.size = Vector3(1.65, 1.65, 2.8)
+	cab.mesh = cab_mesh
+	cab.position = Vector3(-2.1, 1.35, 0.0)
+	cab.material_override = _mat(Color(0.82, 0.22, 0.12))
+	truck.add_child(cab)
+	var windshield := MeshInstance3D.new()
+	var windshield_mesh := BoxMesh.new()
+	windshield_mesh.size = Vector3(0.06, 0.72, 1.55)
+	windshield.mesh = windshield_mesh
+	windshield.position = Vector3(-3.0, 1.65, 0.0)
+	windshield.material_override = _mat(Color(0.12, 0.23, 0.29))
+	truck.add_child(windshield)
+	for wheel_x in [-2.5, 0.0, 2.4]:
+		for wheel_z in [-1.45, 1.45]:
+			var wheel := MeshInstance3D.new()
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.48
+			wheel_mesh.bottom_radius = 0.48
+			wheel_mesh.height = 0.22
+			wheel.mesh = wheel_mesh
+			wheel.position = Vector3(wheel_x, 0.48, wheel_z)
+			wheel.rotation_degrees.x = 90.0
+			wheel.material_override = _mat(Color(0.035, 0.04, 0.045))
+			truck.add_child(wheel)
+	var sign := Label3D.new()
+	sign.text = "ZEKA TOYS  #%d" % (index + 1)
+	sign.position = Vector3(0.0, 2.45, 1.52)
+	sign.font_size = 22
+	sign.pixel_size = 0.012
+	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sign.modulate = Color(0.12, 0.20, 0.18)
+	truck.add_child(sign)
+	if is_instance_valid(factory_visual_root):
+		factory_visual_root.add_child(truck)
+	else:
+		add_child(truck)
+	delivery_trucks.append(truck)
+
+func _dispatch_truck_fleet() -> void:
 	shipping_active = true
-	if not truck_at_dock:
+	dispatch_trucks_remaining = 0
+	for index in range(delivery_trucks.size()):
+		if teddy_stock_values.is_empty():
+			break
+		var truck := delivery_trucks[index]
+		if not is_instance_valid(truck):
+			continue
+		dispatch_trucks_remaining += 1
+		var dock_z := 16.1 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
 		var arrive := create_tween()
 		arrive.set_trans(Tween.TRANS_SINE)
 		arrive.set_ease(Tween.EASE_OUT)
-		arrive.tween_property(delivery_truck, "position:x", 12.2, 1.8)
-		arrive.tween_callback(func():
-			truck_at_dock = true
-			_load_next_teddy_package()
+		arrive.tween_property(truck, "position", Vector3(12.2, 0.0, dock_z), 1.8)
+		arrive.tween_callback(_load_next_teddy_package.bind(index, 0))
+
+func _load_next_teddy_package(truck_index: int, loaded_count: int) -> void:
+	if truck_index >= delivery_trucks.size() or teddy_stock_values.is_empty() or loaded_count >= 5:
+		_depart_delivery_truck(truck_index)
+		return
+	var truck := delivery_trucks[truck_index]
+	if not is_instance_valid(truck):
+		_depart_delivery_truck(truck_index)
+		return
+	var package := Node3D.new()
+	package.name = "TeddyShippingPackage"
+	package.position = Vector3(9.45, 1.05, 16.1)
+	var carton := MeshInstance3D.new()
+	var carton_mesh := BoxMesh.new()
+	carton_mesh.size = Vector3(0.72, 0.62, 0.62)
+	carton.mesh = carton_mesh
+	carton.material_override = _mat(Color(0.72, 0.49, 0.25))
+	package.add_child(carton)
+	var tape := MeshInstance3D.new()
+	var tape_mesh := BoxMesh.new()
+	tape_mesh.size = Vector3(0.12, 0.64, 0.64)
+	tape.mesh = tape_mesh
+	tape.material_override = _mat(Color(0.93, 0.80, 0.48))
+	package.add_child(tape)
+	add_child(package)
+	var target := truck.global_position + Vector3(0.0, 2.05, 0.0)
+	var load_tween := create_tween()
+	load_tween.set_trans(Tween.TRANS_SINE)
+	load_tween.set_ease(Tween.EASE_IN_OUT)
+	load_tween.tween_property(package, "global_position", target, 1.15)
+	load_tween.tween_callback(func():
+		package.queue_free()
+		if teddy_stock_values.is_empty():
+			_depart_delivery_truck(truck_index)
+			return
+		var sold_value: float = teddy_stock_values.pop_front()
+		money += sold_value
+		_update_ui()
+		_save_game()
+		_set_message("Teddy bear delivered! Extra sale +$%.2f" % sold_value)
+		_load_next_teddy_package(truck_index, loaded_count + 1)
+	)
+
+func _depart_delivery_truck(truck_index: int) -> void:
+	if truck_index < 0 or truck_index >= delivery_trucks.size():
+		return
+	var truck := delivery_trucks[truck_index]
+	if is_instance_valid(truck):
+		var depart := create_tween()
+		depart.set_trans(Tween.TRANS_SINE)
+		depart.set_ease(Tween.EASE_IN)
+		depart.tween_property(truck, "position:x", 17.4, 2.0)
+		depart.tween_callback(func():
+			dispatch_trucks_remaining = maxi(0, dispatch_trucks_remaining - 1)
+			if dispatch_trucks_remaining == 0:
+				shipping_active = false
 		)
 	else:
-		_load_next_teddy_package()
+		dispatch_trucks_remaining = maxi(0, dispatch_trucks_remaining - 1)
+		if dispatch_trucks_remaining == 0:
+			shipping_active = false
 
+func _upgrade_dispatch() -> void:
+	var cost := _upgrade_cost(25.0, dispatch_upgrade_level + 1)
+	if not await _pay_gradually(cost):
+		return
+	dispatch_upgrade_level += 1
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Truck dispatch interval reduced to %.0f seconds!" % _truck_dispatch_interval())
+
+func _upgrade_fleet() -> void:
+	var cost := _upgrade_cost(45.0, fleet_upgrade_level + 1)
+	if not await _pay_gradually(cost):
+		return
+	fleet_upgrade_level += 1
+	_refresh_delivery_fleet()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("A new delivery truck hired! Fleet size: %d." % _truck_fleet_size())
 func _load_next_teddy_package() -> void:
 	if teddy_stock_values.is_empty() or not is_instance_valid(delivery_truck):
 		shipping_active = false
