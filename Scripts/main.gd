@@ -16,8 +16,10 @@ var trash_nodes: Array[Node3D] = []
 var money_label: Label
 var bag_label: Label
 var message_label: Label
-var joystick_center := Vector2.ZERO
+var joystick_pad: Panel
+var joystick_knob: Panel
 var joystick_touch := -1
+var joystick_max_radius := 58.0
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(7.5, 0.0, -6.5)
@@ -206,32 +208,66 @@ func _build_ui() -> void:
 	_anchor_bottom_right(sell)
 	sell.pressed.connect(_sell_trash)
 
-	var upgrade := _button("BAG +3  $50", Vector2(18, -178), Vector2(174, 54), layer)
-	upgrade.anchor_top = 1.0
-	upgrade.anchor_bottom = 1.0
+	# Fixed four-way virtual joystick on the lower-left.
+	joystick_pad = Panel.new()
+	joystick_pad.position = Vector2(18, -218)
+	joystick_pad.size = Vector2(184, 184)
+	joystick_pad.anchor_top = 1.0
+	joystick_pad.anchor_bottom = 1.0
+	joystick_pad.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.055, 0.06, 0.58)))
+	layer.add_child(joystick_pad)
+
+	var up_hint := _label("▲", Vector2(79, 8), 20, joystick_pad)
+	var down_hint := _label("▼", Vector2(79, 151), 20, joystick_pad)
+	var left_hint := _label("◀", Vector2(8, 78), 20, joystick_pad)
+	var right_hint := _label("▶", Vector2(151, 78), 20, joystick_pad)
+	for arrow in [up_hint, down_hint, left_hint, right_hint]:
+		arrow.add_theme_color_override("font_color", Color(0.88, 0.96, 0.92, 0.78))
+
+	joystick_knob = Panel.new()
+	joystick_knob.size = Vector2(58, 58)
+	joystick_knob.position = (joystick_pad.size - joystick_knob.size) * 0.5
+	joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.48, 0.38, 0.96)))
+	joystick_pad.add_child(joystick_knob)
+
+	# Keep upgrades clear of the movement area.
+	var upgrade := _button("BAG +3  $50", Vector2(-190, 18), Vector2(172, 48), layer)
+	upgrade.anchor_left = 1.0
+	upgrade.anchor_right = 1.0
 	upgrade.pressed.connect(_upgrade_bag)
 
-	var speed_upgrade := _button("SPEED +  $75", Vector2(18, -112), Vector2(174, 54), layer)
-	speed_upgrade.anchor_top = 1.0
-	speed_upgrade.anchor_bottom = 1.0
+	var speed_upgrade := _button("SPEED +  $75", Vector2(-190, 76), Vector2(172, 48), layer)
+	speed_upgrade.anchor_left = 1.0
+	speed_upgrade.anchor_right = 1.0
 	speed_upgrade.pressed.connect(_upgrade_speed)
 
-	var hint := _label("DRAG LEFT SIDE TO MOVE", Vector2(18, -30), 13, layer)
+	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
 
 func _input(event: InputEvent) -> void:
-	var screen_size := get_viewport().get_visible_rect().size
+	if not is_instance_valid(joystick_pad) or not is_instance_valid(player):
+		return
 	if event is InputEventScreenTouch:
-		if event.pressed and event.position.x < screen_size.x * 0.55 and event.position.y < screen_size.y - 125 and joystick_touch == -1:
+		if event.pressed and joystick_touch == -1 and joystick_pad.get_global_rect().has_point(event.position):
 			joystick_touch = event.index
-			joystick_center = event.position
+			_update_joystick(event.position)
 		elif not event.pressed and event.index == joystick_touch:
-			joystick_touch = -1
-			player.call("set_touch_move", Vector2.ZERO)
+			_reset_joystick()
 	elif event is InputEventScreenDrag and event.index == joystick_touch:
-		var movement: Vector2 = ((event.position - joystick_center) / 75.0).limit_length(1.0)
-		player.call("set_touch_move", movement)
+		_update_joystick(event.position)
+
+func _update_joystick(touch_position: Vector2) -> void:
+	var center := joystick_pad.get_global_rect().get_center()
+	var offset := (touch_position - center).limit_length(joystick_max_radius)
+	var movement := offset / joystick_max_radius
+	player.call("set_touch_move", movement)
+	joystick_knob.position = (joystick_pad.size - joystick_knob.size) * 0.5 + offset
+
+func _reset_joystick() -> void:
+	joystick_touch = -1
+	player.call("set_touch_move", Vector2.ZERO)
+	joystick_knob.position = (joystick_pad.size - joystick_knob.size) * 0.5
 
 func _collect_nearby() -> void:
 	if carried >= capacity:
