@@ -232,10 +232,10 @@ func _upgrade_factory() -> void:
 	if factory_stage >= 4:
 		_set_message("Factory production line is fully upgraded!")
 		return
-	var costs := [0.0, 15.0, 45.0, 120.0]
+	var costs := [0.0, 12.0, 35.0, 80.0]
 	var cost: float = costs[factory_stage]
 	if money < cost:
-		_set_message("You need $%.1f to add the next factory machine." % cost)
+		_set_message("You need $%.0f to add the next factory machine." % cost)
 		return
 	money -= cost
 	factory_stage += 1
@@ -1096,7 +1096,7 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.29, 0.22)))
 			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.35, 0.26)))
 		elif available:
-			var base_cost: float = float({"capacity":4.0,"speed":8.0,"unload":6.0,"range":9.0,"technology":18.0,"value":24.0,"supply":14.0,"auto":30.0,"luck":20.0,"magnet_power":28.0,"drones":35.0}.get(branch, 4.0))
+			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0}.get(branch, 4.0))
 			var price_level := level
 			button.text = "%s  %s\nLEVEL %d\n$%.0f  •  UNLOCK" % [icon, node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
@@ -1371,7 +1371,7 @@ func _toggle_upgrade_panel() -> void:
 		upgrade_panel.visible = not upgrade_panel.visible
 
 func _upgrade_bag() -> void:
-	var cost := _upgrade_cost(4.0, upgrade_level)
+	var cost := _upgrade_cost(5.0, upgrade_level)
 	if money < cost:
 		_set_message("You need $%.1f for the next bag upgrade." % cost)
 		return
@@ -1384,7 +1384,7 @@ func _upgrade_bag() -> void:
 	_set_message("Upgrade purchased! New bag capacity: %d." % capacity)
 
 func _upgrade_speed() -> void:
-	var cost := _upgrade_cost(8.0, speed_upgrade_level)
+	var cost := _upgrade_cost(7.0, speed_upgrade_level)
 	if money < cost:
 		_set_message("You need $%.1f for the speed upgrade." % cost)
 		return
@@ -1409,7 +1409,7 @@ func _upgrade_unload() -> void:
 	_set_message("Unloading speed upgraded!")
 
 func _upgrade_equipment() -> void:
-	var cost := _upgrade_cost(9.0, equipment_upgrade_level)
+	var cost := _upgrade_cost(8.0, equipment_upgrade_level)
 	if money < cost:
 		_set_message("You need $%.1f for the magnet upgrade." % cost)
 		return
@@ -1422,7 +1422,7 @@ func _upgrade_equipment() -> void:
 	_set_message("Magnet range increased!")
 
 func _upgrade_technology() -> void:
-	var cost := _upgrade_cost(18.0, technology_upgrade_level)
+	var cost := _upgrade_cost(8.0, technology_upgrade_level)
 	if money < cost:
 		_set_message("You need $%.1f for the technology upgrade." % cost)
 		return
@@ -1435,7 +1435,7 @@ func _upgrade_technology() -> void:
 	_set_message("Recycling value increased!")
 
 func _upgrade_luck() -> void:
-	var cost := _upgrade_cost(20.0, luck_upgrade_level)
+	var cost := _upgrade_cost(6.0, luck_upgrade_level)
 	if money < cost:
 		_set_message("You need $%.1f for the lucky finds upgrade." % cost)
 		return
@@ -1447,7 +1447,7 @@ func _upgrade_luck() -> void:
 	_set_message("Lucky finds chance increased by 10%!")
 
 func _upgrade_drones() -> void:
-	var cost := _upgrade_cost(35.0, drone_level + 1)
+	var cost := _upgrade_cost(25.0, drone_level + 1)
 	if money < cost:
 		_set_message("You need $%.1f for helper drones." % cost)
 		return
@@ -1460,7 +1460,7 @@ func _upgrade_drones() -> void:
 	_set_message("Helper drone upgraded! %d drone(s) now collect trash automatically." % drone_level)
 
 func _upgrade_magnet_power() -> void:
-	var cost := _upgrade_cost(28.0, magnet_power_level)
+	var cost := _upgrade_cost(15.0, magnet_power_level)
 	if money < cost:
 		_set_message("You need $%.1f for magnet power." % cost)
 		return
@@ -1474,7 +1474,7 @@ func _upgrade_magnet_power() -> void:
 	_set_message("Magnet pull power increased!")
 
 func _upgrade_trash_value() -> void:
-	var cost := _upgrade_cost(24.0, trash_value_upgrade_level)
+	var cost := _upgrade_cost(12.0, trash_value_upgrade_level)
 	if money < cost:
 		_set_message("You need $%.1f for the trash value upgrade." % cost)
 		return
@@ -1490,7 +1490,7 @@ func _upgrade_cost(base_cost: float, level: int) -> float:
 	return ceil(base_cost * pow(1.55, float(level - 1)))
 
 func _upgrade_spawn() -> void:
-	var cost := _upgrade_cost(14.0, spawn_upgrade_level)
+	var cost := _upgrade_cost(6.0, spawn_upgrade_level)
 	if money < cost:
 		_set_message("You need $%.1f for the trash supply upgrade." % cost)
 		return
@@ -1502,7 +1502,7 @@ func _upgrade_spawn() -> void:
 	_set_message("Trash supply upgraded! +6 trash on every manual refill.")
 
 func _upgrade_auto_pickup() -> void:
-	var cost := _upgrade_cost(30.0, auto_pickup_level + 1)
+	var cost := _upgrade_cost(20.0, auto_pickup_level + 1)
 	if money < cost:
 		_set_message("You need $%.1f for automatic pickup." % cost)
 		return
@@ -1558,7 +1558,7 @@ func _create_expansion_zone() -> void:
 	zone.add_child(ring)
 	var label := Label3D.new()
 	label.name = "UnlockZoneLabel"
-	label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$80"
+	label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$25"
 	label.position = Vector3(0, 2.2, 0)
 	label.font_size = 34
 	label.pixel_size = 0.006
@@ -1584,7 +1584,7 @@ func _buy_next_stage() -> void:
 	if yard_stage >= 3:
 		_set_message("All districts unlocked!")
 		return
-	var cost := 80.0 if yard_stage == 1 else 250.0
+	var cost := 25.0 if yard_stage == 1 else 60.0
 	if money < cost:
 		_set_message("You need $%.0f to unlock the next district." % cost)
 		return
@@ -1618,7 +1618,7 @@ func _refresh_expansion_world_button() -> void:
 		zone.position = Vector3(45.15, 0.0, 0.0)
 		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 		if is_instance_valid(label):
-			label.text = "STEP HERE\nUNLOCK DISTRICT 3\n$250"
+			label.text = "STEP HERE\nUNLOCK DISTRICT 3\n$60"
 	expansion_zone_blocked = false
 
 func _expansion_button_label(value: String) -> void:
