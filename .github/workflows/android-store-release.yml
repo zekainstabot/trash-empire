@@ -82,14 +82,26 @@ jobs:
           test -d "$ANDROID_HOME/platforms/android-35"
           test -d "$JAVA_HOME"
 
-      - name: Import resources and install Android Gradle build template
+      - name: Import resources
         shell: bash
+        timeout-minutes: 5
         run: |
           set -euo pipefail
-          "$GODOT_BIN" --headless --editor --path . --quit
-          "$GODOT_BIN" --headless --editor --path . --install-android-build-template
+          echo "Starting Godot resource import"
+          timeout 240 "$GODOT_BIN" --headless --editor --verbose --path . --quit
+          echo "Godot resource import completed"
+
+      - name: Install Android Gradle build template
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          echo "Installing Android Gradle build template"
+          timeout 240 "$GODOT_BIN" --headless --editor --verbose --path . --install-android-build-template
+          echo "Checking installed Gradle template"
           test -f android/build/build.gradle
           test -f android/build/config.gradle
+          echo "Android Gradle build template installed successfully"
 
       - name: Diagnose Android export preset configuration
         shell: bash
