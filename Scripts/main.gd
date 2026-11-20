@@ -383,10 +383,11 @@ func _build_factory_module(stage: int) -> void:
 		_box("GranulatorHopper", Vector3(7.5, 2.95, z - 0.15), Vector3(2.1, 0.65, 1.45), Color(0.32, 0.39, 0.40), false)
 		_box("GranulatorOutlet", Vector3(7.5, 0.95, z + 1.38), Vector3(1.2, 0.65, 0.42), accent.lightened(0.2), false)
 	else:
-		_label_3d("CONSUMER GOODS FACTORY", Vector3(7.5, 3.0, z), 0.22)
+		_label_3d("TEDDY BEAR FACTORY", Vector3(7.5, 3.0, z), 0.22)
 		_box("ProductChute", Vector3(7.5, 0.95, z + 1.48), Vector3(1.8, 0.42, 0.72), Color(0.28, 0.34, 0.34), false)
 		for x in [6.25, 8.75]:
-			_box("ProductCrate", Vector3(x, 0.48, z + 1.65), Vector3(0.72, 0.82, 0.72), accent.lightened(0.12), false)
+			_box("TeddyShippingBox", Vector3(x, 0.48, z + 1.65), Vector3(0.72, 0.82, 0.72), Color(0.72, 0.52, 0.27), false)
+		_label_3d("RECYCLED TEDDY BEARS", Vector3(7.5, 2.85, z + 1.75), 0.16)
 	_box("FactoryModule%dStatus" % stage, Vector3(9.25, 2.0, z - 0.75), Vector3(0.42, 0.42, 0.10), Color(0.10, 0.95, 0.56), false)
 
 func _build_factory_link(start_z: float, end_z: float) -> void:
@@ -1889,7 +1890,7 @@ func _animate_conveyor(delta: float) -> void:
 			slat.position.x = x
 
 func _spawn_conveyor_item() -> void:
-	# Feed a recognizable piece of litter into the first press.
+	# One piece of collected litter travels through each unlocked recycling stage.
 	var item := Node3D.new()
 	item.name = "ConveyorRecyclingItem"
 	item.set_script(TRASH_SCRIPT)
@@ -1897,7 +1898,7 @@ func _spawn_conveyor_item() -> void:
 	item.scale = Vector3.ONE * 0.72
 	add_child(item)
 
-	# The first machine visibly compresses loose trash into a strapped recycling bale.
+	# Stage 1 output: compressed, strapped bale.
 	var bale := Node3D.new()
 	bale.name = "CompressedRecyclingBale"
 	bale.position = Vector3(7.5, 1.25, -5.0)
@@ -1918,13 +1919,60 @@ func _spawn_conveyor_item() -> void:
 		strap.position.x = x
 		strap.material_override = _mat(Color(0.78, 0.69, 0.43))
 		bale.add_child(strap)
-	var top_mark := MeshInstance3D.new()
-	var mark_mesh := BoxMesh.new()
-	mark_mesh.size = Vector3(0.38, 0.025, 0.24)
-	top_mark.mesh = mark_mesh
-	top_mark.position.y = 0.25
-	top_mark.material_override = _mat(Color(0.31, 0.66, 0.55))
-	bale.add_child(top_mark)
+
+	# Stage 2 output: visible shredded flakes.
+	var flakes := Node3D.new()
+	flakes.name = "ShreddedPlasticFlakes"
+	flakes.position = Vector3(7.5, 1.18, -2.0)
+	flakes.scale = Vector3.ONE * 0.08
+	flakes.visible = false
+	add_child(flakes)
+	for i in range(9):
+		var flake := MeshInstance3D.new()
+		var flake_mesh := BoxMesh.new()
+		flake_mesh.size = Vector3(0.16, 0.055, 0.12)
+		flake.mesh = flake_mesh
+		flake.position = Vector3(randf_range(-0.42, 0.42), randf_range(-0.12, 0.14), randf_range(-0.36, 0.36))
+		flake.rotation = Vector3(randf_range(-0.5, 0.5), randf_range(0.0, TAU), randf_range(-0.5, 0.5))
+		flake.material_override = _mat([Color(0.12, 0.62, 0.72), Color(0.20, 0.72, 0.48), Color(0.88, 0.68, 0.22)][i % 3])
+		flakes.add_child(flake)
+
+	# Stage 3 output: recycled plastic pellets.
+	var pellets := Node3D.new()
+	pellets.name = "RecycledPlasticPellets"
+	pellets.position = Vector3(7.5, 1.15, 3.45)
+	pellets.scale = Vector3.ONE * 0.08
+	pellets.visible = false
+	add_child(pellets)
+	for i in range(18):
+		var pellet := MeshInstance3D.new()
+		var pellet_mesh := SphereMesh.new()
+		pellet_mesh.radius = 0.075
+		pellet_mesh.height = 0.12
+		pellet.mesh = pellet_mesh
+		pellet.position = Vector3(randf_range(-0.42, 0.42), randf_range(-0.12, 0.16), randf_range(-0.35, 0.35))
+		pellet.material_override = _mat([Color(0.12, 0.62, 0.72), Color(0.20, 0.72, 0.48), Color(0.88, 0.68, 0.22)][i % 3])
+		pellets.add_child(pellet)
+
+	# Stage 4 output: a teddy bear made from the recycled material.
+	var teddy := Node3D.new()
+	teddy.name = "RecycledTeddyBear"
+	teddy.position = Vector3(7.5, 0.62, 8.95)
+	teddy.scale = Vector3.ONE * 0.05
+	teddy.visible = false
+	add_child(teddy)
+	_add_teddy_part(teddy, "TeddyBody", Vector3(0, 0.48, 0), Vector3(0.48, 0.58, 0.34), Color(0.68, 0.39, 0.20))
+	_add_teddy_part(teddy, "TeddyHead", Vector3(0, 1.05, -0.02), Vector3(0.58, 0.56, 0.48), Color(0.76, 0.48, 0.27))
+	_add_teddy_part(teddy, "TeddyEarL", Vector3(-0.36, 1.34, 0), Vector3(0.23, 0.25, 0.20), Color(0.76, 0.48, 0.27))
+	_add_teddy_part(teddy, "TeddyEarR", Vector3(0.36, 1.34, 0), Vector3(0.23, 0.25, 0.20), Color(0.76, 0.48, 0.27))
+	_add_teddy_part(teddy, "TeddyMuzzle", Vector3(0, 0.94, -0.25), Vector3(0.28, 0.20, 0.18), Color(0.94, 0.79, 0.60))
+	_add_teddy_part(teddy, "TeddyNose", Vector3(0, 1.00, -0.405), Vector3(0.10, 0.075, 0.055), Color(0.12, 0.08, 0.06))
+	for x in [-0.18, 0.18]:
+		_add_teddy_part(teddy, "TeddyEye", Vector3(x, 1.12, -0.405), Vector3(0.055, 0.065, 0.04), Color(0.035, 0.025, 0.02))
+	for x in [-0.38, 0.38]:
+		_add_teddy_part(teddy, "TeddyArm", Vector3(x, 0.52, -0.01), Vector3(0.22, 0.42, 0.23), Color(0.76, 0.48, 0.27))
+		_add_teddy_part(teddy, "TeddyFoot", Vector3(x * 0.62, 0.12, -0.04), Vector3(0.28, 0.20, 0.30), Color(0.68, 0.39, 0.20))
+	_add_teddy_part(teddy, "TeddyRibbon", Vector3(0, 0.80, -0.20), Vector3(0.32, 0.09, 0.07), Color(0.82, 0.16, 0.20))
 
 	var travel := create_tween()
 	travel.set_trans(Tween.TRANS_SINE)
@@ -1933,7 +1981,6 @@ func _spawn_conveyor_item() -> void:
 	travel.parallel().tween_property(item, "rotation:y", item.rotation.y + TAU, 1.0)
 	travel.tween_property(item, "position", Vector3(7.5, 1.25, -6.5), 0.55)
 	travel.tween_property(item, "scale", Vector3.ONE * 0.22, 0.55)
-	travel.parallel().tween_property(item, "position", Vector3(7.5, 1.25, -5.0), 0.45)
 	travel.tween_callback(func():
 		item.visible = false
 		bale.visible = true
@@ -1941,13 +1988,45 @@ func _spawn_conveyor_item() -> void:
 	travel.tween_property(bale, "scale", Vector3.ONE, 0.22)
 	if factory_stage >= 2:
 		travel.tween_property(bale, "position", Vector3(7.5, 1.25, -2.0), 0.9)
+		travel.tween_callback(func():
+			bale.visible = false
+			flakes.visible = true
+		)
+		travel.tween_property(flakes, "scale", Vector3.ONE, 0.22)
 	if factory_stage >= 3:
-		travel.tween_property(bale, "position", Vector3(7.5, 1.25, 3.45), 1.1)
+		travel.tween_property(flakes, "position", Vector3(7.5, 1.15, 3.45), 1.1)
+		travel.tween_callback(func():
+			flakes.visible = false
+			pellets.visible = true
+		)
+		travel.tween_property(pellets, "scale", Vector3.ONE, 0.22)
 	if factory_stage >= 4:
-		travel.tween_property(bale, "position", Vector3(7.5, 1.25, 8.95), 1.1)
-	travel.tween_callback(item.queue_free)
-	travel.tween_callback(bale.queue_free)
+		travel.tween_property(pellets, "position", Vector3(7.5, 0.62, 8.95), 1.1)
+		travel.tween_callback(func():
+			pellets.visible = false
+			teddy.visible = true
+		)
+		travel.tween_property(teddy, "scale", Vector3.ONE, 0.35)
+		travel.tween_property(teddy, "rotation:y", TAU, 0.55)
+	travel.tween_callback(func():
+		item.queue_free()
+		bale.queue_free()
+		flakes.queue_free()
+		pellets.queue_free()
+		teddy.queue_free()
+	)
 
+func _add_teddy_part(parent: Node3D, part_name: String, part_position: Vector3, part_size: Vector3, part_color: Color) -> void:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.5
+	mesh.height = 1.0
+	part.mesh = mesh
+	part.scale = part_size
+	part.position = part_position
+	part.material_override = _mat(part_color)
+	parent.add_child(part)
 func _make_bin(pos: Vector3, color: Color, label_text: String) -> void:
 	# Wheeled commercial recycling container with sloped lid, molded ribs and handle.
 	_box("BinBody", pos + Vector3(0, 0.72, 0), Vector3(1.42, 1.42, 1.35), color, true)
