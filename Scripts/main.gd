@@ -120,7 +120,8 @@ func _build_world() -> void:
 	_box("RightWallSouth", Vector3(15.5, 2.0, 9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
 	var first_gate := _box("ExpansionGateOne", Vector3(15.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
 	expansion_gates.append(first_gate)
-	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 32), Color(0.29, 0.34, 0.32), true)
+	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 32), Color(0.20, 0.43, 0.22), true)
+	_box("DistrictTwoGrassPatch", Vector3(32, 0.012, 0), Vector3(29.5, 0.025, 28.5), Color(0.25, 0.50, 0.22), false)
 	_box("DistrictTwoOuterWallNorth", Vector3(47.5, 2.0, -9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoOuterWallSouth", Vector3(47.5, 2.0, 9.0), Vector3(0.5, 4, 14.0), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoBackWall", Vector3(32, 2.0, -15.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
@@ -210,7 +211,8 @@ func _build_world() -> void:
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 14.55), 0.65)
 
-	expansion_world_button = _create_world_action_button("ExpansionPurchase", "OPEN DISTRICT 2  $800", Vector3(15.0, 0.0, 2.6), Vector3(2.8, 1.25, 0.35), Callable(self, "_buy_next_stage"), Color(0.88, 0.56, 0.12))
+	expansion_world_button = _create_world_action_button("ExpansionPurchase", "OPEN DISTRICT 2  $800", Vector3(15.12, 0.0, 0.0), Vector3(2.8, 1.25, 0.35), Callable(self, "_buy_next_stage"), Color(0.88, 0.56, 0.12))
+	expansion_world_button.rotation.y = PI * 0.5
 	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
 
@@ -504,9 +506,11 @@ func _build_trash() -> void:
 	for i in range(24):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.position = _random_trash_position(rng)
+		item.position = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
 		add_child(item)
 		trash_nodes.append(item)
+	if yard_stage >= 2:
+		_spawn_district_two_trash(48)
 
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
@@ -1319,7 +1323,10 @@ func _buy_next_stage() -> void:
 		var gate := expansion_gates[gate_index]
 		if is_instance_valid(gate):
 			gate.queue_free()
-	_spawn_trash(18 if yard_stage == 2 else 24)
+	if yard_stage == 2:
+		_spawn_district_two_trash(48)
+	else:
+		_spawn_trash(24)
 	_update_ui()
 	_refresh_expansion_world_button()
 	_save_game()
@@ -1333,10 +1340,10 @@ func _refresh_expansion_world_button() -> void:
 		return
 	expansion_world_button.visible = true
 	if yard_stage == 1:
-		expansion_world_button.position = Vector3(15.0, 0.0, 2.6)
-		_expansion_button_label("OPEN DISTRICT 2  $500")
+		expansion_world_button.position = Vector3(15.12, 0.0, 0.0)
+		_expansion_button_label("OPEN DISTRICT 2  $800")
 	else:
-		expansion_world_button.position = Vector3(47.0, 0.0, 2.6)
+		expansion_world_button.position = Vector3(47.12, 0.0, 0.0)
 		_expansion_button_label("OPEN DISTRICT 3  $3000")
 
 func _expansion_button_label(value: String) -> void:
@@ -1392,6 +1399,18 @@ func _spawn_trash(amount: int) -> void:
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
 		item.position = _random_trash_position(rng)
+		add_child(item)
+		trash_nodes.append(item)
+
+func _spawn_district_two_trash(amount: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(amount):
+		var item := Node3D.new()
+		item.set_script(TRASH_SCRIPT)
+		var angle := rng.randf_range(0.0, TAU)
+		var radius := sqrt(rng.randf()) * 9.5
+		item.position = Vector3(32.0 + cos(angle) * radius, 0.34 + rng.randf_range(0.0, 0.12), sin(angle) * radius)
 		add_child(item)
 		trash_nodes.append(item)
 
