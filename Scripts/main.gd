@@ -255,9 +255,9 @@ func _refresh_factory_upgrade_button() -> void:
 	if factory_stage >= 4:
 		label.text = "FACTORY MAX\nGOODS LINE"
 	else:
-		var costs := [0.0, 0.8, 3.0, 9.0]
+		var costs := [0.0, 15.0, 45.0, 120.0]
 		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD GOODS LINE"]
-		label.text = "%s\n$%d" % [names[factory_stage + 1], costs[factory_stage]]
+		label.text = "%s\n$%.0f" % [names[factory_stage + 1], costs[factory_stage]]
 
 func _build_factory_expansion() -> void:
 	if not is_instance_valid(factory_visual_root):
@@ -1096,9 +1096,9 @@ func _refresh_upgrade_prices() -> void:
 			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.29, 0.22)))
 			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.35, 0.26)))
 		elif available:
-			var base_cost: float = float({"capacity":4.0,"speed":8.0,"unload":6.0,"range":9.0,"technology":18.0,"value":24.0,"supply":14.0,"auto":30.0,"luck":20.0,"magnet_power":28.0,"drones":35.0}.get(branch, 0.5))
+			var base_cost: float = float({"capacity":4.0,"speed":8.0,"unload":6.0,"range":9.0,"technology":18.0,"value":24.0,"supply":14.0,"auto":30.0,"luck":20.0,"magnet_power":28.0,"drones":35.0}.get(branch, 4.0))
 			var price_level := level
-			button.text = "%s  %s\nLEVEL %d\n$%d  •  UNLOCK" % [icon, node.title, level, _upgrade_cost(base_cost, price_level)]
+			button.text = "%s  %s\nLEVEL %d\n$%.0f  •  UNLOCK" % [icon, node.title, level, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
 			button.add_theme_stylebox_override("normal", _skill_node_style(accent.darkened(0.55)))
 			button.add_theme_stylebox_override("hover", _skill_node_style(accent.darkened(0.35)))
@@ -1558,7 +1558,7 @@ func _create_expansion_zone() -> void:
 	zone.add_child(ring)
 	var label := Label3D.new()
 	label.name = "UnlockZoneLabel"
-	label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$8.0"
+	label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$80"
 	label.position = Vector3(0, 2.2, 0)
 	label.font_size = 34
 	label.pixel_size = 0.006
@@ -1613,12 +1613,12 @@ func _refresh_expansion_world_button() -> void:
 		zone.position = Vector3(13.15, 0.0, 0.0)
 		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 		if is_instance_valid(label):
-			label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$800"
+			label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$80"
 	else:
 		zone.position = Vector3(45.15, 0.0, 0.0)
 		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 		if is_instance_valid(label):
-			label.text = "STEP HERE\nUNLOCK DISTRICT 3\n$30.0"
+			label.text = "STEP HERE\nUNLOCK DISTRICT 3\n$250"
 	expansion_zone_blocked = false
 
 func _expansion_button_label(value: String) -> void:
