@@ -264,7 +264,7 @@ func _upgrade_factory() -> void:
 	_refresh_factory_upgrade_button()
 	_update_ui()
 	_save_game()
-	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY"]
+	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY", "PACKAGING + DELIVERY"]
 	_set_message("Factory expanded! %s connected to the conveyor." % names[factory_stage])
 
 func _refresh_factory_upgrade_button() -> void:
@@ -362,7 +362,7 @@ func _process_factory_build(delta: float) -> void:
 		factory_build_save_timer = 0.0
 		_build_factory_expansion()
 		# Move the player clear of the newly spawned machine collision immediately.
-		player.global_position = Vector3(3.5, maxf(player.global_position.y, 0.0), z_positions[factory_stage] + 2.8)
+		player.global_position = Vector3(3.5, maxf(player.global_position.y, 0.0), minf(z_positions[factory_stage] + 2.8, 13.2))
 		player.velocity = Vector3.ZERO
 		player.reset_physics_interpolation()
 		_refresh_factory_upgrade_button()
@@ -1538,7 +1538,7 @@ func _process_auto_sell(delta: float) -> void:
 		else:
 			_set_message("Teddy bear made! Waiting for packaging and truck delivery...")
 		if carried == 0:
-			_set_message("Bag emptied! Money added.")
+			_set_message("Bag emptied! Teddy bears are being prepared for delivery." if factory_stage >= 4 else "Bag emptied! Money added.")
 
 func _toggle_upgrade_panel() -> void:
 	if is_instance_valid(upgrade_panel):
