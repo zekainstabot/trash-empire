@@ -616,21 +616,26 @@ func _build_player() -> void:
 	robot_visual.name = "RecyclerBot"
 	player.add_child(robot_visual)
 
-	_add_robot_box(robot_visual, "Torso", Vector3(0, 1.05, 0), Vector3(0.72, 0.82, 0.48), Color(0.16, 0.30, 0.34))
-	_add_robot_box(robot_visual, "ChestPanel", Vector3(0, 1.12, -0.252), Vector3(0.48, 0.42, 0.035), Color(0.08, 0.55, 0.48))
-	_add_robot_box(robot_visual, "ChestLight", Vector3(0, 1.12, -0.278), Vector3(0.19, 0.08, 0.025), Color(0.35, 1.0, 0.78))
-	_add_robot_box(robot_visual, "Belt", Vector3(0, 0.62, 0), Vector3(0.76, 0.13, 0.5), Color(0.08, 0.13, 0.16))
+	# Industrial, adult-style recycler chassis: segmented armor and a sensor visor.
+	_add_robot_box(robot_visual, "Torso", Vector3(0, 1.05, 0), Vector3(0.82, 0.88, 0.52), Color(0.12, 0.18, 0.21))
+	_add_robot_box(robot_visual, "ChestArmor", Vector3(0, 1.18, -0.27), Vector3(0.62, 0.52, 0.055), Color(0.27, 0.32, 0.34))
+	_add_robot_box(robot_visual, "ChestPanel", Vector3(0, 1.12, -0.307), Vector3(0.38, 0.24, 0.035), Color(0.055, 0.12, 0.14))
+	_add_robot_box(robot_visual, "StatusBar", Vector3(0, 1.12, -0.33), Vector3(0.24, 0.035, 0.025), Color(0.15, 0.72, 0.62))
+	_add_robot_box(robot_visual, "Belt", Vector3(0, 0.62, 0), Vector3(0.84, 0.16, 0.54), Color(0.055, 0.09, 0.12))
+	_add_robot_box(robot_visual, "ShoulderArmorL", Vector3(-0.49, 1.39, 0), Vector3(0.30, 0.30, 0.36), Color(0.34, 0.38, 0.39))
+	_add_robot_box(robot_visual, "ShoulderArmorR", Vector3(0.49, 1.39, 0), Vector3(0.30, 0.30, 0.36), Color(0.34, 0.38, 0.39))
 
 	robot_head = Node3D.new()
-	robot_head.position = Vector3(0, 1.78, 0)
+	robot_head.position = Vector3(0, 1.82, 0)
 	robot_visual.add_child(robot_head)
-	_add_robot_box(robot_head, "HeadShell", Vector3.ZERO, Vector3(0.68, 0.55, 0.52), Color(0.76, 0.84, 0.82))
-	_add_robot_box(robot_head, "FaceScreen", Vector3(0, -0.015, -0.273), Vector3(0.53, 0.30, 0.035), Color(0.035, 0.10, 0.14))
-	for eye_x in [-0.14, 0.14]:
-		_add_robot_sphere(robot_head, "GlowingEye", Vector3(eye_x, 0.025, -0.302), 0.055, Color(0.18, 0.95, 1.0))
-	_add_robot_box(robot_head, "Smile", Vector3(0, -0.105, -0.305), Vector3(0.13, 0.018, 0.018), Color(0.35, 1.0, 0.78))
-	_add_robot_box(robot_head, "AntennaStem", Vector3(0, 0.34, 0), Vector3(0.055, 0.20, 0.055), Color(0.30, 0.42, 0.44))
-	_add_robot_sphere(robot_head, "AntennaGlow", Vector3(0, 0.46, 0), 0.09, Color(0.20, 1.0, 0.65))
+	_add_robot_box(robot_head, "HeadShell", Vector3(0, 0, 0), Vector3(0.72, 0.58, 0.56), Color(0.38, 0.44, 0.46))
+	_add_robot_box(robot_head, "Visor", Vector3(0, 0.02, -0.292), Vector3(0.58, 0.26, 0.045), Color(0.025, 0.055, 0.075))
+	_add_robot_box(robot_head, "SensorL", Vector3(-0.17, 0.025, -0.323), Vector3(0.09, 0.035, 0.025), Color(0.12, 0.78, 0.72))
+	_add_robot_box(robot_head, "SensorR", Vector3(0.17, 0.025, -0.323), Vector3(0.09, 0.035, 0.025), Color(0.12, 0.78, 0.72))
+	_add_robot_box(robot_head, "JawPlate", Vector3(0, -0.20, -0.26), Vector3(0.40, 0.12, 0.08), Color(0.23, 0.29, 0.31))
+	_add_robot_box(robot_head, "HeadSideL", Vector3(-0.39, 0, 0), Vector3(0.10, 0.30, 0.42), Color(0.19, 0.25, 0.27))
+	_add_robot_box(robot_head, "HeadSideR", Vector3(0.39, 0, 0), Vector3(0.10, 0.30, 0.42), Color(0.19, 0.25, 0.27))
+	_add_robot_box(robot_head, "TopSensor", Vector3(0, 0.31, 0), Vector3(0.20, 0.09, 0.22), Color(0.20, 0.28, 0.30))
 
 	robot_left_arm = _robot_limb(robot_visual, "LeftArm", Vector3(-0.48, 1.30, 0), Color(0.22, 0.43, 0.48))
 	robot_right_arm = _robot_limb(robot_visual, "RightArm", Vector3(0.48, 1.30, 0), Color(0.22, 0.43, 0.48))
