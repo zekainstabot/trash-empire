@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   build_android:
     name: Export Android APK
@@ -83,10 +86,20 @@ jobs:
           mkdir -p build
           "$GODOT_BIN" --headless --verbose --path . --install-android-build-template --export-debug "Android Debug" build/TrashEmpire.apk
           test -s build/TrashEmpire.apk
-      - name: Upload APK
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Trash-Empire-Android-APK
           path: build/TrashEmpire.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-build-${{ github.run_number }}
+          name: Trash Empire Android Build ${{ github.run_number }}
+          make_latest: true
+          files: build/TrashEmpire.apk
+          fail_on_unmatched_files: true
