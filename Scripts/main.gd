@@ -320,7 +320,7 @@ func _build_ui() -> void:
 	joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.48, 0.38, 0.96)))
 	joystick_pad.add_child(joystick_knob)
 
-	var upgrades_button := _button("UPGRADES", Vector2(-174, 24), Vector2(156, 58), layer)
+	var upgrades_button := _button("SKILL TREE", Vector2(-174, 24), Vector2(156, 58), layer)
 	upgrades_button.anchor_left = 1.0
 	upgrades_button.anchor_right = 1.0
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
@@ -332,7 +332,7 @@ func _build_ui() -> void:
 	upgrade_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.075, 0.08, 0.97)))
 	upgrade_panel.visible = false
 	layer.add_child(upgrade_panel)
-	var upgrade_title := _label("UPGRADE STORE", Vector2(24, 20), 24, upgrade_panel)
+	var upgrade_title := _label("SKILL TREE", Vector2(24, 20), 24, upgrade_panel)
 	var close_upgrades := _button("X", Vector2(282, 14), Vector2(42, 42), upgrade_panel)
 	close_upgrades.pressed.connect(_toggle_upgrade_panel)
 	bag_upgrade_button = _button("BAG CAPACITY +3", Vector2(20, 92), Vector2(300, 58), upgrade_panel)
