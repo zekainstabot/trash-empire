@@ -44,6 +44,12 @@ var conveyor_item_count := 0
 var yard_stage := 1
 var expansion_button: Button
 var expansion_gates: Array[Node3D] = []
+var refresh_handle: Button
+var refresh_touch := -1
+var refresh_start_y := 0.0
+var refresh_origin_y := 18.0
+var refresh_pull_distance := 0.0
+var refresh_busy := false
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
@@ -378,6 +384,16 @@ func _build_ui() -> void:
 	expansion_button.pressed.connect(_buy_next_stage)
 	_refresh_expansion_button()
 
+	# Pull-down handle for manual trash refill in District 1.
+	refresh_handle = _button("↓  PULL TO REFILL", Vector2.ZERO, Vector2(190, 48), layer)
+	refresh_handle.anchor_left = 0.5
+	refresh_handle.anchor_right = 0.5
+	refresh_handle.position = Vector2(-95, refresh_origin_y)
+	refresh_handle.add_theme_font_size_override("font_size", 14)
+	refresh_handle.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.39, 0.34)))
+	refresh_handle.add_theme_stylebox_override("pressed", _button_style(Color(0.08, 0.29, 0.27)))
+	refresh_handle.pressed.connect(_on_refresh_handle_tap)
+
 	upgrade_panel = Panel.new()
 	upgrade_panel.set_anchors_preset(Control.PRESET_CENTER)
 	upgrade_panel.position = Vector2(-175, -270)
@@ -443,16 +459,49 @@ func _add_skill_branch(parent: VBoxContainer, branch_title: String, description:
 	skill_buttons.append(node_button)
 
 func _input(event: InputEvent) -> void:
-	if not is_instance_valid(joystick_pad) or not is_instance_valid(player):
+	if not is_instance_valid(player):
 		return
 	if event is InputEventScreenTouch:
-		if event.pressed and joystick_touch == -1 and joystick_pad.get_global_rect().has_point(event.position):
-			joystick_touch = event.index
-			_update_joystick(event.position)
-		elif not event.pressed and event.index == joystick_touch:
+		if event.pressed:
+			if is_instance_valid(refresh_handle) and refresh_touch == -1 and not refresh_busy and refresh_handle.get_global_rect().has_point(event.position):
+				refresh_touch = event.index
+				refresh_start_y = event.position.y
+				refresh_pull_distance = 0.0
+				refresh_handle.text = "↓  KEEP PULLING"
+				return
+			if is_instance_valid(joystick_pad) and joystick_touch == -1 and joystick_pad.get_global_rect().has_point(event.position):
+				joystick_touch = event.index
+				_update_joystick(event.position)
+		elif event.index == refresh_touch:
+			refresh_touch = -1
+			if refresh_pull_distance >= 78.0:
+				_refill_first_district()
+			_return_refresh_handle()
+		elif event.index == joystick_touch:
 			_reset_joystick()
-	elif event is InputEventScreenDrag and event.index == joystick_touch:
-		_update_joystick(event.position)
+	elif event is InputEventScreenDrag:
+		if event.index == refresh_touch:
+			refresh_pull_distance = clampf(event.position.y - refresh_start_y, 0.0, 115.0)
+			refresh_handle.position.y = refresh_origin_y + refresh_pull_distance
+			refresh_handle.text = "↓  RELEASE TO REFILL" if refresh_pull_distance >= 78.0 else "↓  KEEP PULLING"
+		elif event.index == joystick_touch:
+			_update_joystick(event.position)
+
+func _on_refresh_handle_tap() -> void:
+	if refresh_touch == -1 and not refresh_busy:
+		_set_message("Drag the top handle down to refill the first yard.")
+
+func _return_refresh_handle() -> void:
+	if not is_instance_valid(refresh_handle):
+		return
+	refresh_busy = true
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(refresh_handle, "position:y", refresh_origin_y, 0.38)
+	tween.tween_callback(func():
+		refresh_handle.text = "↓  PULL TO REFILL"
+		refresh_busy = false
+	)
 
 func _update_joystick(touch_position: Vector2) -> void:
 	var center := joystick_pad.get_global_rect().get_center()
@@ -507,7 +556,6 @@ func _process_auto_sell(delta: float) -> void:
 		_set_message("Conveyor recycling... +$%d" % int(round(10.0 * recycling_bonus)))
 		if carried == 0:
 			_set_message("Bag emptied! Money added.")
-			_spawn_trash(6)
 
 func _toggle_upgrade_panel() -> void:
 	if is_instance_valid(upgrade_panel):
@@ -665,6 +713,28 @@ func _spawn_trash(amount: int) -> void:
 		item.position = _random_trash_position(rng)
 		add_child(item)
 		trash_nodes.append(item)
+
+func _refill_first_district() -> void:
+	var existing_first_district := 0
+	for item in trash_nodes:
+		if is_instance_valid(item) and item.global_position.x >= -15.0 and item.global_position.x <= 15.0:
+			existing_first_district += 1
+	var amount := maxi(0, 24 - existing_first_district)
+	if amount == 0:
+		_set_message("First district is already full of trash!")
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(amount):
+		var item := Node3D.new()
+		item.set_script(TRASH_SCRIPT)
+		item.position = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
+		if item.position.distance_to(SELL_POINT) < 4.0:
+			item.position.z = 10.5
+		add_child(item)
+		trash_nodes.append(item)
+	_update_ui()
+	_set_message("First district refilled! %d new trash pieces spawned." % amount)
 
 func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 	var max_x := 11.5
