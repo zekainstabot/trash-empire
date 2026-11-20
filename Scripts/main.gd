@@ -255,7 +255,7 @@ func _refresh_factory_upgrade_button() -> void:
 	if factory_stage >= 4:
 		label.text = "FACTORY MAX\nGOODS LINE"
 	else:
-		var costs := [0.0, 15.0, 45.0, 120.0]
+		var costs := [0.0, 12.0, 35.0, 80.0]
 		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD GOODS LINE"]
 		label.text = "%s\n$%.0f" % [names[factory_stage + 1], costs[factory_stage]]
 
@@ -1613,7 +1613,7 @@ func _refresh_expansion_world_button() -> void:
 		zone.position = Vector3(13.15, 0.0, 0.0)
 		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 		if is_instance_valid(label):
-			label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$80"
+			label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$25"
 	else:
 		zone.position = Vector3(45.15, 0.0, 0.0)
 		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
