@@ -1310,7 +1310,7 @@ func _input(event: InputEvent) -> void:
 				skill_touch_points[event.index] = event.position
 				if skill_touch_points.size() == 1:
 					skill_drag_touch = event.index
-					skill_scroll_velocity = 0.0
+					skill_scroll_velocity = Vector2.ZERO
 				elif skill_touch_points.size() == 2:
 					var points: Array = skill_touch_points.values()
 					skill_pinch_distance = points[0].distance_to(points[1])
@@ -1797,7 +1797,7 @@ func _pay_gradually(cost: float) -> bool:
 			payment_active = false
 			return false
 		var delta := get_process_delta_time()
-		var amount := minf(cost - paid, money, (cost / 3.0) * _spending_speed_multiplier() * delta)
+		var amount := minf(minf(cost - paid, money), (cost / 3.0) * _spending_speed_multiplier() * delta)
 		if amount <= 0.0:
 			payment_active = false
 			_set_message("Payment stopped: not enough money.")
