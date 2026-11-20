@@ -997,12 +997,12 @@ func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
 	return style
 
 func _add_skill_connection(parent: Control, from_point: Vector2, to_point: Vector2) -> void:
-	var line := ColorRect.new()
-	var difference := to_point - from_point
-	line.size = Vector2(difference.length(), 4.0)
-	line.position = (from_point + to_point) * 0.5 - Vector2(line.size.x * 0.5, 2.5)
-	line.rotation = difference.angle()
-	line.color = Color(0.28, 0.78, 0.62, 0.82)
+	var line := Line2D.new()
+	line.width = 5.0
+	line.default_color = Color(0.28, 0.78, 0.62, 0.9)
+	line.antialiased = true
+	line.add_point(from_point)
+	line.add_point(to_point)
 	parent.add_child(line)
 
 func _skill_level(branch: String) -> int:
