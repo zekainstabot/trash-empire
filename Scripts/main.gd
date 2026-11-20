@@ -20,6 +20,7 @@ var auto_pickup_level := 0
 var auto_pickup_timer := 0.0
 var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
+var skill_branch_panels: Array[PanelContainer] = []
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -453,7 +454,7 @@ func _build_ui() -> void:
 	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	upgrade_panel.add_child(skill_scroll)
 	var skill_list := VBoxContainer.new()
-	skill_list.custom_minimum_size = Vector2(300, 1080)
+	skill_list.custom_minimum_size = Vector2(300, 0)
 	skill_list.add_theme_constant_override("separation", 10)
 	skill_scroll.add_child(skill_list)
 
@@ -475,6 +476,7 @@ func _add_skill_branch(parent: VBoxContainer, branch_title: String, description:
 	branch.custom_minimum_size = Vector2(296, 126)
 	branch.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.105, 0.11, 0.98)))
 	parent.add_child(branch)
+	skill_branch_panels.append(branch)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 4)
 	branch.add_child(content)
@@ -651,8 +653,20 @@ func _upgrade_cost(base_cost: int, level: int) -> int:
 	return int(ceil(float(base_cost) * pow(1.25, float(level - 1))))
 
 func _refresh_upgrade_prices() -> void:
-	if skill_buttons.size() < 7:
+	if skill_buttons.size() < 7 or skill_branch_panels.size() < 7:
 		return
+	# Show only the first skill at the beginning. Each purchase reveals the next branch.
+	var unlocked := [
+		true,
+		upgrade_level > 1,
+		speed_upgrade_level > 1,
+		unload_upgrade_level > 1,
+		equipment_upgrade_level > 1,
+		technology_upgrade_level > 1,
+		spawn_upgrade_level > 1
+	]
+	for i in range(skill_branch_panels.size()):
+		skill_branch_panels[i].visible = unlocked[i]
 	skill_buttons[0].text = "BAG CAPACITY +3  |  LV %d  |  $%d" % [upgrade_level, _upgrade_cost(50, upgrade_level)]
 	skill_buttons[1].text = "MOVE SPEED  |  LV %d  |  $%d" % [speed_upgrade_level, _upgrade_cost(75, speed_upgrade_level)]
 	skill_buttons[2].text = "UNLOAD SPEED  |  LV %d  |  $%d" % [unload_upgrade_level, _upgrade_cost(100, unload_upgrade_level)]
