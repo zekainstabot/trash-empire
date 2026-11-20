@@ -1066,7 +1066,7 @@ func _build_skill_tree(parent: Control) -> void:
 	# Progression is arranged in five readable rings, from basic collection
 	# through processing and automation to the final shipping line.
 	var center := Vector2(1200, 1200)
-	var node_size := Vector2(150, 88)
+	var node_size := Vector2(142, 124)
 	var branch_defs := [
 		# Ring 1: improve the basic work loop.
 		{"branch":"speed","title":"MOVEMENT SPEED","depth":1,"angle":210.0},
@@ -1135,19 +1135,35 @@ func _build_skill_tree(parent: Control) -> void:
 	for node_data in all_nodes:
 		var branch := String(node_data.branch)
 		for level in range(1, 4):
-			var button := Button.new()
 			var point: Vector2 = positions["%s_%d" % [branch, level]]
+			# Honeycomb cell: a true six-sided polygon behind a transparent button.
+			var hex := Polygon2D.new()
+			hex.name = "SkillHex_%s_%d" % [branch, level]
+			hex.position = point
+			hex.polygon = PackedVector2Array([
+				Vector2(-68, -39), Vector2(0, -78), Vector2(68, -39),
+				Vector2(68, 39), Vector2(0, 78), Vector2(-68, 39)
+			])
+			hex.color = Color(0.075, 0.095, 0.105)
+			hex.z_index = 1
+			parent.add_child(hex)
+			var button := Button.new()
 			button.position = point - node_size * 0.5
 			button.size = node_size
 			button.custom_minimum_size = node_size
-			button.add_theme_font_size_override("font_size", 11)
+			button.add_theme_font_size_override("font_size", 10)
 			button.add_theme_color_override("font_color", Color(0.95, 0.98, 0.96))
 			button.add_theme_color_override("font_hover_color", Color.WHITE)
 			button.add_theme_color_override("font_disabled_color", Color(0.68, 0.74, 0.72))
+			button.add_theme_stylebox_override("normal", _skill_hex_button_style())
+			button.add_theme_stylebox_override("hover", _skill_hex_button_style())
+			button.add_theme_stylebox_override("pressed", _skill_hex_button_style())
+			button.add_theme_stylebox_override("disabled", _skill_hex_button_style())
 			button.focus_mode = Control.FOCUS_NONE
+			button.z_index = 2
 			button.pressed.connect(_purchase_skill_node.bind(branch, level))
 			parent.add_child(button)
-			skill_node_data.append({"button":button,"branch":branch,"level":level,"title":String(node_data.title),"key":"%s_%d" % [branch, level],"position":point})
+			skill_node_data.append({"button":button,"hex":hex,"branch":branch,"level":level,"title":String(node_data.title),"key":"%s_%d" % [branch, level],"position":point})
 	var core := Label.new()
 	core.text = "✦  START HERE  ✦"
 	core.position = center + Vector2(-72, 92)
@@ -1208,6 +1224,13 @@ func _skill_icon(branch: String) -> String:
 		"truck_capacity": return "📦"
 		"packaging": return "🏭"
 	return "◆"
+
+func _skill_hex_button_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = Color(0, 0, 0, 0)
+	style.shadow_size = 0
+	return style
 
 func _skill_node_style(color: Color, locked := false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -1330,28 +1353,27 @@ func _refresh_upgrade_prices() -> void:
 		var available := visible_node and _skill_branch_unlocked(branch) and level == current + 1 and level <= 3
 		var owned := current >= level
 		var button := node.button as Button
+		var hex := node.hex as Polygon2D
 		button.visible = visible_node
+		hex.visible = visible_node
 		if not visible_node:
 			continue
 		var accent := _skill_branch_color(branch)
 		var icon := _skill_icon(branch)
 		if owned:
-			button.text = "%s  %s\nLEVEL %d\n✓  INSTALLED" % [icon, node.title, level]
+			button.text = "%s\n%s\nLV %d  ✓" % [icon, node.title, level]
 			button.disabled = true
-			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.055, 0.29, 0.22)))
-			button.add_theme_stylebox_override("hover", _skill_node_style(Color(0.07, 0.35, 0.26)))
+			hex.color = Color(0.055, 0.34, 0.25)
 		elif available:
 			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0}.get(branch, 4.0))
 			var price_level := level
-			button.text = "%s  %s\nLEVEL %d\n$%.0f  •  UNLOCK" % [icon, node.title, level, _upgrade_cost(base_cost, price_level)]
+			button.text = "%s\n%s\n$%.0f" % [icon, node.title, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
-			button.add_theme_stylebox_override("normal", _skill_node_style(accent.darkened(0.55)))
-			button.add_theme_stylebox_override("hover", _skill_node_style(accent.darkened(0.35)))
-			button.add_theme_stylebox_override("pressed", _skill_node_style(accent.darkened(0.68)))
+			hex.color = accent.darkened(0.48)
 		else:
-			button.text = "%s  %s\nLEVEL %d\nWAITING" % [icon, node.title, level]
+			button.text = "%s\n%s\nLOCKED" % [icon, node.title]
 			button.disabled = true
-			button.add_theme_stylebox_override("normal", _skill_node_style(Color(0.075, 0.095, 0.105), true))
+			hex.color = Color(0.075, 0.095, 0.105)
 	for connection in skill_connection_data:
 		var line := connection.line as Line2D
 		line.visible = revealed.has(String(connection.from)) and revealed.has(String(connection.to))
