@@ -1155,9 +1155,7 @@ func _build_skill_tree(parent: Control) -> void:
 		{"branch":"packaging","title":"PACKAGING SPEED","depth":5,"angle":210.0},
 		{"branch":"truck_capacity","title":"TRUCK CAPACITY","depth":5,"angle":330.0}
 	]
-	var positions: Dictionary = {}
-	for level in range(1, 4):
-		positions["capacity_%d" % level] = center + Vector2(0, float(level - 3) * 112.0)
+	var positions: Dictionary = {"capacity_1": center}
 	# Compact radial layout: branches fan out around the core, with levels
 	# staggered locally rather than placed on distant concentric rings.
 	var branch_layout := {
@@ -1176,15 +1174,15 @@ func _build_skill_tree(parent: Control) -> void:
 			positions["%s_%d" % [branch_data.branch, level]] = center + direction * (base_radius + offset)
 	# Decorative circles are removed so branches and nodes form a compact,
 	# readable network instead of an enormous empty skill map.
+	# Capacity is one meaningful starting upgrade, not three repetitive
+	# nodes in a straight line. The real branches fan out from this hub.
 	# Draw prerequisite links behind the skill buttons.
-	for level in range(1, 3):
-		_add_skill_connection(parent, positions["capacity_%d" % level], positions["capacity_%d" % (level + 1)], "capacity_%d" % level, "capacity_%d" % (level + 1))
 	for branch_data in branch_defs:
 		var branch := String(branch_data.branch)
 		for level in range(1, 3):
 			_add_skill_connection(parent, positions["%s_%d" % [branch, level]], positions["%s_%d" % [branch, level + 1]], "%s_%d" % [branch, level], "%s_%d" % [branch, level + 1])
 	var dependencies := [
-		["capacity_3", "speed_1"], ["capacity_3", "range_1"], ["capacity_3", "unload_1"],
+		["capacity_1", "speed_1"], ["capacity_1", "range_1"], ["capacity_1", "unload_1"],
 		["speed_3", "technology_1"], ["technology_3", "value_1"],
 		["range_3", "supply_1"], ["supply_3", "luck_1"], ["supply_3", "respawn_1"],
 		["unload_3", "auto_1"], ["auto_3", "magnet_power_1"], ["range_3", "bulk_pickup_1"],
@@ -1199,7 +1197,8 @@ func _build_skill_tree(parent: Control) -> void:
 		all_nodes.append({"branch":String(branch_data.branch),"title":String(branch_data.title)})
 	for node_data in all_nodes:
 		var branch := String(node_data.branch)
-		for level in range(1, 4):
+		var max_levels := 1 if branch == "capacity" else 3
+		for level in range(1, max_levels + 1):
 			var point: Vector2 = positions["%s_%d" % [branch, level]]
 			# Honeycomb cell: a true six-sided polygon behind a transparent button.
 			var hex := Polygon2D.new()
@@ -1352,7 +1351,7 @@ func _skill_level(branch: String) -> int:
 func _skill_branch_unlocked(branch: String) -> bool:
 	match branch:
 		"capacity": return true
-		"speed", "range", "unload": return upgrade_level >= 4
+		"speed", "range", "unload": return upgrade_level >= 2
 		"technology": return speed_upgrade_level >= 4
 		"value": return technology_upgrade_level >= 4
 		"supply": return equipment_upgrade_level >= 4
