@@ -16,6 +16,8 @@ var unload_upgrade_level := 1
 var equipment_upgrade_level := 1
 var technology_upgrade_level := 1
 var spawn_upgrade_level := 1
+var auto_pickup_level := 0
+var auto_pickup_timer := 0.0
 var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
 var unload_timer := 0.0
@@ -65,6 +67,7 @@ func _process(delta: float) -> void:
 	_animate_robot(delta)
 	_animate_conveyor(delta)
 	_process_auto_sell(delta)
+	_process_auto_pickup(delta)
 
 func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
@@ -450,7 +453,7 @@ func _build_ui() -> void:
 	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	upgrade_panel.add_child(skill_scroll)
 	var skill_list := VBoxContainer.new()
-	skill_list.custom_minimum_size = Vector2(300, 920)
+	skill_list.custom_minimum_size = Vector2(300, 1080)
 	skill_list.add_theme_constant_override("separation", 10)
 	skill_scroll.add_child(skill_list)
 
@@ -460,6 +463,7 @@ func _build_ui() -> void:
 	_add_skill_branch(skill_list, "04  PICKUP RANGE", "Reach litter farther away • +0.75m per level", "PICKUP RANGE", Callable(self, "_upgrade_equipment"))
 	_add_skill_branch(skill_list, "05  TECHNOLOGY", "Earn more cash from every item", "RECYCLING VALUE", Callable(self, "_upgrade_technology"))
 	_add_skill_branch(skill_list, "06  TRASH SUPPLY", "More litter appears each time you pull to refill", "REFILL CAPACITY", Callable(self, "_upgrade_spawn"))
+	_add_skill_branch(skill_list, "07  AUTO PICKUP", "Automatically collect nearby litter while you move", "AUTO COLLECT", Callable(self, "_upgrade_auto_pickup"))
 	_refresh_upgrade_prices()
 
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
@@ -542,6 +546,17 @@ func _collect_nearby() -> void:
 		_set_message("Collected! Keep cleaning the yard.")
 	else:
 		_set_message("Get closer to a piece of trash.")
+
+func _process_auto_pickup(delta: float) -> void:
+	if auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
+		auto_pickup_timer = 0.0
+		return
+	auto_pickup_timer += delta
+	var interval := maxf(0.35, 1.5 - float(auto_pickup_level - 1) * 0.15)
+	if auto_pickup_timer < interval:
+		return
+	auto_pickup_timer = 0.0
+	_collect_nearby()
 
 func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
@@ -636,7 +651,7 @@ func _upgrade_cost(base_cost: int, level: int) -> int:
 	return int(ceil(float(base_cost) * pow(1.25, float(level - 1))))
 
 func _refresh_upgrade_prices() -> void:
-	if skill_buttons.size() < 6:
+	if skill_buttons.size() < 7:
 		return
 	skill_buttons[0].text = "BAG CAPACITY +3  |  LV %d  |  $%d" % [upgrade_level, _upgrade_cost(50, upgrade_level)]
 	skill_buttons[1].text = "MOVE SPEED  |  LV %d  |  $%d" % [speed_upgrade_level, _upgrade_cost(75, speed_upgrade_level)]
@@ -644,6 +659,7 @@ func _refresh_upgrade_prices() -> void:
 	skill_buttons[3].text = "PICKUP RANGE +0.75M  |  LV %d  |  $%d" % [equipment_upgrade_level, _upgrade_cost(125, equipment_upgrade_level)]
 	skill_buttons[4].text = "RECYCLING VALUE  |  LV %d  |  $%d" % [technology_upgrade_level, _upgrade_cost(150, technology_upgrade_level)]
 	skill_buttons[5].text = "TRASH PER REFILL +6  |  LV %d  |  $%d" % [spawn_upgrade_level, _upgrade_cost(175, spawn_upgrade_level)]
+	skill_buttons[6].text = "AUTO PICKUP  |  LV %d  |  $%d" % [auto_pickup_level, _upgrade_cost(250, auto_pickup_level + 1)]
 
 func _upgrade_spawn() -> void:
 	var cost := _upgrade_cost(175, spawn_upgrade_level)
@@ -656,6 +672,21 @@ func _upgrade_spawn() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Trash supply upgraded! +6 trash on every manual refill.")
+
+func _upgrade_auto_pickup() -> void:
+	var cost := _upgrade_cost(250, auto_pickup_level + 1)
+	if money < cost:
+		_set_message("You need $%d for automatic pickup." % cost)
+		return
+	money -= cost
+	auto_pickup_level += 1
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	if auto_pickup_level == 1:
+		_set_message("Auto pickup unlocked! Nearby litter is collected automatically.")
+	else:
+		_set_message("Auto pickup upgraded! Collection is faster.")
 
 func _apply_unlocked_districts() -> void:
 	for index in range(mini(yard_stage - 1, expansion_gates.size())):
@@ -714,6 +745,7 @@ func _save_game() -> void:
 	save.set_value("progress", "equipment_level", equipment_upgrade_level)
 	save.set_value("progress", "technology_level", technology_upgrade_level)
 	save.set_value("progress", "spawn_level", spawn_upgrade_level)
+	save.set_value("progress", "auto_pickup_level", auto_pickup_level)
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.save("user://trash_empire.save")
 
@@ -730,8 +762,9 @@ func _load_game() -> void:
 	equipment_upgrade_level = int(save.get_value("progress", "equipment_level", 1))
 	technology_upgrade_level = int(save.get_value("progress", "technology_level", 1))
 	spawn_upgrade_level = int(save.get_value("progress", "spawn_level", 1))
+	auto_pickup_level = int(save.get_value("progress", "auto_pickup_level", 0))
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
-	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.55
+	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.75
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 
 func _spawn_trash(amount: int) -> void:
