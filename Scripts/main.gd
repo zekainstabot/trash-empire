@@ -457,7 +457,7 @@ func _build_ui() -> void:
 	_add_skill_branch(skill_list, "01  CAPACITY", "Bigger bag • +3 trash per level", "BAG CAPACITY", Callable(self, "_upgrade_bag"))
 	_add_skill_branch(skill_list, "02  SPEED", "Move faster around the yard", "MOVEMENT SPEED", Callable(self, "_upgrade_speed"))
 	_add_skill_branch(skill_list, "03  RECYCLING", "Unload trash faster", "UNLOAD SPEED", Callable(self, "_upgrade_unload"))
-	_add_skill_branch(skill_list, "04  EQUIPMENT", "Collect trash from farther away", "MAGNET RANGE", Callable(self, "_upgrade_equipment"))
+	_add_skill_branch(skill_list, "04  PICKUP RANGE", "Reach litter farther away • +0.75m per level", "PICKUP RANGE", Callable(self, "_upgrade_equipment"))
 	_add_skill_branch(skill_list, "05  TECHNOLOGY", "Earn more cash from every item", "RECYCLING VALUE", Callable(self, "_upgrade_technology"))
 	_add_skill_branch(skill_list, "06  TRASH SUPPLY", "More litter appears each time you pull to refill", "REFILL CAPACITY", Callable(self, "_upgrade_spawn"))
 	_refresh_upgrade_prices()
@@ -612,7 +612,7 @@ func _upgrade_equipment() -> void:
 		return
 	money -= cost
 	equipment_upgrade_level += 1
-	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.55
+	collection_range = 2.5 + float(equipment_upgrade_level - 1) * 0.75
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
@@ -641,7 +641,7 @@ func _refresh_upgrade_prices() -> void:
 	skill_buttons[0].text = "BAG CAPACITY +3  |  LV %d  |  $%d" % [upgrade_level, _upgrade_cost(50, upgrade_level)]
 	skill_buttons[1].text = "MOVE SPEED  |  LV %d  |  $%d" % [speed_upgrade_level, _upgrade_cost(75, speed_upgrade_level)]
 	skill_buttons[2].text = "UNLOAD SPEED  |  LV %d  |  $%d" % [unload_upgrade_level, _upgrade_cost(100, unload_upgrade_level)]
-	skill_buttons[3].text = "MAGNET RANGE  |  LV %d  |  $%d" % [equipment_upgrade_level, _upgrade_cost(125, equipment_upgrade_level)]
+	skill_buttons[3].text = "PICKUP RANGE +0.75M  |  LV %d  |  $%d" % [equipment_upgrade_level, _upgrade_cost(125, equipment_upgrade_level)]
 	skill_buttons[4].text = "RECYCLING VALUE  |  LV %d  |  $%d" % [technology_upgrade_level, _upgrade_cost(150, technology_upgrade_level)]
 	skill_buttons[5].text = "TRASH PER REFILL +6  |  LV %d  |  $%d" % [spawn_upgrade_level, _upgrade_cost(175, spawn_upgrade_level)]
 
