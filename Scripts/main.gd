@@ -98,13 +98,25 @@ const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
 
 func _ready() -> void:
-	# Render the title menu before creating the 3D world. On slower Android
-	# devices, building the complete factory during startup can stall the
-	# first frame and leave only the clear-color visible.
+	# Always activate a camera on the very first frame. The gameplay camera
+	# is created later when PLAY is pressed; without this boot camera some
+	# Android devices show only the viewport clear color and no menu.
+	camera = Camera3D.new()
+	camera.name = "BootCamera"
+	camera.position = Vector3(0.0, 12.0, 24.0)
+	camera.rotation_degrees = Vector3(-22.0, 0.0, 0.0)
+	camera.current = true
+	camera.near = 0.05
+	camera.far = 250.0
+	add_child(camera)
+
+	# Build the lightweight title UI before creating the 3D world.
+	main_menu_open = true
 	_load_game()
 	_build_ui()
 	_update_ui()
-	main_menu_open = true
+	if is_instance_valid(main_menu_panel):
+		main_menu_panel.show()
 	set_process(true)
 	set_physics_process(true)
 
