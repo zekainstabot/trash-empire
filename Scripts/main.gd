@@ -56,6 +56,8 @@ var conveyor_time := 0.0
 var conveyor_rollers: Array[MeshInstance3D] = []
 var conveyor_slats: Array[Node3D] = []
 var conveyor_item_count := 0
+var factory_stage := 1
+var factory_upgrade_button: Node3D
 var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
 var expansion_world_button: Node3D
@@ -216,6 +218,87 @@ func _build_world() -> void:
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
+	factory_upgrade_button = _create_world_action_button("FactoryExpansionButton", "EXPAND FACTORY", Vector3(13.0, 0.0, 7.0), Vector3(2.8, 0.5, 1.25), Callable(self, "_upgrade_factory"), Color(0.12, 0.55, 0.38))
+	_build_factory_expansion()
+	_refresh_factory_upgrade_button()
+
+func _upgrade_factory() -> void:
+	if factory_stage >= 4:
+		_set_message("Factory production line is fully upgraded!")
+		return
+	var costs := [0, 15, 60, 180]
+	var cost: int = costs[factory_stage]
+	if money < cost:
+		_set_message("You need $%d to add the next factory machine." % cost)
+		return
+	money -= cost
+	factory_stage += 1
+	_build_factory_expansion()
+	_refresh_factory_upgrade_button()
+	_update_ui()
+	_save_game()
+	var names := ["", "", "SHREDDER", "GRANULATOR", "CONSUMER GOODS LINE"]
+	_set_message("Factory expanded! %s connected to the conveyor." % names[factory_stage])
+
+func _refresh_factory_upgrade_button() -> void:
+	if not is_instance_valid(factory_upgrade_button):
+		return
+	var label := factory_upgrade_button.get_node_or_null("WorldButtonLabel") as Label3D
+	if not is_instance_valid(label):
+		return
+	if factory_stage >= 4:
+		label.text = "FACTORY MAX\nGOODS LINE"
+	else:
+		var costs := [0, 15, 60, 180]
+		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD GOODS LINE"]
+		label.text = "%s\n$%d" % [names[factory_stage + 1], costs[factory_stage]]
+
+func _build_factory_expansion() -> void:
+	for stage in range(2, factory_stage + 1):
+		_build_factory_module(stage)
+	for stage in range(2, factory_stage + 1):
+		var start_z := -5.15 if stage == 2 else ([-999.0, -999.0, 1.05, 6.55][stage])
+		var end_z := -2.05 if stage == 2 else (3.45 if stage == 3 else 8.95)
+		_build_factory_link(start_z, end_z)
+
+func _build_factory_module(stage: int) -> void:
+	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5]
+	var z: float = z_positions[stage]
+	var colors := [Color.WHITE, Color.WHITE, Color(0.82, 0.48, 0.16), Color(0.20, 0.56, 0.72), Color(0.18, 0.62, 0.39)]
+	var accent: Color = colors[stage]
+	_box("FactoryModule%dBase" % stage, Vector3(7.5, 0.42, z), Vector3(4.2, 0.84, 3.2), Color(0.055, 0.09, 0.11), true)
+	_box("FactoryModule%dBody" % stage, Vector3(7.5, 1.55, z), Vector3(3.35, 1.55, 2.65), accent.darkened(0.35), true)
+	_box("FactoryModule%dTop" % stage, Vector3(7.5, 2.42, z), Vector3(3.7, 0.18, 2.95), accent, false)
+	_box("FactoryModule%dFront" % stage, Vector3(7.5, 1.48, z - 1.34), Vector3(1.65, 0.78, 0.07), Color(0.035, 0.075, 0.085), false)
+	_box("FactoryModule%dWindow" % stage, Vector3(7.5, 1.58, z - 1.39), Vector3(0.85, 0.34, 0.035), accent.lightened(0.45), false)
+	for x in [6.0, 9.0]:
+		_cylinder("FactoryModule%dVent" % stage, Vector3(x, 1.62, z), 0.24, 0.18, Color(0.24, 0.30, 0.31), false)
+	if stage == 2:
+		_label_3d("INDUSTRIAL SHREDDER", Vector3(7.5, 3.0, z), 0.24)
+		for x in [7.0, 8.0]:
+			_cylinder("ShredderRoller", Vector3(x, 1.62, z - 0.62), 0.32, 0.72, Color(0.66, 0.72, 0.69), true)
+	elif stage == 3:
+		_label_3d("PLASTIC GRANULATOR", Vector3(7.5, 3.0, z), 0.24)
+		_box("GranulatorHopper", Vector3(7.5, 2.95, z - 0.15), Vector3(2.1, 0.65, 1.45), Color(0.32, 0.39, 0.40), false)
+		_box("GranulatorOutlet", Vector3(7.5, 0.95, z + 1.38), Vector3(1.2, 0.65, 0.42), accent.lightened(0.2), false)
+	else:
+		_label_3d("CONSUMER GOODS FACTORY", Vector3(7.5, 3.0, z), 0.22)
+		_box("ProductChute", Vector3(7.5, 0.95, z + 1.48), Vector3(1.8, 0.42, 0.72), Color(0.28, 0.34, 0.34), false)
+		for x in [6.25, 8.75]:
+			_box("ProductCrate", Vector3(x, 0.48, z + 1.65), Vector3(0.72, 0.82, 0.72), accent.lightened(0.12), false)
+	_box("FactoryModule%dStatus" % stage, Vector3(9.25, 2.0, z - 0.75), Vector3(0.42, 0.42, 0.10), Color(0.10, 0.95, 0.56), false)
+
+func _build_factory_link(start_z: float, end_z: float) -> void:
+	var middle := (start_z + end_z) * 0.5
+	var length := absf(end_z - start_z)
+	_box("FactoryConveyorFrame", Vector3(7.5, 0.78, middle), Vector3(1.75, 0.28, length), Color(0.07, 0.11, 0.12), true)
+	_box("FactoryConveyorBelt", Vector3(7.5, 0.96, middle), Vector3(1.48, 0.07, maxf(0.2, length - 0.12)), Color(0.025, 0.04, 0.045), false)
+	for x in [6.68, 8.32]:
+		_box("FactoryConveyorRail", Vector3(x, 1.18, middle), Vector3(0.10, 0.40, length), Color(0.48, 0.54, 0.52), false)
+	for i in range(maxi(2, int(length / 0.65))):
+		var z := start_z + (end_z - start_z) * float(i) / float(maxi(1, int(length / 0.65) - 1))
+		var roller := _cylinder("FactoryConveyorRoller", Vector3(7.5, 0.83, z), 0.095, 1.52, Color(0.55, 0.60, 0.58), true)
+		conveyor_rollers.append(roller)
 
 func _create_world_action_button(node_name: String, title: String, world_position: Vector3, dimensions: Vector3, action: Callable, color: Color) -> Node3D:
 	var root := Node3D.new()
@@ -717,6 +800,7 @@ func _start_new_world() -> void:
 	recycling_bonus = 1.0
 	collection_range = 2.0
 	yard_stage = 1
+	factory_stage = 1
 	unload_timer = 0.0
 	player.set("move_speed", 4.5)
 	for item in trash_nodes:
@@ -1180,7 +1264,9 @@ func _process_auto_sell(delta: float) -> void:
 		unload_timer = 0.0
 		carried -= 1
 		_spawn_conveyor_item()
-		var item_value := 0.1 * recycling_bonus * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)
+		var factory_multipliers := [1.0, 1.5, 2.25, 3.5]
+		var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
+		var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)
 		if randf() < float(luck_upgrade_level - 1) * 0.10:
 			item_value *= 2.0
 		money += item_value
@@ -1467,6 +1553,7 @@ func _save_game() -> void:
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "yard_stage", yard_stage)
+	save.set_value("progress", "factory_stage", factory_stage)
 	save.save("user://trash_empire.save")
 
 func _load_game() -> void:
@@ -1488,6 +1575,7 @@ func _load_game() -> void:
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
+	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 4)
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
 
@@ -1624,8 +1712,16 @@ func _spawn_conveyor_item() -> void:
 	var travel := create_tween()
 	travel.set_trans(Tween.TRANS_SINE)
 	travel.set_ease(Tween.EASE_IN_OUT)
-	travel.tween_property(item, "position", Vector3(5.35, 1.25, item.position.z), 1.35)
-	travel.parallel().tween_property(item, "rotation:y", item.rotation.y + TAU, 1.35)
+	travel.tween_property(item, "position", Vector3(5.35, 1.25, item.position.z), 1.0)
+	travel.parallel().tween_property(item, "rotation:y", item.rotation.y + TAU, 1.0)
+	travel.tween_property(item, "position", Vector3(7.5, 1.25, -6.5), 0.55)
+	travel.tween_property(item, "position", Vector3(7.5, 1.25, -5.0), 0.45)
+	if factory_stage >= 2:
+		travel.tween_property(item, "position", Vector3(7.5, 1.25, -2.0), 0.9)
+	if factory_stage >= 3:
+		travel.tween_property(item, "position", Vector3(7.5, 1.25, 3.45), 1.1)
+	if factory_stage >= 4:
+		travel.tween_property(item, "position", Vector3(7.5, 1.25, 8.95), 1.1)
 	travel.tween_callback(item.queue_free)
 
 func _make_bin(pos: Vector3, color: Color, label_text: String) -> void:
