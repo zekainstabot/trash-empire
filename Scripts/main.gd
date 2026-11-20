@@ -2180,9 +2180,11 @@ func _spawn_conveyor_item(item_value: float) -> void:
 func _process_teddy_shipping(delta: float) -> void:
 	if factory_stage < 5 or delivery_trucks.is_empty():
 		return
+	if shipping_active:
+		return
 	var interval := _truck_dispatch_interval()
 	truck_dispatch_timer += delta
-	if shipping_active or truck_dispatch_timer < interval:
+	if truck_dispatch_timer < interval:
 		return
 	truck_dispatch_timer = 0.0
 	if teddy_stock_values.is_empty():
