@@ -877,6 +877,13 @@ func _build_ui() -> void:
 	upgrades_button.anchor_right = 1.0
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
 
+	# Always-visible pause/menu control in the gameplay HUD.
+	var menu_button := _button("☰", Vector2(-62, 24), Vector2(48, 58), layer)
+	menu_button.anchor_left = 1.0
+	menu_button.anchor_right = 1.0
+	menu_button.add_theme_font_size_override("font_size", 24)
+	menu_button.pressed.connect(_toggle_main_menu)
+
 	# Full-screen skill tree overlay, sized to the device viewport.
 	upgrade_panel = Panel.new()
 	upgrade_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -996,6 +1003,25 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 			child.visible = false
 
 
+func _toggle_main_menu() -> void:
+	if main_menu_open:
+		_close_main_menu()
+		return
+	main_menu_open = true
+	if is_instance_valid(player):
+		player.set_process(false)
+		player.set_physics_process(false)
+	if is_instance_valid(upgrade_panel):
+		upgrade_panel.hide()
+	if is_instance_valid(main_menu_panel):
+		main_menu_panel.show()
+		main_menu_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+		var ui_layer := main_menu_panel.get_parent()
+		if is_instance_valid(ui_layer):
+			for child in ui_layer.get_children():
+				if child != main_menu_panel:
+					child.hide()
+
 func _confirm_exit_game() -> void:
 	var dialog := ConfirmationDialog.new()
 	dialog.title = "EXIT TRASH EMPIRE?"
@@ -1034,6 +1060,10 @@ func _confirm_new_game() -> void:
 	)
 
 func _start_new_world() -> void:
+	# NEW can be selected directly from the title screen before a player exists.
+	# Initialize the scene first so reset operations never dereference a null player.
+	if not world_initialized:
+		await _close_main_menu()
 	money = 0
 	carried = 0
 	capacity = 4
