@@ -201,20 +201,12 @@ func _build_world() -> void:
 	# Perimeter walls, fencing, and gate.
 	_box("BackWall", Vector3(0, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("LeftWall", Vector3(-15.5, 2.0, 0), Vector3(0.5, 4, 72), Color(0.28, 0.32, 0.31), true)
-	_box("RightWallNorth", Vector3(15.5, 2.0, -19.5), Vector3(0.5, 4, 34.0), Color(0.28, 0.32, 0.31), true)
-	_box("RightWallSouth", Vector3(15.5, 2.0, 19.5), Vector3(0.5, 4, 34.0), Color(0.28, 0.32, 0.31), true)
-	var first_gate := _box("ExpansionGateOne", Vector3(15.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
-	expansion_gates.append(first_gate)
 	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 72), Color(0.20, 0.43, 0.22), true)
 	_box("DistrictTwoGrassPatch", Vector3(32, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.25, 0.50, 0.22), false)
-	_box("DistrictTwoOuterWallNorth", Vector3(47.5, 2.0, -19.5), Vector3(0.5, 4, 34.0), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictTwoOuterWallSouth", Vector3(47.5, 2.0, 19.5), Vector3(0.5, 4, 34.0), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoBackWall", Vector3(32, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoFrontFence", Vector3(32, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 72), Color(0.32, 0.34, 0.29), true)
 	# Open the east edge into a boulevard leading to the new market quarter.
-	_box("DistrictThreeEastWallNorth", Vector3(79.5, 2.0, -19.5), Vector3(0.5, 4, 33.0), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictThreeEastWallSouth", Vector3(79.5, 2.0, 19.5), Vector3(0.5, 4, 33.0), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictFourGround", Vector3(96, -0.3, 0), Vector3(32, 0.6, 72), Color(0.29, 0.34, 0.30), true)
 	_box("DistrictFourGrassPatch", Vector3(96, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.27, 0.43, 0.25), false)
 	_box("DistrictFourOuterWall", Vector3(111.5, 2.0, 0), Vector3(0.5, 4, 72), Color(0.28, 0.32, 0.31), true)
@@ -222,14 +214,6 @@ func _build_world() -> void:
 	_box("DistrictFourFrontFence", Vector3(96, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	_box("DistrictThreeBackWall", Vector3(64, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictThreeFrontFence", Vector3(64, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
-	var second_gate := _box("ExpansionGateTwo", Vector3(47.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
-	expansion_gates.append(second_gate)
-	_box("DistrictTwoSign", Vector3(32, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.08, 0.38, 0.31), false)
-	_label_3d("DISTRICT 2", Vector3(32, 2.2, -13.35), 0.35)
-	_box("DistrictThreeSign", Vector3(64, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.42, 0.30, 0.10), false)
-	_label_3d("DISTRICT 3", Vector3(64, 2.2, -13.35), 0.35)
-	_box("DistrictFourSign", Vector3(96, 2.2, -13.5), Vector3(6.0, 1.0, 0.18), Color(0.10, 0.29, 0.43), false)
-	_label_3d("DISTRICT 4 - MARKET", Vector3(96, 2.2, -13.35), 0.28)
 	for x in range(-14, 15, 2):
 		# Keep a wide, player-accessible entrance aligned with the road.
 		if x >= -12 and x <= -4:
@@ -314,8 +298,6 @@ func _build_world() -> void:
 	_build_city_pedestrians()
 	_build_commercial_district()
 
-	_create_expansion_zone()
-	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(0.0, 2.0, -35.20), Callable(self, "_refill_first_district"))
 	refill_world_button.rotation_degrees.y = 90.0
 	_build_factory_expansion()
@@ -1397,7 +1379,7 @@ func _start_new_world() -> void:
 	auto_pickup_timer = 0.0
 	recycling_bonus = 1.0
 	collection_range = 2.0
-	yard_stage = 1
+	yard_stage = 4
 	_reset_city_truck_fleet()
 	factory_stage = 1
 	factory_built_stage = 1
@@ -1418,7 +1400,6 @@ func _start_new_world() -> void:
 	_build_trash()
 	_update_ui()
 	_refresh_upgrade_prices()
-	_refresh_expansion_world_button()
 	_refresh_factory_upgrade_button()
 	_refresh_factory_build_zones()
 	_save_game()
@@ -2235,7 +2216,7 @@ func _process_trash_respawn(delta: float) -> void:
 	if yard_stage >= 2:
 		target_count += 48
 	if yard_stage >= 3:
-		target_count += 48
+		target_count += 96
 	var alive_count := 0
 	for item in trash_nodes:
 		if is_instance_valid(item):
@@ -2358,51 +2339,12 @@ func _pay_gradually(cost: float) -> bool:
 	payment_active = false
 	return true
 
-func _process_expansion_zone(delta: float) -> void:
-	if payment_active or not is_instance_valid(player) or yard_stage >= 3:
-		expansion_zone_blocked = false
-		district_build_active = false
-		return
-	var target_x := 13.15 if yard_stage == 1 else 45.15
-	var distance := Vector2(player.global_position.x - target_x, player.global_position.z).length()
-	if distance > 2.7:
-		if district_build_active and district_build_paid > 0.0:
-			_save_game()
-		expansion_zone_blocked = false
-		district_build_active = false
-		district_no_money_notified = false
-		district_build_save_timer = 0.0
-		_refresh_expansion_world_button()
-		return
-	if not district_build_active:
-		district_build_active = true
-		district_no_money_notified = false
-		expansion_zone_blocked = true
-	var cost := 25.0 if yard_stage == 1 else 60.0
-	var remaining := maxf(0.0, cost - district_build_paid)
-	if remaining <= 0.001:
-		_complete_district_unlock()
-		return
-	var payment := minf(money, minf((cost / 3.0) * _spending_speed_multiplier() * delta, remaining))
-	if payment > 0.0:
-		district_no_money_notified = false
-		money -= payment
-		district_build_paid += payment
-		_update_ui()
-		district_build_save_timer += delta
-		if district_build_save_timer >= 0.75:
-			district_build_save_timer = 0.0
-			_save_game()
-		var zone := get_node_or_null("DistrictUnlockZone") as Node3D
-		if is_instance_valid(zone):
-			var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
-			if is_instance_valid(label):
-				label.text = "CITY EXPANSION\nDISTRICT %02d\nTOTAL COST   %.0f ZC\nPAID   %.1f ZC   •   LEFT   %.1f ZC\nKEEP STANDING TO BUILD" % [yard_stage + 1, cost, district_build_paid, maxf(0.0, cost - district_build_paid)]
-	if district_build_paid >= cost - 0.001:
-		_complete_district_unlock()
-	elif money <= 0.001 and not district_no_money_notified:
-		district_no_money_notified = true
-		_set_message("Need %.1f more ZC to unlock this district. Stay here to continue." % (cost - district_build_paid))
+func _process_expansion_zone(_delta: float) -> void:
+	# Districts are permanently open; no standing pad, payment or unlock flow.
+	expansion_zone_blocked = false
+	district_build_active = false
+	district_build_paid = 0.0
+
 
 func _complete_district_unlock() -> void:
 	district_build_active = false
@@ -2431,28 +2373,19 @@ func _recover_player() -> void:
 	if yard_stage == 2:
 		max_x = 43.5
 	elif yard_stage >= 3:
-		max_x = 75.5
+		max_x = 107.5
 	player.global_position = Vector3(clampf(player.global_position.x, -11.5, max_x), 0.05, clampf(player.global_position.z, -13.0, 13.0))
 	player.velocity = Vector3.ZERO
 	player.reset_physics_interpolation()
 	_set_message("Safety system: returned to the yard.")
 
 func _refresh_expansion_world_button() -> void:
+	# Compatibility hook for old save/UI paths; expansion is no longer locked.
 	var zone := get_node_or_null("DistrictUnlockZone") as Node3D
-	if not is_instance_valid(zone):
-		return
-	zone.visible = yard_stage < 3
-	if yard_stage == 1:
-		zone.position = Vector3(13.15, 0.0, 0.0)
-		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
-		if is_instance_valid(label):
-			label.text = "CITY EXPANSION\nDISTRICT 02\nCOST: 25 ZC\nSTEP ON PAD TO BUILD"
-	else:
-		zone.position = Vector3(45.15, 0.0, 0.0)
-		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
-		if is_instance_valid(label):
-			label.text = "CITY EXPANSION\nDISTRICT 03\nCOST: 60 ZC\nSTEP ON PAD TO BUILD"
+	if is_instance_valid(zone):
+		zone.hide()
 	expansion_zone_blocked = false
+
 
 func _expansion_button_label(value: String) -> void:
 	var label := expansion_world_button.get_node_or_null("WorldButtonLabel") as Label3D
@@ -2485,7 +2418,6 @@ func _save_game() -> void:
 	save.set_value("progress", "truck_capacity_upgrade_level", truck_capacity_upgrade_level)
 	save.set_value("progress", "packaging_upgrade_level", packaging_upgrade_level)
 	save.set_value("progress", "yard_stage", yard_stage)
-	save.set_value("progress", "district_build_paid", district_build_paid)
 	save.set_value("progress", "factory_stage", factory_stage)
 	save.set_value("progress", "factory_build_paid", factory_build_paid)
 	save.set_value("progress", "teddy_stock_values", teddy_stock_values)
@@ -2518,8 +2450,8 @@ func _load_game() -> void:
 	fleet_upgrade_level = clampi(int(save.get_value("progress", "fleet_upgrade_level", 0)), 0, 3)
 	truck_capacity_upgrade_level = clampi(int(save.get_value("progress", "truck_capacity_upgrade_level", 0)), 0, 3)
 	packaging_upgrade_level = clampi(int(save.get_value("progress", "packaging_upgrade_level", 0)), 0, 3)
-	yard_stage = clampi(int(save.get_value("progress", "yard_stage", 1)), 1, 3)
-	district_build_paid = clampf(float(save.get_value("progress", "district_build_paid", 0.0)), 0.0, 60.0)
+	yard_stage = 4 # All four areas are permanently open in the unified city.
+	district_build_paid = 0.0
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
 	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0, 160.0][factory_stage])
 	teddy_stock_values.clear()
