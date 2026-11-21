@@ -90,6 +90,11 @@ var fleet_upgrade_level := 0
 var truck_capacity_upgrade_level := 0
 var packaging_upgrade_level := 0
 var delivery_trucks: Array[Node3D] = []
+var city_truck: Node3D
+var city_truck_phase := 0
+var city_truck_timer := 8.0
+var city_truck_start := Vector3(-8.0, 0.0, 14.0)
+var city_truck_dump := Vector3(-4.8, 0.0, -11.5)
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -141,6 +146,7 @@ func _process(delta: float) -> void:
 	_process_auto_pickup(delta)
 	_process_helper_drones(delta)
 	_process_trash_respawn(delta)
+	_process_city_truck(delta)
 
 func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
@@ -174,6 +180,7 @@ func _build_world() -> void:
 	_box("RoadLane", Vector3(-8.0, 0.012, 1.0), Vector3(5.0, 0.025, 27.0), Color(0.19, 0.22, 0.22), false)
 	for z in range(-11, 13, 4):
 		_box("RoadDash", Vector3(-8.0, 0.03, z), Vector3(0.13, 0.025, 1.7), Color(0.88, 0.77, 0.38), false)
+	_build_city_dump_area()
 	_box("PlayerStartZone", Vector3(0, 0.02, 7), Vector3(7, 0.04, 5), Color(0.39, 0.40, 0.35), false)
 
 	# Perimeter walls, fencing, and gate.
@@ -2260,6 +2267,91 @@ func _load_game() -> void:
 		teddy_stock_values.append(float(stored_value))
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
+
+
+func _build_city_dump_area() -> void:
+	# Municipal collection depot beside the service road.
+	_box("CityDumpConcrete", Vector3(-4.8, 0.035, -13.0), Vector3(7.2, 0.07, 7.0), Color(0.25, 0.29, 0.28), false)
+	_box("CityDumpMarking", Vector3(-4.8, 0.078, -13.0), Vector3(6.7, 0.025, 6.5), Color(0.36, 0.39, 0.34), false)
+	_box("CityDumpBackWall", Vector3(-4.8, 1.15, -16.35), Vector3(7.2, 2.3, 0.22), Color(0.30, 0.36, 0.35), true)
+	_box("CityDumpLeftWall", Vector3(-8.25, 1.0, -13.0), Vector3(0.22, 2.0, 6.5), Color(0.30, 0.36, 0.35), true)
+	_box("CityDumpRightWall", Vector3(-1.35, 1.0, -13.0), Vector3(0.22, 2.0, 6.5), Color(0.30, 0.36, 0.35), true)
+	_box("CityDumpHazardStripe", Vector3(-4.8, 0.10, -9.62), Vector3(6.9, 0.08, 0.16), Color(0.95, 0.72, 0.12), false)
+	_box("CityDumpSign", Vector3(-4.8, 2.45, -16.18), Vector3(3.8, 0.72, 0.16), Color(0.08, 0.28, 0.25), false)
+	_label_3d("CITY WASTE DEPOT", Vector3(-4.8, 2.45, -16.06), 0.24)
+	# A recognizable municipal dump truck, parked off the road until its route begins.
+	city_truck = Node3D.new()
+	city_truck.name = "MunicipalGarbageTruck"
+	city_truck.position = city_truck_start
+	add_child(city_truck)
+	_city_truck_box("TruckChassis", Vector3(0, 0.72, 0), Vector3(2.0, 0.35, 3.5), Color(0.12, 0.16, 0.17))
+	_city_truck_box("TruckCab", Vector3(0, 1.35, -1.12), Vector3(1.85, 1.25, 1.25), Color(0.88, 0.66, 0.13))
+	_city_truck_box("TruckWindshield", Vector3(0, 1.55, -1.77), Vector3(1.38, 0.62, 0.045), Color(0.18, 0.38, 0.48))
+	_city_truck_box("TruckGrille", Vector3(0, 0.92, -1.79), Vector3(0.82, 0.28, 0.05), Color(0.20, 0.25, 0.26))
+	_city_truck_box("TruckCargo", Vector3(0, 1.38, 0.72), Vector3(1.92, 1.15, 1.85), Color(0.16, 0.43, 0.34))
+	_city_truck_box("TruckCargoTop", Vector3(0, 1.98, 0.72), Vector3(1.98, 0.12, 1.92), Color(0.22, 0.52, 0.40))
+	for side in [-1.0, 1.0]:
+		for z in [-1.18, 1.12]:
+			var wheel := MeshInstance3D.new()
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.38
+			wheel_mesh.bottom_radius = 0.38
+			wheel_mesh.height = 0.22
+			wheel.mesh = wheel_mesh
+			wheel.position = Vector3(side * 0.98, 0.42, z)
+			wheel.rotation_degrees.z = 90
+			wheel.material_override = _mat(Color(0.055, 0.065, 0.07))
+			city_truck.add_child(wheel)
+	_city_truck_box("TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.92, 0.82, 0.35))
+
+func _city_truck_box(node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
+	var mesh := MeshInstance3D.new()
+	mesh.name = node_name
+	var shape := BoxMesh.new()
+	shape.size = size
+	mesh.mesh = shape
+	mesh.position = pos
+	mesh.material_override = _mat(color)
+	city_truck.add_child(mesh)
+
+func _process_city_truck(delta: float) -> void:
+	if not is_instance_valid(city_truck):
+		return
+	city_truck_timer += delta
+	if city_truck_phase == 0:
+		city_truck.position = city_truck.position.move_toward(city_truck_dump, delta * 5.0)
+		city_truck.rotation.y = 0.0
+		if city_truck.position.distance_to(city_truck_dump) < 0.08:
+			city_truck_phase = 1
+			city_truck_timer = 0.0
+	elif city_truck_phase == 1:
+		if city_truck_timer >= 2.5:
+			var delivered := _spawn_city_trash(18 + (yard_stage - 1) * 6)
+			_set_message("Municipal truck delivered %d pieces of city trash!" % delivered)
+			city_truck_phase = 2
+			city_truck_timer = 0.0
+	elif city_truck_phase == 2:
+		city_truck.position = city_truck.position.move_toward(city_truck_start, delta * 5.0)
+		city_truck.rotation.y = PI
+		if city_truck.position.distance_to(city_truck_start) < 0.08:
+			city_truck_phase = 3
+			city_truck_timer = 0.0
+	elif city_truck_phase == 3 and city_truck_timer >= 38.0:
+		city_truck_phase = 0
+		city_truck_timer = 0.0
+
+func _spawn_city_trash(amount: int) -> int:
+	var spawned := 0
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(amount):
+		var item := Node3D.new()
+		item.set_script(TRASH_SCRIPT)
+		item.position = Vector3(rng.randf_range(-7.7, -1.9), 0.34, rng.randf_range(-15.8, -10.2))
+		add_child(item)
+		trash_nodes.append(item)
+		spawned += 1
+	return spawned
 
 func _spawn_trash(amount: int) -> void:
 	var rng := RandomNumberGenerator.new()
