@@ -146,10 +146,19 @@ func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
-	env.sky = Sky.new()
+	var sky_resource := Sky.new()
+	var sky_material := ProceduralSkyMaterial.new()
+	sky_material.sky_top_color = Color(0.16, 0.38, 0.68)
+	sky_material.sky_horizon_color = Color(0.72, 0.82, 0.92)
+	sky_material.ground_bottom_color = Color(0.20, 0.24, 0.25)
+	sky_material.ground_horizon_color = Color(0.55, 0.61, 0.63)
+	sky_material.sun_angle_max = 18.0
+	sky_material.use_debanding = true
+	sky_resource.sky_material = sky_material
+	env.sky = sky_resource
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.72, 0.78, 0.83)
-	env.ambient_light_energy = 0.75
+	env.ambient_light_color = Color(0.68, 0.76, 0.86)
+	env.ambient_light_energy = 0.8
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	world_env.environment = env
 	add_child(world_env)
