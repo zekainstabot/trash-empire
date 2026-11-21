@@ -2435,7 +2435,7 @@ func _recover_player() -> void:
 		return
 	# One continuous playable map includes the city and the endgame landfill.
 	player.global_position = Vector3(
-		clampf(player.global_position.x, -14.0, 210.0),
+		clampf(player.global_position.x, -14.0, 207.0),
 		0.05,
 		clampf(player.global_position.z, -34.0, 34.0)
 	)
