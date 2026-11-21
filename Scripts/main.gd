@@ -289,7 +289,7 @@ func _build_world() -> void:
 	_make_tree(Vector3(-13.0, 0, 9.0))
 	_make_tree(Vector3(-13.0, 0, 1.0))
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
-	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 18.5), 0.65)
+	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 34.5), 0.65)
 	_build_first_district_details()
 	_build_yard_environment_details()
 	_build_random_residential_blocks()
