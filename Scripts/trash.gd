@@ -7,7 +7,7 @@ func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	spin_speed = rng.randf_range(-0.45, 0.45)
-	match rng.randi_range(0, 5):
+	match rng.randi_range(0, 9):
 		0:
 			_make_plastic_bottle(rng)
 		1:
@@ -18,8 +18,16 @@ func _ready() -> void:
 			_make_food_wrapper(rng)
 		4:
 			_make_crumpled_paper(rng)
-		_:
+		5:
 			_make_cardboard_scrap(rng)
+		6:
+			_make_battery(rng)
+		7:
+			_make_broken_glass(rng)
+		8:
+			_make_soda_bottle(rng)
+		_:
+			_make_old_shoe(rng)
 	rotation.y = rng.randf_range(0.0, TAU)
 
 func _process(delta: float) -> void:
@@ -107,6 +115,39 @@ func _make_cardboard_scrap(rng: RandomNumberGenerator) -> void:
 	for x in [-0.17, 0.0, 0.17]:
 		var corrugation := _flat_box(Vector3(0.025, 0.012, 0.34), Vector3(x, 0.065, 0), Color(0.42, 0.28, 0.16))
 		add_child(corrugation)
+
+
+func _make_battery(rng: RandomNumberGenerator) -> void:
+	var body := _cylinder_piece(0.12, 0.12, 0.42, Vector3(0, 0.21, 0), Color(0.18, 0.19, 0.22))
+	body.rotation_degrees.z = rng.randf_range(-15.0, 15.0)
+	add_child(body)
+	add_child(_flat_box(Vector3(0.20, 0.12, 0.025), Vector3(0, 0.22, -0.13), Color(0.88, 0.25, 0.12)))
+	add_child(_flat_box(Vector3(0.08, 0.025, 0.06), Vector3(0, 0.44, 0), Color(0.72, 0.75, 0.74)))
+
+func _make_broken_glass(rng: RandomNumberGenerator) -> void:
+	for i in range(4):
+		var shard := _flat_box(Vector3(rng.randf_range(0.16, 0.30), 0.025, rng.randf_range(0.10, 0.22)), Vector3(rng.randf_range(-0.22, 0.22), 0.04, rng.randf_range(-0.18, 0.18)), Color(0.45, 0.75, 0.78, 0.75))
+		shard.rotation.y = rng.randf_range(0, TAU)
+		add_child(shard)
+
+func _make_soda_bottle(rng: RandomNumberGenerator) -> void:
+	var body := _cylinder_piece(0.17, 0.16, 0.40, Vector3(0, 0.20, 0), Color(0.82, 0.26, 0.12))
+	body.rotation_degrees.z = 90
+	add_child(body)
+	var neck := _cylinder_piece(0.07, 0.08, 0.13, Vector3(0.30, 0.20, 0), Color(0.82, 0.26, 0.12))
+	neck.rotation_degrees.z = 90
+	add_child(neck)
+	var cap := _cylinder_piece(0.065, 0.065, 0.07, Vector3(0.40, 0.20, 0), Color(0.95, 0.78, 0.12))
+	cap.rotation_degrees.z = 90
+	add_child(cap)
+	add_child(_flat_box(Vector3(0.14, 0.08, 0.02), Vector3(-0.02, 0.20, -0.14), Color(0.95, 0.80, 0.48)))
+
+func _make_old_shoe(rng: RandomNumberGenerator) -> void:
+	add_child(_flat_box(Vector3(0.48, 0.16, 0.25), Vector3(0.03, 0.10, 0), Color(0.25, 0.22, 0.18)))
+	add_child(_flat_box(Vector3(0.24, 0.20, 0.23), Vector3(-0.10, 0.23, 0), Color(0.38, 0.32, 0.25)))
+	for i in range(3):
+		add_child(_flat_box(Vector3(0.12, 0.025, 0.025), Vector3(-0.10 + i * 0.06, 0.27, -0.12), Color(0.80, 0.75, 0.66)))
+	rotation.z = rng.randf_range(-0.15, 0.15)
 
 func _flat_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
