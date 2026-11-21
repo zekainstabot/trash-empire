@@ -261,7 +261,9 @@ func _build_world() -> void:
 			var support := _box("ConveyorLeg", Vector3(x, 0.43, z), Vector3(0.12, 0.82, 0.12), Color(0.22, 0.27, 0.28), true)
 			var foot := _box("ConveyorFoot", Vector3(x, 0.06, z), Vector3(0.38, 0.10, 0.30), Color(0.12, 0.16, 0.17), false)
 	for x in [2.8, 3.6, 4.4, 5.2]:
-		var roller := _cylinder("ConveyorRoller", Vector3(x, 0.88, -6.5), 0.12, 1.55, Color(0.48, 0.52, 0.52), true)
+		var roller := _cylinder("ConveyorRoller", Vector3(x, 0.88, -6.5), 0.12, 1.30, Color(0.48, 0.52, 0.52), false)
+		# Roller axle runs across the belt, not along its length.
+		roller.rotation_degrees.x = 90.0
 		conveyor_rollers.append(roller)
 	for i in range(8):
 		var slat := _box("MovingBeltSlat", Vector3(2.65 + i * 0.38, 1.09, -6.5), Vector3(0.10, 0.025, 1.22), Color(0.30, 0.38, 0.39), false)
