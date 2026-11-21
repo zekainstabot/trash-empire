@@ -96,6 +96,9 @@ var truck_capacity_upgrade_level := 0
 var packaging_upgrade_level := 0
 var delivery_trucks: Array[Node3D] = []
 var city_truck: Node3D
+var city_trucks: Array[Node3D] = []
+var city_fleet_upgrade_level := 0
+var city_trash_reserved := 0
 var city_truck_phase := 3
 var city_truck_timer := 0.0
 var city_truck_upgrade_level := 0
@@ -364,9 +367,13 @@ func _build_first_district_details() -> void:
 
 
 	# More realistic street treatment: curbs, lane markings, drains and manholes.
-	for x in [-10.72, -5.28]:
-		_box("RoadRaisedCurb", Vector3(x, 0.10, 1.0), Vector3(0.22, 0.20, 54.0), Color(0.48, 0.50, 0.48), true)
-		_box("RoadCurbHighlight", Vector3(x, 0.205, 1.0), Vector3(0.24, 0.025, 54.0), Color(0.55, 0.57, 0.55), false)
+	# Keep the service-road lane open where municipal trucks turn into the depot.
+	_box("RoadRaisedCurb", Vector3(-10.72, 0.10, 1.0), Vector3(0.22, 0.20, 54.0), Color(0.48, 0.50, 0.48), true)
+	_box("RoadCurbHighlight", Vector3(-10.72, 0.205, 1.0), Vector3(0.24, 0.025, 54.0), Color(0.55, 0.57, 0.55), false)
+	for curb_segment in [Vector3(-5.28, 0.10, -20.0), Vector3(-5.28, 0.10, 9.0)]:
+		var curb_length := 12.0 if curb_segment.z < 0.0 else 34.0
+		_box("RoadRaisedCurb", curb_segment, Vector3(0.22, 0.20, curb_length), Color(0.48, 0.50, 0.48), true)
+		_box("RoadCurbHighlight", curb_segment + Vector3(0, 0.105, 0), Vector3(0.24, 0.025, curb_length), Color(0.55, 0.57, 0.55), false)
 	for z in range(-23, 27, 6):
 		_box("RoadCenterDash", Vector3(-8.0, 0.035, float(z)), Vector3(0.13, 0.025, 2.8), Color(0.72, 0.73, 0.69), false)
 	for z in [-17.0, 8.0, 23.0]:
@@ -1156,11 +1163,11 @@ func _start_new_world() -> void:
 	drone_level = 0
 	dispatch_upgrade_level = 0
 	city_truck_upgrade_level = 0
+	city_fleet_upgrade_level = 0
 	city_truck_phase = 0
 	city_truck_timer = 0.0
-	if is_instance_valid(city_truck):
-		city_truck.position = city_truck_start
-		city_truck.rotation.y = 0.0
+	city_trash_reserved = 0
+	_reset_city_truck_fleet()
 	fleet_upgrade_level = 0
 	truck_capacity_upgrade_level = 0
 	packaging_upgrade_level = 0
@@ -1240,13 +1247,13 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power"]},
 		{"title":"RECYCLING & ECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","branches":["drones","city_truck","dispatch","fleet","truck_capacity","packaging"]}
+		{"title":"AUTOMATION & FLEET","branches":["drones","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER",
-		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
 	var category_index := 0
@@ -1331,6 +1338,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"magnet_power": return Color(0.20, 0.78, 0.88)
 		"drones": return Color(0.65, 0.78, 0.30)
 		"city_truck": return Color(0.95, 0.72, 0.18)
+		"city_fleet": return Color(0.82, 0.58, 0.24)
 		"dispatch": return Color(0.16, 0.70, 0.82)
 		"fleet": return Color(0.90, 0.48, 0.22)
 		"truck_capacity": return Color(0.75, 0.52, 0.22)
@@ -1354,6 +1362,7 @@ func _skill_icon(branch: String) -> String:
 		"magnet_power": return "🧲"
 		"drones": return "🚁"
 		"city_truck": return "🚛"
+		"city_fleet": return "🚚"
 		"dispatch": return "⏱️"
 		"fleet": return "🚚"
 		"truck_capacity": return "📦"
@@ -1415,6 +1424,7 @@ func _skill_level(branch: String) -> int:
 		"magnet_power": return magnet_power_level - 1
 		"drones": return drone_level
 		"city_truck": return city_truck_upgrade_level
+		"city_fleet": return city_fleet_upgrade_level
 		"dispatch": return dispatch_upgrade_level
 		"fleet": return fleet_upgrade_level
 		"truck_capacity": return truck_capacity_upgrade_level
@@ -1436,6 +1446,7 @@ func _skill_branch_unlocked(branch: String) -> bool:
 		"drones": return luck_upgrade_level >= 2
 		"rare_drops": return luck_upgrade_level >= 2
 		"city_truck": return spawn_upgrade_level >= 4
+		"city_fleet": return city_truck_upgrade_level >= 1
 		"dispatch", "fleet": return factory_stage >= 5 and drone_level >= 3
 		"truck_capacity": return factory_stage >= 5 and fleet_upgrade_level >= 3
 		"packaging": return factory_stage >= 5 and dispatch_upgrade_level >= 3
@@ -1464,13 +1475,14 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"magnet_power": _upgrade_magnet_power()
 		"drones": _upgrade_drones()
 		"city_truck": _upgrade_city_truck_frequency()
+		"city_fleet": _upgrade_city_fleet()
 		"dispatch": _upgrade_dispatch()
 		"fleet": _upgrade_fleet()
 		"truck_capacity": _upgrade_truck_capacity()
 		"packaging": _upgrade_packaging()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":12.0,"bulk_pickup":18.0}
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":12.0,"bulk_pickup":18.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -2168,6 +2180,7 @@ func _save_game() -> void:
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
 	save.set_value("progress", "city_truck_upgrade_level", city_truck_upgrade_level)
+	save.set_value("progress", "city_fleet_upgrade_level", city_fleet_upgrade_level)
 	save.set_value("progress", "fleet_upgrade_level", fleet_upgrade_level)
 	save.set_value("progress", "truck_capacity_upgrade_level", truck_capacity_upgrade_level)
 	save.set_value("progress", "packaging_upgrade_level", packaging_upgrade_level)
@@ -2201,6 +2214,7 @@ func _load_game() -> void:
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
 	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
+	city_fleet_upgrade_level = clampi(int(save.get_value("progress", "city_fleet_upgrade_level", 0)), 0, 3)
 	fleet_upgrade_level = clampi(int(save.get_value("progress", "fleet_upgrade_level", 0)), 0, 3)
 	truck_capacity_upgrade_level = clampi(int(save.get_value("progress", "truck_capacity_upgrade_level", 0)), 0, 3)
 	packaging_upgrade_level = clampi(int(save.get_value("progress", "packaging_upgrade_level", 0)), 0, 3)
@@ -2225,34 +2239,48 @@ func _build_city_dump_area() -> void:
 	_box("CityDumpHazardStripe", Vector3(-4.8, 0.10, -9.62), Vector3(6.9, 0.08, 0.16), Color(0.95, 0.72, 0.12), false)
 	_box("CityDumpSign", Vector3(-4.8, 2.45, -16.18), Vector3(3.8, 0.72, 0.16), Color(0.08, 0.28, 0.25), false)
 	_label_3d("CITY WASTE DEPOT", Vector3(-4.8, 2.45, -16.06), 0.24)
-	# A recognizable municipal dump truck, parked off the road until its route begins.
-	city_truck = Node3D.new()
-	city_truck.name = "MunicipalGarbageTruck"
-	city_truck.position = city_truck_start
-	city_truck_phase = 0
-	city_truck_timer = 0.0
-	add_child(city_truck)
-	_city_truck_box("TruckChassis", Vector3(0, 0.72, 0), Vector3(2.0, 0.35, 3.5), Color(0.12, 0.16, 0.17))
-	_city_truck_box("TruckCab", Vector3(0, 1.35, -1.12), Vector3(1.85, 1.25, 1.25), Color(0.88, 0.66, 0.13))
-	_city_truck_box("TruckWindshield", Vector3(0, 1.55, -1.77), Vector3(1.38, 0.62, 0.045), Color(0.18, 0.38, 0.48))
-	_city_truck_box("TruckGrille", Vector3(0, 0.92, -1.79), Vector3(0.82, 0.28, 0.05), Color(0.20, 0.25, 0.26))
-	_city_truck_box("TruckCargo", Vector3(0, 1.38, 0.72), Vector3(1.92, 1.15, 1.85), Color(0.16, 0.43, 0.34))
-	_city_truck_box("TruckCargoTop", Vector3(0, 1.98, 0.72), Vector3(1.98, 0.12, 1.92), Color(0.22, 0.52, 0.40))
+	# Municipal trucks stay beyond the playable view until their staggered route starts.
+	city_trucks.clear()
+	city_truck = null
+	city_trash_reserved = 0
+	_refresh_city_truck_fleet()
+	_reset_city_truck_fleet()
+
+func _create_city_truck(index: int) -> Node3D:
+	var truck := Node3D.new()
+	truck.name = "MunicipalGarbageTruck%d" % (index + 1)
+	truck.position = city_truck_start
+	truck.set_meta("phase", 0)
+	truck.set_meta("timer", maxf(0.0, _city_truck_interval() - float(index) * 12.0))
+	truck.set_meta("queue_position", Vector3(-8.0, 0.0, -5.5 + float(index) * 3.8))
+	truck.set_meta("load", _city_truck_load())
+	truck.set_meta("reserved", false)
+	add_child(truck)
+	_city_truck_box(truck, "TruckChassis", Vector3(0, 0.72, 0), Vector3(2.0, 0.35, 3.5), Color(0.12, 0.16, 0.17))
+	_city_truck_box(truck, "TruckCab", Vector3(0, 1.35, -1.12), Vector3(1.85, 1.25, 1.25), Color(0.78, 0.62, 0.35))
+	_city_truck_box(truck, "TruckWindshield", Vector3(0, 1.55, -1.77), Vector3(1.38, 0.62, 0.045), Color(0.18, 0.30, 0.34))
+	_city_truck_box(truck, "TruckGrille", Vector3(0, 0.92, -1.79), Vector3(0.82, 0.28, 0.05), Color(0.20, 0.25, 0.26))
+	_city_truck_box(truck, "TruckCargo", Vector3(0, 1.38, 0.72), Vector3(1.92, 1.15, 1.85), Color(0.20, 0.34, 0.29))
+	_city_truck_box(truck, "TruckCargoTop", Vector3(0, 1.98, 0.72), Vector3(1.98, 0.12, 1.92), Color(0.25, 0.39, 0.33))
+	var wheels: Array[Node3D] = []
 	for side in [-1.0, 1.0]:
-		for z in [-1.18, 1.12]:
+		for wheel_z in [-1.18, 1.12]:
 			var wheel := MeshInstance3D.new()
 			var wheel_mesh := CylinderMesh.new()
 			wheel_mesh.top_radius = 0.38
 			wheel_mesh.bottom_radius = 0.38
 			wheel_mesh.height = 0.22
 			wheel.mesh = wheel_mesh
-			wheel.position = Vector3(side * 0.98, 0.42, z)
+			wheel.position = Vector3(side * 0.98, 0.42, wheel_z)
 			wheel.rotation_degrees.z = 90
 			wheel.material_override = _mat(Color(0.055, 0.065, 0.07))
-			city_truck.add_child(wheel)
-	_city_truck_box("TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.92, 0.82, 0.35))
+			truck.add_child(wheel)
+			wheels.append(wheel)
+	truck.set_meta("wheels", wheels)
+	_city_truck_box(truck, "TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.72, 0.66, 0.48))
+	return truck
 
-func _city_truck_box(node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
+func _city_truck_box(parent: Node3D, node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = node_name
 	var shape := BoxMesh.new()
@@ -2260,40 +2288,120 @@ func _city_truck_box(node_name: String, pos: Vector3, size: Vector3, color: Colo
 	mesh.mesh = shape
 	mesh.position = pos
 	mesh.material_override = _mat(color)
-	city_truck.add_child(mesh)
+	parent.add_child(mesh)
+
+func _refresh_city_truck_fleet() -> void:
+	var target_count := clampi(1 + city_fleet_upgrade_level, 1, 4)
+	while city_trucks.size() < target_count:
+		var new_truck := _create_city_truck(city_trucks.size())
+		city_trucks.append(new_truck)
+	if not city_trucks.is_empty():
+		city_truck = city_trucks[0]
+
+func _reset_city_truck_fleet() -> void:
+	city_trash_reserved = 0
+	for index in range(city_trucks.size()):
+		var truck := city_trucks[index]
+		if not is_instance_valid(truck):
+			continue
+		truck.position = city_truck_start
+		truck.rotation = Vector3.ZERO
+		truck.set_meta("phase", 0)
+		truck.set_meta("timer", maxf(0.0, _city_truck_interval() - float(index) * 12.0))
+		truck.set_meta("reserved", false)
+		truck.set_meta("load", _city_truck_load())
+	city_truck_phase = 0
+	city_truck_timer = 0.0
 
 func _process_city_truck(delta: float) -> void:
-	if not is_instance_valid(city_truck):
+	if city_trucks.is_empty():
 		return
-	city_truck_timer += delta
-	if city_truck_phase == 0:
-		city_truck.position = city_truck.position.move_toward(city_truck_dump, delta * 5.0)
-		city_truck.rotation.y = 0.0
-		if city_truck.position.distance_to(city_truck_dump) < 0.08:
-			city_truck_phase = 1
-			city_truck_timer = 0.0
-	elif city_truck_phase == 1:
-		if city_truck_timer >= 2.5:
-			var delivered := _spawn_city_trash(18 + (yard_stage - 1) * 6)
-			_set_message("Municipal truck delivered %d pieces of city trash!" % delivered)
-			city_truck_phase = 2
-			city_truck_timer = 0.0
-	elif city_truck_phase == 2:
-		city_truck.position = city_truck.position.move_toward(city_truck_start, delta * 5.0)
-		city_truck.rotation.y = PI
-		if city_truck.position.distance_to(city_truck_start) < 0.08:
-			city_truck_phase = 3
-			city_truck_timer = 0.0
-	elif city_truck_phase == 3 and city_truck_timer >= maxf(0.0, _city_truck_interval() - _city_truck_route_seconds()):
-		city_truck_phase = 0
-		city_truck_timer = 0.0
+	for truck_index in range(city_trucks.size()):
+		var truck := city_trucks[truck_index]
+		if not is_instance_valid(truck):
+			continue
+		var phase := int(truck.get_meta("phase", 0))
+		var timer := float(truck.get_meta("timer", 0.0)) + delta
+		truck.set_meta("timer", timer)
+		var queue_point: Vector3 = truck.get_meta("queue_position", Vector3(-8.0, 0.0, -5.5))
+		var target := truck.position
+		match phase:
+			0:
+				if timer >= _city_truck_interval():
+					truck.set_meta("phase", 1)
+					truck.set_meta("timer", 0.0)
+					phase = 1
+			1:
+				target = queue_point
+				if _move_city_truck(truck, target, delta):
+					truck.set_meta("phase", 2)
+					truck.set_meta("timer", 0.0)
+			2:
+				var load_amount := int(truck.get_meta("load", _city_truck_load()))
+				if _city_dump_trash_count() + city_trash_reserved + load_amount <= _city_dump_capacity():
+					city_trash_reserved += load_amount
+					truck.set_meta("reserved", true)
+					truck.set_meta("phase", 3)
+					truck.set_meta("timer", 0.0)
+			3:
+				target = city_truck_dump
+				if _move_city_truck(truck, target, delta):
+					truck.set_meta("phase", 4)
+					truck.set_meta("timer", 0.0)
+			4:
+				if timer >= 2.5:
+					var delivered := _spawn_city_trash(int(truck.get_meta("load", _city_truck_load())))
+					city_trash_reserved = maxi(0, city_trash_reserved - int(truck.get_meta("load", _city_truck_load())))
+					truck.set_meta("reserved", false)
+					_set_message("City truck unloaded %d bags. Depot: %d / %d" % [delivered, _city_dump_trash_count(), _city_dump_capacity()])
+					truck.set_meta("phase", 5)
+					truck.set_meta("timer", 0.0)
+			5:
+				target = queue_point
+				if _move_city_truck(truck, target, delta):
+					truck.set_meta("phase", 6)
+			6:
+				target = city_truck_start
+				if _move_city_truck(truck, target, delta):
+					truck.set_meta("phase", 0)
+					truck.set_meta("timer", 0.0)
+		if phase == 2:
+			# Parked trucks wait in a clear service lane without blocking the depot entrance.
+			truck.rotation.y = lerp_angle(truck.rotation.y, PI, delta * 2.0)
+		var wheels: Array = truck.get_meta("wheels", [])
+		if phase in [1, 3, 5, 6]:
+			for wheel in wheels:
+				if is_instance_valid(wheel):
+					wheel.rotate_object_local(Vector3.RIGHT, delta * 4.0)
+
+func _move_city_truck(truck: Node3D, target: Vector3, delta: float) -> bool:
+	var direction := target - truck.position
+	direction.y = 0.0
+	if direction.length() > 0.06:
+		var desired_yaw := atan2(-direction.x, -direction.z)
+		truck.rotation.y = lerp_angle(truck.rotation.y, desired_yaw, minf(1.0, delta * 4.5))
+	var speed := 3.8
+	truck.position = truck.position.move_toward(target, delta * speed)
+	return truck.position.distance_to(target) < 0.07
 
 func _city_truck_interval() -> float:
 	var intervals := [300.0, 240.0, 180.0, 120.0]
 	return intervals[clampi(city_truck_upgrade_level, 0, 3)]
 
-func _city_truck_route_seconds() -> float:
-	return city_truck_start.distance_to(city_truck_dump) * 2.0 / 5.0 + 2.5
+func _city_truck_load() -> int:
+	return 18 + (yard_stage - 1) * 6
+
+func _city_dump_capacity() -> int:
+	return _city_truck_load() * 5
+
+func _city_dump_trash_count() -> int:
+	var count := 0
+	for item in trash_nodes:
+		if is_instance_valid(item):
+			var p := item.global_position
+			if p.x >= -8.1 and p.x <= -1.5 and p.z >= -16.2 and p.z <= -9.8:
+				count += 1
+	return count
 
 func _apply_rare_drop(item: Node3D, rng: RandomNumberGenerator) -> void:
 	var chances := _rare_drop_chances()
@@ -2748,13 +2856,29 @@ func _depart_delivery_truck(truck_index: int) -> void:
 			shipping_active = false
 
 func _upgrade_city_truck_frequency() -> void:
+	if city_truck_upgrade_level >= 3:
+		_set_message("City truck frequency is already at maximum.")
+		return
 	var cost := _upgrade_cost(35.0, city_truck_upgrade_level + 1)
 	if not await _pay_gradually(cost):
 		return
 	city_truck_upgrade_level = mini(city_truck_upgrade_level + 1, 3)
 	_refresh_upgrade_prices()
 	_save_game()
-	_set_message("Municipal truck now arrives every %.0f minutes!" % (_city_truck_interval() / 60.0))
+	_set_message("City trucks now arrive every %.0f minutes!" % (_city_truck_interval() / 60.0))
+
+func _upgrade_city_fleet() -> void:
+	if city_fleet_upgrade_level >= 3:
+		_set_message("City truck fleet is already at maximum.")
+		return
+	var cost := _upgrade_cost(55.0, city_fleet_upgrade_level + 1)
+	if not await _pay_gradually(cost):
+		return
+	city_fleet_upgrade_level = mini(city_fleet_upgrade_level + 1, 3)
+	_refresh_city_truck_fleet()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("City fleet expanded: %d trucks. Extra trucks will queue at the depot." % city_trucks.size())
 
 func _upgrade_dispatch() -> void:
 	var cost := _upgrade_cost(25.0, dispatch_upgrade_level + 1)
