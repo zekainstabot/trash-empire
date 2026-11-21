@@ -1039,11 +1039,11 @@ func _robot_leg(parent: Node3D, part_name: String, pos: Vector3) -> Node3D:
 func _build_trash() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(24):
+	for i in range(30):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
 		_apply_rare_drop(item, rng)
-		item.position = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
+		item.position = _random_trash_position(rng)
 		add_child(item)
 		trash_nodes.append(item)
 	if yard_stage >= 2:
@@ -2704,9 +2704,16 @@ func _spawn_district_two_trash(amount: int) -> void:
 	for i in range(amount):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		var angle := rng.randf_range(0.0, TAU)
-		var radius := sqrt(rng.randf()) * 9.5
-		item.position = Vector3(32.0 + cos(angle) * radius, 0.34 + rng.randf_range(0.0, 0.12), sin(angle) * radius)
+		var spawn_point := Vector3.ZERO
+		var attempts := 0
+		while attempts < 40:
+			var angle := rng.randf_range(0.0, TAU)
+			var radius := sqrt(rng.randf()) * 9.5
+			spawn_point = Vector3(32.0 + cos(angle) * radius, 0.34 + rng.randf_range(0.0, 0.12), sin(angle) * radius)
+			if _is_clear_trash_spawn(spawn_point):
+				break
+			attempts += 1
+		item.position = spawn_point
 		add_child(item)
 		trash_nodes.append(item)
 
@@ -2727,7 +2734,7 @@ func _refill_first_district() -> void:
 		item.set_script(TRASH_SCRIPT)
 		var spawn_point := Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
 		var attempts := 0
-		while (spawn_point.distance_to(SELL_POINT) < 4.0 or _is_city_truck_lane_position(spawn_point)) and attempts < 30:
+		while not _is_clear_trash_spawn(spawn_point) and attempts < 60:
 			spawn_point = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
 			attempts += 1
 		item.position = spawn_point
@@ -2741,6 +2748,26 @@ func _is_city_truck_lane_position(point: Vector3) -> bool:
 	var depot_entrance := point.x >= -7.8 and point.x <= -3.8 and point.z >= -13.5 and point.z <= -5.0
 	return on_service_road or depot_entrance
 
+func _is_clear_trash_spawn(point: Vector3) -> bool:
+	# Protect road lanes, gates, curb/crosswalk details, pocket parks and parked cars.
+	if point.distance_to(SELL_POINT) < 4.0 or _is_city_truck_lane_position(point):
+		return false
+	if point.x >= -10.8 and point.x <= -5.2:
+		return false
+	if (point.x > 14.0 and point.x < 20.0) or (point.x > 46.0 and point.x < 52.0):
+		return false
+	for district_x in [32.0, 64.0]:
+		var park_z := 14.0 if district_x < 48.0 else -14.0
+		if absf(point.x - district_x) < 5.0 and absf(point.z - park_z) < 4.5:
+			return false
+		if absf(point.z - 4.1) < 0.8 or absf(point.z + 4.1) < 0.8:
+			if absf(point.x - district_x) < 14.5:
+				return false
+	for car_pos in [Vector3(20.0, 0.0, -15.5), Vector3(44.0, 0.0, 15.5), Vector3(52.0, 0.0, 15.5), Vector3(76.0, 0.0, -15.5)]:
+		if absf(point.x - car_pos.x) < 2.4 and absf(point.z - car_pos.z) < 1.6:
+			return false
+	return true
+
 func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 	var max_x := 11.5
 	if yard_stage == 2:
@@ -2749,7 +2776,7 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 		max_x = 75.5
 	var point := Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
 	var attempts := 0
-	while (point.distance_to(SELL_POINT) < 4.0 or _is_city_truck_lane_position(point) or (point.x > 15.0 and point.x < 19.0) or (point.x > 47.0 and point.x < 51.0)) and attempts < 30:
+	while not _is_clear_trash_spawn(point) and attempts < 60:
 		point = Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
 		attempts += 1
 	return point
