@@ -366,29 +366,32 @@ func _build_first_district_details() -> void:
 	# More realistic street treatment: curbs, lane markings, drains and manholes.
 	for x in [-10.72, -5.28]:
 		_box("RoadRaisedCurb", Vector3(x, 0.10, 1.0), Vector3(0.22, 0.20, 54.0), Color(0.48, 0.50, 0.48), true)
-		_box("RoadCurbHighlight", Vector3(x, 0.205, 1.0), Vector3(0.24, 0.025, 54.0), Color(0.68, 0.69, 0.64), false)
+		_box("RoadCurbHighlight", Vector3(x, 0.205, 1.0), Vector3(0.24, 0.025, 54.0), Color(0.55, 0.57, 0.55), false)
 	for z in range(-23, 27, 6):
-		_box("RoadCenterDash", Vector3(-8.0, 0.035, float(z)), Vector3(0.13, 0.025, 2.8), Color(0.92, 0.83, 0.52), false)
+		_box("RoadCenterDash", Vector3(-8.0, 0.035, float(z)), Vector3(0.13, 0.025, 2.8), Color(0.72, 0.73, 0.69), false)
 	for z in [-17.0, 8.0, 23.0]:
 		_cylinder("RoadManhole", Vector3(-9.65, 0.045, z), 0.38, 0.045, Color(0.20, 0.23, 0.23), false)
 		_cylinder("RoadManholeInset", Vector3(-9.65, 0.071, z), 0.27, 0.012, Color(0.31, 0.34, 0.33), false)
 		_box("RoadDrain", Vector3(-5.48, 0.055, z), Vector3(0.30, 0.035, 1.0), Color(0.12, 0.15, 0.15), false)
 		for slot in range(4):
 			_box("RoadDrainSlot", Vector3(-5.48, 0.078, z - 0.34 + float(slot) * 0.22), Vector3(0.34, 0.012, 0.045), Color(0.48, 0.51, 0.49), false)
-	# Residential details: flower boxes, roof vents and a small front garden.
+	# Restrained architectural and utility details; avoid toy-like bright decoration.
 	var home_center := Vector3(-12.8, 0.0, -10.4)
 	for floor in range(3):
 		var window_y := 0.95 + float(floor) * 1.42
 		for window_x in [-1.35, 0.0, 1.35]:
-			_box("ApartmentFlowerBox", home_center + Vector3(window_x, window_y - 0.52, 2.78), Vector3(0.72, 0.16, 0.24), Color(0.30, 0.19, 0.12), false)
-			for flower_x in [-0.20, 0.0, 0.20]:
-				_cylinder("ApartmentFlower", home_center + Vector3(window_x + flower_x, window_y - 0.39, 2.82), 0.055, 0.10, [Color(0.82, 0.30, 0.25), Color(0.94, 0.70, 0.22), Color(0.88, 0.82, 0.62)][int(absf(flower_x) * 10.0) % 3], false)
+			_box("ApartmentConcreteSill", home_center + Vector3(window_x, window_y - 0.49, 2.70), Vector3(0.88, 0.10, 0.18), Color(0.48, 0.49, 0.46), false)
+			_box("ApartmentFacadeExpansionJoint", home_center + Vector3(window_x + 0.55, window_y + 0.48, 2.56), Vector3(0.035, 0.92, 0.035), Color(0.52, 0.50, 0.45), false)
 	for vent_x in [-0.72, 0.0, 0.72]:
-		_box("ApartmentRoofVent", home_center + Vector3(vent_x, 5.38, 0.75), Vector3(0.34, 0.34, 0.34), Color(0.34, 0.39, 0.39), false)
-		_box("ApartmentRoofVentCap", home_center + Vector3(vent_x, 5.57, 0.75), Vector3(0.46, 0.08, 0.44), Color(0.20, 0.25, 0.26), false)
-	_box("HouseGardenPath", Vector3(-9.2, 0.045, -6.0), Vector3(2.0, 0.08, 5.8), Color(0.58, 0.55, 0.46), false)
+		_cylinder("ApartmentRoofExhaust", home_center + Vector3(vent_x, 5.48, 0.75), 0.13, 0.62, Color(0.31, 0.34, 0.34), false)
+		_cylinder("ApartmentRoofExhaustCap", home_center + Vector3(vent_x, 5.80, 0.75), 0.19, 0.08, Color(0.20, 0.23, 0.23), false)
+	_box("HouseGardenPath", Vector3(-9.2, 0.045, -6.0), Vector3(2.0, 0.08, 5.8), Color(0.43, 0.44, 0.42), false)
 	for z in [-7.8, -6.6, -5.4, -4.2]:
-		_box("GardenPathJoint", Vector3(-9.2, 0.09, z), Vector3(1.9, 0.018, 0.045), Color(0.35, 0.34, 0.30), false)
+		_box("GardenPathJoint", Vector3(-9.2, 0.09, z), Vector3(1.9, 0.018, 0.045), Color(0.30, 0.31, 0.30), false)
+	# Utility cabinet and a discreet service conduit beside the apartment.
+	_box("StreetUtilityCabinet", Vector3(-15.25, 0.72, -6.2), Vector3(0.72, 1.35, 0.62), Color(0.34, 0.38, 0.37), true)
+	_box("StreetUtilityCabinetDoor", Vector3(-14.87, 0.72, -6.2), Vector3(0.035, 1.12, 0.48), Color(0.24, 0.28, 0.28), false)
+	_box("StreetUtilityWarningPlate", Vector3(-14.84, 0.92, -6.2), Vector3(0.025, 0.22, 0.25), Color(0.62, 0.53, 0.31), false)
 
 func _upgrade_factory() -> void:
 	if factory_stage >= 5:
