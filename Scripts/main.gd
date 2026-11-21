@@ -2421,8 +2421,10 @@ func _spawn_conveyor_item(item_value: float) -> void:
 	var item := Node3D.new()
 	item.name = "ConveyorRecyclingItem"
 	item.set_script(TRASH_SCRIPT)
-	item.position = Vector3(2.55, 1.22, -6.5 + randf_range(-0.32, 0.32))
-	item.scale = Vector3.ONE * 0.72
+	# Keep generated pieces centered within the belt rails.
+	# Random lateral offsets made wide trash models protrude from the conveyor.
+	item.position = Vector3(2.82, 1.16, -6.5)
+	item.scale = Vector3.ONE * 0.52
 	add_child(item)
 
 	# Stage 1 output: compressed, strapped bale.
