@@ -296,7 +296,7 @@ func _build_world() -> void:
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
-	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
+	refill_world_button = _create_gear_refill_button(Vector3(15.22, 1.72, -4.25), Callable(self, "_refill_first_district"))
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
 
@@ -793,90 +793,87 @@ func _create_world_action_button(node_name: String, title: String, world_positio
 	return root
 
 func _create_gear_refill_button(world_position: Vector3, action: Callable) -> Node3D:
-	# Industrial pull lever: a fixed floor mount and a long hinged rod with a grip.
+	# Wall-mounted industrial control station; the front faces into the yard (-X).
 	var root := Node3D.new()
-	root.name = "TrashRespawnPullLever"
+	root.name = "TrashRespawnWallPanel"
 	root.position = world_position
 	add_child(root)
 
-	var base := MeshInstance3D.new()
-	var base_mesh := CylinderMesh.new()
-	base_mesh.top_radius = 0.72
-	base_mesh.bottom_radius = 0.82
-	base_mesh.height = 0.28
-	base_mesh.radial_segments = 32
-	base.mesh = base_mesh
-	base.position.y = 0.14
-	base.material_override = _mat(Color(0.12, 0.18, 0.19))
-	root.add_child(base)
+	# Reinforced mounting plate and steel outer frame.
+	_box_child(root, "RespawnPanelBackplate", Vector3(-0.14, 0.0, 0.0), Vector3(0.18, 1.55, 1.85), Color(0.055, 0.085, 0.09))
+	_box_child(root, "RespawnPanelFace", Vector3(-0.245, 0.0, 0.0), Vector3(0.045, 1.34, 1.62), Color(0.19, 0.24, 0.24))
+	_box_child(root, "RespawnPanelHeader", Vector3(-0.275, 0.48, 0.0), Vector3(0.035, 0.28, 1.42), Color(0.11, 0.16, 0.17))
+	_box_child(root, "RespawnPanelWarning", Vector3(-0.30, 0.48, 0.0), Vector3(0.025, 0.045, 1.18), Color(0.88, 0.57, 0.13))
 
-	var collar := MeshInstance3D.new()
-	var collar_mesh := CylinderMesh.new()
-	collar_mesh.top_radius = 0.30
-	collar_mesh.bottom_radius = 0.36
-	collar_mesh.height = 0.30
-	collar_mesh.radial_segments = 24
-	collar.mesh = collar_mesh
-	collar.position = Vector3(0, 0.39, 0)
-	collar.material_override = _mat(Color(0.72, 0.55, 0.20))
-	root.add_child(collar)
+	# Status screen and industrial labels.
+	_box_child(root, "RespawnPanelScreenFrame", Vector3(-0.29, 0.12, 0.0), Vector3(0.07, 0.48, 0.92), Color(0.035, 0.065, 0.07))
+	_box_child(root, "RespawnPanelScreen", Vector3(-0.33, 0.12, 0.0), Vector3(0.025, 0.34, 0.72), Color(0.08, 0.30, 0.29))
+	var screen_text := Label3D.new()
+	screen_text.text = "WASTE SYSTEM\nREADY"
+	screen_text.position = Vector3(-0.35, 0.13, 0.0)
+	screen_text.rotation_degrees.y = 90.0
+	screen_text.font_size = 24
+	screen_text.pixel_size = 0.0045
+	screen_text.modulate = Color(0.48, 1.0, 0.76)
+	root.add_child(screen_text)
 
-	var pivot := Node3D.new()
-	pivot.name = "LeverHinge"
-	pivot.position = Vector3(0, 0.46, 0)
-	root.add_child(pivot)
-
-	var rod := MeshInstance3D.new()
-	var rod_mesh := CylinderMesh.new()
-	rod_mesh.top_radius = 0.075
-	rod_mesh.bottom_radius = 0.095
-	rod_mesh.height = 1.55
-	rod_mesh.radial_segments = 16
-	rod.mesh = rod_mesh
-	rod.position.y = 0.76
-	rod.material_override = _mat(Color(0.62, 0.68, 0.68))
-	pivot.add_child(rod)
-
-	var grip := MeshInstance3D.new()
-	var grip_mesh := SphereMesh.new()
-	grip_mesh.radius = 0.23
-	grip_mesh.height = 0.46
-	grip.mesh = grip_mesh
-	grip.position = Vector3(0, 1.56, 0)
-	grip.material_override = _mat(Color(0.86, 0.20, 0.12))
-	pivot.add_child(grip)
-
-	var grip_cap := MeshInstance3D.new()
+	# Large guarded push button, mounted directly on the vertical panel.
+	_box_child(root, "RespawnButtonGuard", Vector3(-0.31, -0.40, 0.0), Vector3(0.10, 0.42, 0.72), Color(0.10, 0.13, 0.13))
+	var button_ring := MeshInstance3D.new()
+	var ring_mesh := CylinderMesh.new()
+	ring_mesh.top_radius = 0.30
+	ring_mesh.bottom_radius = 0.30
+	ring_mesh.height = 0.12
+	ring_mesh.radial_segments = 32
+	button_ring.mesh = ring_mesh
+	button_ring.position = Vector3(-0.39, -0.40, 0.0)
+	button_ring.rotation_degrees.z = 90.0
+	button_ring.material_override = _mat(Color(0.78, 0.57, 0.16))
+	root.add_child(button_ring)
+	var button_cap := MeshInstance3D.new()
 	var cap_mesh := CylinderMesh.new()
-	cap_mesh.top_radius = 0.16
-	cap_mesh.bottom_radius = 0.16
-	cap_mesh.height = 0.10
-	cap_mesh.radial_segments = 20
-	grip_cap.mesh = cap_mesh
-	grip_cap.position = Vector3(0, 1.56, 0)
-	grip_cap.material_override = _mat(Color(0.98, 0.66, 0.20))
-	pivot.add_child(grip_cap)
+	cap_mesh.top_radius = 0.22
+	cap_mesh.bottom_radius = 0.22
+	cap_mesh.height = 0.16
+	cap_mesh.radial_segments = 32
+	button_cap.mesh = cap_mesh
+	button_cap.position = Vector3(-0.49, -0.40, 0.0)
+	button_cap.rotation_degrees.z = 90.0
+	button_cap.material_override = _mat(Color(0.82, 0.16, 0.10))
+	root.add_child(button_cap)
 
 	var label := Label3D.new()
-	label.text = "PULL TO RESPAWN"
-	label.position = Vector3(0, 2.20, 0)
-	label.font_size = 26
-	label.pixel_size = 0.006
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(1.0, 0.90, 0.58)
+	label.text = "TRASH RESPAWN"
+	label.position = Vector3(-0.34, -0.72, 0.0)
+	label.rotation_degrees.y = 90.0
+	label.font_size = 25
+	label.pixel_size = 0.005
+	label.modulate = Color(1.0, 0.88, 0.62)
 	root.add_child(label)
 
+	# Keep the whole panel tappable without adding a floor obstacle.
 	var area := Area3D.new()
-	area.name = "PullLeverArea"
-	area.position = Vector3(0, 1.55, 0)
+	area.name = "WallRespawnButtonArea"
+	area.position = Vector3(-0.42, -0.20, 0.0)
 	var collision := CollisionShape3D.new()
-	var hit_shape := SphereShape3D.new()
-	hit_shape.radius = 1.35
+	var hit_shape := BoxShape3D.new()
+	hit_shape.size = Vector3(0.9, 1.55, 1.65)
 	collision.shape = hit_shape
 	area.add_child(collision)
 	root.add_child(area)
-	area.input_event.connect(_on_pull_lever_input.bind(action, pivot))
+	area.input_event.connect(_on_world_action_input.bind(action))
 	return root
+
+func _box_child(parent: Node3D, node_name: String, local_position: Vector3, dimensions: Vector3, color: Color) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = node_name
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = dimensions
+	mesh_instance.mesh = box_mesh
+	mesh_instance.position = local_position
+	mesh_instance.material_override = _mat(color)
+	parent.add_child(mesh_instance)
+	return mesh_instance
 
 func _on_pull_lever_input(_camera: Node, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_index: int, action: Callable, pivot: Node3D) -> void:
 	var activated: bool = (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
