@@ -281,8 +281,8 @@ func _build_world() -> void:
 	_make_bin(Vector3(12.4, 0, -4.5), Color(0.12, 0.42, 0.78), "PLASTIC")
 	_make_bin(Vector3(12.4, 0, -7.7), Color(0.78, 0.56, 0.12), "METAL")
 	_make_bin(Vector3(12.4, 0, -10.9), Color(0.18, 0.58, 0.34), "PAPER")
-	_make_barrel(Vector3(-12.2, 0, 3.5), Color(0.76, 0.31, 0.16))
-	_make_barrel(Vector3(-10.8, 0, 4.1), Color(0.18, 0.43, 0.67))
+	_make_barrel(Vector3(-13.25, 0, 4.0), Color(0.76, 0.31, 0.16))
+	_make_barrel(Vector3(-13.25, 0, 6.0), Color(0.18, 0.43, 0.67))
 	_make_tire_stack(Vector3(12.0, 0, 4.5))
 	_make_lamp(Vector3(-13.4, 0, -12.5))
 	_make_lamp(Vector3(13.4, 0, 10.5))
@@ -466,7 +466,7 @@ func _build_first_district_details() -> void:
 	for x in [-3.72, -2.85, -1.98]:
 		_box("WalkwayPaverJoint", Vector3(x, 0.075, -2.2), Vector3(0.035, 0.012, 9.8), Color(0.29, 0.33, 0.32), false)
 	# Raised planters, shrubs and low decorative edging.
-	for pos in [Vector3(-5.1, 0, -6.8), Vector3(2.2, 0, 10.5), Vector3(5.4, 0, 10.5)]:
+	for pos in [Vector3(-4.15, 0, -6.8), Vector3(2.2, 0, 10.5), Vector3(5.4, 0, 10.5)]:
 		_box("PlanterBase", pos + Vector3(0, 0.22, 0), Vector3(2.1, 0.44, 1.25), Color(0.30, 0.34, 0.31), true)
 		_box("PlanterSoil", pos + Vector3(0, 0.46, 0), Vector3(1.92, 0.08, 1.08), Color(0.24, 0.18, 0.12), false)
 		for shrub_x in [-0.58, 0.0, 0.58]:
@@ -2464,8 +2464,7 @@ func _build_city_dump_area() -> void:
 	_box("CityDumpBackWall", Vector3(-4.8, 1.15, -25.85), Vector3(7.2, 2.3, 0.22), Color(0.27, 0.31, 0.31), true)
 	_box("CityDumpLeftWall", Vector3(-8.25, 1.0, -22.5), Vector3(0.22, 2.0, 6.5), Color(0.27, 0.31, 0.31), true)
 	_box("CityDumpRightWall", Vector3(-1.35, 1.0, -22.5), Vector3(0.22, 2.0, 6.5), Color(0.27, 0.31, 0.31), true)
-	for x in [-8.12, -1.48]:
-		_cylinder("DepotSteelCornerPost", Vector3(x, 1.15, -25.65), 0.12, 2.3, Color(0.12, 0.16, 0.17), true)
+	# Corner joints are integrated into the bunker walls; no tall loose pipes.
 	# Concrete expansion joints, drainage channel and restrained safety markings.
 	for z in [-25.0, -22.5, -20.0]:
 		_box("DepotConcreteJoint", Vector3(-4.8, 0.082, z), Vector3(6.8, 0.012, 0.035), Color(0.16, 0.19, 0.19), false)
@@ -2482,15 +2481,15 @@ func _build_city_dump_area() -> void:
 	for x in [-8.8, -0.8]:
 		for z in [-19.0, -24.5]:
 			_cylinder("DepotSafetyBollard", Vector3(x, 0.48, z), 0.13, 0.96, Color(0.62, 0.48, 0.20), true)
-	# Fixed floodlights and a wall-mounted service cabinet add practical industrial detail.
-	for x in [-8.0, -1.6]:
-		_cylinder("DepotFloodlightPole", Vector3(x, 3.0, -25.0), 0.065, 6.0, Color(0.14, 0.18, 0.19), false)
-		_box("DepotFloodlight", Vector3(x, 5.85, -24.9), Vector3(0.72, 0.22, 0.42), Color(0.68, 0.70, 0.65), false)
+	# Compact wall-mounted work lights replace the oversized protruding poles.
+	for x in [-7.85, -1.75]:
+		_box("DepotFloodlightHousing", Vector3(x, 2.05, -25.48), Vector3(0.72, 0.28, 0.22), Color(0.16, 0.21, 0.22), false)
+		_box("DepotFloodlightLens", Vector3(x, 1.98, -25.34), Vector3(0.48, 0.08, 0.035), Color(0.92, 0.82, 0.55), false)
 		var lamp := OmniLight3D.new()
-		lamp.position = Vector3(x, 5.55, -24.9)
+		lamp.position = Vector3(x, 1.85, -25.15)
 		lamp.light_color = Color(0.82, 0.86, 0.82)
-		lamp.light_energy = 0.32
-		lamp.omni_range = 8.0
+		lamp.light_energy = 0.22
+		lamp.omni_range = 5.0
 		add_child(lamp)
 	_box("DepotElectricalCabinet", Vector3(-1.75, 0.95, -24.6), Vector3(0.48, 1.6, 0.34), Color(0.34, 0.39, 0.38), true)
 	_box("DepotCabinetDoor", Vector3(-1.75, 0.95, -24.41), Vector3(0.38, 1.42, 0.035), Color(0.24, 0.29, 0.29), false)
@@ -2521,17 +2520,30 @@ func _create_city_truck(index: int) -> Node3D:
 	var wheels: Array[Node3D] = []
 	for side in [-1.0, 1.0]:
 		for wheel_z in [-1.18, 1.12]:
+			# The pivot axis runs across the axle; the tire mesh is rotated separately.
+			var wheel_pivot := Node3D.new()
+			wheel_pivot.name = "TruckWheelPivot"
+			wheel_pivot.position = Vector3(side * 0.98, 0.42, wheel_z)
+			truck.add_child(wheel_pivot)
 			var wheel := MeshInstance3D.new()
 			var wheel_mesh := CylinderMesh.new()
 			wheel_mesh.top_radius = 0.38
 			wheel_mesh.bottom_radius = 0.38
 			wheel_mesh.height = 0.22
 			wheel.mesh = wheel_mesh
-			wheel.position = Vector3(side * 0.98, 0.42, wheel_z)
-			wheel.rotation_degrees.z = 90
+			wheel.rotation_degrees.z = 90.0
 			wheel.material_override = _mat(Color(0.055, 0.065, 0.07))
-			truck.add_child(wheel)
-			wheels.append(wheel)
+			wheel_pivot.add_child(wheel)
+			var hub := MeshInstance3D.new()
+			var hub_mesh := CylinderMesh.new()
+			hub_mesh.top_radius = 0.17
+			hub_mesh.bottom_radius = 0.17
+			hub_mesh.height = 0.245
+			hub.mesh = hub_mesh
+			hub.rotation_degrees.z = 90.0
+			hub.material_override = _mat(Color(0.48, 0.53, 0.52))
+			wheel_pivot.add_child(hub)
+			wheels.append(wheel_pivot)
 	truck.set_meta("wheels", wheels)
 	_city_truck_box(truck, "TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.72, 0.66, 0.48))
 	return truck
