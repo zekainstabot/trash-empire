@@ -40,6 +40,7 @@ var skill_drag_touch := -1
 var skill_touch_points: Dictionary = {}
 var skill_pinch_distance := 0.0
 var skill_scroll_velocity := Vector2.ZERO
+var skill_scroll_tween: Tween
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -963,6 +964,9 @@ func _build_ui() -> void:
 	skill_scroll_container.offset_bottom = -12
 	skill_scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	skill_scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	skill_scroll_container.scroll_deadzone = 10
+	skill_scroll_container.scroll_vertical_custom_step = 42.0
+	skill_scroll_container.mouse_filter = Control.MOUSE_FILTER_STOP
 	upgrade_panel.add_child(skill_scroll_container)
 	skill_map = VBoxContainer.new()
 	skill_map.name = "UpgradeCards"
@@ -1212,6 +1216,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
+	var category_index := 0
 	for category in categories:
 		var section := PanelContainer.new()
 		section.add_theme_stylebox_override("panel", _panel_style(Color(0.045,0.075,0.08,0.96)))
@@ -1219,11 +1224,20 @@ func _build_skill_tree(parent: Control) -> void:
 		var stack := VBoxContainer.new()
 		stack.add_theme_constant_override("separation", 8)
 		section.add_child(stack)
-		var heading := Label.new()
-		heading.text = category.title
+		var heading := Button.new()
+		heading.text = ("▼  " if category_index == 0 else "▶  ") + String(category.title)
+		heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		heading.custom_minimum_size = Vector2(0, 48)
 		heading.add_theme_font_size_override("font_size", 16)
 		heading.add_theme_color_override("font_color", Color(0.40,0.88,0.70))
+		heading.add_theme_stylebox_override("normal", _button_style(Color(0.065,0.12,0.12)))
+		heading.add_theme_stylebox_override("hover", _button_style(Color(0.09,0.19,0.17)))
 		stack.add_child(heading)
+		var category_body := VBoxContainer.new()
+		category_body.add_theme_constant_override("separation", 8)
+		category_body.visible = category_index == 0
+		stack.add_child(category_body)
+		heading.pressed.connect(_toggle_upgrade_category.bind(category_body, heading, String(category.title)))
 		for branch in category.branches:
 			var row := Button.new()
 			row.custom_minimum_size = Vector2(0,82)
@@ -1235,9 +1249,15 @@ func _build_skill_tree(parent: Control) -> void:
 			row.add_theme_stylebox_override("pressed",_button_style(Color(0.07,0.12,0.13)))
 			row.add_theme_stylebox_override("disabled",_button_style(Color(0.07,0.10,0.11)))
 			row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
-			stack.add_child(row)
+			category_body.add_child(row)
 			skill_node_data.append({"button":row,"branch":String(branch),"title":String(titles[branch])})
+		category_index += 1
 	_refresh_upgrade_prices()
+
+
+func _toggle_upgrade_category(body: VBoxContainer, heading: Button, category_title: String) -> void:
+	body.visible = not body.visible
+	heading.text = ("▼  " if body.visible else "▶  ") + category_title
 
 func _purchase_upgrade_branch(branch: String) -> void:
 	if not _skill_branch_unlocked(branch):
@@ -1452,6 +1472,17 @@ func _notification(what: int) -> void:
 func _input(event: InputEvent) -> void:
 	if main_menu_open:
 		return
+	if is_instance_valid(upgrade_panel) and upgrade_panel.visible and is_instance_valid(skill_scroll_container) and event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			var direction := -1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1
+			var target_scroll := clampi(skill_scroll_container.scroll_vertical + direction * 150, 0, maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.size.y)))
+			if is_instance_valid(skill_scroll_tween):
+				skill_scroll_tween.kill()
+			skill_scroll_tween = create_tween()
+			skill_scroll_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			skill_scroll_tween.tween_property(skill_scroll_container, "scroll_vertical", target_scroll, 0.22)
+			get_viewport().set_input_as_handled()
+			return
 	if not is_instance_valid(player):
 		return
 	if event is InputEventScreenTouch:
