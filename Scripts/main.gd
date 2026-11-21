@@ -2308,7 +2308,7 @@ func _reset_city_truck_fleet() -> void:
 	city_trash_reserved = 0
 	var target_count := clampi(1 + city_fleet_upgrade_level, 1, 4)
 	while city_trucks.size() > target_count:
-		var removed_truck := city_trucks.pop_back()
+		var removed_truck: Node3D = city_trucks.pop_back()
 		if is_instance_valid(removed_truck):
 			removed_truck.queue_free()
 	if not city_trucks.is_empty():
