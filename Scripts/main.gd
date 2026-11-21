@@ -291,12 +291,58 @@ func _build_world() -> void:
 	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 18.5), 0.65)
 	_build_first_district_details()
+	_build_yard_environment_details()
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
+
+func _build_yard_environment_details() -> void:
+	# Subtle concrete panel joints make the yard read as a real industrial site.
+	for z in [-16.0, -12.0, -2.0, 2.0, 14.0]:
+		_box("YardConcreteJoint", Vector3(1.0, 0.008, z), Vector3(27.0, 0.012, 0.035), Color(0.27, 0.30, 0.29), false)
+	for x in [-14.0, -1.0, 4.0, 10.0, 14.0]:
+		_box("YardConcreteJoint", Vector3(x, 0.009, 1.0), Vector3(0.035, 0.012, 34.0), Color(0.27, 0.30, 0.29), false)
+
+	# Clearly defined equipment staging / forklift parking area beside the factory.
+	_box("EquipmentStagingPad", Vector3(11.7, 0.025, -15.0), Vector3(5.2, 0.035, 5.0), Color(0.29, 0.32, 0.31), false)
+	for x in [9.15, 14.25]:
+		_box("StagingBayLine", Vector3(x, 0.052, -15.0), Vector3(0.07, 0.018, 4.6), Color(0.82, 0.68, 0.34), false)
+	_box("StagingBayBackLine", Vector3(11.7, 0.052, -17.28), Vector3(5.1, 0.018, 0.07), Color(0.82, 0.68, 0.34), false)
+	_label_3d("EQUIPMENT BAY", Vector3(11.7, 0.10, -15.8), 0.18)
+
+	# Realistic timber pallets and a restrained stack of sorted material.
+	for pallet_x in [10.0, 12.0]:
+		_box("TimberPalletBase", Vector3(pallet_x, 0.16, -12.8), Vector3(1.35, 0.20, 1.0), Color(0.37, 0.25, 0.15), false)
+		for slat_x in [-0.48, -0.16, 0.16, 0.48]:
+			_box("PalletTopSlat", Vector3(pallet_x + slat_x, 0.28, -12.8), Vector3(0.12, 0.055, 0.94), Color(0.49, 0.34, 0.21), false)
+	_box("SortedMaterialStack", Vector3(12.0, 0.62, -12.8), Vector3(1.05, 0.62, 0.72), Color(0.35, 0.43, 0.40), false)
+	_box("MaterialStackStrap", Vector3(12.0, 0.64, -12.42), Vector3(0.10, 0.72, 0.035), Color(0.72, 0.61, 0.36), false)
+
+	# Low safety bollards protect the machine zone without narrowing the walking path.
+	for z in [-10.0, -3.0]:
+		_cylinder("FactorySafetyBollard", Vector3(10.35, 0.48, z), 0.12, 0.96, Color(0.74, 0.55, 0.20), false)
+		_cylinder("FactoryBollardCap", Vector3(10.35, 0.98, z), 0.13, 0.08, Color(0.16, 0.20, 0.20), false)
+
+	# Distant warehouse silhouettes add depth beyond the perimeter wall.
+	_box("DistantWarehouseA", Vector3(-10.0, 4.8, -42.0), Vector3(11.0, 9.6, 1.0), Color(0.25, 0.31, 0.33), false)
+	_box("DistantWarehouseRoofA", Vector3(-10.0, 9.65, -42.0), Vector3(11.5, 0.28, 1.2), Color(0.16, 0.21, 0.23), false)
+	_box("DistantWarehouseB", Vector3(5.5, 3.8, -43.0), Vector3(12.0, 7.6, 1.0), Color(0.31, 0.34, 0.33), false)
+	_box("DistantWarehouseRoofB", Vector3(5.5, 7.68, -43.0), Vector3(12.5, 0.25, 1.2), Color(0.18, 0.23, 0.24), false)
+	for x in [-13.5, -10.0, -6.5, 2.0, 5.5, 9.0]:
+		_box("DistantWarehouseWindow", Vector3(x, 4.6, -41.43), Vector3(1.25, 1.15, 0.035), Color(0.22, 0.40, 0.46), false)
+	_cylinder("DistantVentStack", Vector3(12.0, 5.0, -42.5), 0.42, 10.0, Color(0.28, 0.32, 0.32), false)
+	_cylinder("DistantVentCap", Vector3(12.0, 10.05, -42.5), 0.58, 0.20, Color(0.17, 0.21, 0.22), false)
+
+	# Soft industrial haze helps separate the foreground from the distant skyline.
+	var world_env := get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if world_env != null and world_env.environment != null:
+		world_env.environment.fog_enabled = true
+		world_env.environment.fog_light_color = Color(0.63, 0.70, 0.75)
+		world_env.environment.fog_density = 0.0018
+
 
 func _build_apartment_block() -> void:
 	# Compact three-storey apartment block with a clear residential silhouette.
