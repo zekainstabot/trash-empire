@@ -435,7 +435,7 @@ func _refresh_factory_upgrade_button() -> void:
 	else:
 		var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
 		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD TEDDY BEAR FACTORY", "ADD PACKAGING + TRUCK"]
-		label.text = "%s\n$%.0f" % [names[factory_stage + 1], costs[factory_stage]]
+		label.text = "%s\n%.0f Zeka Coin" % [names[factory_stage + 1], costs[factory_stage]]
 
 func _build_factory_expansion() -> void:
 	if not is_instance_valid(factory_visual_root):
@@ -534,7 +534,7 @@ func _update_factory_build_label() -> void:
 	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
 	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY", "PACKAGING + TRUCK"]
 	var cost: float = costs[factory_stage]
-	factory_build_label.text = "BUILD %s\n$%.1f / $%.0f\nSTAY HERE TO PAY" % [names[factory_stage + 1], factory_build_paid, cost]
+	factory_build_label.text = "BUILD %s\n%.1f Zeka Coin / %.0f Zeka Coin\nSTAY HERE TO PAY" % [names[factory_stage + 1], factory_build_paid, cost]
 
 func _build_factory_module(stage: int) -> void:
 	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5, 16.0]
@@ -1326,7 +1326,7 @@ func _build_skill_tree(parent: Control) -> void:
 			upgrade_row.add_child(row)
 
 			var price_panel := PanelContainer.new()
-			price_panel.custom_minimum_size = Vector2(104, 66)
+			price_panel.custom_minimum_size = Vector2(142, 66)
 			price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.12, 0.095)))
 			upgrade_row.add_child(price_panel)
@@ -1660,7 +1660,7 @@ func _collect_nearby() -> void:
 			var rare_type := String(nearest.get_meta("rare_type"))
 			var bonus := 8.0 if rare_type == "gold" else 2.0
 			money += bonus
-			_set_message("%s rare scrap found! Bonus +$%.2f" % [rare_type.to_upper(), bonus])
+			_set_message("%s rare scrap found! Bonus +%.2f Zeka Coin" % [rare_type.to_upper(), bonus])
 		nearest.queue_free()
 		trash_nodes.erase(nearest)
 		carried += 1
@@ -2164,7 +2164,7 @@ func _process_expansion_zone(delta: float) -> void:
 		if is_instance_valid(zone):
 			var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 			if is_instance_valid(label):
-				label.text = "UNLOCKING DISTRICT %d\n$%.1f / $%.0f" % [yard_stage + 1, district_build_paid, cost]
+				label.text = "UNLOCKING DISTRICT %d\n%.1f Zeka Coin / %.0f Zeka Coin" % [yard_stage + 1, district_build_paid, cost]
 	if district_build_paid >= cost - 0.001:
 		_complete_district_unlock()
 	elif money <= 0.001 and not district_no_money_notified:
