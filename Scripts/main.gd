@@ -1306,9 +1306,16 @@ func _build_skill_tree(parent: Control) -> void:
 		category_bodies.append(category_body)
 
 		for branch in category.branches:
+			var upgrade_row := HBoxContainer.new()
+			upgrade_row.custom_minimum_size = Vector2(0, 82)
+			upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			upgrade_row.add_theme_constant_override("separation", 12)
+			category_body.add_child(upgrade_row)
+
 			var row := Button.new()
 			row.custom_minimum_size = Vector2(0, 82)
 			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.size_flags_stretch_ratio = 1.0
 			row.add_theme_font_size_override("font_size", 14)
 			row.add_theme_color_override("font_color", Color.WHITE)
 			row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.17, 0.18)))
@@ -1316,8 +1323,21 @@ func _build_skill_tree(parent: Control) -> void:
 			row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.12, 0.13)))
 			row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.10, 0.11)))
 			row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
-			category_body.add_child(row)
-			skill_node_data.append({"button": row, "branch": String(branch), "title": String(titles[branch])})
+			upgrade_row.add_child(row)
+
+			var price_panel := PanelContainer.new()
+			price_panel.custom_minimum_size = Vector2(104, 66)
+			price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.12, 0.095)))
+			upgrade_row.add_child(price_panel)
+			var price_label := Label.new()
+			price_label.text = "—"
+			price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			price_label.add_theme_font_size_override("font_size", 17)
+			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
+			price_panel.add_child(price_label)
+			skill_node_data.append({"button": row, "price_label": price_label, "branch": String(branch), "title": String(titles[branch])})
 
 		folder.pressed.connect(_select_upgrade_category.bind(category_index, category_bodies, folder_buttons, category_titles, detail_title))
 
@@ -1526,20 +1546,29 @@ func _refresh_upgrade_prices() -> void:
 		var current := _skill_level(branch)
 		var unlocked := _skill_branch_unlocked(branch)
 		var button := node.button as Button
+		var price_label := node.price_label as Label
 		var icon := _skill_icon(branch)
-		if branch == "capacity":
-			button.text = "%s  %s\\nLEVEL %d  •  +3 BAG SLOTS\\n$%.0f" % [icon,node.title,current+1,_upgrade_cost(5.0,upgrade_level)]
-			button.disabled = not unlocked
-			continue
-		if current >= 3:
-			button.text = "%s  %s\\nMAX LEVEL  •  LV 3" % [icon,node.title]
+		if current >= 3 and branch != "capacity":
+			button.text = "%s  %s\\nMAX LEVEL  •  LV 3" % [icon, node.title]
 			button.disabled = true
+			price_label.text = "MAX"
+			price_label.add_theme_color_override("font_color", Color(0.65, 0.82, 0.72))
 		elif not unlocked:
-			button.text = "%s  %s\\nLOCKED  •  unlock prerequisite" % [icon,node.title]
+			button.text = "%s  %s\\nLOCKED  •  unlock prerequisite" % [icon, node.title]
 			button.disabled = true
+			price_label.text = "LOCKED"
+			price_label.add_theme_color_override("font_color", Color(0.72, 0.72, 0.72))
 		else:
-			var price := _upgrade_cost(float(base_costs.get(branch,4.0)),current+1)
-			button.text = "%s  %s\\nLEVEL %d  →  %d\\n$%.0f" % [icon,node.title,current,current+1,price]
+			var price := _upgrade_cost(float(base_costs.get(branch, 4.0)), current + 1)
+			var next_level := current + 1
+			if branch == "capacity":
+				next_level = upgrade_level
+				price = _upgrade_cost(5.0, upgrade_level)
+				button.text = "%s  %s\\nNEXT LEVEL  •  +3 BAG SLOTS" % [icon, node.title]
+			else:
+				button.text = "%s  %s\\nLEVEL %d  →  %d" % [icon, node.title, current, next_level]
+			price_label.text = "$%.0f" % price
+			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
 			button.disabled = false
 
 func _skill_key_owned(key: String) -> bool:
