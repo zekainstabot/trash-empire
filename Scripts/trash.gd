@@ -80,7 +80,7 @@ func _make_plastic_bottle(rng: RandomNumberGenerator) -> void:
 	shape.top_radius = 0.125
 	shape.bottom_radius = 0.17
 	shape.height = 0.48
-	shape.radial_segments = 9
+	shape.radial_segments = 16
 	body.mesh = shape
 	body.position.y = 0.02
 	body.rotation_degrees.z = 90
@@ -311,7 +311,7 @@ func _cylinder_piece(top: float, bottom: float, height: float, pos: Vector3, col
 	shape.top_radius = top
 	shape.bottom_radius = bottom
 	shape.height = height
-	shape.radial_segments = 10
+	shape.radial_segments = 16
 	mesh.mesh = shape
 	mesh.position = pos
 	mesh.material_override = _material(color)
@@ -320,7 +320,9 @@ func _cylinder_piece(top: float, bottom: float, height: float, pos: Vector3, col
 func _material(color: Color, transparent := false) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
-	material.roughness = 0.62
+	material.roughness = 0.48
+	material.metallic = 0.12
 	if transparent:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.roughness = 0.28
 	return material
