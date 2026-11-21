@@ -2837,7 +2837,7 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 	if yard_stage == 2:
 		max_x = 43.5
 	elif yard_stage >= 3:
-		max_x = 75.5
+		max_x = 107.5
 	var point := Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
 	var attempts := 0
 	while not _is_clear_trash_spawn(point) and attempts < 60:
