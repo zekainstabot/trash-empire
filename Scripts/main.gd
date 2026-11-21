@@ -133,7 +133,6 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if main_menu_open:
 		return
-	_process_skill_scroll(delta)
 	_process_expansion_zone(delta)
 	_process_factory_build(delta)
 	if is_instance_valid(player) and player.global_position.y < -3.0:
@@ -925,68 +924,46 @@ func _build_ui() -> void:
 	joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.48, 0.38, 0.58)))
 	joystick_pad.add_child(joystick_knob)
 
-	var upgrades_button := _button("SKILL TREE", Vector2(-174, 24), Vector2(156, 58), layer)
+	var upgrades_button := _button("⚙  UPGRADES", Vector2(-174, 24), Vector2(156, 58), layer)
 	upgrades_button.anchor_left = 1.0
 	upgrades_button.anchor_right = 1.0
 	upgrades_button.pressed.connect(_toggle_upgrade_panel)
 
-	# Always-visible pause/menu control in the gameplay HUD.
 	var menu_button := _button("☰", Vector2(-232, 24), Vector2(48, 58), layer)
 	menu_button.anchor_left = 1.0
 	menu_button.anchor_right = 1.0
 	menu_button.add_theme_font_size_override("font_size", 24)
 	menu_button.pressed.connect(_toggle_main_menu)
 
-	# Full-screen skill tree overlay, sized to the device viewport.
 	upgrade_panel = Panel.new()
 	upgrade_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	upgrade_panel.offset_left = 0
-	upgrade_panel.offset_top = 0
-	upgrade_panel.offset_right = 0
-	upgrade_panel.offset_bottom = 0
 	upgrade_panel.z_index = 10
 	upgrade_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.055, 0.065, 0.995)))
 	upgrade_panel.visible = false
 	layer.add_child(upgrade_panel)
 
-	_label("SKILL TREE", Vector2(20, 14), 25, upgrade_panel)
-	_label("Unlock stronger skills branch by branch", Vector2(20, 47), 12, upgrade_panel)
+	var upgrade_header := _label("UPGRADE GARAGE", Vector2(18, 16), 25, upgrade_panel)
+	upgrade_header.add_theme_color_override("font_color", Color(0.45, 0.94, 0.75))
+	_label("Improve your equipment and recycling empire", Vector2(18, 50), 13, upgrade_panel)
 	var close_upgrades := _button("X", Vector2(-58, 12), Vector2(44, 44), upgrade_panel)
 	close_upgrades.anchor_left = 1.0
 	close_upgrades.anchor_right = 1.0
 	close_upgrades.pressed.connect(_toggle_upgrade_panel)
 
 	skill_scroll_container = ScrollContainer.new()
-	var skill_scroll := skill_scroll_container
-	skill_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	skill_scroll.offset_left = 14
-	skill_scroll.offset_top = 82
-	skill_scroll.offset_right = -14
-	skill_scroll.offset_bottom = -14
-	skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	skill_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	skill_scroll.scroll_deadzone = 8
-	skill_scroll.scroll_vertical_custom_step = 42
-	upgrade_panel.add_child(skill_scroll)
-	skill_map = Control.new()
-	skill_map.name = "SkillGalaxyMap"
-	skill_map.custom_minimum_size = Vector2(3400, 3400)
-	skill_map.size = Vector2(3400, 3400)
-	skill_scroll.add_child(skill_map)
-	var zoom_out := _button("−", Vector2(-166, 66), Vector2(42, 42), upgrade_panel)
-	zoom_out.anchor_left = 1.0
-	zoom_out.anchor_right = 1.0
-	zoom_out.pressed.connect(func() -> void: _set_skill_zoom(skill_zoom - 0.15))
-	var zoom_in := _button("+", Vector2(-116, 66), Vector2(42, 42), upgrade_panel)
-	zoom_in.anchor_left = 1.0
-	zoom_in.anchor_right = 1.0
-	zoom_in.pressed.connect(func() -> void: _set_skill_zoom(skill_zoom + 0.15))
-	var zoom_label := _label("ZOOM", Vector2(-218, 76), 10, upgrade_panel)
-	zoom_label.anchor_left = 1.0
-	zoom_label.anchor_right = 1.0
-	# Open the tree focused on its central capacity core.
-	skill_scroll.set_deferred("scroll_horizontal", 1400)
-	skill_scroll.set_deferred("scroll_vertical", 1300)
+	skill_scroll_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	skill_scroll_container.offset_left = 12
+	skill_scroll_container.offset_top = 84
+	skill_scroll_container.offset_right = -12
+	skill_scroll_container.offset_bottom = -12
+	skill_scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	skill_scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	upgrade_panel.add_child(skill_scroll_container)
+	skill_map = VBoxContainer.new()
+	skill_map.name = "UpgradeCards"
+	skill_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	skill_map.add_theme_constant_override("separation", 10)
+	skill_scroll_container.add_child(skill_map)
 	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
@@ -1217,116 +1194,57 @@ func _close_main_menu() -> void:
 
 
 func _build_skill_tree(parent: Control) -> void:
-	# Progression is arranged in five readable rings, from basic collection
-	# through processing and automation to the final shipping line.
-	var center := Vector2(1200, 1200)
-	var node_size := Vector2(142, 124)
-	var branch_defs := [
-		# Ring 1: improve the basic work loop.
-		{"branch":"speed","title":"MOVEMENT SPEED","depth":1,"angle":210.0},
-		{"branch":"range","title":"PICKUP RANGE","depth":1,"angle":270.0},
-		{"branch":"unload","title":"RECYCLING SPEED","depth":1,"angle":330.0},
-		# Ring 2: unlock the tools that support each basic upgrade.
-		{"branch":"technology","title":"TECHNOLOGY","depth":2,"angle":210.0},
-		{"branch":"supply","title":"TRASH SUPPLY","depth":2,"angle":270.0},
-		{"branch":"auto","title":"AUTO PICKUP","depth":2,"angle":330.0},
-		{"branch":"bulk_pickup","title":"MULTI PICKUP","depth":3,"angle":300.0},
-		{"branch":"respawn","title":"AUTO RESPAWN","depth":3,"angle":270.0},
-		# Ring 3: turn better tools into better earnings.
-		{"branch":"value","title":"TRASH VALUE","depth":3,"angle":210.0},
-		{"branch":"luck","title":"LUCKY FINDS","depth":3,"angle":270.0},
-		{"branch":"magnet_power","title":"MAGNET POWER","depth":3,"angle":330.0},
-		# Ring 4: automation and the start of the delivery business.
-		{"branch":"drones","title":"HELPER DRONES","depth":4,"angle":270.0},
-		{"branch":"city_truck","title":"CITY TRUCK FREQUENCY","depth":4,"angle":90.0},
-		{"branch":"dispatch","title":"TRUCK FREQUENCY","depth":4,"angle":210.0},
-		{"branch":"fleet","title":"HIRE TRUCKS","depth":4,"angle":330.0},
-		# Ring 5: improve the two final steps of the teddy-bear supply chain.
-		{"branch":"packaging","title":"PACKAGING SPEED","depth":5,"angle":210.0},
-		{"branch":"truck_capacity","title":"TRUCK CAPACITY","depth":5,"angle":330.0}
+	var categories := [
+		{"title":"ROBOT & COLLECTION","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power"]},
+		{"title":"RECYCLING & ECONOMY","branches":["technology","value","supply","luck","respawn"]},
+		{"title":"AUTOMATION & FLEET","branches":["drones","city_truck","dispatch","fleet","truck_capacity","packaging"]}
 	]
-	var positions: Dictionary = {"capacity_1": center}
-	# Compact radial layout: branches fan out around the core, with levels
-	# staggered locally rather than placed on distant concentric rings.
-	var branch_layout := {
-		"speed": Vector2(-1.0, -0.85), "range": Vector2(-1.0, 0.0), "unload": Vector2(-1.0, 0.85),
-		"technology": Vector2(-0.72, -1.0), "supply": Vector2(0.0, -1.0), "auto": Vector2(0.72, -1.0),
-		"bulk_pickup": Vector2(1.0, -0.35), "respawn": Vector2(0.0, -1.0), "value": Vector2(-0.45, -0.8), "luck": Vector2(0.0, 0.85),
-		"magnet_power": Vector2(0.45, -0.8), "drones": Vector2(0.0, 1.0),
-		"city_truck": Vector2(0.0, -1.0), "dispatch": Vector2(-0.75, 0.65), "fleet": Vector2(0.75, 0.65),
-		"packaging": Vector2(-0.85, 0.35), "truck_capacity": Vector2(0.85, 0.35)
+	var titles := {
+		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
+		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
+		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","magnet_power":"MAGNET POWER",
+		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","dispatch":"TRUCK FREQUENCY",
+		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
-	for branch_data in branch_defs:
-		var direction: Vector2 = branch_layout[String(branch_data.branch)].normalized()
-		var base_radius := 270.0 + (int(branch_data.depth) - 1) * 110.0
-		for level in range(1, 4):
-			var offset := (level - 1) * 72.0
-			positions["%s_%d" % [branch_data.branch, level]] = center + direction * (base_radius + offset)
-	# Decorative circles are removed so branches and nodes form a compact,
-	# readable network instead of an enormous empty skill map.
-	# Capacity is one meaningful starting upgrade, not three repetitive
-	# nodes in a straight line. The real branches fan out from this hub.
-	# Draw prerequisite links behind the skill buttons.
-	for branch_data in branch_defs:
-		var branch := String(branch_data.branch)
-		for level in range(1, 3):
-			_add_skill_connection(parent, positions["%s_%d" % [branch, level]], positions["%s_%d" % [branch, level + 1]], "%s_%d" % [branch, level], "%s_%d" % [branch, level + 1])
-	var dependencies := [
-		["capacity_1", "speed_1"], ["capacity_1", "range_1"], ["capacity_1", "unload_1"],
-		["speed_3", "technology_1"], ["technology_3", "value_1"],
-		["range_3", "supply_1"], ["supply_3", "luck_1"], ["supply_3", "respawn_1"],
-		["unload_3", "auto_1"], ["auto_3", "magnet_power_1"], ["range_3", "bulk_pickup_1"],
-		["luck_3", "drones_1"], ["supply_3", "city_truck_1"],
-		["drones_3", "dispatch_1"], ["drones_3", "fleet_1"],
-		["dispatch_3", "packaging_1"], ["fleet_3", "truck_capacity_1"]
-	]
-	for dependency in dependencies:
-		_add_skill_connection(parent, positions[dependency[0]], positions[dependency[1]], String(dependency[0]), String(dependency[1]))
-	var all_nodes := [{"branch":"capacity","title":"BACKPACK CAPACITY"}]
-	for branch_data in branch_defs:
-		all_nodes.append({"branch":String(branch_data.branch),"title":String(branch_data.title)})
-	for node_data in all_nodes:
-		var branch := String(node_data.branch)
-		var max_levels := 1 if branch == "capacity" else 3
-		for level in range(1, max_levels + 1):
-			var point: Vector2 = positions["%s_%d" % [branch, level]]
-			# Honeycomb cell: a true six-sided polygon behind a transparent button.
-			var hex := Polygon2D.new()
-			hex.name = "SkillHex_%s_%d" % [branch, level]
-			hex.position = point
-			hex.polygon = PackedVector2Array([
-				Vector2(-68, -39), Vector2(0, -78), Vector2(68, -39),
-				Vector2(68, 39), Vector2(0, 78), Vector2(-68, 39)
-			])
-			hex.color = Color(0.075, 0.095, 0.105)
-			hex.z_index = 1
-			parent.add_child(hex)
-			var button := Button.new()
-			button.position = point - node_size * 0.5
-			button.size = node_size
-			button.custom_minimum_size = node_size
-			button.add_theme_font_size_override("font_size", 10)
-			button.add_theme_color_override("font_color", Color(0.95, 0.98, 0.96))
-			button.add_theme_color_override("font_hover_color", Color.WHITE)
-			button.add_theme_color_override("font_disabled_color", Color(0.68, 0.74, 0.72))
-			button.add_theme_stylebox_override("normal", _skill_hex_button_style())
-			button.add_theme_stylebox_override("hover", _skill_hex_button_style())
-			button.add_theme_stylebox_override("pressed", _skill_hex_button_style())
-			button.add_theme_stylebox_override("disabled", _skill_hex_button_style())
-			button.focus_mode = Control.FOCUS_NONE
-			button.z_index = 2
-			button.pressed.connect(_purchase_skill_node.bind(branch, level))
-			parent.add_child(button)
-			skill_node_data.append({"button":button,"hex":hex,"branch":branch,"level":level,"title":String(node_data.title),"key":"%s_%d" % [branch, level],"position":point})
-	var core := Label.new()
-	core.text = "✦  START HERE  ✦"
-	core.position = center + Vector2(-72, 92)
-	core.size = Vector2(144, 28)
-	core.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	core.add_theme_font_size_override("font_size", 11)
-	core.add_theme_color_override("font_color", Color(0.42, 0.92, 0.72))
-	parent.add_child(core)
+	for category in categories:
+		var section := PanelContainer.new()
+		section.add_theme_stylebox_override("panel", _panel_style(Color(0.045,0.075,0.08,0.96)))
+		parent.add_child(section)
+		var stack := VBoxContainer.new()
+		stack.add_theme_constant_override("separation", 8)
+		section.add_child(stack)
+		var heading := Label.new()
+		heading.text = category.title
+		heading.add_theme_font_size_override("font_size", 16)
+		heading.add_theme_color_override("font_color", Color(0.40,0.88,0.70))
+		stack.add_child(heading)
+		for branch in category.branches:
+			var row := Button.new()
+			row.custom_minimum_size = Vector2(0,82)
+			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_theme_font_size_override("font_size",14)
+			row.add_theme_color_override("font_color",Color.WHITE)
+			row.add_theme_stylebox_override("normal",_button_style(Color(0.10,0.17,0.18)))
+			row.add_theme_stylebox_override("hover",_button_style(Color(0.14,0.28,0.25)))
+			row.add_theme_stylebox_override("pressed",_button_style(Color(0.07,0.12,0.13)))
+			row.add_theme_stylebox_override("disabled",_button_style(Color(0.07,0.10,0.11)))
+			row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
+			stack.add_child(row)
+			skill_node_data.append({"button":row,"branch":String(branch),"title":String(titles[branch])})
 	_refresh_upgrade_prices()
+
+func _purchase_upgrade_branch(branch: String) -> void:
+	if not _skill_branch_unlocked(branch):
+		_set_message("Locked: upgrade the required branch first.")
+		return
+	var next_level := _skill_level(branch) + 1
+	if branch == "capacity":
+		_upgrade_bag()
+	elif next_level > 3:
+		_set_message("This upgrade is at its maximum level.")
+	else:
+		_purchase_skill_node(branch, next_level)
+
 
 func _add_skill_orbit(parent: Control, center: Vector2, radius: float) -> void:
 	var orbit := Line2D.new()
@@ -1488,54 +1406,27 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"packaging": _upgrade_packaging()
 
 func _refresh_upgrade_prices() -> void:
-	# Fog-of-war skill tree: only the starting node and neighbors of purchased
-	# skills are revealed. Hidden nodes do not occupy the screen until discovered.
-	var revealed: Dictionary = {"capacity_1": true}
-	var changed := true
-	while changed:
-		changed = false
-		for connection in skill_connection_data:
-			var from_key := String(connection.from)
-			var to_key := String(connection.to)
-			if revealed.has(from_key) and _skill_key_owned(from_key) and not revealed.has(to_key):
-				revealed[to_key] = true
-				changed = true
-			if revealed.has(to_key) and _skill_key_owned(to_key) and not revealed.has(from_key):
-				revealed[from_key] = true
-				changed = true
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"respawn":12.0,"bulk_pickup":18.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
-		var level := int(node.level)
-		var key := String(node.key)
-		var visible_node := revealed.has(key)
 		var current := _skill_level(branch)
-		var available := visible_node and _skill_branch_unlocked(branch) and level == current + 1 and level <= 3
-		var owned := current >= level
+		var unlocked := _skill_branch_unlocked(branch)
 		var button := node.button as Button
-		var hex := node.hex as Polygon2D
-		button.visible = visible_node
-		hex.visible = visible_node
-		if not visible_node:
-			continue
-		var accent := _skill_branch_color(branch)
 		var icon := _skill_icon(branch)
-		if owned:
-			button.text = "%s\n%s\nLV %d  ✓" % [icon, node.title, level]
+		if branch == "capacity":
+			button.text = "%s  %s\\nLEVEL %d  •  +3 BAG SLOTS\\n$%.0f" % [icon,node.title,current+1,_upgrade_cost(5.0,upgrade_level)]
+			button.disabled = not unlocked
+			continue
+		if current >= 3:
+			button.text = "%s  %s\\nMAX LEVEL  •  LV 3" % [icon,node.title]
 			button.disabled = true
-			hex.color = Color(0.055, 0.34, 0.25)
-		elif available:
-			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0}.get(branch, 4.0))
-			var price_level := level
-			button.text = "%s\n%s\n$%.0f" % [icon, node.title, _upgrade_cost(base_cost, price_level)]
-			button.disabled = false
-			hex.color = accent.darkened(0.48)
+		elif not unlocked:
+			button.text = "%s  %s\\nLOCKED  •  unlock prerequisite" % [icon,node.title]
+			button.disabled = true
 		else:
-			button.text = "%s\n%s\nLOCKED" % [icon, node.title]
-			button.disabled = true
-			hex.color = Color(0.075, 0.095, 0.105)
-	for connection in skill_connection_data:
-		var line := connection.line as Line2D
-		line.visible = revealed.has(String(connection.from)) and revealed.has(String(connection.to))
+			var price := _upgrade_cost(float(base_costs.get(branch,4.0)),current+1)
+			button.text = "%s  %s\\nLEVEL %d  →  %d\\n$%.0f" % [icon,node.title,current,current+1,price]
+			button.disabled = false
 
 func _skill_key_owned(key: String) -> bool:
 	var parts := key.rsplit("_", true, 1)
@@ -1550,49 +1441,6 @@ func _notification(what: int) -> void:
 func _input(event: InputEvent) -> void:
 	if main_menu_open:
 		return
-	# Skill tree: one-finger drag, two-finger pinch zoom and smooth momentum.
-	if upgrade_panel != null and upgrade_panel.visible and is_instance_valid(skill_scroll_container):
-		var scroll_rect := skill_scroll_container.get_global_rect()
-		if event is InputEventScreenTouch:
-			if event.pressed and scroll_rect.has_point(event.position):
-				skill_touch_points[event.index] = event.position
-				if skill_touch_points.size() == 1:
-					skill_drag_touch = event.index
-					skill_scroll_velocity = Vector2.ZERO
-				elif skill_touch_points.size() == 2:
-					var points: Array = skill_touch_points.values()
-					skill_pinch_distance = points[0].distance_to(points[1])
-					skill_drag_touch = -1
-				get_viewport().set_input_as_handled()
-			elif not event.pressed:
-				skill_touch_points.erase(event.index)
-				if event.index == skill_drag_touch:
-					skill_drag_touch = -1
-				if skill_touch_points.size() == 1:
-					var remaining_index = skill_touch_points.keys()[0]
-					skill_drag_touch = int(remaining_index)
-				else:
-					skill_pinch_distance = 0.0
-				get_viewport().set_input_as_handled()
-		elif event is InputEventScreenDrag:
-			if skill_touch_points.has(event.index):
-				skill_touch_points[event.index] = event.position
-				if skill_touch_points.size() >= 2:
-					var points: Array = skill_touch_points.values()
-					var distance: float = points[0].distance_to(points[1])
-					if skill_pinch_distance > 0.0:
-						_set_skill_zoom(skill_zoom * (distance / skill_pinch_distance))
-					skill_pinch_distance = distance
-					skill_drag_touch = -1
-				elif event.index == skill_drag_touch:
-					# Follow the finger on both axes; retain a little velocity for natural inertia.
-					skill_scroll_velocity = -event.relative * 42.0
-					var max_h := maxi(0, int(skill_scroll_container.get_h_scroll_bar().max_value - skill_scroll_container.get_h_scroll_bar().page))
-					var max_v := maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
-					skill_scroll_container.scroll_horizontal = clampi(skill_scroll_container.scroll_horizontal - int(event.relative.x), 0, max_h)
-					skill_scroll_container.scroll_vertical = clampi(skill_scroll_container.scroll_vertical - int(event.relative.y), 0, max_v)
-				get_viewport().set_input_as_handled()
-		return
 	if not is_instance_valid(player):
 		return
 	if event is InputEventScreenTouch:
@@ -1605,39 +1453,6 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag and event.index == joystick_touch:
 		_update_joystick(event.position)
 
-func _process_skill_scroll(delta: float) -> void:
-	if skill_drag_touch != -1 or not is_instance_valid(skill_scroll_container):
-		return
-	if skill_scroll_velocity.length() < 8.0:
-		skill_scroll_velocity = Vector2.ZERO
-		return
-	var max_h := maxi(0, int(skill_scroll_container.get_h_scroll_bar().max_value - skill_scroll_container.get_h_scroll_bar().page))
-	var max_v := maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
-	var next_h := clampi(skill_scroll_container.scroll_horizontal + int(skill_scroll_velocity.x * delta), 0, max_h)
-	var next_v := clampi(skill_scroll_container.scroll_vertical + int(skill_scroll_velocity.y * delta), 0, max_v)
-	skill_scroll_container.scroll_horizontal = next_h
-	skill_scroll_container.scroll_vertical = next_v
-	if next_h == 0 or next_h == max_h:
-		skill_scroll_velocity.x = 0.0
-	if next_v == 0 or next_v == max_v:
-		skill_scroll_velocity.y = 0.0
-	skill_scroll_velocity *= exp(-4.0 * delta)
-
-func _set_skill_zoom(value: float) -> void:
-	if not is_instance_valid(skill_map) or not is_instance_valid(skill_scroll_container):
-		return
-	var old_zoom := skill_zoom
-	skill_zoom = clampf(value, 0.55, 1.65)
-	if is_equal_approx(old_zoom, skill_zoom):
-		return
-	var view_center := Vector2(skill_scroll_container.scroll_horizontal, skill_scroll_container.scroll_vertical) + skill_scroll_container.size * 0.5
-	var map_center := view_center / old_zoom
-	skill_map.scale = Vector2.ONE * skill_zoom
-	skill_map.custom_minimum_size = Vector2(3400.0, 3400.0) * skill_zoom
-	skill_map.size = skill_map.custom_minimum_size
-	await get_tree().process_frame
-	skill_scroll_container.scroll_horizontal = clampi(int(map_center.x * skill_zoom - skill_scroll_container.size.x * 0.5), 0, int(skill_scroll_container.get_h_scroll_bar().max_value - skill_scroll_container.get_h_scroll_bar().page))
-	skill_scroll_container.scroll_vertical = clampi(int(map_center.y * skill_zoom - skill_scroll_container.size.y * 0.5), 0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
 
 func _update_joystick(touch_position: Vector2) -> void:
 	var center := joystick_pad.get_global_rect().get_center()
