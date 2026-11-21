@@ -212,7 +212,14 @@ func _build_world() -> void:
 	_box("DistrictTwoBackWall", Vector3(32, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoFrontFence", Vector3(32, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 72), Color(0.32, 0.34, 0.29), true)
-	_box("DistrictThreeOuterWall", Vector3(79.5, 2.0, 0), Vector3(0.5, 4, 72), Color(0.28, 0.32, 0.31), true)
+	# Open the east edge into a boulevard leading to the new market quarter.
+	_box("DistrictThreeEastWallNorth", Vector3(79.5, 2.0, -19.5), Vector3(0.5, 4, 33.0), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictThreeEastWallSouth", Vector3(79.5, 2.0, 19.5), Vector3(0.5, 4, 33.0), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictFourGround", Vector3(96, -0.3, 0), Vector3(32, 0.6, 72), Color(0.29, 0.34, 0.30), true)
+	_box("DistrictFourGrassPatch", Vector3(96, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.27, 0.43, 0.25), false)
+	_box("DistrictFourOuterWall", Vector3(111.5, 2.0, 0), Vector3(0.5, 4, 72), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictFourBackWall", Vector3(96, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictFourFrontFence", Vector3(96, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	_box("DistrictThreeBackWall", Vector3(64, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictThreeFrontFence", Vector3(64, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	var second_gate := _box("ExpansionGateTwo", Vector3(47.5, 1.5, 0), Vector3(0.5, 3.0, 4.0), Color(0.82, 0.55, 0.12), true)
@@ -221,6 +228,8 @@ func _build_world() -> void:
 	_label_3d("DISTRICT 2", Vector3(32, 2.2, -13.35), 0.35)
 	_box("DistrictThreeSign", Vector3(64, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.42, 0.30, 0.10), false)
 	_label_3d("DISTRICT 3", Vector3(64, 2.2, -13.35), 0.35)
+	_box("DistrictFourSign", Vector3(96, 2.2, -13.5), Vector3(6.0, 1.0, 0.18), Color(0.10, 0.29, 0.43), false)
+	_label_3d("DISTRICT 4 - MARKET", Vector3(96, 2.2, -13.35), 0.28)
 	for x in range(-14, 15, 2):
 		# Keep a wide, player-accessible entrance aligned with the road.
 		if x >= -12 and x <= -4:
@@ -235,6 +244,7 @@ func _build_world() -> void:
 	_add_invisible_barrier("MainFrontSafety", Vector3(0, 1.0, 36.0), Vector3(32, 2.0, 0.5))
 	_add_invisible_barrier("DistrictTwoFrontSafety", Vector3(32, 1.0, 36.0), Vector3(32, 2.0, 0.5))
 	_add_invisible_barrier("DistrictThreeFrontSafety", Vector3(64, 1.0, 36.0), Vector3(32, 2.0, 0.5))
+	_add_invisible_barrier("DistrictFourFrontSafety", Vector3(96, 1.0, 36.0), Vector3(32, 2.0, 0.5))
 
 	# Residential building: moved to the quiet west edge, away from the factory line.
 	_build_apartment_block()
@@ -302,6 +312,7 @@ func _build_world() -> void:
 	_build_random_residential_blocks()
 	_build_city_polish()
 	_build_city_pedestrians()
+	_build_commercial_district()
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
@@ -3580,6 +3591,89 @@ func _build_city_polish() -> void:
 		for stripe in range(5):
 			_box("PedestrianCrossingStripe", Vector3(district_x - 2.2 + stripe * 1.1, 0.052, 3.0), Vector3(0.62, 0.018, 0.48), Color(0.88, 0.87, 0.78), false)
 
+
+
+func _build_commercial_district() -> void:
+	# Detailed commercial quarter with a boulevard, six stores and a public plaza.
+	_box("MarketBoulevard", Vector3(96, 0.022, 0), Vector3(31.0, 0.045, 6.2), Color(0.105, 0.13, 0.15), false)
+	for side_z in [-4.0, 4.0]:
+		_box("MarketStoneSidewalk", Vector3(96, 0.06, side_z), Vector3(31.0, 0.12, 1.65), Color(0.58, 0.57, 0.51), false)
+		for x in range(82, 111, 2):
+			_box("MarketPavingJoint", Vector3(float(x), 0.126, side_z), Vector3(0.025, 0.008, 1.55), Color(0.42, 0.43, 0.40), false)
+	for x in range(82, 111, 4):
+		_box("MarketRoadDash", Vector3(float(x), 0.055, 0), Vector3(1.75, 0.012, 0.11), Color(0.91, 0.80, 0.55), false)
+
+	var shop_names: Array[String] = ["GROCERY", "BAKERY", "COFFEE", "MARKET", "FLOWERS", "TOOLS"]
+	var shop_colors: Array[Color] = [
+		Color(0.76, 0.56, 0.30), Color(0.70, 0.36, 0.25),
+		Color(0.32, 0.48, 0.53), Color(0.48, 0.57, 0.40),
+		Color(0.68, 0.43, 0.53), Color(0.42, 0.49, 0.58)
+	]
+	var shop_xs: Array[float] = [85.5, 96.0, 106.5]
+	for i in range(3):
+		_build_market_shop(Vector3(shop_xs[i], 0, -23.5), shop_names[i], shop_colors[i], i)
+		_build_market_shop(Vector3(shop_xs[i], 0, 23.5), shop_names[i + 3], shop_colors[i + 3], i + 3)
+
+	# A proper civic square, with a tiered fountain, pavers, planters and seating.
+	var plaza := Vector3(96, 0, 13.0)
+	_box("MarketSquareBase", plaza + Vector3(0, 0.055, 0), Vector3(17.5, 0.11, 12.0), Color(0.61, 0.59, 0.51), false)
+	for x in range(88, 105, 2):
+		_box("MarketSquarePaverLine", Vector3(float(x), 0.116, 13), Vector3(0.025, 0.008, 11.6), Color(0.45, 0.46, 0.42), false)
+	for z in [8.0, 18.0]:
+		_box("MarketSquareBorder", Vector3(96, 0.14, z), Vector3(17.0, 0.08, 0.12), Color(0.34, 0.37, 0.34), false)
+	_cylinder("FountainLowerBasin", Vector3(96, 0.32, 13), 2.0, 0.48, Color(0.43, 0.48, 0.47), false)
+	_cylinder("FountainWater", Vector3(96, 0.57, 13), 1.72, 0.06, Color(0.18, 0.55, 0.68), false)
+	_cylinder("FountainColumn", Vector3(96, 0.92, 13), 0.34, 0.72, Color(0.68, 0.67, 0.60), false)
+	_cylinder("FountainTopBowl", Vector3(96, 1.34, 13), 0.82, 0.18, Color(0.55, 0.61, 0.59), false)
+	_cylinder("FountainJet", Vector3(96, 1.70, 13), 0.10, 0.62, Color(0.26, 0.66, 0.78), false)
+	for corner in [Vector3(89, 0, 9), Vector3(103, 0, 9), Vector3(89, 0, 17), Vector3(103, 0, 17)]:
+		_box("MarketPlanterStone", corner + Vector3(0, 0.35, 0), Vector3(1.8, 0.7, 1.5), Color(0.36, 0.38, 0.34), false)
+		_cylinder("MarketPlanterShrub", corner + Vector3(0, 0.95, 0), 0.62, 0.9, Color(0.17, 0.37, 0.20), false)
+	for bench in [Vector3(92, 0, 13), Vector3(100, 0, 13)]:
+		_make_bench(bench)
+
+	# Four parking bays are kept clear of the boulevard and plaza.
+	for car in [Vector3(84.0, 0, 11.0), Vector3(108.0, 0, 11.0), Vector3(84.0, 0, -11.0), Vector3(108.0, 0, -11.0)]:
+		_box("MarketParkingBay", car + Vector3(0, 0.02, 0), Vector3(4.4, 0.025, 2.35), Color(0.34, 0.37, 0.35), false)
+		_box("MarketParkingStripeL", car + Vector3(-2.05, 0.04, 0), Vector3(0.07, 0.02, 2.2), Color(0.90, 0.86, 0.72), false)
+		_box("MarketParkingStripeR", car + Vector3(2.05, 0.04, 0), Vector3(0.07, 0.02, 2.2), Color(0.90, 0.86, 0.72), false)
+		_make_parked_car(car)
+
+	for lamp_x in [82.5, 91.0, 101.0, 109.5]:
+		_make_lamp(Vector3(lamp_x, 0, -5.2))
+		_make_lamp(Vector3(lamp_x, 0, 5.2))
+	for bin_pos in [Vector3(89, 0, 5.1), Vector3(103, 0, -5.1)]:
+		_make_bin(bin_pos, Color(0.12, 0.42, 0.34), "MARKET")
+	for x in range(92, 101, 2):
+		_box("MarketCrosswalkStripe", Vector3(float(x), 0.075, 7.0), Vector3(0.9, 0.02, 0.42), Color(0.91, 0.89, 0.80), false)
+	_box("MarketWelcomeArchTop", Vector3(79.8, 4.2, 0), Vector3(0.34, 0.34, 6.8), Color(0.16, 0.30, 0.34), false)
+	_box("MarketWelcomeArchSign", Vector3(79.8, 4.75, 0), Vector3(0.38, 0.78, 5.8), Color(0.08, 0.31, 0.39), false)
+	_label_3d("MARKET DISTRICT", Vector3(79.55, 4.75, 0), 0.24)
+
+
+func _build_market_shop(center: Vector3, shop_name: String, facade: Color, index: int) -> void:
+	var front_dir := 1.0 if center.z < 0.0 else -1.0
+	var front_z := center.z + front_dir * 4.05
+	var wall_depth := 7.2
+	_box("MarketShopFoundation", center + Vector3(0, 0.14, 0), Vector3(7.6, 0.28, wall_depth + 0.5), Color(0.28, 0.30, 0.29), true)
+	_box("MarketShopWalls", center + Vector3(0, 2.15, 0), Vector3(7.2, 4.0, wall_depth), facade, true)
+	_box("MarketShopRoof", center + Vector3(0, 4.22, 0), Vector3(7.55, 0.22, wall_depth + 0.3), Color(0.17, 0.22, 0.24), false)
+	_box("ShopWindowFrame", Vector3(center.x - 1.55, 1.72, front_z), Vector3(3.15, 2.45, 0.16), Color(0.10, 0.17, 0.19), false)
+	_box("ShopWindowGlass", Vector3(center.x - 1.55, 1.75, front_z + front_dir * 0.09), Vector3(2.86, 2.16, 0.045), Color(0.30, 0.58, 0.65), false)
+	_box("ShopDoorFrame", Vector3(center.x + 2.25, 1.18, front_z), Vector3(1.15, 2.25, 0.18), Color(0.10, 0.15, 0.17), false)
+	_box("ShopDoorGlass", Vector3(center.x + 2.25, 1.18, front_z + front_dir * 0.10), Vector3(0.91, 1.98, 0.045), Color(0.24, 0.49, 0.56), false)
+	_cylinder("ShopDoorHandle", Vector3(center.x + 2.55, 1.18, front_z + front_dir * 0.15), 0.045, 0.32, Color(0.78, 0.70, 0.48), false)
+	var awning_color: Color = [Color(0.78, 0.25, 0.18), Color(0.16, 0.43, 0.58), Color(0.79, 0.66, 0.35)][index % 3]
+	_box("ShopAwning", Vector3(center.x, 3.18, front_z + front_dir * 0.38), Vector3(7.55, 0.62, 0.95), awning_color, false)
+	for stripe_x in range(-3, 4):
+		_box("ShopAwningStripe", Vector3(center.x + float(stripe_x), 3.18, front_z + front_dir * 0.88), Vector3(0.07, 0.56, 0.025), Color(0.92, 0.88, 0.76), false)
+	_box("ShopSignBoard", Vector3(center.x, 3.85, front_z + front_dir * 0.16), Vector3(5.5, 0.62, 0.16), Color(0.08, 0.18, 0.20), false)
+	_label_3d(shop_name, Vector3(center.x, 3.84, front_z + front_dir * 0.27), 0.25)
+	for pillar_x in [-3.35, 3.35]:
+		_box("ShopFacadePillar", Vector3(center.x + pillar_x, 1.9, front_z + front_dir * 0.18), Vector3(0.22, 3.7, 0.24), facade.darkened(0.25), false)
+	for vent_x in [-2.4, 0.0, 2.4]:
+		_box("ShopRoofVent", center + Vector3(vent_x, 4.55, -1.8), Vector3(0.85, 0.42, 0.72), Color(0.28, 0.32, 0.33), false)
+	_box("ShopRearServiceDoor", center + Vector3(0, 1.0, -front_dir * 3.66), Vector3(0.9, 1.9, 0.08), Color(0.24, 0.20, 0.16), false)
 
 func _build_city_pedestrians() -> void:
 	# Pedestrians stay on the wide sidewalks; they have no collision and never
