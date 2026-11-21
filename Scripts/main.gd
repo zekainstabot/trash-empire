@@ -1251,9 +1251,9 @@ func _close_main_menu() -> void:
 
 func _build_skill_tree(parent: Control) -> void:
 	var categories := [
-		{"title":"ROBOT & COLLECTION","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power"]},
-		{"title":"RECYCLING & ECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","branches":["drones","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging"]}
+		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power"]},
+		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
@@ -1262,48 +1262,80 @@ func _build_skill_tree(parent: Control) -> void:
 		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
-	var category_index := 0
-	for category in categories:
-		var section := PanelContainer.new()
-		section.add_theme_stylebox_override("panel", _panel_style(Color(0.045,0.075,0.08,0.96)))
-		parent.add_child(section)
-		var stack := VBoxContainer.new()
-		stack.add_theme_constant_override("separation", 8)
-		section.add_child(stack)
-		var heading := Button.new()
-		heading.text = ("▼  " if category_index == 0 else "▶  ") + String(category.title)
-		heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		heading.custom_minimum_size = Vector2(0, 48)
-		heading.add_theme_font_size_override("font_size", 16)
-		heading.add_theme_color_override("font_color", Color(0.40,0.88,0.70))
-		heading.add_theme_stylebox_override("normal", _button_style(Color(0.065,0.12,0.12)))
-		heading.add_theme_stylebox_override("hover", _button_style(Color(0.09,0.19,0.17)))
-		stack.add_child(heading)
+
+	var folder_grid := GridContainer.new()
+	folder_grid.columns = 3
+	folder_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	folder_grid.add_theme_constant_override("h_separation", 8)
+	folder_grid.add_theme_constant_override("v_separation", 8)
+	parent.add_child(folder_grid)
+
+	var detail_title := Label.new()
+	detail_title.text = "CHOOSE AN UPGRADE FOLDER"
+	detail_title.custom_minimum_size = Vector2(0, 34)
+	detail_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_title.add_theme_font_size_override("font_size", 15)
+	detail_title.add_theme_color_override("font_color", Color(0.45, 0.94, 0.75))
+	parent.add_child(detail_title)
+
+	var category_bodies: Array = []
+	var folder_buttons: Array = []
+	var category_titles: Array = []
+	for category_index in range(categories.size()):
+		var category: Dictionary = categories[category_index]
+		var category_title := String(category.title)
+		category_titles.append(category_title)
+
+		var folder := Button.new()
+		folder.text = String(category.folder)
+		folder.custom_minimum_size = Vector2(0, 76)
+		folder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		folder.add_theme_font_size_override("font_size", 14)
+		folder.add_theme_color_override("font_color", Color(0.82, 0.94, 0.89))
+		folder.add_theme_stylebox_override("normal", _button_style(Color(0.075, 0.14, 0.14)))
+		folder.add_theme_stylebox_override("hover", _button_style(Color(0.11, 0.23, 0.19)))
+		folder.add_theme_stylebox_override("pressed", _button_style(Color(0.12, 0.34, 0.25)))
+		folder_grid.add_child(folder)
+		folder_buttons.append(folder)
+
 		var category_body := VBoxContainer.new()
 		category_body.add_theme_constant_override("separation", 8)
-		category_body.visible = category_index == 0
-		stack.add_child(category_body)
-		heading.pressed.connect(_toggle_upgrade_category.bind(category_body, heading, String(category.title)))
+		category_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		category_body.visible = false
+		parent.add_child(category_body)
+		category_bodies.append(category_body)
+
 		for branch in category.branches:
 			var row := Button.new()
-			row.custom_minimum_size = Vector2(0,82)
+			row.custom_minimum_size = Vector2(0, 82)
 			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_theme_font_size_override("font_size",14)
-			row.add_theme_color_override("font_color",Color.WHITE)
-			row.add_theme_stylebox_override("normal",_button_style(Color(0.10,0.17,0.18)))
-			row.add_theme_stylebox_override("hover",_button_style(Color(0.14,0.28,0.25)))
-			row.add_theme_stylebox_override("pressed",_button_style(Color(0.07,0.12,0.13)))
-			row.add_theme_stylebox_override("disabled",_button_style(Color(0.07,0.10,0.11)))
+			row.add_theme_font_size_override("font_size", 14)
+			row.add_theme_color_override("font_color", Color.WHITE)
+			row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.17, 0.18)))
+			row.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.28, 0.25)))
+			row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.12, 0.13)))
+			row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.10, 0.11)))
 			row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
 			category_body.add_child(row)
-			skill_node_data.append({"button":row,"branch":String(branch),"title":String(titles[branch])})
-		category_index += 1
+			skill_node_data.append({"button": row, "branch": String(branch), "title": String(titles[branch])})
+
+		folder.pressed.connect(_select_upgrade_category.bind(category_index, category_bodies, folder_buttons, category_titles, detail_title))
+
+	_select_upgrade_category(0, category_bodies, folder_buttons, category_titles, detail_title)
 	_refresh_upgrade_prices()
 
 
-func _toggle_upgrade_category(body: VBoxContainer, heading: Button, category_title: String) -> void:
-	body.visible = not body.visible
-	heading.text = ("▼  " if body.visible else "▶  ") + category_title
+func _select_upgrade_category(index: int, bodies: Array, folders: Array, titles: Array, heading: Label) -> void:
+	if index < 0 or index >= bodies.size():
+		return
+	for i in range(bodies.size()):
+		var body := bodies[i] as VBoxContainer
+		var folder := folders[i] as Button
+		body.visible = i == index
+		folder.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.34, 0.25) if i == index else Color(0.075, 0.14, 0.14)))
+		folder.add_theme_color_override("font_color", Color(0.95, 1.0, 0.96) if i == index else Color(0.68, 0.82, 0.77))
+	heading.text = String(titles[index])
+
 
 func _purchase_upgrade_branch(branch: String) -> void:
 	if not _skill_branch_unlocked(branch):
