@@ -345,7 +345,7 @@ func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -
 	var width := 3.9 if apartment else 3.2
 	var depth := 3.8 if apartment else 3.4
 	var height := 4.2 if apartment else 2.8
-	var wall_color := [Color(0.72, 0.61, 0.47), Color(0.66, 0.70, 0.66), Color(0.72, 0.69, 0.58), Color(0.61, 0.67, 0.70)][index % 4]
+	var wall_color: Color = [Color(0.72, 0.61, 0.47), Color(0.66, 0.70, 0.66), Color(0.72, 0.69, 0.58), Color(0.61, 0.67, 0.70)][index % 4]
 	# Solid foundations and walls make buildings physical obstacles.
 	_box("ResidentialBase", center + Vector3(0, 0.12, 0), Vector3(width + 0.35, 0.24, depth + 0.35), Color(0.30, 0.32, 0.30), true)
 	_box("ResidentialWalls", center + Vector3(0, height * 0.5, 0), Vector3(width, height, depth), wall_color, true)
@@ -1452,50 +1452,50 @@ func _build_skill_tree(parent: Control) -> void:
 
 		for branch in category.branches:
 			var upgrade_row := HBoxContainer.new()
-		upgrade_row.custom_minimum_size = Vector2(0, 88)
-		upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		upgrade_row.add_theme_constant_override("separation", 12)
-		category_body.add_child(upgrade_row)
-
-		var upgrade_info := VBoxContainer.new()
-		upgrade_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		upgrade_info.size_flags_stretch_ratio = 1.0
-		upgrade_info.add_theme_constant_override("separation", 3)
-		upgrade_row.add_child(upgrade_info)
-
-		var row := Button.new()
-		row.custom_minimum_size = Vector2(0, 52)
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_theme_font_size_override("font_size", 14)
-		row.add_theme_color_override("font_color", Color.WHITE)
-		row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.17, 0.18)))
-		row.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.28, 0.25)))
-		row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.12, 0.13)))
-		row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.10, 0.11)))
-		row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
-		upgrade_info.add_child(row)
-
-		var description := Label.new()
-		description.text = String(descriptions.get(String(branch), "Improves this part of your operation."))
-		description.custom_minimum_size = Vector2(0, 28)
-		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		description.add_theme_font_size_override("font_size", 11)
-		description.add_theme_color_override("font_color", Color(0.69, 0.78, 0.75))
-		upgrade_info.add_child(description)
-
-		var price_panel := PanelContainer.new()
-		price_panel.custom_minimum_size = Vector2(92, 66)
-		price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.12, 0.095)))
-		upgrade_row.add_child(price_panel)
-		var price_label := Label.new()
-		price_label.text = "—"
-		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		price_label.add_theme_font_size_override("font_size", 17)
-		price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
-		price_panel.add_child(price_label)
-		skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch])})
+			upgrade_row.custom_minimum_size = Vector2(0, 88)
+			upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			upgrade_row.add_theme_constant_override("separation", 12)
+			category_body.add_child(upgrade_row)
+	
+			var upgrade_info := VBoxContainer.new()
+			upgrade_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			upgrade_info.size_flags_stretch_ratio = 1.0
+			upgrade_info.add_theme_constant_override("separation", 3)
+			upgrade_row.add_child(upgrade_info)
+	
+			var row := Button.new()
+			row.custom_minimum_size = Vector2(0, 52)
+			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_theme_font_size_override("font_size", 14)
+			row.add_theme_color_override("font_color", Color.WHITE)
+			row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.17, 0.18)))
+			row.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.28, 0.25)))
+			row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.12, 0.13)))
+			row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.10, 0.11)))
+			row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
+			upgrade_info.add_child(row)
+	
+			var description := Label.new()
+			description.text = String(descriptions.get(String(branch), "Improves this part of your operation."))
+			description.custom_minimum_size = Vector2(0, 28)
+			description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			description.add_theme_font_size_override("font_size", 11)
+			description.add_theme_color_override("font_color", Color(0.69, 0.78, 0.75))
+			upgrade_info.add_child(description)
+	
+			var price_panel := PanelContainer.new()
+			price_panel.custom_minimum_size = Vector2(92, 66)
+			price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.12, 0.095)))
+			upgrade_row.add_child(price_panel)
+			var price_label := Label.new()
+			price_label.text = "—"
+			price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			price_label.add_theme_font_size_override("font_size", 17)
+			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
+			price_panel.add_child(price_label)
+			skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch])})
 
 		folder.pressed.connect(_select_upgrade_category.bind(category_index, category_bodies, folder_buttons, category_titles, detail_title))
 
