@@ -1483,19 +1483,19 @@ func _build_skill_tree(parent: Control) -> void:
 		description.add_theme_color_override("font_color", Color(0.69, 0.78, 0.75))
 		upgrade_info.add_child(description)
 
-			var price_panel := PanelContainer.new()
-			price_panel.custom_minimum_size = Vector2(92, 66)
-			price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.12, 0.095)))
-			upgrade_row.add_child(price_panel)
-			var price_label := Label.new()
-			price_label.text = "—"
-			price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			price_label.add_theme_font_size_override("font_size", 17)
-			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
-			price_panel.add_child(price_label)
-			skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch])})
+		var price_panel := PanelContainer.new()
+		price_panel.custom_minimum_size = Vector2(92, 66)
+		price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.12, 0.095)))
+		upgrade_row.add_child(price_panel)
+		var price_label := Label.new()
+		price_label.text = "—"
+		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		price_label.add_theme_font_size_override("font_size", 17)
+		price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
+		price_panel.add_child(price_label)
+		skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch])})
 
 		folder.pressed.connect(_select_upgrade_category.bind(category_index, category_bodies, folder_buttons, category_titles, detail_title))
 
