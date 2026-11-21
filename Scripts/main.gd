@@ -171,16 +171,20 @@ func _build_world() -> void:
 	sky_resource.sky_material = sky_material
 	env.sky = sky_resource
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.68, 0.76, 0.86)
-	env.ambient_light_energy = 0.8
+	env.ambient_light_color = Color(0.72, 0.77, 0.82)
+	env.ambient_light_energy = 0.92
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.08
+	env.tonemap_white = 5.0
 	world_env.environment = env
 	add_child(world_env)
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -32, 0)
-	sun.light_energy = 1.15
+	sun.light_energy = 1.28
 	sun.shadow_enabled = true
+	sun.shadow_bias = 0.035
+	sun.directional_shadow_max_distance = 75.0
 	add_child(sun)
 
 	# Main concrete yard and worn work zones.
@@ -3376,9 +3380,23 @@ func _panel_style(color: Color) -> StyleBoxFlat:
 	return style
 
 func _mat(color: Color) -> StandardMaterial3D:
+	# More convincing PBR response: dark neutral surfaces read as rubber/steel,
+	# while painted, organic and concrete surfaces keep a softer matte finish.
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
-	material.roughness = 0.82
+	var highest := maxf(color.r, maxf(color.g, color.b))
+	var lowest := minf(color.r, minf(color.g, color.b))
+	var chroma := highest - lowest
+	var luminance := color.get_luminance()
+	if chroma < 0.13 and luminance < 0.42:
+		material.metallic = 0.48
+		material.roughness = 0.48
+	elif chroma < 0.16 and luminance < 0.72:
+		material.metallic = 0.22
+		material.roughness = 0.58
+	else:
+		material.metallic = 0.04
+		material.roughness = 0.68
 	return material
 
 func _label(value: String, pos: Vector2, font_size: int, parent: Node) -> Label:
