@@ -102,7 +102,7 @@ var city_trash_reserved := 0
 var city_truck_phase := 3
 var city_truck_timer := 0.0
 var city_truck_upgrade_level := 0
-var city_truck_start := Vector3(-8.0, 0.0, 14.0)
+var city_truck_start := Vector3(-7.2, 0.0, 42.0)
 var city_truck_dump := Vector3(-4.8, 0.0, -11.5)
 var refill_world_button: Node3D
 var main_menu_panel: Control
@@ -2252,7 +2252,7 @@ func _create_city_truck(index: int) -> Node3D:
 	truck.position = city_truck_start
 	truck.set_meta("phase", 0)
 	truck.set_meta("timer", maxf(0.0, _city_truck_interval() - float(index) * 12.0))
-	truck.set_meta("queue_position", Vector3(-8.0, 0.0, -5.5 + float(index) * 3.8))
+	truck.set_meta("queue_position", Vector3(-7.2, 0.0, -5.5 + float(index) * 3.8))
 	truck.set_meta("load", _city_truck_load())
 	truck.set_meta("reserved", false)
 	add_child(truck)
@@ -2300,6 +2300,13 @@ func _refresh_city_truck_fleet() -> void:
 
 func _reset_city_truck_fleet() -> void:
 	city_trash_reserved = 0
+	var target_count := clampi(1 + city_fleet_upgrade_level, 1, 4)
+	while city_trucks.size() > target_count:
+		var removed_truck := city_trucks.pop_back()
+		if is_instance_valid(removed_truck):
+			removed_truck.queue_free()
+	if not city_trucks.is_empty():
+		city_truck = city_trucks[0]
 	for index in range(city_trucks.size()):
 		var truck := city_trucks[index]
 		if not is_instance_valid(truck):
@@ -2323,7 +2330,7 @@ func _process_city_truck(delta: float) -> void:
 		var phase := int(truck.get_meta("phase", 0))
 		var timer := float(truck.get_meta("timer", 0.0)) + delta
 		truck.set_meta("timer", timer)
-		var queue_point: Vector3 = truck.get_meta("queue_position", Vector3(-8.0, 0.0, -5.5))
+		var queue_point: Vector3 = truck.get_meta("queue_position", Vector3(-7.2, 0.0, -5.5))
 		var target := truck.position
 		match phase:
 			0:
@@ -2365,9 +2372,6 @@ func _process_city_truck(delta: float) -> void:
 				if _move_city_truck(truck, target, delta):
 					truck.set_meta("phase", 0)
 					truck.set_meta("timer", 0.0)
-		if phase == 2:
-			# Parked trucks wait in a clear service lane without blocking the depot entrance.
-			truck.rotation.y = lerp_angle(truck.rotation.y, PI, delta * 2.0)
 		var wheels: Array = truck.get_meta("wheels", [])
 		if phase in [1, 3, 5, 6]:
 			for wheel in wheels:
