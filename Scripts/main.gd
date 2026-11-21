@@ -1312,6 +1312,28 @@ func _build_skill_tree(parent: Control) -> void:
 		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
+	var descriptions := {
+		"capacity":"Carry more waste before returning to unload.",
+		"speed":"Move around the yard faster.",
+		"range":"Collect trash from farther away.",
+		"unload":"Empty your backpack into the conveyor faster.",
+		"technology":"Improve recycling efficiency and production.",
+		"value":"Earn more ZC when selling recycled waste.",
+		"supply":"Increase how much trash appears around the yard.",
+		"auto":"Automatically collect nearby trash.",
+		"bulk_pickup":"Collect several nearby pieces at once.",
+		"respawn":"Make collected trash respawn more often.",
+		"luck":"Improve your chance of finding valuable items.",
+		"rare_drops":"Increase silver and gold item drop chances.",
+		"magnet_power":"Pull trash toward you from farther away.",
+		"drones":"Add helper drones that collect trash for you.",
+		"city_truck":"Make city garbage trucks arrive more often.",
+		"city_fleet":"Add more city trucks to deliver larger loads.",
+		"dispatch":"Send product delivery trucks more frequently.",
+		"fleet":"Hire extra delivery trucks to ship products.",
+		"truck_capacity":"Let each delivery truck carry more boxes.",
+		"packaging":"Package products faster for shipment."
+	}
 
 	var folder_grid := GridContainer.new()
 	folder_grid.columns = 3
@@ -1357,23 +1379,36 @@ func _build_skill_tree(parent: Control) -> void:
 
 		for branch in category.branches:
 			var upgrade_row := HBoxContainer.new()
-			upgrade_row.custom_minimum_size = Vector2(0, 82)
-			upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			upgrade_row.add_theme_constant_override("separation", 12)
-			category_body.add_child(upgrade_row)
+		upgrade_row.custom_minimum_size = Vector2(0, 88)
+		upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		upgrade_row.add_theme_constant_override("separation", 12)
+		category_body.add_child(upgrade_row)
 
-			var row := Button.new()
-			row.custom_minimum_size = Vector2(0, 82)
-			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.size_flags_stretch_ratio = 1.0
-			row.add_theme_font_size_override("font_size", 14)
-			row.add_theme_color_override("font_color", Color.WHITE)
-			row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.17, 0.18)))
-			row.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.28, 0.25)))
-			row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.12, 0.13)))
-			row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.10, 0.11)))
-			row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
-			upgrade_row.add_child(row)
+		var upgrade_info := VBoxContainer.new()
+		upgrade_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		upgrade_info.size_flags_stretch_ratio = 1.0
+		upgrade_info.add_theme_constant_override("separation", 3)
+		upgrade_row.add_child(upgrade_info)
+
+		var row := Button.new()
+		row.custom_minimum_size = Vector2(0, 52)
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_font_size_override("font_size", 14)
+		row.add_theme_color_override("font_color", Color.WHITE)
+		row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.17, 0.18)))
+		row.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.28, 0.25)))
+		row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.12, 0.13)))
+		row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.10, 0.11)))
+		row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
+		upgrade_info.add_child(row)
+
+		var description := Label.new()
+		description.text = String(descriptions.get(String(branch), "Improves this part of your operation."))
+		description.custom_minimum_size = Vector2(0, 28)
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		description.add_theme_font_size_override("font_size", 11)
+		description.add_theme_color_override("font_color", Color(0.69, 0.78, 0.75))
+		upgrade_info.add_child(description)
 
 			var price_panel := PanelContainer.new()
 			price_panel.custom_minimum_size = Vector2(92, 66)
@@ -1387,7 +1422,7 @@ func _build_skill_tree(parent: Control) -> void:
 			price_label.add_theme_font_size_override("font_size", 17)
 			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
 			price_panel.add_child(price_label)
-			skill_node_data.append({"button": row, "price_label": price_label, "branch": String(branch), "title": String(titles[branch])})
+			skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch])})
 
 		folder.pressed.connect(_select_upgrade_category.bind(category_index, category_bodies, folder_buttons, category_titles, detail_title))
 
