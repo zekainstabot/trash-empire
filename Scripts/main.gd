@@ -328,7 +328,7 @@ func _build_first_district_details() -> void:
 	for x in [-3.72, -2.85, -1.98]:
 		_box("WalkwayPaverJoint", Vector3(x, 0.075, -2.2), Vector3(0.035, 0.012, 9.8), Color(0.29, 0.33, 0.32), false)
 	# Raised planters, shrubs and low decorative edging.
-	for pos in [Vector3(-5.1, 0, -13.6), Vector3(-5.1, 0, -6.8), Vector3(2.2, 0, 10.5), Vector3(5.4, 0, 10.5)]:
+	for pos in [Vector3(-5.1, 0, -6.8), Vector3(2.2, 0, 10.5), Vector3(5.4, 0, 10.5)]:
 		_box("PlanterBase", pos + Vector3(0, 0.22, 0), Vector3(2.1, 0.44, 1.25), Color(0.30, 0.34, 0.31), true)
 		_box("PlanterSoil", pos + Vector3(0, 0.46, 0), Vector3(1.92, 0.08, 1.08), Color(0.24, 0.18, 0.12), false)
 		for shrub_x in [-0.58, 0.0, 0.58]:
@@ -1136,8 +1136,11 @@ func _start_new_world() -> void:
 	drone_level = 0
 	dispatch_upgrade_level = 0
 	city_truck_upgrade_level = 0
-	city_truck_phase = 3
+	city_truck_phase = 0
 	city_truck_timer = 0.0
+	if is_instance_valid(city_truck):
+		city_truck.position = city_truck_start
+		city_truck.rotation.y = 0.0
 	fleet_upgrade_level = 0
 	truck_capacity_upgrade_level = 0
 	packaging_upgrade_level = 0
@@ -2295,6 +2298,8 @@ func _build_city_dump_area() -> void:
 	city_truck = Node3D.new()
 	city_truck.name = "MunicipalGarbageTruck"
 	city_truck.position = city_truck_start
+	city_truck_phase = 0
+	city_truck_timer = 0.0
 	add_child(city_truck)
 	_city_truck_box("TruckChassis", Vector3(0, 0.72, 0), Vector3(2.0, 0.35, 3.5), Color(0.12, 0.16, 0.17))
 	_city_truck_box("TruckCab", Vector3(0, 1.35, -1.12), Vector3(1.85, 1.25, 1.25), Color(0.88, 0.66, 0.13))
