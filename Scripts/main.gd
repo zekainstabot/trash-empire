@@ -412,7 +412,7 @@ func _upgrade_factory() -> void:
 	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
 	var cost: float = costs[factory_stage]
 	if money < cost:
-		_set_message("You need $%.0f to add the next factory machine." % cost)
+		_set_message("You need %.0f Zeka Coin to add the next factory machine." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -933,7 +933,7 @@ func _build_ui() -> void:
 	panel.size = Vector2(245, 100)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.065, 0.075, 0.88)))
 	layer.add_child(panel)
-	money_label = _label("CASH  $0", Vector2(32, 27), 22, layer)
+	money_label = _label("ZEKA COIN  0", Vector2(32, 27), 22, layer)
 	bag_label = _label("BAG  0 / 5", Vector2(32, 64), 18, layer)
 
 	message_label = _label("Collect litter around the yard.", Vector2(20, 130), 17, layer)
@@ -1567,7 +1567,7 @@ func _refresh_upgrade_prices() -> void:
 				button.text = "%s  %s\\nNEXT LEVEL  •  +3 BAG SLOTS" % [icon, node.title]
 			else:
 				button.text = "%s  %s\\nLEVEL %d  →  %d" % [icon, node.title, current, next_level]
-			price_label.text = "$%.0f" % price
+			price_label.text = "%.0f Zeka Coin" % price
 			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
 			button.disabled = false
 
@@ -1805,10 +1805,10 @@ func _process_auto_sell(delta: float) -> void:
 			# The teddy bear sale is a separate bonus; recycling income is still paid now.
 			var teddy_sale_bonus := item_value * 4.0
 			_spawn_conveyor_item(teddy_sale_bonus)
-			_set_message("Recycling +$%.2f | Teddy bear queued for extra sale +$%.2f" % [item_value, teddy_sale_bonus])
+			_set_message("Recycling +%.2f Zeka Coin | Teddy bear queued for extra sale +%.2f Zeka Coin" % [item_value, teddy_sale_bonus])
 		else:
 			_spawn_conveyor_item(item_value)
-			_set_message("Conveyor recycling... +$%.2f" % item_value)
+			_set_message("Conveyor recycling... +%.2f Zeka Coin" % item_value)
 		_update_ui()
 		_save_game()
 		if carried == 0:
@@ -1824,7 +1824,7 @@ func _toggle_upgrade_panel() -> void:
 func _upgrade_bag() -> void:
 	var cost := _upgrade_cost(5.0, upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1838,7 +1838,7 @@ func _upgrade_bag() -> void:
 func _upgrade_speed() -> void:
 	var cost := _upgrade_cost(7.0, speed_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1852,7 +1852,7 @@ func _upgrade_speed() -> void:
 func _upgrade_unload() -> void:
 	var cost := _upgrade_cost(6.0, unload_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1865,7 +1865,7 @@ func _upgrade_unload() -> void:
 func _upgrade_equipment() -> void:
 	var cost := _upgrade_cost(8.0, equipment_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1879,7 +1879,7 @@ func _upgrade_equipment() -> void:
 func _upgrade_technology() -> void:
 	var cost := _upgrade_cost(8.0, technology_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1909,7 +1909,7 @@ func _rare_drop_chances() -> Vector2:
 func _upgrade_luck() -> void:
 	var cost := _upgrade_cost(6.0, luck_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1922,7 +1922,7 @@ func _upgrade_luck() -> void:
 func _upgrade_drones() -> void:
 	var cost := _upgrade_cost(25.0, drone_level + 1)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1936,7 +1936,7 @@ func _upgrade_drones() -> void:
 func _upgrade_magnet_power() -> void:
 	var cost := _upgrade_cost(15.0, magnet_power_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1951,7 +1951,7 @@ func _upgrade_magnet_power() -> void:
 func _upgrade_trash_value() -> void:
 	var cost := _upgrade_cost(12.0, trash_value_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1968,7 +1968,7 @@ func _upgrade_cost(base_cost: float, level: int) -> float:
 func _upgrade_spawn() -> void:
 	var cost := _upgrade_cost(6.0, spawn_upgrade_level)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -1981,7 +1981,7 @@ func _upgrade_spawn() -> void:
 func _upgrade_respawn() -> void:
 	var cost := _upgrade_cost(55.0, respawn_level + 1)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -2019,7 +2019,7 @@ func _process_trash_respawn(delta: float) -> void:
 func _upgrade_bulk_pickup() -> void:
 	var cost := _upgrade_cost(30.0, bulk_pickup_level + 1)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -2033,7 +2033,7 @@ func _upgrade_bulk_pickup() -> void:
 func _upgrade_auto_pickup() -> void:
 	var cost := _upgrade_cost(20.0, auto_pickup_level + 1)
 	if money < cost:
-		_set_message("You need $%.1f to complete this purchase." % cost)
+		_set_message("You need %.1f Zeka Coin to complete this purchase." % cost)
 		return
 	if not await _pay_gradually(cost):
 		return
@@ -2169,7 +2169,7 @@ func _process_expansion_zone(delta: float) -> void:
 		_complete_district_unlock()
 	elif money <= 0.001 and not district_no_money_notified:
 		district_no_money_notified = true
-		_set_message("Need $%.1f more to unlock this district. Stay here to continue." % (cost - district_build_paid))
+		_set_message("Need %.1f more Zeka Coin to unlock this district. Stay here to continue." % (cost - district_build_paid))
 
 func _complete_district_unlock() -> void:
 	district_build_active = false
@@ -2592,7 +2592,7 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 	return point
 
 func _update_ui() -> void:
-	money_label.text = "CASH  $%.1f" % money
+	money_label.text = "ZEKA COIN  %.1f" % money
 	bag_label.text = "BACKPACK  %d / %d" % [carried, capacity]
 	var is_full := carried >= capacity
 	var bag_color := Color(1.0, 0.20, 0.16) if is_full else Color(0.88, 0.96, 0.92)
@@ -2941,7 +2941,7 @@ func _load_next_teddy_package(truck_index: int, loaded_count: int) -> void:
 		money += sold_value
 		_update_ui()
 		_save_game()
-		_set_message("Teddy bear delivered! Extra sale +$%.2f" % sold_value)
+		_set_message("Teddy bear delivered! Extra sale +%.2f Zeka Coin" % sold_value)
 		_load_next_teddy_package(truck_index, loaded_count + 1)
 	)
 
