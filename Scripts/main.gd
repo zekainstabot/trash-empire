@@ -199,16 +199,19 @@ func _build_world() -> void:
 	for z in range(-11, 13, 4):
 		_box("RoadDash", Vector3(-8.0, 0.03, z), Vector3(0.13, 0.025, 1.7), Color(0.88, 0.77, 0.38), false)
 	_build_city_dump_area()
-	# Connected endgame landfill beyond the unified city.
+	# Endgame landfill: a continuous, walkable extension of the city.
 	_box("FinalCleanupGround", Vector3(160, -0.3, 0), Vector3(96, 0.6, 72), Color(0.30, 0.32, 0.27), true)
 	_box("FinalCleanupWorkPad", Vector3(160, 0.018, 0), Vector3(90, 0.035, 62), Color(0.28, 0.30, 0.26), false)
-	_box("FinalZoneAccessRoad", Vector3(119, 0.025, 0), Vector3(22, 0.05, 7.0), Color(0.14, 0.17, 0.18), false)
-	_box("FinalZoneSignPost", Vector3(119, 2.0, -6.0), Vector3(0.22, 4.0, 0.22), Color(0.22, 0.25, 0.24), false)
-	_box("FinalZoneSignBoard", Vector3(119, 3.35, -6.0), Vector3(8.5, 1.8, 0.28), Color(0.13, 0.22, 0.18), false)
-	_label_3d("ULTIMATE CLEANUP - 60,000", Vector3(119, 3.45, -5.82), 0.42)
-	for marker_x in range(118, 207, 12):
-		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, -33.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
-		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, 33.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
+	_box("FinalZoneAccessRoad", Vector3(122, 0.025, 0), Vector3(28, 0.05, 8.0), Color(0.14, 0.17, 0.18), false)
+	_box("FinalZoneRoadCenterLine", Vector3(122, 0.055, 0), Vector3(26, 0.012, 0.13), Color(0.91, 0.78, 0.43), false)
+	_box("FinalZoneEntryApron", Vector3(135, 0.045, 0), Vector3(8, 0.08, 15), Color(0.34, 0.35, 0.30), false)
+	_box("FinalZoneSignPost", Vector3(119, 2.0, -7.0), Vector3(0.22, 4.0, 0.22), Color(0.22, 0.25, 0.24), false)
+	_box("FinalZoneSignBoard", Vector3(119, 3.35, -7.0), Vector3(9.5, 1.8, 0.28), Color(0.13, 0.22, 0.18), false)
+	_label_3d("60,000 WASTE UNITS", Vector3(119, 3.45, -6.82), 0.42)
+	_build_final_landfill_details()
+	for marker_x in range(118, 207, 8):
+		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, -34.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
+		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, 34.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
 	_box("PlayerStartZone", Vector3(0, 0.02, 7), Vector3(7, 0.04, 5), Color(0.39, 0.40, 0.35), false)
 
 	# Perimeter walls, fencing, and gate.
@@ -220,7 +223,14 @@ func _build_world() -> void:
 	# Open the east edge into a boulevard leading to the new market quarter.
 	_box("DistrictFourGround", Vector3(96, -0.3, 0), Vector3(32, 0.6, 72), Color(0.29, 0.34, 0.30), true)
 	_box("DistrictFourGrassPatch", Vector3(96, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.27, 0.43, 0.25), false)
-	_box("DistrictFourOuterWall", Vector3(111.5, 2.0, 0), Vector3(0.5, 4, 72), Color(0.28, 0.32, 0.31), true)
+	# Open a wide service gateway into the final landfill.
+	_box("DistrictFourOuterWallNorth", Vector3(111.5, 2.0, -22.0), Vector3(0.5, 4.0, 28.0), Color(0.28, 0.32, 0.31), true)
+	_box("DistrictFourOuterWallSouth", Vector3(111.5, 2.0, 22.0), Vector3(0.5, 4.0, 28.0), Color(0.28, 0.32, 0.31), true)
+	for gate_z in [-8.0, 8.0]:
+		_box("LandfillGatePillar", Vector3(111.5, 2.1, gate_z), Vector3(0.8, 4.2, 0.8), Color(0.20, 0.26, 0.25), true)
+		_box("LandfillGateCap", Vector3(111.5, 4.25, gate_z), Vector3(1.1, 0.22, 1.1), Color(0.83, 0.62, 0.19), false)
+	_box("LandfillGateHeader", Vector3(111.5, 4.15, 0), Vector3(0.45, 0.28, 15.5), Color(0.14, 0.22, 0.21), false)
+	_label_3d("LANDFILL ACCESS", Vector3(113.0, 4.65, 0), 0.34)
 	for x in range(-14, 15, 2):
 		# Keep a wide, player-accessible entrance aligned with the road.
 		if x >= -12 and x <= -4:
@@ -300,6 +310,7 @@ func _build_world() -> void:
 	_build_random_residential_blocks()
 	_build_connected_city_streets()
 	_build_city_polish()
+	_build_city_life_details()
 	_build_city_pedestrians()
 	_build_commercial_district()
 
@@ -2422,12 +2433,12 @@ func _complete_district_unlock() -> void:
 func _recover_player() -> void:
 	if not is_instance_valid(player):
 		return
-	var max_x := 11.5
-	if yard_stage == 2:
-		max_x = 43.5
-	elif yard_stage >= 3:
-		max_x = 107.5
-	player.global_position = Vector3(clampf(player.global_position.x, -11.5, max_x), 0.05, clampf(player.global_position.z, -13.0, 13.0))
+	# One continuous playable map includes the city and the endgame landfill.
+	player.global_position = Vector3(
+		clampf(player.global_position.x, -14.0, 210.0),
+		0.05,
+		clampf(player.global_position.z, -34.0, 34.0)
+	)
 	player.velocity = Vector3.ZERO
 	player.reset_physics_interpolation()
 	_set_message("Safety system: returned to the yard.")
@@ -2514,6 +2525,52 @@ func _load_game() -> void:
 		teddy_stock_values.append(float(stored_value))
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
+
+
+func _build_final_landfill_details() -> void:
+	# Low heap silhouettes turn the 60,000-unit field into one obvious landfill.
+	for heap in [
+		{"pos": Vector3(154.0, 0.42, -3.5), "scale": Vector3(13.0, 0.72, 8.5), "color": Color(0.24, 0.27, 0.23)},
+		{"pos": Vector3(168.0, 0.48, 2.5), "scale": Vector3(15.0, 0.82, 9.0), "color": Color(0.27, 0.28, 0.23)},
+		{"pos": Vector3(177.0, 0.36, -5.0), "scale": Vector3(8.0, 0.58, 6.5), "color": Color(0.22, 0.25, 0.22)}
+	]:
+		var mound := MeshInstance3D.new()
+		mound.name = "LandfillHeapBase"
+		var shape := SphereMesh.new()
+		shape.radius = 1.0
+		shape.height = 2.0
+		shape.radial_segments = 24
+		shape.rings = 12
+		mound.mesh = shape
+		mound.position = heap.pos
+		mound.scale = heap.scale
+		mound.material_override = _mat(heap.color)
+		add_child(mound)
+
+	# Retaining berms and a marked industrial perimeter.
+	for z in [-34.0, 34.0]:
+		_box("LandfillRetainingBerm", Vector3(160.0, 0.38, z), Vector3(88.0, 0.76, 0.65), Color(0.34, 0.35, 0.30), false)
+	for x in range(120, 205, 4):
+		for z in [-33.2, 33.2]:
+			_cylinder("LandfillFencePost", Vector3(float(x), 1.35, z), 0.075, 2.7, Color(0.20, 0.25, 0.24), false)
+	for z in range(-32, 33, 4):
+		for x in [117.0, 203.0]:
+			_cylinder("LandfillFencePost", Vector3(x, 1.35, float(z)), 0.075, 2.7, Color(0.20, 0.25, 0.24), false)
+	for rail_y in [0.72, 1.92]:
+		_box("LandfillFenceRailNorth", Vector3(162.0, rail_y, -33.2), Vector3(84.0, 0.08, 0.08), Color(0.25, 0.31, 0.29), false)
+		_box("LandfillFenceRailSouth", Vector3(162.0, rail_y, 33.2), Vector3(84.0, 0.08, 0.08), Color(0.25, 0.31, 0.29), false)
+	for light_x in [126.0, 194.0]:
+		for light_z in [-28.0, 28.0]:
+			_cylinder("LandfillFloodlightPole", Vector3(light_x, 5.0, light_z), 0.13, 10.0, Color(0.25, 0.29, 0.28), false)
+			_box("LandfillFloodlightHead", Vector3(light_x, 9.8, light_z), Vector3(1.25, 0.22, 0.55), Color(0.82, 0.78, 0.60), false)
+	_box("LandfillTruckScale", Vector3(130.0, 0.13, 0.0), Vector3(7.0, 0.22, 9.0), Color(0.19, 0.23, 0.23), false)
+	_box("LandfillScaleDeck", Vector3(130.0, 0.26, 0.0), Vector3(6.2, 0.08, 8.2), Color(0.39, 0.43, 0.41), false)
+	for z in [-3.8, 3.8]:
+		_box("LandfillScaleStripe", Vector3(130.0, 0.31, z), Vector3(5.8, 0.025, 0.12), Color(0.91, 0.72, 0.25), false)
+	_box("LandfillProgressSign", Vector3(190.0, 2.4, -23.0), Vector3(8.5, 4.0, 0.35), Color(0.10, 0.17, 0.16), false)
+	_label_3d("FINAL CLEANUP\n60,000 UNITS", Vector3(190.0, 2.35, -22.78), 0.42)
+	for x in range(140, 185, 8):
+		_box("LandfillLaneMarking", Vector3(float(x), 0.10, 25.0), Vector3(3.0, 0.025, 0.14), Color(0.87, 0.72, 0.32), false)
 
 
 func _build_city_dump_area() -> void:
@@ -2819,15 +2876,22 @@ func _spawn_city_trash(amount: int) -> int:
 	return spawned
 
 func _spawn_final_cleanup_trash() -> void:
-	# 600 collectible props represent 60,000 cleanup units without spawning 60,000 nodes.
+	# 600 collectible clusters represent 60,000 units without 60,000 Android nodes.
 	var remaining_objects := ceili(float(FINAL_ZONE_TARGET - final_zone_cleaned) / 100.0)
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	for i in range(remaining_objects):
+		var column := i % 30
+		var row := int(i / 30)
+		var x := 141.8 + float(column) * 1.48 + rng.randf_range(-0.22, 0.22)
+		var z := -14.0 + float(row) * 1.48 + rng.randf_range(-0.22, 0.22)
+		# A broad low mound keeps every collectible within practical reach.
+		var mound_radius := sqrt(pow((x - 163.5) / 22.5, 2.0) + pow(z / 15.5, 2.0))
+		var mound_height := maxf(0.0, 1.0 - mound_radius) * 0.62
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
 		item.set_meta("final_cleanup_units", 100)
-		item.position = Vector3(rng.randf_range(116.0, 204.0), 0.34, rng.randf_range(-30.0, 30.0))
+		item.position = Vector3(x, 0.34 + mound_height + rng.randf_range(0.0, 0.08), z)
 		add_child(item)
 		trash_nodes.append(item)
 
@@ -3607,6 +3671,39 @@ func _build_city_polish() -> void:
 		for stripe in range(5):
 			_box("PedestrianCrossingStripe", Vector3(district_x - 2.2 + stripe * 1.1, 0.052, 3.0), Vector3(0.62, 0.018, 0.48), Color(0.88, 0.87, 0.78), false)
 
+
+
+func _build_city_life_details() -> void:
+	# Add crosswalks and traffic signals at the main connected-road junctions.
+	for crossing_x in [16.0, 48.0, 80.0, 104.0]:
+		for stripe in range(7):
+			_box("BoulevardCrosswalkStripe", Vector3(crossing_x - 2.4 + float(stripe) * 0.8, 0.058, 0.0), Vector3(0.46, 0.018, 4.8), Color(0.88, 0.87, 0.78), false)
+		for side in [-1.0, 1.0]:
+			var signal_pos := Vector3(crossing_x + side * 4.2, 0.0, -4.8)
+			_box("TrafficSignalPole", signal_pos + Vector3(0, 1.65, 0), Vector3(0.10, 3.3, 0.10), Color(0.17, 0.21, 0.22), false)
+			_box("TrafficSignalHousing", signal_pos + Vector3(0, 3.0, 0), Vector3(0.34, 0.86, 0.28), Color(0.08, 0.11, 0.12), false)
+			for lamp_index in range(3):
+				_cylinder("TrafficSignalLamp", signal_pos + Vector3(0, 3.28 - float(lamp_index) * 0.27, 0.16), 0.075, 0.055, [Color(0.82, 0.18, 0.13), Color(0.91, 0.68, 0.16), Color(0.20, 0.72, 0.36)][lamp_index], false)
+
+	# Trees and benches fill spare sidewalk pockets without blocking lanes.
+	for tree_pos in [
+		Vector3(18.0, 0.0, -18.0), Vector3(44.0, 0.0, 18.0),
+		Vector3(50.0, 0.0, -18.0), Vector3(76.0, 0.0, 18.0),
+		Vector3(84.0, 0.0, -18.0), Vector3(108.0, 0.0, 18.0)
+	]:
+		_build_neighborhood_tree(tree_pos)
+	for bench_pos in [Vector3(27.0, 0.0, 17.0), Vector3(59.0, 0.0, -17.0), Vector3(91.0, 0.0, 17.0)]:
+		_make_bench(bench_pos)
+
+	# District signs make the long boulevard easier to read.
+	for marker in [
+		{"x": 16.0, "name": "RESIDENTIAL"},
+		{"x": 48.0, "name": "CIVIC"},
+		{"x": 80.0, "name": "MARKET"}
+	]:
+		_box("DistrictWelcomeSignPost", Vector3(float(marker.x), 1.55, -31.5), Vector3(0.12, 3.1, 0.12), Color(0.20, 0.25, 0.24), false)
+		_box("DistrictWelcomeSignBoard", Vector3(float(marker.x), 2.65, -31.5), Vector3(5.0, 1.0, 0.18), Color(0.12, 0.27, 0.25), false)
+		_label_3d(String(marker.name), Vector3(float(marker.x), 2.68, -31.36), 0.20)
 
 
 func _build_commercial_district() -> void:
