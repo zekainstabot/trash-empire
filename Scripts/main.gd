@@ -2537,23 +2537,34 @@ func _create_city_truck(index: int) -> Node3D:
 			wheel_pivot.name = "TruckWheelPivot"
 			wheel_pivot.position = Vector3(side * 0.98, 0.42, wheel_z)
 			truck.add_child(wheel_pivot)
+			# Proper truck tire: a rounded torus with its axle across the chassis.
 			var wheel := MeshInstance3D.new()
-			var wheel_mesh := CylinderMesh.new()
-			wheel_mesh.top_radius = 0.38
-			wheel_mesh.bottom_radius = 0.38
-			wheel_mesh.height = 0.22
+			wheel.name = "TruckRubberTire"
+			var wheel_mesh := TorusMesh.new()
+			wheel_mesh.inner_radius = 0.245
+			wheel_mesh.outer_radius = 0.40
 			wheel.mesh = wheel_mesh
-			wheel.rotation_degrees.z = 90.0
-			wheel.material_override = _mat(Color(0.055, 0.065, 0.07))
+			wheel.rotation_degrees.y = 90.0
+			wheel.material_override = _mat(Color(0.035, 0.043, 0.047))
 			wheel_pivot.add_child(wheel)
+			var rim := MeshInstance3D.new()
+			rim.name = "TruckWheelRim"
+			var rim_mesh := CylinderMesh.new()
+			rim_mesh.top_radius = 0.245
+			rim_mesh.bottom_radius = 0.245
+			rim_mesh.height = 0.20
+			rim.mesh = rim_mesh
+			rim.rotation_degrees.z = 90.0
+			rim.material_override = _mat(Color(0.25, 0.30, 0.31))
+			wheel_pivot.add_child(rim)
 			var hub := MeshInstance3D.new()
 			var hub_mesh := CylinderMesh.new()
-			hub_mesh.top_radius = 0.17
-			hub_mesh.bottom_radius = 0.17
-			hub_mesh.height = 0.245
+			hub_mesh.top_radius = 0.105
+			hub_mesh.bottom_radius = 0.105
+			hub_mesh.height = 0.235
 			hub.mesh = hub_mesh
 			hub.rotation_degrees.z = 90.0
-			hub.material_override = _mat(Color(0.48, 0.53, 0.52))
+			hub.material_override = _mat(Color(0.62, 0.66, 0.64))
 			wheel_pivot.add_child(hub)
 			wheels.append(wheel_pivot)
 	truck.set_meta("wheels", wheels)
