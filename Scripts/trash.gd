@@ -7,7 +7,7 @@ func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	spin_speed = rng.randf_range(-0.45, 0.45)
-	match rng.randi_range(0, 20):
+	match rng.randi_range(0, 30):
 		0:
 			_make_plastic_bottle(rng)
 		1:
@@ -50,8 +50,26 @@ func _ready() -> void:
 			_make_scrap_spring(rng)
 		20:
 			_make_oil_can(rng)
-		_:
-			_make_old_shoe(rng)
+		21:
+			_make_banana_peel(rng)
+		22:
+			_make_plastic_bag(rng)
+		23:
+			_make_milk_carton(rng)
+		24:
+			_make_old_tire(rng)
+		25:
+			_make_paint_bucket(rng)
+		26:
+			_make_toy_blocks(rng)
+		27:
+			_make_glass_jar(rng)
+		28:
+			_make_takeaway_tray(rng)
+		29:
+			_make_cable_bundle(rng)
+		30:
+			_make_safety_helmet(rng)
 	rotation.y = rng.randf_range(0.0, TAU)
 	if has_meta("rare_type"):
 		_add_rare_visual(String(get_meta("rare_type")))
@@ -295,6 +313,104 @@ func _make_oil_can(rng: RandomNumberGenerator) -> void:
 	add_child(can)
 	add_child(_flat_box(Vector3(0.19, 0.12, 0.025), Vector3(0, 0.22, -0.17), Color(0.86, 0.61, 0.16)))
 	add_child(_cylinder_piece(0.055, 0.055, 0.10, Vector3(0.18, 0.40, 0), Color(0.62, 0.66, 0.62)))
+
+func _make_banana_peel(rng: RandomNumberGenerator) -> void:
+	for side in [-1.0, 1.0]:
+		var peel := _flat_box(Vector3(0.34, 0.045, 0.12), Vector3(side * 0.13, 0.035, 0), Color(0.88, 0.72, 0.12))
+		peel.rotation.y = side * 0.28
+		add_child(peel)
+	add_child(_flat_box(Vector3(0.14, 0.05, 0.10), Vector3(0, 0.055, 0), Color(0.43, 0.31, 0.12)))
+	rotation.y = rng.randf_range(0.0, TAU)
+
+func _make_plastic_bag(rng: RandomNumberGenerator) -> void:
+	var body := _flat_box(Vector3(0.46, 0.055, 0.38), Vector3(0, 0.12, 0), Color(0.74, 0.82, 0.78, 0.78))
+	body.rotation.y = rng.randf_range(-0.35, 0.35)
+	add_child(body)
+	for side in [-1.0, 1.0]:
+		var handle := _flat_box(Vector3(0.10, 0.22, 0.055), Vector3(side * 0.14, 0.23, 0), Color(0.82, 0.88, 0.82, 0.82))
+		handle.rotation.z = side * 0.25
+		add_child(handle)
+
+func _make_milk_carton(rng: RandomNumberGenerator) -> void:
+	var body := _flat_box(Vector3(0.34, 0.42, 0.28), Vector3(0, 0.23, 0), Color(0.82, 0.84, 0.77))
+	body.rotation.y = rng.randf_range(-0.18, 0.18)
+	add_child(body)
+	add_child(_flat_box(Vector3(0.36, 0.10, 0.30), Vector3(0, 0.49, 0), Color(0.30, 0.55, 0.72)))
+	add_child(_cylinder_piece(0.045, 0.045, 0.07, Vector3(0.08, 0.57, 0), Color(0.94, 0.91, 0.76)))
+
+func _make_old_tire(rng: RandomNumberGenerator) -> void:
+	var tire := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.25
+	torus.outer_radius = 0.43
+	torus.rings = 12
+	torus.ring_segments = 20
+	tire.mesh = torus
+	tire.position.y = 0.43
+	tire.rotation_degrees.x = 90.0
+	tire.material_override = _material(Color(0.055, 0.065, 0.067))
+	add_child(tire)
+	var hub := _cylinder_piece(0.22, 0.22, 0.10, Vector3(0, 0.43, 0), Color(0.38, 0.42, 0.42))
+	hub.rotation_degrees.x = 90.0
+	add_child(hub)
+	rotation.y = rng.randf_range(0.0, TAU)
+
+func _make_paint_bucket(rng: RandomNumberGenerator) -> void:
+	add_child(_cylinder_piece(0.19, 0.16, 0.36, Vector3(0, 0.19, 0), Color(0.72, 0.31, 0.16)))
+	add_child(_cylinder_piece(0.20, 0.20, 0.045, Vector3(0, 0.38, 0), Color(0.58, 0.62, 0.61)))
+	add_child(_flat_box(Vector3(0.20, 0.12, 0.025), Vector3(0, 0.20, -0.16), Color(0.92, 0.84, 0.62)))
+	rotation.y = rng.randf_range(0.0, TAU)
+
+func _make_toy_blocks(rng: RandomNumberGenerator) -> void:
+	var colors := [Color(0.86, 0.18, 0.13), Color(0.16, 0.43, 0.82), Color(0.92, 0.70, 0.12), Color(0.18, 0.62, 0.38)]
+	for i in range(4):
+		var block := _flat_box(Vector3(0.20, 0.18, 0.20), Vector3(rng.randf_range(-0.20, 0.20), 0.09 + float(i % 2) * 0.18, rng.randf_range(-0.18, 0.18)), colors[i])
+		block.rotation.y = rng.randf_range(0.0, TAU)
+		add_child(block)
+
+func _make_glass_jar(rng: RandomNumberGenerator) -> void:
+	var jar := _cylinder_piece(0.14, 0.16, 0.34, Vector3(0, 0.18, 0), Color(0.48, 0.72, 0.65, 0.78), true)
+	jar.rotation_degrees.z = rng.randf_range(-12.0, 12.0)
+	add_child(jar)
+	add_child(_cylinder_piece(0.075, 0.075, 0.08, Vector3(0, 0.37, 0), Color(0.72, 0.76, 0.72)))
+
+func _make_takeaway_tray(rng: RandomNumberGenerator) -> void:
+	var tray := _flat_box(Vector3(0.48, 0.07, 0.36), Vector3(0, 0.07, 0), Color(0.72, 0.73, 0.68))
+	tray.rotation.y = rng.randf_range(0.0, TAU)
+	add_child(tray)
+	for x in [-0.16, 0.0, 0.16]:
+		add_child(_flat_box(Vector3(0.12, 0.045, 0.25), Vector3(x, 0.12, 0), Color(0.83, 0.82, 0.75)))
+
+func _make_cable_bundle(rng: RandomNumberGenerator) -> void:
+	for i in range(3):
+		var cable := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.10
+		torus.outer_radius = 0.15
+		torus.rings = 8
+		torus.ring_segments = 16
+		cable.mesh = torus
+		cable.position = Vector3(rng.randf_range(-0.10, 0.10), 0.13 + float(i) * 0.035, rng.randf_range(-0.08, 0.08))
+		cable.rotation_degrees.x = 90.0
+		cable.rotation.z = rng.randf_range(-0.35, 0.35)
+		cable.material_override = _material([Color(0.12, 0.14, 0.16), Color(0.72, 0.24, 0.13), Color(0.12, 0.38, 0.62)][i])
+		add_child(cable)
+
+func _make_safety_helmet(rng: RandomNumberGenerator) -> void:
+	var shell := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.27
+	sphere.height = 0.34
+	sphere.radial_segments = 12
+	sphere.rings = 6
+	shell.mesh = sphere
+	shell.position.y = 0.16
+	shell.scale = Vector3(1.25, 0.70, 1.0)
+	shell.material_override = _material(Color(0.91, 0.66, 0.12))
+	add_child(shell)
+	add_child(_flat_box(Vector3(0.62, 0.055, 0.34), Vector3(0, 0.055, 0), Color(0.88, 0.61, 0.10)))
+	rotation.y = rng.randf_range(0.0, TAU)
+
 
 func _flat_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
