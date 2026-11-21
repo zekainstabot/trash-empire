@@ -822,30 +822,32 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 	screen_text.modulate = Color(0.48, 1.0, 0.76)
 	root.add_child(screen_text)
 
-	# Large guarded push button, mounted directly on the vertical panel.
-	_box_child(root, "RespawnButtonGuard", Vector3(-0.31, -0.40, 0.0), Vector3(0.10, 0.42, 0.72), Color(0.10, 0.13, 0.13))
-	var button_ring := MeshInstance3D.new()
-	var ring_mesh := CylinderMesh.new()
-	ring_mesh.top_radius = 0.30
-	ring_mesh.bottom_radius = 0.30
-	ring_mesh.height = 0.12
-	ring_mesh.radial_segments = 32
-	button_ring.mesh = ring_mesh
-	button_ring.position = Vector3(-0.39, -0.40, 0.0)
-	button_ring.rotation_degrees.z = 90.0
-	button_ring.material_override = _mat(Color(0.78, 0.57, 0.16))
-	root.add_child(button_ring)
-	var button_cap := MeshInstance3D.new()
-	var cap_mesh := CylinderMesh.new()
-	cap_mesh.top_radius = 0.22
-	cap_mesh.bottom_radius = 0.22
-	cap_mesh.height = 0.16
-	cap_mesh.radial_segments = 32
-	button_cap.mesh = cap_mesh
-	button_cap.position = Vector3(-0.49, -0.40, 0.0)
-	button_cap.rotation_degrees.z = 90.0
-	button_cap.material_override = _mat(Color(0.82, 0.16, 0.10))
-	root.add_child(button_cap)
+	# Visible manual pull lever instead of a push-button: pivot, steel rod and grip.
+	_box_child(root, "RespawnLeverMount", Vector3(-0.31, -0.40, 0.0), Vector3(0.12, 0.50, 0.72), Color(0.10, 0.13, 0.13))
+	var lever_pivot := Node3D.new()
+	lever_pivot.name = "RespawnLeverPivot"
+	lever_pivot.position = Vector3(-0.43, -0.40, 0.0)
+	root.add_child(lever_pivot)
+	var lever_rod := MeshInstance3D.new()
+	lever_rod.name = "RespawnLeverRod"
+	var lever_rod_mesh := CylinderMesh.new()
+	lever_rod_mesh.top_radius = 0.075
+	lever_rod_mesh.bottom_radius = 0.075
+	lever_rod_mesh.height = 0.72
+	lever_rod.mesh = lever_rod_mesh
+	lever_rod.position = Vector3(-0.18, 0.28, 0.0)
+	lever_rod.rotation_degrees.z = -32.0
+	lever_rod.material_override = _mat(Color(0.72, 0.76, 0.73))
+	lever_pivot.add_child(lever_rod)
+	var lever_grip := MeshInstance3D.new()
+	lever_grip.name = "RespawnLeverGrip"
+	var grip_mesh := SphereMesh.new()
+	grip_mesh.radius = 0.19
+	grip_mesh.height = 0.38
+	lever_grip.mesh = grip_mesh
+	lever_grip.position = Vector3(-0.38, 0.58, 0.0)
+	lever_grip.material_override = _mat(Color(0.86, 0.15, 0.10))
+	lever_pivot.add_child(lever_grip)
 
 	var label := Label3D.new()
 	label.text = "TRASH RESPAWN"
