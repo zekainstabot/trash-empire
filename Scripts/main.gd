@@ -3673,18 +3673,6 @@ func _animate_city_pedestrians(delta: float) -> void:
 		(pedestrian.right_arm as Node3D).rotation_degrees.z = sin(walk_phase) * 18.0
 
 
-func _box_child(parent: Node3D, node_name: String, pos: Vector3, dimensions: Vector3, color: Color) -> MeshInstance3D:
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = node_name
-	var mesh := BoxMesh.new()
-	mesh.size = dimensions
-	mesh_instance.mesh = mesh
-	mesh_instance.position = pos
-	mesh_instance.material_override = _mat(color)
-	parent.add_child(mesh_instance)
-	return mesh_instance
-
-
 func _sphere_child(parent: Node3D, node_name: String, pos: Vector3, dimensions: Vector3, color: Color) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = node_name
