@@ -91,8 +91,9 @@ var truck_capacity_upgrade_level := 0
 var packaging_upgrade_level := 0
 var delivery_trucks: Array[Node3D] = []
 var city_truck: Node3D
-var city_truck_phase := 0
-var city_truck_timer := 8.0
+var city_truck_phase := 3
+var city_truck_timer := 0.0
+var city_truck_upgrade_level := 0
 var city_truck_start := Vector3(-8.0, 0.0, 14.0)
 var city_truck_dump := Vector3(-4.8, 0.0, -11.5)
 var refill_world_button: Node3D
@@ -1134,6 +1135,9 @@ func _start_new_world() -> void:
 	magnet_power_level = 1
 	drone_level = 0
 	dispatch_upgrade_level = 0
+	city_truck_upgrade_level = 0
+	city_truck_phase = 3
+	city_truck_timer = 0.0
 	fleet_upgrade_level = 0
 	truck_capacity_upgrade_level = 0
 	packaging_upgrade_level = 0
@@ -1231,6 +1235,7 @@ func _build_skill_tree(parent: Control) -> void:
 		{"branch":"magnet_power","title":"MAGNET POWER","depth":3,"angle":330.0},
 		# Ring 4: automation and the start of the delivery business.
 		{"branch":"drones","title":"HELPER DRONES","depth":4,"angle":270.0},
+		{"branch":"city_truck","title":"CITY TRUCK FREQUENCY","depth":4,"angle":90.0},
 		{"branch":"dispatch","title":"TRUCK FREQUENCY","depth":4,"angle":210.0},
 		{"branch":"fleet","title":"HIRE TRUCKS","depth":4,"angle":330.0},
 		# Ring 5: improve the two final steps of the teddy-bear supply chain.
@@ -1245,7 +1250,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"technology": Vector2(-0.72, -1.0), "supply": Vector2(0.0, -1.0), "auto": Vector2(0.72, -1.0),
 		"bulk_pickup": Vector2(1.0, -0.35), "respawn": Vector2(0.0, -1.0), "value": Vector2(-0.45, -0.8), "luck": Vector2(0.0, 0.85),
 		"magnet_power": Vector2(0.45, -0.8), "drones": Vector2(0.0, 1.0),
-		"dispatch": Vector2(-0.75, 0.65), "fleet": Vector2(0.75, 0.65),
+		"city_truck": Vector2(0.0, -1.0), "dispatch": Vector2(-0.75, 0.65), "fleet": Vector2(0.75, 0.65),
 		"packaging": Vector2(-0.85, 0.35), "truck_capacity": Vector2(0.85, 0.35)
 	}
 	for branch_data in branch_defs:
@@ -1268,7 +1273,7 @@ func _build_skill_tree(parent: Control) -> void:
 		["speed_3", "technology_1"], ["technology_3", "value_1"],
 		["range_3", "supply_1"], ["supply_3", "luck_1"], ["supply_3", "respawn_1"],
 		["unload_3", "auto_1"], ["auto_3", "magnet_power_1"], ["range_3", "bulk_pickup_1"],
-		["luck_3", "drones_1"],
+		["luck_3", "drones_1"], ["supply_3", "city_truck_1"],
 		["drones_3", "dispatch_1"], ["drones_3", "fleet_1"],
 		["dispatch_3", "packaging_1"], ["fleet_3", "truck_capacity_1"]
 	]
@@ -1344,6 +1349,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"luck": return Color(0.92, 0.72, 0.20)
 		"magnet_power": return Color(0.20, 0.78, 0.88)
 		"drones": return Color(0.65, 0.78, 0.30)
+		"city_truck": return Color(0.95, 0.72, 0.18)
 		"dispatch": return Color(0.16, 0.70, 0.82)
 		"fleet": return Color(0.90, 0.48, 0.22)
 		"truck_capacity": return Color(0.75, 0.52, 0.22)
@@ -1365,6 +1371,7 @@ func _skill_icon(branch: String) -> String:
 		"luck": return "🍀"
 		"magnet_power": return "🧲"
 		"drones": return "🚁"
+		"city_truck": return "🚛"
 		"dispatch": return "⏱️"
 		"fleet": return "🚚"
 		"truck_capacity": return "📦"
@@ -1424,6 +1431,7 @@ func _skill_level(branch: String) -> int:
 		"luck": return luck_upgrade_level - 1
 		"magnet_power": return magnet_power_level - 1
 		"drones": return drone_level
+		"city_truck": return city_truck_upgrade_level
 		"dispatch": return dispatch_upgrade_level
 		"fleet": return fleet_upgrade_level
 		"truck_capacity": return truck_capacity_upgrade_level
@@ -1443,6 +1451,7 @@ func _skill_branch_unlocked(branch: String) -> bool:
 		"magnet_power": return auto_pickup_level >= 3
 		"bulk_pickup": return equipment_upgrade_level >= 4
 		"drones": return luck_upgrade_level >= 2
+		"city_truck": return spawn_upgrade_level >= 4
 		"dispatch", "fleet": return factory_stage >= 5 and drone_level >= 3
 		"truck_capacity": return factory_stage >= 5 and fleet_upgrade_level >= 3
 		"packaging": return factory_stage >= 5 and dispatch_upgrade_level >= 3
@@ -1469,6 +1478,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"luck": _upgrade_luck()
 		"magnet_power": _upgrade_magnet_power()
 		"drones": _upgrade_drones()
+		"city_truck": _upgrade_city_truck_frequency()
 		"dispatch": _upgrade_dispatch()
 		"fleet": _upgrade_fleet()
 		"truck_capacity": _upgrade_truck_capacity()
@@ -1511,7 +1521,7 @@ func _refresh_upgrade_prices() -> void:
 			button.disabled = true
 			hex.color = Color(0.055, 0.34, 0.25)
 		elif available:
-			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0}.get(branch, 4.0))
+			var base_cost: float = float({"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0}.get(branch, 4.0))
 			var price_level := level
 			button.text = "%s\n%s\n$%.0f" % [icon, node.title, _upgrade_cost(base_cost, price_level)]
 			button.disabled = false
@@ -2224,6 +2234,7 @@ func _save_game() -> void:
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
+	save.set_value("progress", "city_truck_upgrade_level", city_truck_upgrade_level)
 	save.set_value("progress", "fleet_upgrade_level", fleet_upgrade_level)
 	save.set_value("progress", "truck_capacity_upgrade_level", truck_capacity_upgrade_level)
 	save.set_value("progress", "packaging_upgrade_level", packaging_upgrade_level)
@@ -2255,6 +2266,7 @@ func _load_game() -> void:
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
+	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
 	fleet_upgrade_level = clampi(int(save.get_value("progress", "fleet_upgrade_level", 0)), 0, 3)
 	truck_capacity_upgrade_level = clampi(int(save.get_value("progress", "truck_capacity_upgrade_level", 0)), 0, 3)
 	packaging_upgrade_level = clampi(int(save.get_value("progress", "packaging_upgrade_level", 0)), 0, 3)
@@ -2336,9 +2348,16 @@ func _process_city_truck(delta: float) -> void:
 		if city_truck.position.distance_to(city_truck_start) < 0.08:
 			city_truck_phase = 3
 			city_truck_timer = 0.0
-	elif city_truck_phase == 3 and city_truck_timer >= 38.0:
+	elif city_truck_phase == 3 and city_truck_timer >= maxf(0.0, _city_truck_interval() - _city_truck_route_seconds()):
 		city_truck_phase = 0
 		city_truck_timer = 0.0
+
+func _city_truck_interval() -> float:
+	var intervals := [300.0, 240.0, 180.0, 120.0]
+	return intervals[clampi(city_truck_upgrade_level, 0, 3)]
+
+func _city_truck_route_seconds() -> float:
+	return city_truck_start.distance_to(city_truck_dump) * 2.0 / 5.0 + 2.5
 
 func _spawn_city_trash(amount: int) -> int:
 	var spawned := 0
@@ -2782,6 +2801,15 @@ func _depart_delivery_truck(truck_index: int) -> void:
 		dispatch_trucks_remaining = maxi(0, dispatch_trucks_remaining - 1)
 		if dispatch_trucks_remaining == 0:
 			shipping_active = false
+
+func _upgrade_city_truck_frequency() -> void:
+	var cost := _upgrade_cost(35.0, city_truck_upgrade_level + 1)
+	if not await _pay_gradually(cost):
+		return
+	city_truck_upgrade_level = mini(city_truck_upgrade_level + 1, 3)
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Municipal truck now arrives every %.0f minutes!" % (_city_truck_interval() / 60.0))
 
 func _upgrade_dispatch() -> void:
 	var cost := _upgrade_cost(25.0, dispatch_upgrade_level + 1)
