@@ -277,10 +277,10 @@ func _build_world() -> void:
 		var slat := _box("MovingBeltSlat", Vector3(2.65 + i * 0.38, 1.09, -6.5), Vector3(0.10, 0.025, 1.22), Color(0.30, 0.38, 0.39), false)
 		conveyor_slats.append(slat)
 
-	# Sorting bins and industrial props.
-	_make_bin(Vector3(12.4, 0, -4.5), Color(0.12, 0.42, 0.78), "PLASTIC")
-	_make_bin(Vector3(12.4, 0, -7.7), Color(0.78, 0.56, 0.12), "METAL")
-	_make_bin(Vector3(12.4, 0, -10.9), Color(0.18, 0.58, 0.34), "PAPER")
+	# Ordinary neighborhood waste bins, distributed around the streets.
+	_make_street_bin(Vector3(-14.2, 0, -17.0), Color(0.20, 0.29, 0.27))
+	_make_street_bin(Vector3(13.8, 0, 8.5), Color(0.28, 0.34, 0.32))
+	_make_street_bin(Vector3(29.0, 0, -15.5), Color(0.22, 0.30, 0.36))
 	_make_barrel(Vector3(-13.25, 0, 4.0), Color(0.76, 0.31, 0.16))
 	_make_barrel(Vector3(-13.25, 0, 6.0), Color(0.18, 0.43, 0.67))
 	_make_tire_stack(Vector3(12.0, 0, 4.5))
@@ -3242,6 +3242,16 @@ func _add_teddy_part(parent: Node3D, part_name: String, part_position: Vector3, 
 	part.position = part_position
 	part.material_override = _mat(part_color)
 	parent.add_child(part)
+func _make_street_bin(pos: Vector3, color: Color) -> void:
+	# Compact domestic wheelie bin with a rounded lid and no industrial sorting label.
+	_box("StreetBinBody", pos + Vector3(0, 0.58, 0), Vector3(0.92, 1.12, 0.88), color, true)
+	_box("StreetBinFront", pos + Vector3(0, 0.62, -0.455), Vector3(0.72, 0.72, 0.035), color.lightened(0.08), false)
+	var lid := _box("StreetBinLid", pos + Vector3(0, 1.18, 0.0), Vector3(1.02, 0.16, 0.96), Color(0.075, 0.10, 0.095), false)
+	lid.rotation_degrees.x = -3.0
+	_box("StreetBinHandle", pos + Vector3(0, 1.28, -0.34), Vector3(0.34, 0.07, 0.12), Color(0.12, 0.15, 0.14), false)
+	for x in [-0.34, 0.34]:
+		_cylinder("StreetBinWheel", pos + Vector3(x, 0.16, 0.36), 0.14, 0.11, Color(0.035, 0.04, 0.04), true)
+
 func _make_bin(pos: Vector3, color: Color, label_text: String) -> void:
 	# Wheeled commercial recycling container with sloped lid, molded ribs and handle.
 	_box("BinBody", pos + Vector3(0, 0.72, 0), Vector3(1.42, 1.42, 1.35), color, true)
