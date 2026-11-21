@@ -73,6 +73,11 @@ func _ready() -> void:
 	rotation.y = rng.randf_range(0.0, TAU)
 	if has_meta("rare_type"):
 		_add_rare_visual(String(get_meta("rare_type")))
+	# The endgame contains 600 detailed clusters; keep them static to avoid
+	# spending mobile frame time rotating every piece in the huge landfill.
+	if has_meta("final_cleanup_units"):
+		spin_speed = 0.0
+		set_process(false)
 
 func _add_rare_visual(rare_type: String) -> void:
 	var gold := rare_type == "gold"
