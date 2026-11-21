@@ -724,6 +724,13 @@ func _add_machine_detail(stage: int, z: float, accent: Color) -> void:
 		_cylinder("MachineControlKnob", Vector3(9.30 + i * 0.18, 1.60, z - 0.57), 0.055, 0.04, [Color(0.9, 0.2, 0.12), Color(0.92, 0.7, 0.12), Color(0.18, 0.8, 0.38)][i], false)
 	_cylinder("MachinePipe", Vector3(6.05, 2.45, z + 0.85), 0.10, 1.45, Color(0.55, 0.62, 0.63), false)
 	_cylinder("MachinePipeElbow", Vector3(6.05, 2.95, z + 0.15), 0.12, 0.42, Color(0.55, 0.62, 0.63), false)
+	# Rounded pressure drums, pipe unions and heavy feet add industrial mass.
+	for x in [6.55, 8.45]:
+		_cylinder("MachinePressureDrum", Vector3(x, 1.18, z + 1.48), 0.34, 0.82, Color(0.34, 0.40, 0.41), false)
+		_cylinder("MachineDrumCap", Vector3(x, 1.18, z + 1.91), 0.29, 0.045, Color(0.62, 0.67, 0.66), false)
+	for x in [6.15, 8.85]:
+		_box("MachineReinforcedFoot", Vector3(x, 0.28, z), Vector3(0.52, 0.22, 0.82), Color(0.12, 0.16, 0.17), false)
+	_cylinder("MachinePipeUnion", Vector3(6.05, 2.45, z + 1.18), 0.16, 0.16, Color(0.72, 0.76, 0.74), false)
 	_box("MachineVentGrille", Vector3(8.75, 1.75, z + 1.35), Vector3(0.72, 0.55, 0.06), Color(0.10, 0.15, 0.17), false)
 	for i in range(4):
 		_box("MachineVentSlat", Vector3(8.75, 1.55 + i * 0.13, z + 1.39), Vector3(0.56, 0.045, 0.035), Color(0.55, 0.61, 0.62), false)
@@ -2558,6 +2565,37 @@ func _create_city_truck(index: int) -> Node3D:
 			wheels.append(wheel_pivot)
 	truck.set_meta("wheels", wheels)
 	_city_truck_box(truck, "TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.72, 0.66, 0.48))
+	# Rounded industrial details break up the toy-like rectangular silhouette.
+	_city_truck_box(truck, "FrontSteelBumper", Vector3(0, 0.67, -1.91), Vector3(2.08, 0.20, 0.18), Color(0.30, 0.34, 0.34))
+	_city_truck_box(truck, "CabRoofCap", Vector3(0, 2.02, -1.12), Vector3(1.92, 0.12, 1.32), Color(0.62, 0.49, 0.29))
+	_city_truck_box(truck, "LeftMirrorArm", Vector3(-1.02, 1.48, -1.35), Vector3(0.28, 0.07, 0.08), Color(0.18, 0.21, 0.21))
+	_city_truck_box(truck, "RightMirrorArm", Vector3(1.02, 1.48, -1.35), Vector3(0.28, 0.07, 0.08), Color(0.18, 0.21, 0.21))
+	for side in [-1.0, 1.0]:
+		_city_truck_box(truck, "CargoSideRib", Vector3(side * 0.985, 1.38, 0.72), Vector3(0.07, 0.92, 1.55), Color(0.12, 0.23, 0.20))
+		_city_truck_box(truck, "CabStep", Vector3(side * 0.91, 0.73, -0.72), Vector3(0.22, 0.12, 0.72), Color(0.34, 0.38, 0.37))
+		for wheel_z in [-1.18, 1.12]:
+			var fender := MeshInstance3D.new()
+			fender.name = "TruckWheelFender"
+			var fender_mesh := TorusMesh.new()
+			fender_mesh.inner_radius = 0.32
+			fender_mesh.outer_radius = 0.46
+			fender_mesh.rings = 12
+			fender_mesh.ring_segments = 20
+			fender.mesh = fender_mesh
+			fender.position = Vector3(side * 1.01, 0.43, wheel_z)
+			fender.rotation_degrees.y = 90.0
+			fender.material_override = _mat(Color(0.22, 0.27, 0.27))
+			truck.add_child(fender)
+	for x in [-0.68, 0.68]:
+		var lamp := MeshInstance3D.new()
+		lamp.name = "TruckHeadlight"
+		var lamp_mesh := SphereMesh.new()
+		lamp_mesh.radius = 0.13
+		lamp_mesh.height = 0.20
+		lamp.mesh = lamp_mesh
+		lamp.position = Vector3(x, 1.02, -1.82)
+		lamp.material_override = _mat(Color(0.96, 0.84, 0.48))
+		truck.add_child(lamp)
 	return truck
 
 func _city_truck_box(parent: Node3D, node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
