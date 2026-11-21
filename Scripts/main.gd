@@ -375,10 +375,12 @@ func _build_first_district_details() -> void:
 	# Keep the service-road lane open where municipal trucks turn into the depot.
 	_box("RoadRaisedCurb", Vector3(-10.72, 0.10, 1.0), Vector3(0.22, 0.20, 54.0), Color(0.48, 0.50, 0.48), true)
 	_box("RoadCurbHighlight", Vector3(-10.72, 0.205, 1.0), Vector3(0.24, 0.025, 54.0), Color(0.55, 0.57, 0.55), false)
-	for curb_segment in [Vector3(-5.28, 0.10, -20.0), Vector3(-5.28, 0.10, 9.0)]:
-		var curb_length := 12.0 if curb_segment.z < 0.0 else 34.0
-		_box("RoadRaisedCurb", curb_segment, Vector3(0.22, 0.20, curb_length), Color(0.48, 0.50, 0.48), true)
-		_box("RoadCurbHighlight", curb_segment + Vector3(0, 0.105, 0), Vector3(0.24, 0.025, curb_length), Color(0.55, 0.57, 0.55), false)
+	# Keep the curb only along the normal roadside. The depot approach is an open
+	# truck entrance, so no curb/highlight may cross into the garbage unloading bay.
+	var curb_segment := Vector3(-5.28, 0.10, 9.0)
+	var curb_length := 34.0
+	_box("RoadRaisedCurb", curb_segment, Vector3(0.22, 0.20, curb_length), Color(0.48, 0.50, 0.48), true)
+	_box("RoadCurbHighlight", curb_segment + Vector3(0, 0.105, 0), Vector3(0.24, 0.025, curb_length), Color(0.55, 0.57, 0.55), false)
 	for z in range(-23, 27, 6):
 		_box("RoadCenterDash", Vector3(-8.0, 0.035, float(z)), Vector3(0.13, 0.025, 2.8), Color(0.72, 0.73, 0.69), false)
 	for z in [-17.0, 8.0, 23.0]:
