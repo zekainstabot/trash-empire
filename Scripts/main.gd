@@ -292,12 +292,50 @@ func _build_world() -> void:
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 18.5), 0.65)
 	_build_first_district_details()
 	_build_yard_environment_details()
+	_build_random_residential_blocks()
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
 	refill_world_button = _create_gear_refill_button(Vector3(10.2, 0.0, -4.25), Callable(self, "_refill_first_district"))
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
+
+
+func _build_random_residential_blocks() -> void:
+	# Decorative homes live only in the two expansion districts. Every mesh is
+	# non-colliding, so residents can never trap the player or obstruct vehicles.
+	var lots: Array[Vector3] = [
+		Vector3(22.0, 0.0, -25.0), Vector3(32.0, 0.0, -25.0),
+		Vector3(42.0, 0.0, -25.0), Vector3(22.0, 0.0, 25.0),
+		Vector3(32.0, 0.0, 25.0), Vector3(42.0, 0.0, 25.0),
+		Vector3(54.0, 0.0, -25.0), Vector3(64.0, 0.0, -25.0),
+		Vector3(74.0, 0.0, -25.0), Vector3(54.0, 0.0, 25.0),
+		Vector3(64.0, 0.0, 25.0), Vector3(74.0, 0.0, 25.0)
+	]
+	lots.shuffle()
+	for i in range(6):
+		var lot: Vector3 = lots[i]
+		var apartment := (i % 3 == 1)
+		_build_decorative_residence(lot, apartment, i + 1)
+
+
+func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -> void:
+	var width := 3.9 if apartment else 3.2
+	var depth := 3.8 if apartment else 3.4
+	var height := 4.2 if apartment else 2.8
+	var wall_color := [Color(0.72, 0.61, 0.47), Color(0.66, 0.70, 0.66), Color(0.72, 0.69, 0.58), Color(0.61, 0.67, 0.70)][index % 4]
+	_box("ResidentialBase", center + Vector3(0, 0.12, 0), Vector3(width + 0.35, 0.24, depth + 0.35), Color(0.30, 0.32, 0.30), false)
+	_box("ResidentialWalls", center + Vector3(0, height * 0.5, 0), Vector3(width, height, depth), wall_color, false)
+	_box("ResidentialRoof", center + Vector3(0, height + 0.12, 0), Vector3(width + 0.25, 0.24, depth + 0.25), Color(0.20, 0.25, 0.26), false)
+	_box("ResidentialFrontDoor", center + Vector3(0, 0.82, depth * 0.5 + 0.035), Vector3(0.68, 1.55, 0.07), Color(0.30, 0.20, 0.14), false)
+	for window_x in [-width * 0.28, width * 0.28]:
+		for floor_y in ([1.05, 2.85] if apartment else [1.35]):
+			_box("ResidentialWindowFrame", center + Vector3(window_x, floor_y, depth * 0.5 + 0.045), Vector3(0.78, 0.82, 0.07), Color(0.15, 0.22, 0.24), false)
+			_box("ResidentialWindowGlass", center + Vector3(window_x, floor_y, depth * 0.5 + 0.09), Vector3(0.62, 0.66, 0.035), Color(0.30, 0.56, 0.64), false)
+	if apartment:
+		_box("ResidentialBalcony", center + Vector3(0, 2.05, depth * 0.5 + 0.38), Vector3(width * 0.72, 0.12, 0.72), Color(0.38, 0.42, 0.41), false)
+		_box("ResidentialBalconyRail", center + Vector3(0, 2.42, depth * 0.5 + 0.72), Vector3(width * 0.72, 0.55, 0.06), Color(0.16, 0.22, 0.23), false)
+	_box("ResidentialRoofVent", center + Vector3(width * 0.28, height + 0.42, -depth * 0.22), Vector3(0.48, 0.42, 0.48), Color(0.39, 0.43, 0.42), false)
 
 func _build_yard_environment_details() -> void:
 	# Subtle concrete panel joints make the yard read as a real industrial site.
