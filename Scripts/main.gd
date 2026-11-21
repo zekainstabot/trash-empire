@@ -3707,6 +3707,29 @@ func _make_parked_car(pos: Vector3) -> void:
 	_box("ParkedCarRearGlass", pos + Vector3(1.0, 1.20, 0), Vector3(0.045, 0.40, 1.10), Color(0.12, 0.21, 0.26), false)
 	for wheel_x in [-1.05, 1.05]:
 		for wheel_z in [-0.82, 0.82]:
-			_cylinder("ParkedCarWheel", pos + Vector3(wheel_x, 0.34, wheel_z), 0.34, 0.18, Color(0.035, 0.04, 0.045), false)
+			# Wheels stand upright: their axle runs across the car's body (Z axis).
+			var wheel := MeshInstance3D.new()
+			wheel.name = "ParkedCarWheel"
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.34
+			wheel_mesh.bottom_radius = 0.34
+			wheel_mesh.height = 0.18
+			wheel.mesh = wheel_mesh
+			wheel.position = pos + Vector3(wheel_x, 0.34, wheel_z)
+			wheel.rotation_degrees.x = 90.0
+			wheel.material_override = _mat(Color(0.035, 0.04, 0.045))
+			add_child(wheel)
+			# Small metallic hub visible on the outside face of each tire.
+			var hub := MeshInstance3D.new()
+			hub.name = "ParkedCarWheelHub"
+			var hub_mesh := CylinderMesh.new()
+			hub_mesh.top_radius = 0.15
+			hub_mesh.bottom_radius = 0.15
+			hub_mesh.height = 0.025
+			hub.mesh = hub_mesh
+			hub.position = pos + Vector3(wheel_x, 0.34, wheel_z + (0.105 if wheel_z > 0.0 else -0.105))
+			hub.rotation_degrees.x = 90.0
+			hub.material_override = _mat(Color(0.48, 0.52, 0.52))
+			add_child(hub)
 	_box("ParkedCarHeadlightL", pos + Vector3(-1.69, 0.70, -0.48), Vector3(0.05, 0.20, 0.28), Color(0.96, 0.84, 0.55), false)
 	_box("ParkedCarHeadlightR", pos + Vector3(-1.69, 0.70, 0.48), Vector3(0.05, 0.20, 0.28), Color(0.96, 0.84, 0.55), false)
