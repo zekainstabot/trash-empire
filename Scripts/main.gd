@@ -2530,9 +2530,9 @@ func _load_game() -> void:
 func _build_final_landfill_details() -> void:
 	# Low heap silhouettes turn the 60,000-unit field into one obvious landfill.
 	for heap in [
-		{"pos": Vector3(154.0, 0.42, -3.5), "scale": Vector3(13.0, 0.72, 8.5), "color": Color(0.24, 0.27, 0.23)},
-		{"pos": Vector3(168.0, 0.48, 2.5), "scale": Vector3(15.0, 0.82, 9.0), "color": Color(0.27, 0.28, 0.23)},
-		{"pos": Vector3(177.0, 0.36, -5.0), "scale": Vector3(8.0, 0.58, 6.5), "color": Color(0.22, 0.25, 0.22)}
+		{"pos": Vector3(154.0, 0.18, -3.5), "scale": Vector3(13.0, 0.22, 8.5), "color": Color(0.24, 0.27, 0.23)},
+		{"pos": Vector3(168.0, 0.18, 2.5), "scale": Vector3(15.0, 0.26, 9.0), "color": Color(0.27, 0.28, 0.23)},
+		{"pos": Vector3(177.0, 0.16, -5.0), "scale": Vector3(8.0, 0.20, 6.5), "color": Color(0.22, 0.25, 0.22)}
 	]:
 		var mound := MeshInstance3D.new()
 		mound.name = "LandfillHeapBase"
