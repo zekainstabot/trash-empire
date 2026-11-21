@@ -1482,11 +1482,12 @@ func _build_skill_tree(parent: Control) -> void:
 	
 			var description := Label.new()
 			description.text = String(descriptions.get(String(branch), "Improves this part of your operation."))
-			description.custom_minimum_size = Vector2(0, 28)
+			description.position = Vector2(12, 48)
+			description.size = Vector2(340, 34)
 			description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			description.add_theme_font_size_override("font_size", 11)
 			description.add_theme_color_override("font_color", Color(0.69, 0.78, 0.75))
-			upgrade_info.add_child(description)
+			row.add_child(description)
 	
 			var price_panel := PanelContainer.new()
 			price_panel.custom_minimum_size = Vector2(92, 66)
