@@ -1444,15 +1444,13 @@ func _select_upgrade_category(index: int, bodies: Array, folders: Array, titles:
 
 func _purchase_upgrade_branch(branch: String) -> void:
 	if not _skill_branch_unlocked(branch):
-		_set_message("")
+		_set_message("This upgrade is not available yet.")
 		return
 	var next_level := _skill_level(branch) + 1
-	if branch == "capacity":
-		_upgrade_bag()
-	elif next_level > 3:
+	if next_level > 3:
 		_set_message("This upgrade is at its maximum level.")
-	else:
-		_purchase_skill_node(branch, next_level)
+		return
+	await _purchase_skill_node(branch, next_level)
 
 
 func _add_skill_orbit(parent: Control, center: Vector2, radius: float) -> void:
@@ -1580,32 +1578,32 @@ func _skill_branch_unlocked(_branch: String) -> bool:
 
 func _purchase_skill_node(branch: String, level: int) -> void:
 	if not _skill_branch_unlocked(branch):
-		_set_message("")
+		_set_message("This upgrade is not available yet.")
 		return
 	if level != _skill_level(branch) + 1 or level > 3:
-		_set_message("Unlock the connected previous skill level first.")
+		_set_message("This upgrade is already at its maximum level.")
 		return
 	match branch:
-		"capacity": _upgrade_bag()
-		"speed": _upgrade_speed()
-		"unload": _upgrade_unload()
-		"range": _upgrade_equipment()
-		"technology": _upgrade_technology()
-		"value": _upgrade_trash_value()
-		"supply": _upgrade_spawn()
-		"respawn": _upgrade_respawn()
-		"auto": _upgrade_auto_pickup()
-		"bulk_pickup": _upgrade_bulk_pickup()
-		"luck": _upgrade_luck()
-		"rare_drops": _upgrade_rare_drops()
-		"magnet_power": _upgrade_magnet_power()
-		"drones": _upgrade_drones()
-		"city_truck": _upgrade_city_truck_frequency()
-		"city_fleet": _upgrade_city_fleet()
-		"dispatch": _upgrade_dispatch()
-		"fleet": _upgrade_fleet()
-		"truck_capacity": _upgrade_truck_capacity()
-		"packaging": _upgrade_packaging()
+		"capacity": await _upgrade_bag()
+		"speed": await _upgrade_speed()
+		"unload": await _upgrade_unload()
+		"range": await _upgrade_equipment()
+		"technology": await _upgrade_technology()
+		"value": await _upgrade_trash_value()
+		"supply": await _upgrade_spawn()
+		"respawn": await _upgrade_respawn()
+		"auto": await _upgrade_auto_pickup()
+		"bulk_pickup": await _upgrade_bulk_pickup()
+		"luck": await _upgrade_luck()
+		"rare_drops": await _upgrade_rare_drops()
+		"magnet_power": await _upgrade_magnet_power()
+		"drones": await _upgrade_drones()
+		"city_truck": await _upgrade_city_truck_frequency()
+		"city_fleet": await _upgrade_city_fleet()
+		"dispatch": await _upgrade_dispatch()
+		"fleet": await _upgrade_fleet()
+		"truck_capacity": await _upgrade_truck_capacity()
+		"packaging": await _upgrade_packaging()
 
 func _refresh_upgrade_prices() -> void:
 	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":12.0,"bulk_pickup":18.0}
