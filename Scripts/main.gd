@@ -47,6 +47,9 @@ var bag_upgrade_button: Button
 var movement_upgrade_button: Button
 var unload_upgrade_button: Button
 var trash_nodes: Array[Node3D] = []
+var final_zone_cleaned := 0
+var final_zone_label: Label
+const FINAL_ZONE_TARGET := 60000
 var money_label: Label
 var bag_label: Label
 var message_label: Label
@@ -196,6 +199,16 @@ func _build_world() -> void:
 	for z in range(-11, 13, 4):
 		_box("RoadDash", Vector3(-8.0, 0.03, z), Vector3(0.13, 0.025, 1.7), Color(0.88, 0.77, 0.38), false)
 	_build_city_dump_area()
+	# Connected endgame landfill beyond the unified city.
+	_box("FinalCleanupGround", Vector3(160, -0.3, 0), Vector3(96, 0.6, 72), Color(0.30, 0.32, 0.27), true)
+	_box("FinalCleanupWorkPad", Vector3(160, 0.018, 0), Vector3(90, 0.035, 62), Color(0.28, 0.30, 0.26), false)
+	_box("FinalZoneAccessRoad", Vector3(119, 0.025, 0), Vector3(22, 0.05, 7.0), Color(0.14, 0.17, 0.18), false)
+	_box("FinalZoneSignPost", Vector3(119, 2.0, -6.0), Vector3(0.22, 4.0, 0.22), Color(0.22, 0.25, 0.24), false)
+	_box("FinalZoneSignBoard", Vector3(119, 3.35, -6.0), Vector3(8.5, 1.8, 0.28), Color(0.13, 0.22, 0.18), false)
+	_label_3d("ULTIMATE CLEANUP - 60,000", Vector3(119, 3.45, -5.82), 0.42)
+	for marker_x in range(118, 207, 12):
+		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, -33.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
+		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, 33.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
 	_box("PlayerStartZone", Vector3(0, 0.02, 7), Vector3(7, 0.04, 5), Color(0.39, 0.40, 0.35), false)
 
 	# Perimeter walls, fencing, and gate.
@@ -1137,6 +1150,7 @@ func _build_trash() -> void:
 		trash_nodes.append(item)
 	if yard_stage >= 2:
 		_spawn_district_two_trash(48)
+	_spawn_final_cleanup_trash()
 
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
@@ -1145,11 +1159,14 @@ func _build_ui() -> void:
 	var screen := get_viewport().get_visible_rect().size
 	var panel := Panel.new()
 	panel.position = Vector2(18, 18)
-	panel.size = Vector2(245, 100)
+	panel.size = Vector2(270, 126)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.065, 0.075, 0.88)))
 	layer.add_child(panel)
 	money_label = _label("ZC  0", Vector2(32, 27), 22, layer)
 	bag_label = _label("BAG  0 / 5", Vector2(32, 64), 18, layer)
+	final_zone_label = _label("FINAL CLEANUP  0 / 60,000", Vector2(32, 94), 14, layer)
+	final_zone_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.30))
+	_update_final_zone_label()
 
 	message_label = _label("Collect litter around the yard.", Vector2(20, 130), 17, layer)
 	message_label.size = Vector2(maxf(280.0, screen.x - 40.0), 48)
@@ -1364,6 +1381,7 @@ func _start_new_world() -> void:
 	if not world_initialized:
 		await _close_main_menu()
 	money = 0
+	final_zone_cleaned = 0
 	carried = 0
 	capacity = 4
 	upgrade_level = 1
@@ -1892,6 +1910,12 @@ func _collect_nearby() -> void:
 			var bonus := 8.0 if rare_type == "gold" else 2.0
 			money += bonus
 			_set_message("%s rare scrap found! Bonus +%.2f ZC" % [rare_type.to_upper(), bonus])
+		var cleanup_units := int(nearest.get_meta("final_cleanup_units", 0))
+		if cleanup_units > 0:
+			final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + cleanup_units)
+			_update_final_zone_label()
+			if final_zone_cleaned >= FINAL_ZONE_TARGET:
+				_set_message("ULTIMATE GOAL COMPLETE! The entire 60,000-unit landfill is clean!")
 		nearest.queue_free()
 		trash_nodes.erase(nearest)
 		carried += 1
@@ -2416,6 +2440,7 @@ func _expansion_button_label(value: String) -> void:
 func _save_game() -> void:
 	var save := ConfigFile.new()
 	save.set_value("progress", "money", money)
+	save.set_value("progress", "final_zone_cleaned", final_zone_cleaned)
 	save.set_value("progress", "carried", carried)
 	save.set_value("progress", "capacity", capacity)
 	save.set_value("progress", "bag_level", upgrade_level)
@@ -2449,6 +2474,7 @@ func _load_game() -> void:
 	if save.load("user://trash_empire.save") != OK:
 		return
 	money = float(save.get_value("progress", "money", 0.0))
+	final_zone_cleaned = clampi(int(save.get_value("progress", "final_zone_cleaned", 0)), 0, FINAL_ZONE_TARGET)
 	carried = int(save.get_value("progress", "carried", 0))
 	capacity = int(save.get_value("progress", "capacity", 4))
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
@@ -2783,6 +2809,24 @@ func _spawn_city_trash(amount: int) -> int:
 		trash_nodes.append(item)
 		spawned += 1
 	return spawned
+
+func _spawn_final_cleanup_trash() -> void:
+	# 600 collectible props represent 60,000 cleanup units without spawning 60,000 nodes.
+	var remaining_objects := ceili(float(FINAL_ZONE_TARGET - final_zone_cleaned) / 100.0)
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(remaining_objects):
+		var item := Node3D.new()
+		item.set_script(TRASH_SCRIPT)
+		item.set_meta("final_cleanup_units", 100)
+		item.position = Vector3(rng.randf_range(116.0, 204.0), 0.34, rng.randf_range(-30.0, 30.0))
+		add_child(item)
+		trash_nodes.append(item)
+
+func _update_final_zone_label() -> void:
+	if is_instance_valid(final_zone_label):
+		final_zone_label.text = "FINAL CLEANUP  %d / 60,000" % final_zone_cleaned
+
 
 func _spawn_trash(amount: int) -> void:
 	var rng := RandomNumberGenerator.new()
