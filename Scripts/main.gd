@@ -507,6 +507,42 @@ func _build_factory_module(stage: int) -> void:
 		# The initial delivery truck is joined by additional hired trucks from the skill tree.
 		_create_delivery_truck(0)
 	_box("FactoryModule%dStatus" % stage, Vector3(9.25, 2.0, z - 0.75), Vector3(0.42, 0.42, 0.10), Color(0.10, 0.95, 0.56), false)
+	_add_machine_detail(stage, z, accent)
+
+func _add_machine_detail(stage: int, z: float, accent: Color) -> void:
+	# Realistic machine detailing: ribs, access panel, control console, pipes and vents.
+	for x in [5.85, 9.15]:
+		for y in [0.85, 2.18]:
+			_cylinder("MachineBoltDetail", Vector3(x, y, z - 1.39), 0.07, 0.045, Color(0.72, 0.76, 0.75), false)
+	for x in [6.15, 8.85]:
+		_box("MachineSideRib", Vector3(x, 1.52, z - 1.32), Vector3(0.12, 1.32, 0.09), accent.lightened(0.16), false)
+	_box("MachineServiceDoor", Vector3(8.65, 1.35, z - 1.43), Vector3(0.48, 0.58, 0.06), Color(0.12, 0.16, 0.18), false)
+	_box("MachineWarningStripe", Vector3(7.5, 0.88, z - 1.46), Vector3(2.5, 0.12, 0.04), Color(0.95, 0.72, 0.13), false)
+	_box("MachineControlHousing", Vector3(9.48, 1.85, z - 0.82), Vector3(0.62, 0.82, 0.42), Color(0.045, 0.075, 0.09), false)
+	_box("MachineControlScreen", Vector3(9.48, 2.04, z - 0.59), Vector3(0.40, 0.25, 0.04), Color(0.18, 0.78, 0.65), false)
+	for i in range(3):
+		_cylinder("MachineControlKnob", Vector3(9.30 + i * 0.18, 1.60, z - 0.57), 0.055, 0.04, [Color(0.9, 0.2, 0.12), Color(0.92, 0.7, 0.12), Color(0.18, 0.8, 0.38)][i], false)
+	_cylinder("MachinePipe", Vector3(6.05, 2.45, z + 0.85), 0.10, 1.45, Color(0.55, 0.62, 0.63), false)
+	_cylinder("MachinePipeElbow", Vector3(6.05, 2.95, z + 0.15), 0.12, 0.42, Color(0.55, 0.62, 0.63), false)
+	_box("MachineVentGrille", Vector3(8.75, 1.75, z + 1.35), Vector3(0.72, 0.55, 0.06), Color(0.10, 0.15, 0.17), false)
+	for i in range(4):
+		_box("MachineVentSlat", Vector3(8.75, 1.55 + i * 0.13, z + 1.39), Vector3(0.56, 0.045, 0.035), Color(0.55, 0.61, 0.62), false)
+	if stage == 2:
+		for i in range(6):
+			_box("ShredderTooth", Vector3(7.0 + i * 0.20, 1.95, z - 0.68), Vector3(0.12, 0.16, 0.18), Color(0.85, 0.62, 0.20), false)
+		_box("ShredderSafetyGuard", Vector3(7.5, 2.35, z - 0.65), Vector3(1.45, 0.12, 0.88), Color(0.16, 0.22, 0.23), false)
+	elif stage == 3:
+		_box("GranulatorMotor", Vector3(9.15, 1.15, z + 0.45), Vector3(0.82, 0.75, 0.95), Color(0.13, 0.25, 0.28), false)
+		_cylinder("GranulatorMotorFan", Vector3(9.15, 1.55, z + 0.96), 0.30, 0.08, Color(0.58, 0.65, 0.65), false)
+	elif stage == 4:
+		for x in [6.65, 8.35]:
+			_cylinder("TeddyFabricRoll", Vector3(x, 1.22, z - 0.9), 0.22, 0.72, Color(0.82, 0.58, 0.38), false)
+		_box("TeddyFactoryWindow", Vector3(7.5, 1.85, z - 1.44), Vector3(1.0, 0.55, 0.04), Color(0.14, 0.44, 0.48), false)
+	else:
+		for x in [6.45, 8.55]:
+			_cylinder("PackagingRoller", Vector3(x, 1.08, z + 0.75), 0.16, 1.2, Color(0.65, 0.69, 0.68), false)
+		_box("PackagingSafetyPanel", Vector3(7.5, 1.6, z - 1.45), Vector3(1.35, 0.55, 0.05), Color(0.13, 0.21, 0.22), false)
+
 func _build_factory_link(start_z: float, end_z: float) -> void:
 	var middle := (start_z + end_z) * 0.5
 	var length := absf(end_z - start_z)
