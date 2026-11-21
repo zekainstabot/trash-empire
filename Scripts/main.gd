@@ -218,13 +218,13 @@ func _build_world() -> void:
 		# Keep a wide, player-accessible entrance aligned with the road.
 		if x >= -12 and x <= -4:
 			continue
-		_box("FencePost", Vector3(x, 1.35, 19.0), Vector3(0.16, 2.7, 0.16), Color(0.20, 0.24, 0.24), true)
+		_box("FencePost", Vector3(x, 1.35, 35.0), Vector3(0.16, 2.7, 0.16), Color(0.20, 0.24, 0.24), true)
 	# Wide 8-metre opening: both the player and municipal trucks can enter freely.
 	for rail_y in [2.45, 0.45]:
-		_box("FenceRailServiceLeft", Vector3(-13.5, rail_y, 19.0), Vector3(3.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-		_box("FenceRailServiceRight", Vector3(5.5, rail_y, 19.0), Vector3(19.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-	_box("GateLeft", Vector3(-12.0, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
-	_box("GateRight", Vector3(-4.0, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
+		_box("FenceRailServiceLeft", Vector3(-13.5, rail_y, 35.0), Vector3(3.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
+		_box("FenceRailServiceRight", Vector3(5.5, rail_y, 35.0), Vector3(19.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
+	_box("GateLeft", Vector3(-12.0, 1.3, 35.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
+	_box("GateRight", Vector3(-4.0, 1.3, 35.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
 	_add_invisible_barrier("MainFrontSafety", Vector3(0, 1.0, 36.0), Vector3(32, 2.0, 0.5))
 	_add_invisible_barrier("DistrictTwoFrontSafety", Vector3(32, 1.0, 36.0), Vector3(32, 2.0, 0.5))
 	_add_invisible_barrier("DistrictThreeFrontSafety", Vector3(64, 1.0, 36.0), Vector3(32, 2.0, 0.5))
@@ -2412,6 +2412,7 @@ func _create_city_truck(index: int) -> Node3D:
 	var truck := Node3D.new()
 	truck.name = "MunicipalGarbageTruck%d" % (index + 1)
 	truck.position = city_truck_start
+	truck.visible = false
 	truck.set_meta("phase", 0)
 	truck.set_meta("timer", maxf(0.0, _city_truck_interval() - float(index) * 12.0))
 	truck.set_meta("queue_position", Vector3(-7.2, 0.0, -15.0 + float(index) * 3.8))
@@ -2474,6 +2475,7 @@ func _reset_city_truck_fleet() -> void:
 		if not is_instance_valid(truck):
 			continue
 		truck.position = city_truck_start
+		truck.visible = false
 		truck.rotation = Vector3.ZERO
 		truck.set_meta("phase", 0)
 		truck.set_meta("timer", maxf(0.0, _city_truck_interval() - float(index) * 12.0))
@@ -2497,6 +2499,7 @@ func _process_city_truck(delta: float) -> void:
 		match phase:
 			0:
 				if timer >= _city_truck_interval():
+					truck.visible = true
 					truck.set_meta("load", _city_truck_load())
 					truck.set_meta("phase", 1)
 					truck.set_meta("timer", 0.0)
@@ -2533,6 +2536,7 @@ func _process_city_truck(delta: float) -> void:
 			6:
 				target = city_truck_start
 				if _move_city_truck(truck, target, delta):
+					truck.visible = false
 					truck.set_meta("phase", 0)
 					truck.set_meta("timer", 0.0)
 		var wheels: Array = truck.get_meta("wheels", [])
