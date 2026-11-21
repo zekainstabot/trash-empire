@@ -111,6 +111,8 @@ var new_game_button: Button
 var main_menu_play_button: Button
 var skill_tree_built := false
 var world_initialized := false
+var city_pedestrians: Array[Dictionary] = []
+var pedestrian_clock := 0.0
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
@@ -155,6 +157,7 @@ func _process(delta: float) -> void:
 	_process_helper_drones(delta)
 	_process_trash_respawn(delta)
 	_process_city_truck(delta)
+	_animate_city_pedestrians(delta)
 
 func _build_world() -> void:
 	var world_env := WorldEnvironment.new()
@@ -298,6 +301,7 @@ func _build_world() -> void:
 	_build_yard_environment_details()
 	_build_random_residential_blocks()
 	_build_city_polish()
+	_build_city_pedestrians()
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
@@ -3575,6 +3579,113 @@ func _build_city_polish() -> void:
 				_box("StreetCurbStone", Vector3(district_x + float(x_offset), 0.075, z_side), Vector3(1.75, 0.13, 0.22), Color(0.59, 0.60, 0.55), false)
 		for stripe in range(5):
 			_box("PedestrianCrossingStripe", Vector3(district_x - 2.2 + stripe * 1.1, 0.052, 3.0), Vector3(0.62, 0.018, 0.48), Color(0.88, 0.87, 0.78), false)
+
+
+func _build_city_pedestrians() -> void:
+	# Pedestrians stay on the wide sidewalks; they have no collision and never
+	# enter the vehicle lanes or interfere with the player's movement.
+	var outfits: Array[Color] = [
+		Color(0.20, 0.38, 0.72), Color(0.72, 0.30, 0.16),
+		Color(0.20, 0.48, 0.34), Color(0.62, 0.48, 0.22),
+		Color(0.43, 0.30, 0.58), Color(0.18, 0.20, 0.23)
+	]
+	var skin_tones: Array[Color] = [
+		Color(0.78, 0.57, 0.40), Color(0.55, 0.36, 0.25),
+		Color(0.91, 0.72, 0.55)
+	]
+	var index := 0
+	for district_x in [32.0, 64.0]:
+		for side_z in [-3.35, 3.35]:
+			for offset in [-8.0, 0.0, 8.0]:
+				var start := Vector3(district_x + offset, 0.0, side_z)
+				var walker := Node3D.new()
+				walker.name = "CityPedestrian"
+				walker.position = start
+				add_child(walker)
+
+				var outfit: Color = outfits[index % outfits.size()]
+				var skin: Color = skin_tones[index % skin_tones.size()]
+				_box_child(walker, "PedestrianTorso", Vector3(0, 1.02, 0), Vector3(0.43, 0.62, 0.27), outfit)
+				_sphere_child(walker, "PedestrianHead", Vector3(0, 1.55, 0), Vector3(0.34, 0.36, 0.32), skin)
+				_sphere_child(walker, "PedestrianHair", Vector3(0, 1.72, -0.025), Vector3(0.36, 0.17, 0.34), Color(0.16, 0.13, 0.11))
+				var left_arm := _cylinder_child(walker, "PedestrianLeftArm", Vector3(-0.29, 1.03, 0), 0.085, 0.58, outfit)
+				left_arm.rotation_degrees.z = -12
+				var right_arm := _cylinder_child(walker, "PedestrianRightArm", Vector3(0.29, 1.03, 0), 0.085, 0.58, outfit)
+				right_arm.rotation_degrees.z = 12
+				var left_leg := _cylinder_child(walker, "PedestrianLeftLeg", Vector3(-0.12, 0.43, 0), 0.095, 0.55, Color(0.12, 0.16, 0.20))
+				var right_leg := _cylinder_child(walker, "PedestrianRightLeg", Vector3(0.12, 0.43, 0), 0.095, 0.55, Color(0.12, 0.16, 0.20))
+				_box_child(walker, "PedestrianLeftShoe", Vector3(-0.12, 0.12, 0.08), Vector3(0.18, 0.10, 0.30), Color(0.055, 0.065, 0.07))
+				_box_child(walker, "PedestrianRightShoe", Vector3(0.12, 0.12, 0.08), Vector3(0.18, 0.10, 0.30), Color(0.055, 0.065, 0.07))
+				city_pedestrians.append({
+					"root": walker,
+					"start": start,
+					"phase": float(index) * 1.37,
+					"direction": 1.0 if index % 2 == 0 else -1.0,
+					"left_leg": left_leg,
+					"right_leg": right_leg,
+					"left_arm": left_arm,
+					"right_arm": right_arm
+				})
+				index += 1
+
+
+func _animate_city_pedestrians(delta: float) -> void:
+	pedestrian_clock += delta
+	for pedestrian in city_pedestrians:
+		var root := pedestrian.root as Node3D
+		if not is_instance_valid(root):
+			continue
+		var phase: float = pedestrian.phase
+		var direction: float = pedestrian.direction
+		var walk_phase := pedestrian_clock * 2.6 * direction + phase
+		var start: Vector3 = pedestrian.start
+		root.position = start + Vector3(sin(walk_phase * 0.35) * 2.0, absf(sin(walk_phase)) * 0.045, 0)
+		root.rotation_degrees.y = 90.0 if direction > 0.0 else -90.0
+		(pedestrian.left_leg as Node3D).rotation_degrees.z = sin(walk_phase) * 24.0
+		(pedestrian.right_leg as Node3D).rotation_degrees.z = -sin(walk_phase) * 24.0
+		(pedestrian.left_arm as Node3D).rotation_degrees.z = -sin(walk_phase) * 18.0
+		(pedestrian.right_arm as Node3D).rotation_degrees.z = sin(walk_phase) * 18.0
+
+
+func _box_child(parent: Node3D, node_name: String, pos: Vector3, dimensions: Vector3, color: Color) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = node_name
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	mesh_instance.mesh = mesh
+	mesh_instance.position = pos
+	mesh_instance.material_override = _mat(color)
+	parent.add_child(mesh_instance)
+	return mesh_instance
+
+
+func _sphere_child(parent: Node3D, node_name: String, pos: Vector3, dimensions: Vector3, color: Color) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = node_name
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.5
+	mesh.height = 1.0
+	mesh_instance.mesh = mesh
+	mesh_instance.position = pos
+	mesh_instance.scale = dimensions
+	mesh_instance.material_override = _mat(color)
+	parent.add_child(mesh_instance)
+	return mesh_instance
+
+
+func _cylinder_child(parent: Node3D, node_name: String, pos: Vector3, radius: float, height: float, color: Color) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = node_name
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = height
+	mesh.radial_segments = 12
+	mesh_instance.mesh = mesh
+	mesh_instance.position = pos
+	mesh_instance.material_override = _mat(color)
+	parent.add_child(mesh_instance)
+	return mesh_instance
 
 func _make_bench(pos: Vector3) -> void:
 	_box("ParkBenchSeat", pos + Vector3(0, 0.52, 0), Vector3(1.55, 0.14, 0.48), Color(0.48, 0.29, 0.15), false)
