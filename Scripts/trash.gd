@@ -7,7 +7,7 @@ func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	spin_speed = rng.randf_range(-0.45, 0.45)
-	match rng.randi_range(0, 12):
+	match rng.randi_range(0, 20):
 		0:
 			_make_plastic_bottle(rng)
 		1:
@@ -34,6 +34,22 @@ func _ready() -> void:
 			_make_screws(rng)
 		12:
 			_make_wrench(rng)
+		13:
+			_make_newspaper(rng)
+		14:
+			_make_crushed_carton(rng)
+		15:
+			_make_food_box(rng)
+		16:
+			_make_rusted_pipe(rng)
+		17:
+			_make_circuit_board(rng)
+		18:
+			_make_broken_fan(rng)
+		19:
+			_make_scrap_spring(rng)
+		20:
+			_make_oil_can(rng)
 		_:
 			_make_old_shoe(rng)
 	rotation.y = rng.randf_range(0.0, TAU)
@@ -212,6 +228,73 @@ func _make_wrench(rng: RandomNumberGenerator) -> void:
 	var jaw_gap := _flat_box(Vector3(0.11, 0.08, 0.10), Vector3(0.34, 0.12, 0), Color(0.20, 0.23, 0.24))
 	add_child(jaw_gap)
 	rotation.y = rng.randf_range(0.0, TAU)
+
+func _make_newspaper(rng: RandomNumberGenerator) -> void:
+	var paper := _flat_box(Vector3(0.46, 0.025, 0.34), Vector3(0, 0.035, 0), Color(0.78, 0.75, 0.64))
+	paper.rotation.y = rng.randf_range(-0.25, 0.25)
+	add_child(paper)
+	for i in range(3):
+		add_child(_flat_box(Vector3(0.27, 0.008, 0.018), Vector3(-0.04, 0.052, -0.09 + i * 0.075), Color(0.25, 0.27, 0.25)))
+
+func _make_crushed_carton(rng: RandomNumberGenerator) -> void:
+	var carton := _flat_box(Vector3(0.40, 0.20, 0.28), Vector3(0, 0.11, 0), Color(0.68, 0.48, 0.26))
+	carton.rotation.y = rng.randf_range(-0.5, 0.5)
+	add_child(carton)
+	add_child(_flat_box(Vector3(0.42, 0.035, 0.30), Vector3(0, 0.21, 0), Color(0.78, 0.62, 0.38)))
+
+func _make_food_box(rng: RandomNumberGenerator) -> void:
+	var box := _flat_box(Vector3(0.38, 0.22, 0.32), Vector3(0, 0.12, 0), Color(0.72, 0.30, 0.13))
+	box.rotation.y = rng.randf_range(-0.4, 0.4)
+	add_child(box)
+	add_child(_flat_box(Vector3(0.18, 0.015, 0.33), Vector3(0, 0.24, 0), Color(0.92, 0.78, 0.46)))
+
+func _make_rusted_pipe(rng: RandomNumberGenerator) -> void:
+	var pipe := _cylinder_piece(0.12, 0.12, 0.72, Vector3(0, 0.10, 0), Color(0.48, 0.29, 0.18))
+	pipe.rotation_degrees.z = 90
+	pipe.rotation.y = rng.randf_range(-0.2, 0.2)
+	add_child(pipe)
+	for x in [-0.25, 0.25]:
+		var collar := _cylinder_piece(0.15, 0.15, 0.07, Vector3(x, 0.10, 0), Color(0.30, 0.32, 0.30))
+		collar.rotation_degrees.z = 90
+		add_child(collar)
+
+func _make_circuit_board(rng: RandomNumberGenerator) -> void:
+	var board := _flat_box(Vector3(0.48, 0.045, 0.34), Vector3(0, 0.055, 0), Color(0.08, 0.34, 0.25))
+	board.rotation.y = rng.randf_range(0, TAU)
+	add_child(board)
+	for i in range(5):
+		add_child(_flat_box(Vector3(0.075, 0.055, 0.07), Vector3(-0.16 + i * 0.08, 0.10, 0.04), [Color(0.12, 0.13, 0.14), Color(0.72, 0.62, 0.30)][i % 2]))
+	for x in [-0.18, 0.0, 0.18]:
+		add_child(_flat_box(Vector3(0.018, 0.012, 0.23), Vector3(x, 0.085, -0.05), Color(0.82, 0.68, 0.30)))
+
+func _make_broken_fan(rng: RandomNumberGenerator) -> void:
+	var hub := _cylinder_piece(0.13, 0.13, 0.10, Vector3(0, 0.10, 0), Color(0.36, 0.40, 0.41))
+	hub.rotation_degrees.x = 90
+	add_child(hub)
+	for i in range(4):
+		var blade := _flat_box(Vector3(0.42, 0.045, 0.13), Vector3(0.22, 0.10, 0), Color(0.55, 0.59, 0.58))
+		blade.rotation.y = float(i) * PI / 2.0
+		blade.rotation.z = rng.randf_range(-0.12, 0.12)
+		add_child(blade)
+
+func _make_scrap_spring(rng: RandomNumberGenerator) -> void:
+	for i in range(5):
+		var ring := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.07
+		torus.outer_radius = 0.13
+		ring.mesh = torus
+		ring.position = Vector3(0, 0.12 + i * 0.045, 0)
+		ring.material_override = _material(Color(0.48, 0.52, 0.52))
+		add_child(ring)
+	add_child(_flat_box(Vector3(0.52, 0.055, 0.07), Vector3(0, 0.10, 0), Color(0.34, 0.38, 0.39)))
+
+func _make_oil_can(rng: RandomNumberGenerator) -> void:
+	var can := _cylinder_piece(0.18, 0.18, 0.42, Vector3(0, 0.21, 0), Color(0.20, 0.28, 0.27))
+	can.rotation_degrees.z = rng.randf_range(65.0, 90.0)
+	add_child(can)
+	add_child(_flat_box(Vector3(0.19, 0.12, 0.025), Vector3(0, 0.22, -0.17), Color(0.86, 0.61, 0.16)))
+	add_child(_cylinder_piece(0.055, 0.055, 0.10, Vector3(0.18, 0.40, 0), Color(0.62, 0.66, 0.62)))
 
 func _flat_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
