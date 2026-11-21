@@ -102,7 +102,7 @@ var city_trash_reserved := 0
 var city_truck_phase := 3
 var city_truck_timer := 0.0
 var city_truck_upgrade_level := 0
-var city_truck_start := Vector3(-7.2, 0.0, 42.0)
+var city_truck_start := Vector3(-7.2, 0.0, 33.0)
 var city_truck_dump := Vector3(-4.8, 0.0, -11.5)
 var refill_world_button: Node3D
 var main_menu_panel: Control
@@ -185,7 +185,7 @@ func _build_world() -> void:
 
 	# Main concrete yard and worn work zones.
 	_box("ConcreteYard", Vector3(0, -0.3, 0), Vector3(32, 0.6, 72), Color(0.34, 0.37, 0.35), true)
-	_box("RoadLane", Vector3(-8.0, 0.012, 1.0), Vector3(5.0, 0.025, 52.0), Color(0.19, 0.22, 0.22), false)
+	_box("RoadLane", Vector3(-8.0, 0.012, 1.0), Vector3(5.0, 0.025, 70.0), Color(0.19, 0.22, 0.22), false)
 	for z in range(-11, 13, 4):
 		_box("RoadDash", Vector3(-8.0, 0.03, z), Vector3(0.13, 0.025, 1.7), Color(0.88, 0.77, 0.38), false)
 	_build_city_dump_area()
@@ -215,9 +215,14 @@ func _build_world() -> void:
 	_box("DistrictThreeSign", Vector3(64, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.42, 0.30, 0.10), false)
 	_label_3d("DISTRICT 3", Vector3(64, 2.2, -13.35), 0.35)
 	for x in range(-14, 15, 2):
+		# Leave a dedicated opening for the municipal truck service lane.
+		if x == -8 or x == -6:
+			continue
 		_box("FencePost", Vector3(x, 1.35, 19.0), Vector3(0.16, 2.7, 0.16), Color(0.20, 0.24, 0.24), true)
-	_box("FenceRailTop", Vector3(0, 2.45, 19.0), Vector3(30, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-	_box("FenceRailBottom", Vector3(0, 0.45, 19.0), Vector3(30, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
+	# Split the rails around the service entrance so the truck never drives through fencing.
+	for rail_y in [2.45, 0.45]:
+		_box("FenceRailServiceLeft", Vector3(-12.0, rail_y, 19.0), Vector3(6.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
+		_box("FenceRailServiceRight", Vector3(4.8, rail_y, 19.0), Vector3(20.4, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
 	_box("GateLeft", Vector3(-4.2, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
 	_box("GateRight", Vector3(4.2, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
 	_add_invisible_barrier("MainFrontSafety", Vector3(0, 1.0, 36.0), Vector3(32, 2.0, 0.5))
