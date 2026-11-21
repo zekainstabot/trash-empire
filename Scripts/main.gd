@@ -3826,3 +3826,5 @@ func _make_parked_car(pos: Vector3) -> void:
 			add_child(hub)
 	_box("ParkedCarHeadlightL", pos + Vector3(-1.69, 0.70, -0.48), Vector3(0.05, 0.20, 0.28), Color(0.96, 0.84, 0.55), false)
 	_box("ParkedCarHeadlightR", pos + Vector3(-1.69, 0.70, 0.48), Vector3(0.05, 0.20, 0.28), Color(0.96, 0.84, 0.55), false)
+
+# Rebuild official Android release for the latest trash-content update.
