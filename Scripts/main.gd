@@ -1092,7 +1092,7 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	accent.color = Color(0.22, 0.82, 0.57)
 	main_menu_panel.add_child(accent)
 	var title := Label.new()
-	title.text = "TRASH\\nEMPIRE"
+	title.text = "TRASH\nEMPIRE"
 	title.position = Vector2(screen.x * 0.12, screen.y * 0.17)
 	title.size = Vector2(screen.x * 0.82, screen.y * 0.24)
 	title.add_theme_font_size_override("font_size", int(screen.y * 0.065))
@@ -1178,7 +1178,7 @@ func _confirm_new_game() -> void:
 	confirm_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.07, 0.12, 0.13, 1.0)))
 	main_menu_panel.add_child(confirm_panel)
 	var message := Label.new()
-	message.text = "DELETE CURRENT WORLD?\\nAll progress will be lost."
+	message.text = "DELETE CURRENT WORLD?\nAll progress will be lost."
 	message.position = Vector2(18, 24)
 	message.size = Vector2(264, 80)
 	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1617,12 +1617,12 @@ func _refresh_upgrade_prices() -> void:
 		var price_label := node.price_label as Label
 		var icon := _skill_icon(branch)
 		if current >= 3 and branch != "capacity":
-			button.text = "%s  %s\\nMAX LEVEL  •  LV 3" % [icon, node.title]
+			button.text = "%s  %s\nMAX LEVEL  •  LV 3" % [icon, node.title]
 			button.disabled = true
 			price_label.text = "MAX"
 			price_label.add_theme_color_override("font_color", Color(0.65, 0.82, 0.72))
 		elif not unlocked:
-			button.text = "%s  %s\\nLEVEL %d  →  %d" % [icon, node.title, current, current + 1]
+			button.text = "%s  %s\nLEVEL %d  →  %d" % [icon, node.title, current, current + 1]
 			button.disabled = false
 			price_label.text = "%.0f ZC" % _upgrade_cost(float(base_costs.get(branch, 4.0)), current + 1)
 			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
@@ -1632,9 +1632,9 @@ func _refresh_upgrade_prices() -> void:
 			if branch == "capacity":
 				next_level = upgrade_level
 				price = _upgrade_cost(5.0, upgrade_level)
-				button.text = "%s  %s\\nNEXT LEVEL  •  +3 BAG SLOTS" % [icon, node.title]
+				button.text = "%s  %s\nNEXT LEVEL  •  +3 BAG SLOTS" % [icon, node.title]
 			else:
-				button.text = "%s  %s\\nLEVEL %d  →  %d" % [icon, node.title, current, next_level]
+				button.text = "%s  %s\nLEVEL %d  →  %d" % [icon, node.title, current, next_level]
 			price_label.text = "%.0f ZC" % price
 			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
 			button.disabled = false
