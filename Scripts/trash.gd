@@ -7,7 +7,7 @@ func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	spin_speed = rng.randf_range(-0.45, 0.45)
-	match rng.randi_range(0, 9):
+	match rng.randi_range(0, 12):
 		0:
 			_make_plastic_bottle(rng)
 		1:
@@ -26,6 +26,14 @@ func _ready() -> void:
 			_make_broken_glass(rng)
 		8:
 			_make_soda_bottle(rng)
+		9:
+			_make_old_shoe(rng)
+		10:
+			_make_gear(rng)
+		11:
+			_make_screws(rng)
+		12:
+			_make_wrench(rng)
 		_:
 			_make_old_shoe(rng)
 	rotation.y = rng.randf_range(0.0, TAU)
@@ -148,6 +156,45 @@ func _make_old_shoe(rng: RandomNumberGenerator) -> void:
 	for i in range(3):
 		add_child(_flat_box(Vector3(0.12, 0.025, 0.025), Vector3(-0.10 + i * 0.06, 0.27, -0.12), Color(0.80, 0.75, 0.66)))
 	rotation.z = rng.randf_range(-0.15, 0.15)
+
+func _make_gear(rng: RandomNumberGenerator) -> void:
+	# Rusty steel cogwheel with a central opening and chunky teeth.
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.22
+	torus.outer_radius = 0.42
+	ring.mesh = torus
+	ring.position.y = 0.12
+	ring.rotation_degrees.x = 90.0
+	ring.material_override = _material(Color(0.48, 0.43, 0.34))
+	add_child(ring)
+	for i in range(8):
+		var tooth := _flat_box(Vector3(0.16, 0.10, 0.13), Vector3(0, 0.12, -0.40), Color(0.52, 0.48, 0.39))
+		tooth.rotation.y = float(i) * TAU / 8.0
+		add_child(tooth)
+	var hub := _cylinder_piece(0.14, 0.14, 0.12, Vector3(0, 0.13, 0), Color(0.34, 0.39, 0.40))
+	hub.rotation_degrees.x = 90.0
+	add_child(hub)
+	rotation.y = rng.randf_range(0.0, TAU)
+
+func _make_screws(rng: RandomNumberGenerator) -> void:
+	for i in range(3):
+		var screw := _cylinder_piece(0.045, 0.045, 0.24, Vector3(rng.randf_range(-0.18, 0.18), 0.05, rng.randf_range(-0.16, 0.16)), Color(0.60, 0.64, 0.65))
+		screw.rotation.z = rng.randf_range(-0.4, 0.4)
+		add_child(screw)
+		var head := _flat_box(Vector3(0.11, 0.045, 0.11), screw.position + Vector3(0, 0.12, 0), Color(0.70, 0.72, 0.68))
+		add_child(head)
+
+func _make_wrench(rng: RandomNumberGenerator) -> void:
+	# A small discarded metal wrench, with a shaft and open jaw.
+	var shaft := _flat_box(Vector3(0.48, 0.10, 0.12), Vector3(0, 0.12, 0), Color(0.56, 0.60, 0.61))
+	shaft.rotation.y = rng.randf_range(-0.35, 0.35)
+	add_child(shaft)
+	var jaw_base := _flat_box(Vector3(0.18, 0.12, 0.16), Vector3(0.24, 0.12, 0), Color(0.64, 0.67, 0.67))
+	add_child(jaw_base)
+	var jaw_gap := _flat_box(Vector3(0.11, 0.08, 0.10), Vector3(0.34, 0.12, 0), Color(0.20, 0.23, 0.24))
+	add_child(jaw_gap)
+	rotation.y = rng.randf_range(0.0, TAU)
 
 func _flat_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
