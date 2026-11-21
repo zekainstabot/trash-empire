@@ -293,6 +293,7 @@ func _build_world() -> void:
 	_build_first_district_details()
 	_build_yard_environment_details()
 	_build_random_residential_blocks()
+	_build_city_polish()
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
@@ -3336,3 +3337,62 @@ func _button_style(color: Color) -> StyleBoxFlat:
 	style.border_width_bottom = 3
 	style.border_color = Color(0.04, 0.17, 0.16)
 	return style
+
+
+func _build_city_polish() -> void:
+	# Small public squares in the spare blocks: all props stay off streets,
+	# alleys and building lots so the player and trucks keep clear routes.
+	for district_x in [32.0, 64.0]:
+		var park_z := 14.0 if district_x < 48.0 else -14.0
+		_box("CityPocketParkBase", Vector3(district_x, 0.035, park_z), Vector3(8.4, 0.07, 6.8), Color(0.30, 0.43, 0.29), false)
+		_box("ParkPath", Vector3(district_x, 0.078, park_z), Vector3(1.35, 0.025, 6.2), Color(0.67, 0.63, 0.52), false)
+		_box("ParkCrossPath", Vector3(district_x, 0.082, park_z), Vector3(7.8, 0.025, 1.05), Color(0.67, 0.63, 0.52), false)
+		for side in [-1.0, 1.0]:
+			var planter_pos := Vector3(district_x + side * 3.0, 0.10, park_z - 2.2)
+			_box("ParkPlanter", planter_pos, Vector3(1.25, 0.22, 1.05), Color(0.43, 0.29, 0.18), false)
+			_cylinder("ParkShrub", planter_pos + Vector3(0, 0.42, 0), 0.43, 0.62, Color(0.19, 0.39, 0.20), false)
+			_make_bench(Vector3(district_x + side * 2.55, 0.0, park_z + 1.75))
+		_build_neighborhood_tree(Vector3(district_x - 3.0, 0.0, park_z + 2.3))
+		_build_neighborhood_tree(Vector3(district_x + 3.0, 0.0, park_z + 2.3))
+		_make_lamp(Vector3(district_x - 4.5, 0.0, park_z))
+		_make_lamp(Vector3(district_x + 4.5, 0.0, park_z))
+
+		# Street furniture and waste bins at the edge of the pedestrian zone.
+		_make_bin(Vector3(district_x - 4.0, 0.0, park_z - 3.5), Color(0.16, 0.48, 0.34), "CITY")
+		_box("BusStopSignPole", Vector3(district_x + 4.0, 1.25, -5.0 if district_x < 48.0 else 5.0), Vector3(0.09, 2.5, 0.09), Color(0.18, 0.22, 0.23), false)
+		_box("BusStopSign", Vector3(district_x + 4.0, 2.25, -5.0 if district_x < 48.0 else 5.0), Vector3(0.72, 0.82, 0.12), Color(0.10, 0.39, 0.68), false)
+		_label_3d("BUS", Vector3(district_x + 4.0, 2.22, -4.91 if district_x < 48.0 else 5.09), 0.16)
+
+	# Marked parking pockets along the outer edge, not on the central road.
+	for car_pos in [Vector3(20.0, 0.0, -15.5), Vector3(44.0, 0.0, 15.5), Vector3(52.0, 0.0, 15.5), Vector3(76.0, 0.0, -15.5)]:
+		_box("StreetParkingBay", car_pos + Vector3(0, 0.018, 0), Vector3(4.4, 0.025, 2.35), Color(0.36, 0.39, 0.36), false)
+		_box("ParkingBayStripeA", car_pos + Vector3(-2.05, 0.04, 0), Vector3(0.07, 0.018, 2.2), Color(0.88, 0.85, 0.72), false)
+		_box("ParkingBayStripeB", car_pos + Vector3(2.05, 0.04, 0), Vector3(0.07, 0.018, 2.2), Color(0.88, 0.85, 0.72), false)
+		_make_parked_car(car_pos)
+
+	# Extra curb stones and pedestrian crossing marks are visual only.
+	for district_x in [32.0, 64.0]:
+		for z_side in [-4.1, 4.1]:
+			for x_offset in range(-13, 14, 2):
+				_box("StreetCurbStone", Vector3(district_x + float(x_offset), 0.075, z_side), Vector3(1.75, 0.13, 0.22), Color(0.59, 0.60, 0.55), false)
+		for stripe in range(5):
+			_box("PedestrianCrossingStripe", Vector3(district_x - 2.2 + stripe * 1.1, 0.052, 3.0), Vector3(0.62, 0.018, 0.48), Color(0.88, 0.87, 0.78), false)
+
+func _make_bench(pos: Vector3) -> void:
+	_box("ParkBenchSeat", pos + Vector3(0, 0.52, 0), Vector3(1.55, 0.14, 0.48), Color(0.48, 0.29, 0.15), false)
+	_box("ParkBenchBack", pos + Vector3(0, 0.92, -0.19), Vector3(1.55, 0.62, 0.12), Color(0.42, 0.25, 0.13), false)
+	for x in [-0.58, 0.58]:
+		_box("ParkBenchLeg", pos + Vector3(x, 0.26, 0), Vector3(0.12, 0.52, 0.42), Color(0.16, 0.20, 0.20), false)
+
+func _make_parked_car(pos: Vector3) -> void:
+	# Decorative vehicle meshes have no collision; parking never blocks movement.
+	var paint: Color = [Color(0.68, 0.20, 0.14), Color(0.16, 0.34, 0.56), Color(0.72, 0.68, 0.52), Color(0.18, 0.40, 0.31)][randi() % 4]
+	_box("ParkedCarBody", pos + Vector3(0, 0.62, 0), Vector3(3.35, 0.78, 1.55), paint, false)
+	_box("ParkedCarCabin", pos + Vector3(0.05, 1.18, 0), Vector3(1.85, 0.62, 1.32), paint.lightened(0.08), false)
+	_box("ParkedCarWindshield", pos + Vector3(-0.90, 1.20, 0), Vector3(0.045, 0.43, 1.12), Color(0.12, 0.21, 0.26), false)
+	_box("ParkedCarRearGlass", pos + Vector3(1.0, 1.20, 0), Vector3(0.045, 0.40, 1.10), Color(0.12, 0.21, 0.26), false)
+	for wheel_x in [-1.05, 1.05]:
+		for wheel_z in [-0.82, 0.82]:
+			_cylinder("ParkedCarWheel", pos + Vector3(wheel_x, 0.34, wheel_z), 0.34, 0.18, Color(0.035, 0.04, 0.045), false)
+	_box("ParkedCarHeadlightL", pos + Vector3(-1.69, 0.70, -0.48), Vector3(0.05, 0.20, 0.28), Color(0.96, 0.84, 0.55), false)
+	_box("ParkedCarHeadlightR", pos + Vector3(-1.69, 0.70, 0.48), Vector3(0.05, 0.20, 0.28), Color(0.96, 0.84, 0.55), false)
