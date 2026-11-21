@@ -2472,13 +2472,21 @@ func _refill_first_district() -> void:
 	for i in range(amount):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.position = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
-		if item.position.distance_to(SELL_POINT) < 4.0:
-			item.position.z = 10.5
+		var spawn_point := Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
+		var attempts := 0
+		while (spawn_point.distance_to(SELL_POINT) < 4.0 or _is_city_truck_lane_position(spawn_point)) and attempts < 30:
+			spawn_point = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
+			attempts += 1
+		item.position = spawn_point
 		add_child(item)
 		trash_nodes.append(item)
 	_update_ui()
 	_set_message("First district refilled! %d new trash pieces spawned." % amount)
+
+func _is_city_truck_lane_position(point: Vector3) -> bool:
+	var on_service_road := point.x >= -9.2 and point.x <= -5.2 and point.z >= -8.5 and point.z <= 34.0
+	var depot_entrance := point.x >= -7.8 and point.x <= -3.8 and point.z >= -13.5 and point.z <= -5.0
+	return on_service_road or depot_entrance
 
 func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 	var max_x := 11.5
@@ -2488,7 +2496,7 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 		max_x = 75.5
 	var point := Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
 	var attempts := 0
-	while (point.distance_to(SELL_POINT) < 4.0 or (point.x > 15.0 and point.x < 19.0) or (point.x > 47.0 and point.x < 51.0)) and attempts < 20:
+	while (point.distance_to(SELL_POINT) < 4.0 or _is_city_truck_lane_position(point) or (point.x > 15.0 and point.x < 19.0) or (point.x > 47.0 and point.x < 51.0)) and attempts < 30:
 		point = Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
 		attempts += 1
 	return point
