@@ -365,6 +365,16 @@ func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -
 	if apartment:
 		_box("ResidentialBalcony", center + Vector3(0, 2.05, depth * 0.5 + 0.38), Vector3(width * 0.72, 0.12, 0.72), Color(0.38, 0.42, 0.41), false)
 		_box("ResidentialBalconyRail", center + Vector3(0, 2.42, depth * 0.5 + 0.72), Vector3(width * 0.72, 0.55, 0.06), Color(0.16, 0.22, 0.23), false)
+	# Architectural depth: corner pilasters, projecting sills, rainwater downpipes and roof fascia.
+	for side_x in [-1.0, 1.0]:
+		_box("ResidenceCornerPilaster", center + Vector3(side_x * (width * 0.5 - 0.09), height * 0.5, depth * 0.5 + 0.055), Vector3(0.16, height, 0.12), wall_color.darkened(0.12), false)
+		_box("ResidenceWindowSill", center + Vector3(side_x * width * 0.28, 0.88 if apartment else 1.0, depth * 0.5 + 0.13), Vector3(0.94, 0.10, 0.22), Color(0.48, 0.49, 0.46), false)
+	_box("ResidenceRoofFascia", center + Vector3(0, height + 0.02, depth * 0.5 + 0.08), Vector3(width + 0.32, 0.16, 0.18), Color(0.25, 0.29, 0.29), false)
+	for side_x in [-1.0, 1.0]:
+		_cylinder("ResidenceRainPipe", center + Vector3(side_x * (width * 0.5 + 0.035), height * 0.5, depth * 0.5 + 0.12), 0.055, height, Color(0.25, 0.30, 0.30), false)
+	for window_x in [-width * 0.28, width * 0.28]:
+		_box("ResidenceWindowAwning", center + Vector3(window_x, (1.52 if apartment else 1.82), depth * 0.5 + 0.20), Vector3(0.98, 0.10, 0.38), Color(0.32, 0.39, 0.38), false)
+	_box("ResidenceEntryCanopy", center + Vector3(0, 1.70, depth * 0.5 + 0.32), Vector3(1.15, 0.12, 0.62), Color(0.20, 0.31, 0.31), false)
 	_box("ResidentialRoofVent", center + Vector3(width * 0.28, height + 0.42, -depth * 0.22), Vector3(0.48, 0.42, 0.48), Color(0.39, 0.43, 0.42), false)
 
 
@@ -381,6 +391,17 @@ func _build_neighborhood_tree(pos: Vector3) -> void:
 	crown.scale = Vector3(1.25, 1.1, 1.25)
 	crown.material_override = _mat(Color(0.18, 0.36, 0.23))
 	add_child(crown)
+	# Irregular secondary foliage clusters avoid the single-ball tree silhouette.
+	for offset in [Vector3(-0.62, 0.10, 0.12), Vector3(0.58, 0.02, -0.18), Vector3(0.05, 0.38, 0.56)]:
+		var foliage := MeshInstance3D.new()
+		var foliage_mesh := SphereMesh.new()
+		foliage_mesh.radius = 0.62
+		foliage_mesh.height = 1.12
+		foliage.mesh = foliage_mesh
+		foliage.position = pos + Vector3(0, 2.42, 0) + offset
+		foliage.scale = Vector3(1.0, 0.92, 1.08)
+		foliage.material_override = _mat(Color(0.15, 0.31, 0.19))
+		add_child(foliage)
 
 func _build_yard_environment_details() -> void:
 	# Subtle concrete panel joints make the yard read as a real industrial site.
