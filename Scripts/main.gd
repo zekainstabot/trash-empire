@@ -285,6 +285,7 @@ func _build_world() -> void:
 	_build_first_district_details()
 	_build_yard_environment_details()
 	_build_random_residential_blocks()
+	_build_connected_city_streets()
 	_build_city_polish()
 	_build_city_pedestrians()
 	_build_commercial_district()
@@ -293,6 +294,35 @@ func _build_world() -> void:
 	refill_world_button.rotation_degrees.y = 90.0
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
+
+
+func _build_connected_city_streets() -> void:
+	# Replace the removed district boundary walls with a continuous street grid.
+	# All road surfaces are decorative and non-colliding; the city stays walkable.
+	var asphalt := Color(0.14, 0.17, 0.18)
+	var curb := Color(0.53, 0.54, 0.50)
+	var sidewalk := Color(0.47, 0.48, 0.44)
+	# Two continuous cross-town streets run through the former front/back wall lines.
+	for street_z in [-29.0, 29.0]:
+		_box("CrossTownStreet", Vector3(48.0, 0.022, street_z), Vector3(119.0, 0.045, 5.8), asphalt, false)
+		_box("CrossTownSidewalk", Vector3(48.0, 0.055, street_z - 3.55), Vector3(119.0, 0.11, 1.25), sidewalk, false)
+		_box("CrossTownSidewalk", Vector3(48.0, 0.055, street_z + 3.55), Vector3(119.0, 0.11, 1.25), sidewalk, false)
+		for dash_x in range(-8, 109, 8):
+			_box("CrossTownRoadMarking", Vector3(float(dash_x), 0.052, street_z), Vector3(3.0, 0.012, 0.12), Color(0.88, 0.81, 0.62), false)
+	# Side streets join the central avenue to both cross-town roads, creating real alleys.
+	for street_x in [16.0, 48.0, 80.0, 104.0]:
+		_box("NeighborhoodConnectorRoad", Vector3(street_x, 0.025, 0.0), Vector3(5.2, 0.05, 62.0), asphalt, false)
+		for edge_x in [street_x - 3.0, street_x + 3.0]:
+			_box("ConnectorCurb", Vector3(edge_x, 0.075, 0.0), Vector3(0.18, 0.15, 62.0), curb, false)
+		for dash_z in range(-25, 26, 8):
+			_box("ConnectorRoadMarking", Vector3(street_x, 0.055, float(dash_z)), Vector3(0.12, 0.012, 3.0), Color(0.88, 0.81, 0.62), false)
+	# Small paved junction aprons blend the intersections into the existing avenues.
+	for street_x in [16.0, 48.0, 80.0, 104.0]:
+		for street_z in [-29.0, 0.0, 29.0]:
+			_box("StreetJunctionApron", Vector3(street_x, 0.031, street_z), Vector3(7.2, 0.055, 7.2), asphalt, false)
+	# Restore grounded street furniture at the former wall lines instead of leaving wall-mounted pieces suspended.
+	for lamp in [Vector3(8.0, 0.0, -25.0), Vector3(40.0, 0.0, -25.0), Vector3(72.0, 0.0, -25.0), Vector3(104.0, 0.0, -25.0), Vector3(24.0, 0.0, 25.0), Vector3(56.0, 0.0, 25.0), Vector3(88.0, 0.0, 25.0)]:
+		_make_lamp(lamp)
 
 
 func _build_random_residential_blocks() -> void:
