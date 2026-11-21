@@ -103,7 +103,7 @@ var city_truck_phase := 3
 var city_truck_timer := 0.0
 var city_truck_upgrade_level := 0
 var city_truck_start := Vector3(-7.2, 0.0, 33.0)
-var city_truck_dump := Vector3(-4.8, 0.0, -11.5)
+var city_truck_dump := Vector3(-4.8, 0.0, -22.5)
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -2236,16 +2236,45 @@ func _load_game() -> void:
 
 
 func _build_city_dump_area() -> void:
-	# Municipal collection depot beside the service road.
-	_box("CityDumpConcrete", Vector3(-4.8, 0.035, -13.0), Vector3(7.2, 0.07, 7.0), Color(0.25, 0.29, 0.28), false)
-	_box("CityDumpMarking", Vector3(-4.8, 0.078, -13.0), Vector3(6.7, 0.025, 6.5), Color(0.36, 0.39, 0.34), false)
-	_box("CityDumpBackWall", Vector3(-4.8, 1.15, -16.35), Vector3(7.2, 2.3, 0.22), Color(0.30, 0.36, 0.35), true)
-	_box("CityDumpLeftWall", Vector3(-8.25, 1.0, -13.0), Vector3(0.22, 2.0, 6.5), Color(0.30, 0.36, 0.35), true)
-	_box("CityDumpRightWall", Vector3(-1.35, 1.0, -13.0), Vector3(0.22, 2.0, 6.5), Color(0.30, 0.36, 0.35), true)
-	_box("CityDumpHazardStripe", Vector3(-4.8, 0.10, -9.62), Vector3(6.9, 0.08, 0.16), Color(0.95, 0.72, 0.12), false)
-	_box("CityDumpSign", Vector3(-4.8, 2.45, -16.18), Vector3(3.8, 0.72, 0.16), Color(0.08, 0.28, 0.25), false)
-	_label_3d("CITY WASTE DEPOT", Vector3(-4.8, 2.45, -16.06), 0.24)
-	# Municipal trucks stay beyond the playable view until their staggered route starts.
+	# Relocated industrial waste transfer bay at the rear of the expanded yard.
+	_box("CityDumpApproachApron", Vector3(-7.0, 0.025, -18.0), Vector3(5.0, 0.05, 8.0), Color(0.22, 0.25, 0.25), false)
+	_box("CityDumpConcrete", Vector3(-4.8, 0.035, -22.5), Vector3(7.2, 0.07, 7.0), Color(0.25, 0.28, 0.27), false)
+	_box("CityDumpMarking", Vector3(-4.8, 0.078, -22.5), Vector3(6.7, 0.025, 6.5), Color(0.31, 0.34, 0.32), false)
+	# Weathered retaining walls and reinforced steel corner posts.
+	_box("CityDumpBackWall", Vector3(-4.8, 1.15, -25.85), Vector3(7.2, 2.3, 0.22), Color(0.27, 0.31, 0.31), true)
+	_box("CityDumpLeftWall", Vector3(-8.25, 1.0, -22.5), Vector3(0.22, 2.0, 6.5), Color(0.27, 0.31, 0.31), true)
+	_box("CityDumpRightWall", Vector3(-1.35, 1.0, -22.5), Vector3(0.22, 2.0, 6.5), Color(0.27, 0.31, 0.31), true)
+	for x in [-8.12, -1.48]:
+		_cylinder("DepotSteelCornerPost", Vector3(x, 1.15, -25.65), 0.12, 2.3, Color(0.12, 0.16, 0.17), true)
+	# Concrete expansion joints, drainage channel and restrained safety markings.
+	for z in [-25.0, -22.5, -20.0]:
+		_box("DepotConcreteJoint", Vector3(-4.8, 0.082, z), Vector3(6.8, 0.012, 0.035), Color(0.16, 0.19, 0.19), false)
+	_box("DepotDrainChannel", Vector3(-4.8, 0.10, -19.18), Vector3(6.3, 0.08, 0.22), Color(0.10, 0.13, 0.13), false)
+	for i in range(12):
+		_box("DepotDrainSlot", Vector3(-7.65 + float(i) * 0.52, 0.145, -19.18), Vector3(0.30, 0.018, 0.055), Color(0.48, 0.51, 0.49), false)
+	_box("CityDumpHazardStripe", Vector3(-4.8, 0.10, -19.0), Vector3(6.9, 0.08, 0.14), Color(0.78, 0.59, 0.16), false)
+	# Industrial sign, mounted on a steel frame.
+	_box("CityDumpSignPostL", Vector3(-6.65, 2.0, -25.66), Vector3(0.09, 2.0, 0.09), Color(0.13, 0.17, 0.18), false)
+	_box("CityDumpSignPostR", Vector3(-2.95, 2.0, -25.66), Vector3(0.09, 2.0, 0.09), Color(0.13, 0.17, 0.18), false)
+	_box("CityDumpSign", Vector3(-4.8, 2.55, -25.66), Vector3(3.8, 0.72, 0.12), Color(0.10, 0.17, 0.17), false)
+	_label_3d("MUNICIPAL WASTE TRANSFER", Vector3(-4.8, 2.55, -25.56), 0.19)
+	# Heavy-duty bollards protect the bay edges without blocking the truck lane.
+	for x in [-8.8, -0.8]:
+		for z in [-19.0, -24.5]:
+			_cylinder("DepotSafetyBollard", Vector3(x, 0.48, z), 0.13, 0.96, Color(0.62, 0.48, 0.20), true)
+	# Fixed floodlights and a wall-mounted service cabinet add practical industrial detail.
+	for x in [-8.0, -1.6]:
+		_cylinder("DepotFloodlightPole", Vector3(x, 3.0, -25.0), 0.065, 6.0, Color(0.14, 0.18, 0.19), false)
+		_box("DepotFloodlight", Vector3(x, 5.85, -24.9), Vector3(0.72, 0.22, 0.42), Color(0.68, 0.70, 0.65), false)
+		var lamp := OmniLight3D.new()
+		lamp.position = Vector3(x, 5.55, -24.9)
+		lamp.light_color = Color(0.82, 0.86, 0.82)
+		lamp.light_energy = 0.32
+		lamp.omni_range = 8.0
+		add_child(lamp)
+	_box("DepotElectricalCabinet", Vector3(-1.75, 0.95, -24.6), Vector3(0.48, 1.6, 0.34), Color(0.34, 0.39, 0.38), true)
+	_box("DepotCabinetDoor", Vector3(-1.75, 0.95, -24.41), Vector3(0.38, 1.42, 0.035), Color(0.24, 0.29, 0.29), false)
+	# Truck fleet waits beyond the playable view until its staggered route starts.
 	city_trucks.clear()
 	city_truck = null
 	city_trash_reserved = 0
@@ -2258,7 +2287,7 @@ func _create_city_truck(index: int) -> Node3D:
 	truck.position = city_truck_start
 	truck.set_meta("phase", 0)
 	truck.set_meta("timer", maxf(0.0, _city_truck_interval() - float(index) * 12.0))
-	truck.set_meta("queue_position", Vector3(-7.2, 0.0, -5.5 + float(index) * 3.8))
+	truck.set_meta("queue_position", Vector3(-7.2, 0.0, -15.0 + float(index) * 3.8))
 	truck.set_meta("load", _city_truck_load())
 	truck.set_meta("reserved", false)
 	add_child(truck)
@@ -2336,7 +2365,7 @@ func _process_city_truck(delta: float) -> void:
 		var phase := int(truck.get_meta("phase", 0))
 		var timer := float(truck.get_meta("timer", 0.0)) + delta
 		truck.set_meta("timer", timer)
-		var queue_point: Vector3 = truck.get_meta("queue_position", Vector3(-7.2, 0.0, -5.5))
+		var queue_point: Vector3 = truck.get_meta("queue_position", Vector3(-7.2, 0.0, -15.0))
 		var target := truck.position
 		match phase:
 			0:
@@ -2410,7 +2439,7 @@ func _city_dump_trash_count() -> int:
 	for item in trash_nodes:
 		if is_instance_valid(item):
 			var p := item.global_position
-			if p.x >= -8.1 and p.x <= -1.5 and p.z >= -16.2 and p.z <= -9.8:
+			if p.x >= -8.1 and p.x <= -1.5 and p.z >= -25.7 and p.z <= -19.3:
 				count += 1
 	return count
 
@@ -2429,7 +2458,7 @@ func _spawn_city_trash(amount: int) -> int:
 	for i in range(amount):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.position = Vector3(rng.randf_range(-7.7, -1.9), 0.34, rng.randf_range(-15.8, -10.2))
+		item.position = Vector3(rng.randf_range(-7.7, -1.9), 0.34, rng.randf_range(-25.3, -19.7))
 		add_child(item)
 		trash_nodes.append(item)
 		spawned += 1
