@@ -215,16 +215,16 @@ func _build_world() -> void:
 	_box("DistrictThreeSign", Vector3(64, 2.2, -13.5), Vector3(5.0, 1.0, 0.18), Color(0.42, 0.30, 0.10), false)
 	_label_3d("DISTRICT 3", Vector3(64, 2.2, -13.35), 0.35)
 	for x in range(-14, 15, 2):
-		# Leave a dedicated opening for the municipal truck service lane.
-		if x == -8 or x == -6:
+		# Keep a wide, player-accessible entrance aligned with the road.
+		if x >= -12 and x <= -4:
 			continue
 		_box("FencePost", Vector3(x, 1.35, 19.0), Vector3(0.16, 2.7, 0.16), Color(0.20, 0.24, 0.24), true)
-	# Split the rails around the service entrance so the truck never drives through fencing.
+	# Wide 8-metre opening: both the player and municipal trucks can enter freely.
 	for rail_y in [2.45, 0.45]:
-		_box("FenceRailServiceLeft", Vector3(-12.0, rail_y, 19.0), Vector3(6.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-		_box("FenceRailServiceRight", Vector3(4.8, rail_y, 19.0), Vector3(20.4, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-	_box("GateLeft", Vector3(-4.2, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
-	_box("GateRight", Vector3(4.2, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
+		_box("FenceRailServiceLeft", Vector3(-13.5, rail_y, 19.0), Vector3(3.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
+		_box("FenceRailServiceRight", Vector3(5.5, rail_y, 19.0), Vector3(19.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
+	_box("GateLeft", Vector3(-12.0, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
+	_box("GateRight", Vector3(-4.0, 1.3, 19.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
 	_add_invisible_barrier("MainFrontSafety", Vector3(0, 1.0, 36.0), Vector3(32, 2.0, 0.5))
 	_add_invisible_barrier("DistrictTwoFrontSafety", Vector3(32, 1.0, 36.0), Vector3(32, 2.0, 0.5))
 	_add_invisible_barrier("DistrictThreeFrontSafety", Vector3(64, 1.0, 36.0), Vector3(32, 2.0, 0.5))
