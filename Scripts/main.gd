@@ -660,7 +660,8 @@ func _update_factory_build_label() -> void:
 	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
 	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY", "PACKAGING + TRUCK"]
 	var cost: float = costs[factory_stage]
-	factory_build_label.text = "BUILD %s\n%.1f ZC / %.0f ZC\nSTAY HERE TO PAY" % [names[factory_stage + 1], factory_build_paid, cost]
+	var remaining := maxf(0.0, cost - factory_build_paid)
+	factory_build_label.text = "CITY FACTORY EXPANSION\nNEXT: %s\nTOTAL COST   %.0f ZC\nPAID   %.1f ZC   •   LEFT   %.1f ZC\nSTAND ON PLATFORM TO BUILD" % [names[factory_stage + 1], cost, factory_build_paid, remaining]
 
 func _build_factory_module(stage: int) -> void:
 	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5, 16.0]
@@ -786,7 +787,7 @@ func _create_world_action_button(node_name: String, title: String, world_positio
 	label.text = title
 	label.position = Vector3(0, dimensions.y * 0.5 + 0.07, dimensions.z * 0.5 + 0.02)
 	label.font_size = 30
-	label.pixel_size = 0.006
+	label.pixel_size = 0.005
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.modulate = Color.WHITE
 	root.add_child(label)
@@ -2229,12 +2230,14 @@ func _create_expansion_zone() -> void:
 	zone.add_child(ring)
 	var label := Label3D.new()
 	label.name = "UnlockZoneLabel"
-	label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$25"
+	label.text = "CITY EXPANSION\nDISTRICT 02\nCOST: 25 ZC\nSTEP ON PAD TO BUILD"
 	label.position = Vector3(0, 2.2, 0)
-	label.font_size = 34
+	label.font_size = 27
 	label.pixel_size = 0.006
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(1.0, 0.96, 0.78)
+	label.modulate = Color(0.82, 1.0, 0.88)
+	label.outline_size = 8
+	label.outline_modulate = Color(0.015, 0.045, 0.035, 0.98)
 	zone.add_child(label)
 
 func _spending_speed_multiplier() -> float:
@@ -2305,7 +2308,7 @@ func _process_expansion_zone(delta: float) -> void:
 		if is_instance_valid(zone):
 			var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 			if is_instance_valid(label):
-				label.text = "UNLOCKING DISTRICT %d\n%.1f ZC / %.0f ZC" % [yard_stage + 1, district_build_paid, cost]
+				label.text = "CITY EXPANSION\nDISTRICT %02d\nTOTAL COST   %.0f ZC\nPAID   %.1f ZC   •   LEFT   %.1f ZC\nKEEP STANDING TO BUILD" % [yard_stage + 1, cost, district_build_paid, maxf(0.0, cost - district_build_paid)]
 	if district_build_paid >= cost - 0.001:
 		_complete_district_unlock()
 	elif money <= 0.001 and not district_no_money_notified:
@@ -2354,12 +2357,12 @@ func _refresh_expansion_world_button() -> void:
 		zone.position = Vector3(13.15, 0.0, 0.0)
 		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 		if is_instance_valid(label):
-			label.text = "STEP HERE\nUNLOCK DISTRICT 2\n$25"
+			label.text = "CITY EXPANSION\nDISTRICT 02\nCOST: 25 ZC\nSTEP ON PAD TO BUILD"
 	else:
 		zone.position = Vector3(45.15, 0.0, 0.0)
 		var label := zone.get_node_or_null("UnlockZoneLabel") as Label3D
 		if is_instance_valid(label):
-			label.text = "STEP HERE\nUNLOCK DISTRICT 3\n$60"
+			label.text = "CITY EXPANSION\nDISTRICT 03\nCOST: 60 ZC\nSTEP ON PAD TO BUILD"
 	expansion_zone_blocked = false
 
 func _expansion_button_label(value: String) -> void:
