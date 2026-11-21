@@ -2367,6 +2367,21 @@ func _build_city_dump_area() -> void:
 	_box("CityDumpApproachApron", Vector3(-7.0, 0.025, -18.0), Vector3(5.0, 0.05, 8.0), Color(0.22, 0.25, 0.25), false)
 	_box("CityDumpConcrete", Vector3(-4.8, 0.035, -22.5), Vector3(7.2, 0.07, 7.0), Color(0.25, 0.28, 0.27), false)
 	_box("CityDumpMarking", Vector3(-4.8, 0.078, -22.5), Vector3(6.7, 0.025, 6.5), Color(0.31, 0.34, 0.32), false)
+	# Heavy industrial roll-off waste bunker: dark steel cladding, reinforced ribs and loading rim.
+	_box("CityDumpSteelOuterBack", Vector3(-4.8, 1.18, -25.70), Vector3(7.35, 2.35, 0.16), Color(0.16, 0.20, 0.21), false)
+	_box("CityDumpSteelOuterLeft", Vector3(-8.10, 1.05, -22.5), Vector3(0.16, 2.10, 6.4), Color(0.16, 0.20, 0.21), false)
+	_box("CityDumpSteelOuterRight", Vector3(-1.50, 1.05, -22.5), Vector3(0.16, 2.10, 6.4), Color(0.16, 0.20, 0.21), false)
+	# Vertical welded reinforcement ribs along the container sides.
+	for z in [-24.8, -23.4, -22.0, -20.6]:
+		_box("DumpBunkerSideRibL", Vector3(-8.16, 1.0, z), Vector3(0.10, 1.9, 0.16), Color(0.32, 0.37, 0.37), false)
+		_box("DumpBunkerSideRibR", Vector3(-1.44, 1.0, z), Vector3(0.10, 1.9, 0.16), Color(0.32, 0.37, 0.37), false)
+	# Thick steel rim around the open loading bay.
+	_box("DumpBunkerTopRailBack", Vector3(-4.8, 2.18, -25.72), Vector3(7.45, 0.18, 0.28), Color(0.34, 0.39, 0.39), false)
+	_box("DumpBunkerTopRailLeft", Vector3(-8.18, 2.18, -22.5), Vector3(0.28, 0.18, 6.5), Color(0.34, 0.39, 0.39), false)
+	_box("DumpBunkerTopRailRight", Vector3(-1.42, 2.18, -22.5), Vector3(0.28, 0.18, 6.5), Color(0.34, 0.39, 0.39), false)
+	# Industrial hydraulic compactor housing mounted behind the bunker.
+	_box("DumpCompactorHousing", Vector3(-4.8, 2.55, -26.05), Vector3(3.0, 0.62, 0.55), Color(0.20, 0.25, 0.25), false)
+	_box("DumpCompactorServicePanel", Vector3(-4.8, 2.58, -25.76), Vector3(1.15, 0.34, 0.035), Color(0.48, 0.39, 0.22), false)
 	# Weathered retaining walls and reinforced steel corner posts.
 	_box("CityDumpBackWall", Vector3(-4.8, 1.15, -25.85), Vector3(7.2, 2.3, 0.22), Color(0.27, 0.31, 0.31), true)
 	_box("CityDumpLeftWall", Vector3(-8.25, 1.0, -22.5), Vector3(0.22, 2.0, 6.5), Color(0.27, 0.31, 0.31), true)
