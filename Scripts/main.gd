@@ -296,7 +296,7 @@ func _build_world() -> void:
 
 	_create_expansion_zone()
 	_refresh_expansion_world_button()
-	refill_world_button = _create_gear_refill_button(Vector3(15.22, 1.72, -4.25), Callable(self, "_refill_first_district"))
+	refill_world_button = _create_gear_refill_button(Vector3(15.30, 1.72, -4.25), Callable(self, "_refill_first_district"))
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
 
