@@ -203,17 +203,11 @@ func _build_world() -> void:
 	_box("LeftWall", Vector3(-15.5, 2.0, 0), Vector3(0.5, 4, 72), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 72), Color(0.20, 0.43, 0.22), true)
 	_box("DistrictTwoGrassPatch", Vector3(32, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.25, 0.50, 0.22), false)
-	_box("DistrictTwoBackWall", Vector3(32, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictTwoFrontFence", Vector3(32, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 72), Color(0.32, 0.34, 0.29), true)
 	# Open the east edge into a boulevard leading to the new market quarter.
 	_box("DistrictFourGround", Vector3(96, -0.3, 0), Vector3(32, 0.6, 72), Color(0.29, 0.34, 0.30), true)
 	_box("DistrictFourGrassPatch", Vector3(96, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.27, 0.43, 0.25), false)
 	_box("DistrictFourOuterWall", Vector3(111.5, 2.0, 0), Vector3(0.5, 4, 72), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictFourBackWall", Vector3(96, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictFourFrontFence", Vector3(96, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
-	_box("DistrictThreeBackWall", Vector3(64, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictThreeFrontFence", Vector3(64, 1.5, 35.0), Vector3(32, 3, 0.18), Color(0.20, 0.24, 0.24), true)
 	for x in range(-14, 15, 2):
 		# Keep a wide, player-accessible entrance aligned with the road.
 		if x >= -12 and x <= -4:
@@ -226,9 +220,6 @@ func _build_world() -> void:
 	_box("GateLeft", Vector3(-12.0, 1.3, 35.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
 	_box("GateRight", Vector3(-4.0, 1.3, 35.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
 	_add_invisible_barrier("MainFrontSafety", Vector3(0, 1.0, 36.0), Vector3(32, 2.0, 0.5))
-	_add_invisible_barrier("DistrictTwoFrontSafety", Vector3(32, 1.0, 36.0), Vector3(32, 2.0, 0.5))
-	_add_invisible_barrier("DistrictThreeFrontSafety", Vector3(64, 1.0, 36.0), Vector3(32, 2.0, 0.5))
-	_add_invisible_barrier("DistrictFourFrontSafety", Vector3(96, 1.0, 36.0), Vector3(32, 2.0, 0.5))
 
 	# Residential building: moved to the quiet west edge, away from the factory line.
 	_build_apartment_block()
