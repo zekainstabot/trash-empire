@@ -1622,7 +1622,7 @@ func _refresh_upgrade_prices() -> void:
 			price_label.text = "MAX"
 			price_label.add_theme_color_override("font_color", Color(0.65, 0.82, 0.72))
 		elif not unlocked:
-			button.text = "%s  %s\nLEVEL %d  →  %d" % [icon, node.title, current, current + 1]
+			button.text = "%s  %s\nLEVEL %d" % [icon, node.title, current + 1]
 			button.disabled = false
 			price_label.text = "%.0f ZC" % _upgrade_cost(float(base_costs.get(branch, 4.0)), current + 1)
 			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
@@ -1634,7 +1634,7 @@ func _refresh_upgrade_prices() -> void:
 				price = _upgrade_cost(5.0, upgrade_level)
 				button.text = "%s  %s\nNEXT LEVEL  •  +3 BAG SLOTS" % [icon, node.title]
 			else:
-				button.text = "%s  %s\nLEVEL %d  →  %d" % [icon, node.title, current, next_level]
+				button.text = "%s  %s\nLEVEL %d" % [icon, node.title, next_level]
 			price_label.text = "%.0f ZC" % price
 			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
 			button.disabled = false
