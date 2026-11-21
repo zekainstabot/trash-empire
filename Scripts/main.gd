@@ -1887,6 +1887,16 @@ func _reset_joystick() -> void:
 	player.call("set_touch_move", Vector2.ZERO)
 	joystick_knob.position = (joystick_pad.size - joystick_knob.size) * 0.5
 
+func _register_final_cleanup_pickup(item: Node3D) -> void:
+	var cleanup_units := int(item.get_meta("final_cleanup_units", 0))
+	if cleanup_units <= 0:
+		return
+	final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + cleanup_units)
+	_update_final_zone_label()
+	if final_zone_cleaned >= FINAL_ZONE_TARGET:
+		_set_message("ULTIMATE GOAL COMPLETE! The entire 60,000-unit landfill is clean!")
+
+
 func _collect_nearby() -> void:
 	if carried >= capacity:
 		_set_message("Bag full! Return to the recycling station.")
@@ -1910,12 +1920,8 @@ func _collect_nearby() -> void:
 			var bonus := 8.0 if rare_type == "gold" else 2.0
 			money += bonus
 			_set_message("%s rare scrap found! Bonus +%.2f ZC" % [rare_type.to_upper(), bonus])
-		var cleanup_units := int(nearest.get_meta("final_cleanup_units", 0))
-		if cleanup_units > 0:
-			final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + cleanup_units)
-			_update_final_zone_label()
-			if final_zone_cleaned >= FINAL_ZONE_TARGET:
-				_set_message("ULTIMATE GOAL COMPLETE! The entire 60,000-unit landfill is clean!")
+
+		_register_final_cleanup_pickup(nearest)
 		nearest.queue_free()
 		trash_nodes.erase(nearest)
 		carried += 1
@@ -1967,6 +1973,7 @@ func _process_auto_pickup(delta: float) -> void:
 				nearest = item
 		if nearest == null:
 			break
+		_register_final_cleanup_pickup(nearest)
 		nearest.queue_free()
 		trash_nodes.erase(nearest)
 		carried += 1
@@ -2029,6 +2036,7 @@ func _process_helper_drones(delta: float) -> void:
 				nearest = item
 		if nearest == null:
 			break
+		_register_final_cleanup_pickup(nearest)
 		nearest.queue_free()
 		trash_nodes.erase(nearest)
 		carried += 1
