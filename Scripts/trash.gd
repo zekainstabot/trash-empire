@@ -37,6 +37,23 @@ func _ready() -> void:
 		_:
 			_make_old_shoe(rng)
 	rotation.y = rng.randf_range(0.0, TAU)
+	if has_meta("rare_type"):
+		_add_rare_visual(String(get_meta("rare_type")))
+
+func _add_rare_visual(rare_type: String) -> void:
+	var gold := rare_type == "gold"
+	var color := Color(1.0, 0.72, 0.12) if gold else Color(0.72, 0.84, 0.92)
+	var badge := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.19
+	sphere.height = 0.38
+	sphere.radial_segments = 10
+	badge.mesh = sphere
+	badge.position = Vector3(0, 0.38, 0)
+	badge.material_override = _material(color)
+	add_child(badge)
+	var glint := _flat_box(Vector3(0.055, 0.22, 0.055), Vector3(0, 0.39, -0.16), Color.WHITE)
+	add_child(glint)
 
 func _process(delta: float) -> void:
 	rotation.y += spin_speed * delta
