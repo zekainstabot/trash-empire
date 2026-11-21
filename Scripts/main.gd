@@ -302,21 +302,43 @@ func _build_world() -> void:
 
 
 func _build_random_residential_blocks() -> void:
-	# Decorative homes live only in the two expansion districts. Every mesh is
-	# non-colliding, so residents can never trap the player or obstruct vehicles.
+	# Streets and alleys are laid out first; buildings occupy reserved lots
+	# beside them, never on the vehicle lanes or the district entrances.
+	for district_x in [32.0, 64.0]:
+		_box("NeighborhoodMainRoad", Vector3(district_x, 0.018, 0.0), Vector3(31.0, 0.035, 5.2), Color(0.13, 0.16, 0.17), false)
+		_box("NeighborhoodSidewalkNorth", Vector3(district_x, 0.045, -3.45), Vector3(31.0, 0.07, 1.45), Color(0.48, 0.49, 0.44), false)
+		_box("NeighborhoodSidewalkSouth", Vector3(district_x, 0.045, 3.45), Vector3(31.0, 0.07, 1.45), Color(0.48, 0.49, 0.44), false)
+		for lane_x in ([26.0, 38.0] if district_x < 48.0 else [58.0, 70.0]):
+			_box("NeighborhoodAlley", Vector3(lane_x, 0.019, 0.0), Vector3(3.6, 0.037, 25.0), Color(0.17, 0.20, 0.20), false)
+			for side_z in [-12.8, 12.8]:
+				_box("AlleyCurb", Vector3(lane_x + 2.0, 0.055, side_z), Vector3(0.12, 0.11, 3.0), Color(0.58, 0.59, 0.53), false)
+		# Short dashed center markings, purely visual and non-blocking.
+		for mark_x in range(int(district_x - 13), int(district_x + 14), 4):
+			_box("NeighborhoodRoadMarking", Vector3(float(mark_x), 0.045, 0.0), Vector3(1.8, 0.012, 0.10), Color(0.88, 0.80, 0.57), false)
+
 	var lots: Array[Vector3] = [
-		Vector3(22.0, 0.0, -25.0), Vector3(32.0, 0.0, -25.0),
-		Vector3(42.0, 0.0, -25.0), Vector3(22.0, 0.0, 25.0),
-		Vector3(32.0, 0.0, 25.0), Vector3(42.0, 0.0, 25.0),
-		Vector3(54.0, 0.0, -25.0), Vector3(64.0, 0.0, -25.0),
-		Vector3(74.0, 0.0, -25.0), Vector3(54.0, 0.0, 25.0),
-		Vector3(64.0, 0.0, 25.0), Vector3(74.0, 0.0, 25.0)
+		Vector3(21.0, 0.0, -24.0), Vector3(32.0, 0.0, -24.0),
+		Vector3(43.0, 0.0, -24.0), Vector3(21.0, 0.0, 24.0),
+		Vector3(32.0, 0.0, 24.0), Vector3(43.0, 0.0, 24.0),
+		Vector3(53.0, 0.0, -24.0), Vector3(64.0, 0.0, -24.0),
+		Vector3(75.0, 0.0, -24.0), Vector3(53.0, 0.0, 24.0),
+		Vector3(64.0, 0.0, 24.0), Vector3(75.0, 0.0, 24.0)
 	]
 	lots.shuffle()
-	for i in range(6):
+	for i in range(8):
 		var lot: Vector3 = lots[i]
-		var apartment := (i % 3 == 1)
-		_build_decorative_residence(lot, apartment, i + 1)
+		_build_decorative_residence(lot, i % 3 == 1, i + 1)
+
+	# Trees line the sidewalks and green pockets, clear of all road surfaces.
+	for tree_pos in [
+		Vector3(18.5, 0.0, -5.6), Vector3(24.0, 0.0, 5.6),
+		Vector3(34.5, 0.0, -5.6), Vector3(40.5, 0.0, 5.6),
+		Vector3(50.5, 0.0, -5.6), Vector3(56.0, 0.0, 5.6),
+		Vector3(66.5, 0.0, -5.6), Vector3(72.5, 0.0, 5.6)
+	]:
+		_build_neighborhood_tree(tree_pos)
+	for lamp_pos in [Vector3(29.0, 0.0, -4.7), Vector3(45.0, 0.0, 4.7), Vector3(61.0, 0.0, -4.7), Vector3(77.0, 0.0, 4.7)]:
+		_make_lamp(lamp_pos)
 
 
 func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -> void:
@@ -324,9 +346,10 @@ func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -
 	var depth := 3.8 if apartment else 3.4
 	var height := 4.2 if apartment else 2.8
 	var wall_color := [Color(0.72, 0.61, 0.47), Color(0.66, 0.70, 0.66), Color(0.72, 0.69, 0.58), Color(0.61, 0.67, 0.70)][index % 4]
-	_box("ResidentialBase", center + Vector3(0, 0.12, 0), Vector3(width + 0.35, 0.24, depth + 0.35), Color(0.30, 0.32, 0.30), false)
-	_box("ResidentialWalls", center + Vector3(0, height * 0.5, 0), Vector3(width, height, depth), wall_color, false)
-	_box("ResidentialRoof", center + Vector3(0, height + 0.12, 0), Vector3(width + 0.25, 0.24, depth + 0.25), Color(0.20, 0.25, 0.26), false)
+	# Solid foundations and walls make buildings physical obstacles.
+	_box("ResidentialBase", center + Vector3(0, 0.12, 0), Vector3(width + 0.35, 0.24, depth + 0.35), Color(0.30, 0.32, 0.30), true)
+	_box("ResidentialWalls", center + Vector3(0, height * 0.5, 0), Vector3(width, height, depth), wall_color, true)
+	_box("ResidentialRoof", center + Vector3(0, height + 0.12, 0), Vector3(width + 0.25, 0.24, depth + 0.25), Color(0.20, 0.25, 0.26), true)
 	_box("ResidentialFrontDoor", center + Vector3(0, 0.82, depth * 0.5 + 0.035), Vector3(0.68, 1.55, 0.07), Color(0.30, 0.20, 0.14), false)
 	for window_x in [-width * 0.28, width * 0.28]:
 		for floor_y in ([1.05, 2.85] if apartment else [1.35]):
@@ -336,6 +359,21 @@ func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -
 		_box("ResidentialBalcony", center + Vector3(0, 2.05, depth * 0.5 + 0.38), Vector3(width * 0.72, 0.12, 0.72), Color(0.38, 0.42, 0.41), false)
 		_box("ResidentialBalconyRail", center + Vector3(0, 2.42, depth * 0.5 + 0.72), Vector3(width * 0.72, 0.55, 0.06), Color(0.16, 0.22, 0.23), false)
 	_box("ResidentialRoofVent", center + Vector3(width * 0.28, height + 0.42, -depth * 0.22), Vector3(0.48, 0.42, 0.48), Color(0.39, 0.43, 0.42), false)
+
+
+func _build_neighborhood_tree(pos: Vector3) -> void:
+	# Trunk collision is limited to a narrow cylinder-sized footprint.
+	_cylinder("NeighborhoodTreeTrunk", pos + Vector3(0, 1.0, 0), 0.20, 2.0, Color(0.32, 0.21, 0.13), false)
+	_add_invisible_barrier("NeighborhoodTreeTrunkCollision", pos + Vector3(0, 1.0, 0), Vector3(0.38, 2.0, 0.38))
+	var crown := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 1.0
+	sphere.height = 1.8
+	crown.mesh = sphere
+	crown.position = pos + Vector3(0, 2.45, 0)
+	crown.scale = Vector3(1.25, 1.1, 1.25)
+	crown.material_override = _mat(Color(0.18, 0.36, 0.23))
+	add_child(crown)
 
 func _build_yard_environment_details() -> void:
 	# Subtle concrete panel joints make the yard read as a real industrial site.
