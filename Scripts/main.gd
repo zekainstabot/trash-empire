@@ -345,6 +345,40 @@ func _build_random_residential_blocks() -> void:
 		_build_neighborhood_tree(tree_pos)
 	for lamp_pos in [Vector3(29.0, 0.0, -4.7), Vector3(45.0, 0.0, 4.7), Vector3(61.0, 0.0, -4.7), Vector3(77.0, 0.0, 4.7)]:
 		_make_lamp(lamp_pos)
+	_build_neighborhood_furniture()
+
+
+func _build_neighborhood_furniture() -> void:
+	# Low planters, benches and hydrants make the residential streets feel lived-in.
+	# All pieces are decorative so they never obstruct player or truck movement.
+	for item in [
+		{"x": 20.0, "z": -14.0}, {"x": 37.0, "z": 14.0},
+		{"x": 54.0, "z": -14.0}, {"x": 71.0, "z": 14.0}
+	]:
+		var p := Vector3(float(item.x), 0.0, float(item.z))
+		_box("StreetPlanter", p + Vector3(0, 0.22, 0), Vector3(2.2, 0.44, 0.85), Color(0.30, 0.32, 0.29), false)
+		_box("StreetPlanterSoil", p + Vector3(0, 0.46, 0), Vector3(2.02, 0.08, 0.68), Color(0.22, 0.16, 0.11), false)
+		for shrub_x in [-0.62, 0.0, 0.62]:
+			var shrub := MeshInstance3D.new()
+			var shrub_mesh := SphereMesh.new()
+			shrub_mesh.radius = 0.34
+			shrub_mesh.height = 0.62
+			shrub.mesh = shrub_mesh
+			shrub.position = p + Vector3(shrub_x, 0.78, 0)
+			shrub.material_override = _mat(Color(0.16, 0.34, 0.19))
+			add_child(shrub)
+
+	for bench_pos in [Vector3(27.0, 0.0, 5.0), Vector3(43.0, 0.0, -5.0), Vector3(59.0, 0.0, 5.0), Vector3(75.0, 0.0, -5.0)]:
+		_box("ParkBenchSeat", bench_pos + Vector3(0, 0.52, 0), Vector3(1.65, 0.14, 0.48), Color(0.42, 0.27, 0.16), false)
+		_box("ParkBenchBack", bench_pos + Vector3(0, 0.92, -0.20), Vector3(1.65, 0.62, 0.12), Color(0.35, 0.22, 0.14), false)
+		for leg_x in [-0.58, 0.58]:
+			_box("ParkBenchLeg", bench_pos + Vector3(leg_x, 0.26, 0), Vector3(0.10, 0.52, 0.34), Color(0.16, 0.19, 0.19), false)
+
+	for hydrant_pos in [Vector3(23.0, 0.0, -5.0), Vector3(39.0, 0.0, 5.0), Vector3(55.0, 0.0, -5.0), Vector3(71.0, 0.0, 5.0)]:
+		_cylinder("StreetHydrantBase", hydrant_pos + Vector3(0, 0.20, 0), 0.20, 0.40, Color(0.72, 0.18, 0.12), false)
+		_cylinder("StreetHydrantBody", hydrant_pos + Vector3(0, 0.52, 0), 0.13, 0.48, Color(0.82, 0.22, 0.15), false)
+		_cylinder("StreetHydrantCap", hydrant_pos + Vector3(0, 0.80, 0), 0.18, 0.12, Color(0.88, 0.72, 0.28), false)
+		_cylinder("StreetHydrantOutlet", hydrant_pos + Vector3(0.20, 0.52, 0), 0.09, 0.20, Color(0.82, 0.22, 0.15), false)
 
 
 func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -> void:
