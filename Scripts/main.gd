@@ -1475,8 +1475,10 @@ func _input(event: InputEvent) -> void:
 			gameplay_touch_points[event.index] = event.position
 			if gameplay_touch_points.size() >= 2 and gameplay_pinch_distance > 0.0 and is_instance_valid(camera):
 				var points: Array = gameplay_touch_points.values()
-				var distance := points[0].distance_to(points[1])
-				camera.fov = clampf(gameplay_pinch_fov * (gameplay_pinch_distance / maxf(distance,1.0)), 38.0, 76.0)
+				var point_a: Vector2 = points[0]
+				var point_b: Vector2 = points[1]
+				var distance: float = point_a.distance_to(point_b)
+				camera.fov = clampf(gameplay_pinch_fov * (gameplay_pinch_distance / maxf(distance, 1.0)), 38.0, 76.0)
 		if event.index == joystick_touch:
 			_update_joystick(event.position)
 
