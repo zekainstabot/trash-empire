@@ -604,10 +604,12 @@ func _refresh_factory_build_zones() -> void:
 	_box("BuildSlotRight", Vector3(9.82, 0.065, z), Vector3(0.12, 0.07, 3.65), edge_color, false)
 	factory_build_label = Label3D.new()
 	factory_build_label.name = "FactoryBuildProgressLabel"
-	factory_build_label.position = Vector3(7.5, 0.45, z + 0.55)
-	factory_build_label.font_size = 30
-	factory_build_label.pixel_size = 0.01
-	factory_build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	# Lay the payment instructions directly on the build pad, like painted floor text.
+	factory_build_label.position = Vector3(7.5, 0.105, z)
+	factory_build_label.rotation_degrees.x = -90.0
+	factory_build_label.font_size = 23
+	factory_build_label.pixel_size = 0.008
+	factory_build_label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	factory_build_label.modulate = Color(1.0, 0.95, 0.68)
 	factory_build_zones_root.add_child(factory_build_label)
 	var new_nodes: Array[Node] = []
@@ -2231,10 +2233,12 @@ func _create_expansion_zone() -> void:
 	var label := Label3D.new()
 	label.name = "UnlockZoneLabel"
 	label.text = "CITY EXPANSION\nDISTRICT 02\nCOST: 25 ZC\nSTEP ON PAD TO BUILD"
-	label.position = Vector3(0, 2.2, 0)
-	label.font_size = 27
-	label.pixel_size = 0.006
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	# Floor lettering sits just above the pad surface and faces upward.
+	label.position = Vector3(0, 0.205, 0)
+	label.rotation_degrees.x = -90.0
+	label.font_size = 19
+	label.pixel_size = 0.0045
+	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	label.modulate = Color(0.82, 1.0, 0.88)
 	label.outline_size = 8
 	label.outline_modulate = Color(0.015, 0.045, 0.035, 0.98)
