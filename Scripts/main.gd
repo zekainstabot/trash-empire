@@ -352,6 +352,7 @@ func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -
 	_box("ResidentialWalls", center + Vector3(0, height * 0.5, 0), Vector3(width, height, depth), wall_color, true)
 	_box("ResidentialRoof", center + Vector3(0, height + 0.12, 0), Vector3(width + 0.25, 0.24, depth + 0.25), Color(0.20, 0.25, 0.26), true)
 	_box("ResidentialFrontDoor", center + Vector3(0, 0.82, depth * 0.5 + 0.035), Vector3(0.68, 1.55, 0.07), Color(0.30, 0.20, 0.14), false)
+	_add_wall_plaque("ResidentialDoorPlaque", "HOME %02d" % index, center + Vector3(0, 1.88, depth * 0.5 + 0.09), Vector2(0.92, 0.28), Color(0.12, 0.20, 0.20), Color(0.88, 0.72, 0.43), 20)
 	for window_x in [-width * 0.28, width * 0.28]:
 		for floor_y in ([1.05, 2.85] if apartment else [1.35]):
 			_box("ResidentialWindowFrame", center + Vector3(window_x, floor_y, depth * 0.5 + 0.045), Vector3(0.78, 0.82, 0.07), Color(0.15, 0.22, 0.24), false)
@@ -450,7 +451,7 @@ func _build_apartment_block() -> void:
 	_box("ApartmentDoorGlass", center + Vector3(0, 1.16, 2.755), Vector3(0.48, 0.55, 0.035), Color(0.30, 0.58, 0.65), false)
 	_box("ApartmentCanopy", center + Vector3(0, 1.92, 2.92), Vector3(1.55, 0.14, 0.75), Color(0.13, 0.38, 0.36), false)
 	_box("ApartmentNamePlate", center + Vector3(0, 2.18, 2.62), Vector3(1.65, 0.28, 0.08), Color(0.10, 0.22, 0.23), false)
-	_label_3d("RESIDENCE 01", center + Vector3(0, 2.18, 2.70), 0.18)
+	_add_wall_plaque("ApartmentNamePlateText", "RESIDENCE 01", center + Vector3(0, 2.18, 2.70), Vector2(1.65, 0.28), Color(0.10, 0.22, 0.23), Color(0.92, 0.84, 0.65), 22)
 	# Rooftop utility room, water tank and air-conditioning units.
 	_box("ApartmentRoofUtility", center + Vector3(1.35, 5.55, -1.45), Vector3(1.35, 0.75, 1.25), Color(0.42, 0.46, 0.44), false)
 	_cylinder("ApartmentWaterTank", center + Vector3(-1.25, 5.62, -1.55), 0.48, 0.95, Color(0.42, 0.53, 0.55), false)
@@ -3263,6 +3264,32 @@ func _make_tree(pos: Vector3) -> void:
 	crown.position = pos + Vector3(0, 2.35, 0)
 	crown.material_override = _mat(Color(0.18, 0.36, 0.23))
 	add_child(crown)
+
+func _add_wall_plaque(node_name: String, value: String, pos: Vector3, dimensions: Vector2, plate_color: Color, text_color: Color, font_px: int) -> void:
+	# Physical plaque sits flush on the facade; lettering is fixed to the wall,
+	# not billboarded toward the camera like floating world-space UI.
+	var plate := MeshInstance3D.new()
+	plate.name = node_name
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(dimensions.x, dimensions.y, 0.055)
+	plate.mesh = mesh
+	plate.position = pos
+	plate.material_override = _mat(plate_color)
+	add_child(plate)
+	var label := Label3D.new()
+	label.name = node_name + "Text"
+	label.text = value
+	label.position = pos + Vector3(0, 0, 0.031)
+	label.font_size = font_px
+	label.pixel_size = 0.0045
+	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	label.modulate = text_color
+	label.outline_size = 4
+	label.outline_modulate = Color(0.025, 0.045, 0.045, 0.95)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(label)
+
 
 func _label_3d(value: String, pos: Vector3, font_size: float) -> void:
 	var label := Label3D.new()
