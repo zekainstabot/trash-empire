@@ -22,6 +22,7 @@ var respawn_timer := 0.0
 var auto_pickup_level := 0
 var bulk_pickup_level := 0
 var luck_upgrade_level := 1
+var rare_drop_upgrade_level := 0
 var magnet_power_level := 1
 var drone_level := 0
 var drone_timer := 0.0
@@ -869,6 +870,7 @@ func _build_trash() -> void:
 	for i in range(24):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
+		_apply_rare_drop(item, rng)
 		item.position = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
 		add_child(item)
 		trash_nodes.append(item)
@@ -1112,6 +1114,7 @@ func _start_new_world() -> void:
 	auto_pickup_level = 0
 	bulk_pickup_level = 0
 	luck_upgrade_level = 1
+	rare_drop_upgrade_level = 0
 	magnet_power_level = 1
 	drone_level = 0
 	dispatch_upgrade_level = 0
@@ -1199,13 +1202,13 @@ func _close_main_menu() -> void:
 func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power"]},
-		{"title":"RECYCLING & ECONOMY","branches":["technology","value","supply","luck","respawn"]},
+		{"title":"RECYCLING & ECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
 		{"title":"AUTOMATION & FLEET","branches":["drones","city_truck","dispatch","fleet","truck_capacity","packaging"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
-		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","magnet_power":"MAGNET POWER",
+		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER",
 		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
@@ -1271,6 +1274,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"auto": return Color(0.30, 0.72, 0.38)
 		"bulk_pickup": return Color(0.18, 0.72, 0.58)
 		"luck": return Color(0.92, 0.72, 0.20)
+		"rare_drops": return Color(0.92, 0.78, 0.30)
 		"magnet_power": return Color(0.20, 0.78, 0.88)
 		"drones": return Color(0.65, 0.78, 0.30)
 		"city_truck": return Color(0.95, 0.72, 0.18)
@@ -1293,6 +1297,7 @@ func _skill_icon(branch: String) -> String:
 		"auto": return "🧲"
 		"bulk_pickup": return "✋"
 		"luck": return "🍀"
+		"rare_drops": return "🥇"
 		"magnet_power": return "🧲"
 		"drones": return "🚁"
 		"city_truck": return "🚛"
@@ -1353,6 +1358,7 @@ func _skill_level(branch: String) -> int:
 		"auto": return auto_pickup_level
 		"bulk_pickup": return bulk_pickup_level
 		"luck": return luck_upgrade_level - 1
+		"rare_drops": return rare_drop_upgrade_level
 		"magnet_power": return magnet_power_level - 1
 		"drones": return drone_level
 		"city_truck": return city_truck_upgrade_level
@@ -1375,6 +1381,7 @@ func _skill_branch_unlocked(branch: String) -> bool:
 		"magnet_power": return auto_pickup_level >= 3
 		"bulk_pickup": return equipment_upgrade_level >= 4
 		"drones": return luck_upgrade_level >= 2
+		"rare_drops": return luck_upgrade_level >= 2
 		"city_truck": return spawn_upgrade_level >= 4
 		"dispatch", "fleet": return factory_stage >= 5 and drone_level >= 3
 		"truck_capacity": return factory_stage >= 5 and fleet_upgrade_level >= 3
@@ -1400,6 +1407,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"auto": _upgrade_auto_pickup()
 		"bulk_pickup": _upgrade_bulk_pickup()
 		"luck": _upgrade_luck()
+		"rare_drops": _upgrade_rare_drops()
 		"magnet_power": _upgrade_magnet_power()
 		"drones": _upgrade_drones()
 		"city_truck": _upgrade_city_truck_frequency()
@@ -1409,7 +1417,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"packaging": _upgrade_packaging()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"respawn":12.0,"bulk_pickup":18.0}
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":12.0,"bulk_pickup":18.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -1503,6 +1511,11 @@ func _collect_nearby() -> void:
 					nearest = item
 		if nearest == null:
 			break
+		if nearest.has_meta("rare_type"):
+			var rare_type := String(nearest.get_meta("rare_type"))
+			var bonus := 8.0 if rare_type == "gold" else 2.0
+			money += bonus
+			_set_message("%s rare scrap found! Bonus +$%.2f" % [rare_type.to_upper(), bonus])
 		nearest.queue_free()
 		trash_nodes.erase(nearest)
 		carried += 1
@@ -1731,6 +1744,22 @@ func _upgrade_technology() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Recycling value increased!")
+
+func _upgrade_rare_drops() -> void:
+	var cost := _upgrade_cost(18.0, rare_drop_upgrade_level + 1)
+	if money < cost:
+		_set_message("Not enough cash for the Silver & Gold Finds upgrade.")
+		return
+	money -= cost
+	rare_drop_upgrade_level = mini(rare_drop_upgrade_level + 1, 3)
+	_refresh_upgrade_prices()
+	_update_ui()
+	_save_game()
+	var chances := _rare_drop_chances()
+	_set_message("Rare finds upgraded! Silver %.1f%% • Gold %.1f%%" % [chances.x * 100.0, chances.y * 100.0])
+
+func _rare_drop_chances() -> Vector2:
+	return Vector2(0.0, 0.0) if rare_drop_upgrade_level <= 0 else Vector2(0.025 * rare_drop_upgrade_level, 0.005 * rare_drop_upgrade_level)
 
 func _upgrade_luck() -> void:
 	var cost := _upgrade_cost(6.0, luck_upgrade_level)
@@ -2068,6 +2097,7 @@ func _save_game() -> void:
 	save.set_value("progress", "auto_pickup_level", auto_pickup_level)
 	save.set_value("progress", "bulk_pickup_level", bulk_pickup_level)
 	save.set_value("progress", "luck_level", luck_upgrade_level)
+	save.set_value("progress", "rare_drop_level", rare_drop_upgrade_level)
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
@@ -2100,6 +2130,7 @@ func _load_game() -> void:
 	auto_pickup_level = int(save.get_value("progress", "auto_pickup_level", 0))
 	bulk_pickup_level = clampi(int(save.get_value("progress", "bulk_pickup_level", 0)), 0, 3)
 	luck_upgrade_level = int(save.get_value("progress", "luck_level", 1))
+	rare_drop_upgrade_level = clampi(int(save.get_value("progress", "rare_drop_level", 0)), 0, 3)
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
@@ -2197,6 +2228,14 @@ func _city_truck_interval() -> float:
 
 func _city_truck_route_seconds() -> float:
 	return city_truck_start.distance_to(city_truck_dump) * 2.0 / 5.0 + 2.5
+
+func _apply_rare_drop(item: Node3D, rng: RandomNumberGenerator) -> void:
+	var chances := _rare_drop_chances()
+	var roll := rng.randf()
+	if chances.y > 0.0 and roll < chances.y:
+		item.set_meta("rare_type", "gold")
+	elif chances.x > 0.0 and roll < chances.x + chances.y:
+		item.set_meta("rare_type", "silver")
 
 func _spawn_city_trash(amount: int) -> int:
 	var spawned := 0
