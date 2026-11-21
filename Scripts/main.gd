@@ -2411,7 +2411,8 @@ func _animate_conveyor(delta: float) -> void:
 	conveyor_time += delta
 	for roller in conveyor_rollers:
 		if is_instance_valid(roller):
-			roller.rotate_x(delta * 5.0)
+			# Spin around each roller's own axle, not sideways like a wheel wobbling.
+			roller.rotate_y(delta * 5.0)
 	for i in range(conveyor_slats.size()):
 		var slat := conveyor_slats[i]
 		if is_instance_valid(slat):
