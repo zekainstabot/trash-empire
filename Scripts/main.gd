@@ -618,7 +618,9 @@ func _build_factory_link(start_z: float, end_z: float) -> void:
 		_box("FactoryConveyorRail", Vector3(x, 1.18, middle), Vector3(0.10, 0.40, length), Color(0.48, 0.54, 0.52), false)
 	for i in range(maxi(2, int(length / 0.65))):
 		var z := start_z + (end_z - start_z) * float(i) / float(maxi(1, int(length / 0.65) - 1))
-		var roller := _cylinder("FactoryConveyorRoller", Vector3(7.5, 0.83, z), 0.095, 1.52, Color(0.55, 0.60, 0.58), true)
+		var roller := _cylinder("FactoryConveyorRoller", Vector3(7.5, 0.83, z), 0.095, 1.42, Color(0.55, 0.60, 0.58), true)
+		# Factory belt runs along Z, so each roller axle must span the X width.
+		roller.rotation_degrees.z = 90.0
 		conveyor_rollers.append(roller)
 
 func _create_world_action_button(node_name: String, title: String, world_position: Vector3, dimensions: Vector3, action: Callable, color: Color) -> Node3D:
@@ -2642,8 +2644,8 @@ func _animate_conveyor(delta: float) -> void:
 	conveyor_time += delta
 	for roller in conveyor_rollers:
 		if is_instance_valid(roller):
-			# Spin around each roller's own axle, not sideways like a wheel wobbling.
-			roller.rotate_y(delta * 5.0)
+			# The cylinder's local Y axis is its axle after its placement rotation.
+			roller.rotate_object_local(Vector3.UP, delta * 5.0)
 	for i in range(conveyor_slats.size()):
 		var slat := conveyor_slats[i]
 		if is_instance_valid(slat):
