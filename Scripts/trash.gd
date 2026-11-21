@@ -374,7 +374,7 @@ func _make_toy_blocks(rng: RandomNumberGenerator) -> void:
 		add_child(block)
 
 func _make_glass_jar(rng: RandomNumberGenerator) -> void:
-	var jar := _cylinder_piece(0.14, 0.16, 0.34, Vector3(0, 0.18, 0), Color(0.48, 0.72, 0.65, 0.78), true)
+	var jar := _cylinder_piece(0.14, 0.16, 0.34, Vector3(0, 0.18, 0), Color(0.48, 0.72, 0.65))
 	jar.rotation_degrees.z = rng.randf_range(-12.0, 12.0)
 	add_child(jar)
 	add_child(_cylinder_piece(0.075, 0.075, 0.08, Vector3(0, 0.37, 0), Color(0.72, 0.76, 0.72)))
