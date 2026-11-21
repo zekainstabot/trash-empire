@@ -51,6 +51,9 @@ var message_label: Label
 var joystick_pad: Panel
 var joystick_knob: Panel
 var joystick_touch := -1
+var gameplay_touch_points: Dictionary = {}
+var gameplay_pinch_distance := 0.0
+var gameplay_pinch_fov := 58.0
 var joystick_max_radius := 58.0
 var robot_visual: Node3D
 var robot_left_arm: Node3D
@@ -1445,13 +1448,29 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			if is_instance_valid(joystick_pad) and joystick_touch == -1 and joystick_pad.get_global_rect().has_point(event.position):
+			gameplay_touch_points[event.index] = event.position
+			if gameplay_touch_points.size() >= 2:
+				var points: Array = gameplay_touch_points.values()
+				gameplay_pinch_distance = points[0].distance_to(points[1])
+				gameplay_pinch_fov = camera.fov if is_instance_valid(camera) else 58.0
+			elif is_instance_valid(joystick_pad) and joystick_touch == -1 and joystick_pad.get_global_rect().has_point(event.position):
 				joystick_touch = event.index
 				_update_joystick(event.position)
-		elif event.index == joystick_touch:
-			_reset_joystick()
-	elif event is InputEventScreenDrag and event.index == joystick_touch:
-		_update_joystick(event.position)
+		else:
+			gameplay_touch_points.erase(event.index)
+			if event.index == joystick_touch:
+				_reset_joystick()
+			if gameplay_touch_points.size() < 2:
+				gameplay_pinch_distance = 0.0
+	elif event is InputEventScreenDrag:
+		if gameplay_touch_points.has(event.index):
+			gameplay_touch_points[event.index] = event.position
+			if gameplay_touch_points.size() >= 2 and gameplay_pinch_distance > 0.0 and is_instance_valid(camera):
+				var points: Array = gameplay_touch_points.values()
+				var distance := points[0].distance_to(points[1])
+				camera.fov = clampf(gameplay_pinch_fov * (gameplay_pinch_distance / maxf(distance,1.0)), 38.0, 76.0)
+		if event.index == joystick_touch:
+			_update_joystick(event.position)
 
 
 func _update_joystick(touch_position: Vector2) -> void:
