@@ -1181,6 +1181,7 @@ func _start_new_world() -> void:
 	recycling_bonus = 1.0
 	collection_range = 2.0
 	yard_stage = 1
+	_reset_city_truck_fleet()
 	factory_stage = 1
 	factory_built_stage = 1
 	teddy_stock_values.clear()
@@ -2335,6 +2336,7 @@ func _process_city_truck(delta: float) -> void:
 		match phase:
 			0:
 				if timer >= _city_truck_interval():
+					truck.set_meta("load", _city_truck_load())
 					truck.set_meta("phase", 1)
 					truck.set_meta("timer", 0.0)
 					phase = 1
