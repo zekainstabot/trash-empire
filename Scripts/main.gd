@@ -2041,7 +2041,7 @@ func _build_helper_drones() -> void:
 	for i in range(3):
 		var drone := Node3D.new()
 		drone.name = "HelperDrone%d" % (i + 1)
-		player.add_child(drone)
+		add_child(drone)
 		_add_robot_box(drone, "DroneBody", Vector3.ZERO, Vector3(0.34, 0.20, 0.30), Color(0.70, 0.78, 0.78))
 		_add_robot_box(drone, "DroneFront", Vector3(0, -0.015, -0.16), Vector3(0.20, 0.10, 0.035), Color(0.12, 0.82, 0.68))
 		_add_robot_sphere(drone, "DroneEye", Vector3(0, 0.02, -0.19), 0.045, Color(0.35, 1.0, 0.78))
@@ -2049,6 +2049,8 @@ func _build_helper_drones() -> void:
 			_add_robot_box(drone, "DroneRotorArm", Vector3(side * 0.27, 0.04, 0), Vector3(0.25, 0.035, 0.06), Color(0.25, 0.32, 0.34))
 			_add_robot_sphere(drone, "DroneRotor", Vector3(side * 0.40, 0.10, 0), 0.10, Color(0.16, 0.22, 0.24))
 		drone.visible = i < drone_level
+		drone.global_position = player.global_position + Vector3(0, 2.3, 0) if is_instance_valid(player) else Vector3.ZERO
+		drone.set_meta("target", null)
 		helper_drones.append(drone)
 
 func _refresh_helper_drone_visibility() -> void:
@@ -2060,40 +2062,46 @@ func _process_helper_drones(delta: float) -> void:
 	if drone_level <= 0 or not is_instance_valid(player):
 		return
 	drone_timer += delta
-	for i in range(helper_drones.size()):
+	var interval := maxf(0.75, 3.2 - float(drone_level - 1) * 0.65)
+	var drone_speed := 5.0 + float(drone_level - 1) * 1.5
+	for i in range(mini(drone_level, helper_drones.size())):
 		var drone := helper_drones[i]
 		if not is_instance_valid(drone) or not drone.visible:
 			continue
-		var angle := robot_anim_time * 1.25 + float(i) * TAU / float(maxi(drone_level, 1))
-		drone.position = Vector3(cos(angle) * 1.35, 2.25 + sin(robot_anim_time * 3.0 + float(i)) * 0.10, sin(angle) * 1.15)
-		drone.rotation.y = -angle
-	var interval := maxf(0.75, 3.2 - float(drone_level - 1) * 0.65)
-	if drone_timer < interval or carried >= capacity:
-		return
-	drone_timer = 0.0
-	var collected := 0
-	for i in range(drone_level):
-		if carried >= capacity:
-			break
-		var nearest: Node3D
-		var best_distance := 5.0 + float(drone_level - 1) * 2.0
-		for item in trash_nodes:
-			if not is_instance_valid(item) or carried + (2 if item.has_meta("bulky") else 1) > capacity:
-				continue
-			var distance := player.global_position.distance_to(item.global_position)
-			if distance < best_distance:
-				best_distance = distance
-				nearest = item
-		if nearest == null:
-			break
-		if not _pickup_trash_item(nearest):
-			break
-		collected += 1
-	if collected > 0:
-		_update_ui()
-		_save_game()
-		_set_message("HELPER DRONES  +%d" % collected)
-
+		var target := drone.get_meta("target") as Node3D
+		if not is_instance_valid(target):
+			target = null
+			var best_distance := 18.0 + float(drone_level - 1) * 6.0
+			for item in trash_nodes:
+				if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
+					continue
+				var weight := 2 if item.has_meta("bulky") else 1
+				if carried + weight > capacity:
+					continue
+				var distance := drone.global_position.distance_to(item.global_position)
+				if distance < best_distance:
+					best_distance = distance
+					target = item
+			if target != null:
+				target.set_meta("drone_reserved", i)
+				drone.set_meta("target", target)
+		if target == null:
+			var idle_pos := player.global_position + Vector3(cos(robot_anim_time + float(i)) * 3.0, 2.3, sin(robot_anim_time + float(i)) * 3.0)
+			drone.global_position = drone.global_position.move_toward(idle_pos, drone_speed * delta)
+			continue
+		var destination := target.global_position + Vector3(0, 0.55, 0)
+		drone.global_position = drone.global_position.move_toward(destination, drone_speed * delta)
+		drone.look_at(destination, Vector3.UP)
+		if drone.global_position.distance_to(destination) < 0.85 and drone_timer >= interval:
+			drone_timer = 0.0
+			if _pickup_trash_item(target):
+				drone.set_meta("target", null)
+				_update_ui()
+				_save_game()
+				_set_message("DRONE CLEANUP  +1")
+			else:
+				target.set_meta("drone_reserved", -1)
+				drone.set_meta("target", null)
 func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
