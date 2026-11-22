@@ -2927,17 +2927,25 @@ func _spawn_final_cleanup_trash() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	_build_final_landfill_debris(remaining_units, rng)
+	var pickup_centers := [
+		Vector2(143.0, -15.0), Vector2(153.0, -9.0), Vector2(164.0, -16.0),
+		Vector2(176.0, -10.0), Vector2(187.0, -15.0), Vector2(147.0, 5.0),
+		Vector2(158.0, 13.0), Vector2(171.0, 6.0), Vector2(183.0, 13.0)
+	]
 	for i in range(remaining_objects):
-		var column := i % 30
-		var row := int(i / 30)
-		var x := 141.8 + float(column) * 1.48 + rng.randf_range(-0.22, 0.22)
-		var z := -14.0 + float(row) * 1.48 + rng.randf_range(-0.22, 0.22)
-		var mound_radius := sqrt(pow((x - 163.5) / 22.5, 2.0) + pow(z / 15.5, 2.0))
-		var mound_height := maxf(0.0, 1.0 - mound_radius) * 0.62
+		var x := 137.0 + rng.randf() * 53.0
+		var z := -19.0 + rng.randf() * 38.0
+		if rng.randf() < 0.68:
+			var center: Vector2 = pickup_centers[rng.randi_range(0, pickup_centers.size() - 1)]
+			var spread := rng.randf_range(2.0, 7.0)
+			x = center.x + (rng.randf() + rng.randf() - 1.0) * spread
+			z = center.y + (rng.randf() + rng.randf() - 1.0) * spread
+		x = clampf(x, 136.5, 190.5)
+		z = clampf(z, -19.5, 19.5)
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
 		item.set_meta("final_cleanup_units", mini(100, remaining_units - i * 100))
-		item.position = Vector3(x, 0.34 + mound_height + rng.randf_range(0.0, 0.08), z)
+		item.position = Vector3(x, 0.34 + rng.randf_range(0.0, 0.42), z)
 		add_child(item)
 		trash_nodes.append(item)
 
@@ -2993,14 +3001,27 @@ func _build_final_landfill_debris(remaining_units: int, rng: RandomNumberGenerat
 		visual.material_override = material
 		visual.custom_aabb = AABB(Vector3(135.0, -0.5, -21.0), Vector3(57.0, 9.0, 42.0))
 		add_child(visual)
+		var debris_centers := [
+			Vector2(143.0, -15.0), Vector2(153.0, -9.0), Vector2(164.0, -16.0),
+			Vector2(176.0, -10.0), Vector2(187.0, -15.0), Vector2(147.0, 5.0),
+			Vector2(158.0, 13.0), Vector2(171.0, 6.0), Vector2(183.0, 13.0)
+		]
 		for instance_index in range(count):
-			var angle := rng.randf_range(0.0, TAU)
-			var radius := sqrt(rng.randf()) * 22.0
-			var x := 163.5 + cos(angle) * radius
-			var z := sin(angle) * radius * 0.68
-			var normalized_radius := radius / 22.0
-			var mound_height := pow(maxf(0.0, 1.0 - normalized_radius), 1.35) * 2.8
-			var y := 0.12 + mound_height + rng.randf_range(0.0, 0.75)
+			var x := 136.0 + rng.randf() * 55.0
+			var z := -20.0 + rng.randf() * 40.0
+			var clustered := rng.randf() < 0.72
+			if clustered:
+				var center: Vector2 = debris_centers[rng.randi_range(0, debris_centers.size() - 1)]
+				var spread := rng.randf_range(2.5, 8.0)
+				x = center.x + (rng.randf() + rng.randf() - 1.0) * spread
+				z = center.y + (rng.randf() + rng.randf() - 1.0) * spread
+			x = clampf(x, 135.5, 191.5)
+			z = clampf(z, -20.5, 20.5)
+			# Smaller scattered litter sits low; clustered patches form uneven heaps.
+			var mound_height := 0.0
+			if clustered:
+				mound_height = rng.randf_range(0.08, 1.05)
+			var y := 0.10 + mound_height + rng.randf_range(0.0, 0.48)
 			var random_scale := Vector3(
 				rng.randf_range(0.72, 1.28),
 				rng.randf_range(0.72, 1.25),
