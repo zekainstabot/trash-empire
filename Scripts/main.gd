@@ -2055,6 +2055,8 @@ func _build_helper_drones() -> void:
 		drone.global_position = player.global_position + Vector3(0, 2.3, 0) if is_instance_valid(player) else Vector3.ZERO
 		drone.set_meta("target", null)
 		drone.set_meta("cargo_slots", 0)
+		drone.set_meta("cargo_items", [])
+		drone.set_meta("lifting_item", null)
 		drone.set_meta("cargo_bulky", 0)
 		drone.set_meta("cargo_capacity", 5)
 		drone.set_meta("returning", false)
@@ -2081,6 +2083,20 @@ func _process_helper_drones(delta: float) -> void:
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
 			if drone.global_position.distance_to(return_pos) <= 2.5:
 				drone.set_meta("deposited", true)
+			continue
+		var lifting_item := drone.get_meta("lifting_item") as Node3D
+		if is_instance_valid(lifting_item):
+			var grip_pos := drone.global_position + Vector3(0, -0.30, 0)
+			lifting_item.global_position = lifting_item.global_position.move_toward(grip_pos, 3.8 * delta)
+			if lifting_item.global_position.distance_to(grip_pos) <= 0.12:
+				var cargo_items: Array = drone.get_meta("cargo_items", [])
+				var keep_transform := lifting_item.global_transform
+				lifting_item.reparent(drone)
+				lifting_item.global_transform = keep_transform
+				lifting_item.position = Vector3(0, -0.30, 0)
+				cargo_items.append(lifting_item)
+				drone.set_meta("cargo_items", cargo_items)
+				drone.set_meta("lifting_item", null)
 			continue
 		if int(drone.get_meta("cargo_slots", 0)) >= int(drone.get_meta("cargo_capacity", 5)):
 			drone.set_meta("returning", true)
@@ -2116,10 +2132,10 @@ func _process_helper_drones(delta: float) -> void:
 			var idle_pos := player.global_position + Vector3(cos(robot_anim_time + float(i)) * 3.0, 2.3, sin(robot_anim_time + float(i)) * 3.0)
 			drone.global_position = drone.global_position.move_toward(idle_pos, drone_speed * delta)
 			continue
-		var destination := target.global_position + Vector3(0, 0.55, 0)
+		var destination := target.global_position + Vector3(0, 0.20, 0)
 		drone.global_position = drone.global_position.move_toward(destination, drone_speed * delta)
-		drone.look_at(destination, Vector3.UP)
-		if drone.global_position.distance_to(destination) < 0.85 and drone_timer >= interval:
+		drone.look_at(target.global_position, Vector3.UP)
+		if drone.global_position.distance_to(destination) < 0.42 and drone_timer >= interval:
 			drone_timer = 0.0
 			var weight := 2 if target.has_meta("bulky") else 1
 			var slots := int(drone.get_meta("cargo_slots", 0))
@@ -2132,8 +2148,7 @@ func _process_helper_drones(delta: float) -> void:
 				if weight == 2:
 					drone.set_meta("cargo_bulky", int(drone.get_meta("cargo_bulky", 0)) + 1)
 				drone.set_meta("cargo_slots", slots + weight)
-				target.queue_free()
-				trash_nodes.erase(target)
+				drone.set_meta("lifting_item", target)
 				drone.set_meta("target", null)
 				if slots + weight >= drone_capacity:
 					drone.set_meta("returning", true)
@@ -2158,6 +2173,14 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		return
 	drone.set_meta("deposit_timer", 0.0)
 	var bulky := int(drone.get_meta("cargo_bulky", 0)) > 0
+	var cargo_items: Array = drone.get_meta("cargo_items", [])
+	if not cargo_items.is_empty():
+		var cargo_item = cargo_items.pop_front()
+		if is_instance_valid(cargo_item):
+			if cargo_item.get_parent() == drone:
+				drone.remove_child(cargo_item)
+			cargo_item.queue_free()
+		drone.set_meta("cargo_items", cargo_items)
 	if bulky:
 		drone.set_meta("cargo_bulky", int(drone.get_meta("cargo_bulky", 0)) - 1)
 		drone.set_meta("cargo_slots", slots - 2)
