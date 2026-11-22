@@ -52,11 +52,11 @@ var final_zone_cleaned := 0
 var final_zone_label: Label
 const FINAL_ZONE_TARGET := 60000
 const FINAL_LANDFILL_CLUSTERS := [
-	Vector2(142.0, -20.0), Vector2(151.0, -10.0), Vector2(160.0, -22.0),
-	Vector2(171.0, -14.0), Vector2(184.0, -21.0), Vector2(195.0, -9.0),
-	Vector2(145.0, 3.0), Vector2(157.0, 8.0), Vector2(169.0, 3.0),
-	Vector2(182.0, 9.0), Vector2(197.0, 5.0), Vector2(150.0, 22.0),
-	Vector2(165.0, 22.0), Vector2(181.0, 23.0), Vector2(195.0, 21.0)
+	Vector2(-6.0, -22.0), Vector2(8.0, 18.0), Vector2(22.0, -14.0),
+	Vector2(38.0, 8.0), Vector2(54.0, -23.0), Vector2(70.0, 18.0),
+	Vector2(86.0, -8.0), Vector2(102.0, 23.0), Vector2(119.0, -21.0),
+	Vector2(135.0, 10.0), Vector2(151.0, -12.0), Vector2(166.0, 22.0),
+	Vector2(178.0, -20.0), Vector2(190.0, 7.0), Vector2(199.0, 24.0)
 ]
 var money_label: Label
 var bag_label: Label
@@ -2944,13 +2944,14 @@ func _spawn_final_cleanup_trash() -> void:
 
 
 func _random_final_landfill_position(rng: RandomNumberGenerator) -> Vector3:
+	# Spread endgame litter across every unlocked district, not only the far landfill.
 	var point := Vector2.ZERO
 	if rng.randf() < 0.78:
 		var center: Vector2 = FINAL_LANDFILL_CLUSTERS[rng.randi_range(0, FINAL_LANDFILL_CLUSTERS.size() - 1)]
-		point = center + Vector2(rng.randfn(0.0, 3.7), rng.randfn(0.0, 3.1))
+		point = center + Vector2(rng.randfn(0.0, 4.2), rng.randfn(0.0, 3.6))
 	else:
-		point = Vector2(rng.randf_range(137.0, 203.0), rng.randf_range(-29.0, 29.0))
-	point.x = clampf(point.x, 137.0, 203.0)
+		point = Vector2(rng.randf_range(-11.0, 203.0), rng.randf_range(-29.0, 29.0))
+	point.x = clampf(point.x, -11.5, 203.0)
 	point.y = clampf(point.y, -29.0, 29.0)
 	var nearest_cluster_distance := 1000.0
 	for center in FINAL_LANDFILL_CLUSTERS:
