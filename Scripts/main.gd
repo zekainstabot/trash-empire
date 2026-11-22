@@ -2877,8 +2877,10 @@ func _create_city_truck(index: int) -> Node3D:
 			fender_mesh.rings = 12
 			fender_mesh.ring_segments = 20
 			fender.mesh = fender_mesh
-			fender.position = Vector3(side * 1.01, 0.43, wheel_z)
-			fender.rotation_degrees.y = 90.0
+			fender.position = Vector3(side * 1.045, 0.43, wheel_z)
+			# TorusMesh is oriented around local Y by default. Rotate it onto
+			# the wheel plane (normal along X), not around Y where it lies flat.
+			fender.rotation_degrees.z = 90.0
 			fender.material_override = _mat(Color(0.22, 0.27, 0.27))
 			truck.add_child(fender)
 	for x in [-0.68, 0.68]:
