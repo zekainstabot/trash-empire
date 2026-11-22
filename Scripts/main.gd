@@ -49,6 +49,8 @@ var movement_upgrade_button: Button
 var unload_upgrade_button: Button
 var trash_nodes: Array[Node3D] = []
 var final_zone_cleaned := 0
+var total_trash_collected := 0
+var replenishment_threshold := 1000
 var final_zone_label: Label
 const FINAL_ZONE_TARGET := 60000
 const FINAL_LANDFILL_CLUSTERS := [
@@ -1908,13 +1910,30 @@ func _reset_joystick() -> void:
 	joystick_knob.position = (joystick_pad.size - joystick_knob.size) * 0.5
 
 func _register_final_cleanup_pickup(item: Node3D) -> void:
-	var cleanup_units := int(item.get_meta("final_cleanup_units", 0))
-	if cleanup_units <= 0:
+	if not is_instance_valid(item) or get_tree().get_meta("cleanup_game_completed", false):
 		return
-	final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + cleanup_units)
+	# Every physical item picked up anywhere in the city counts as one.
+	# Bulky items use two backpack slots, but still count as one trash item.
+	total_trash_collected += 1
+	final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + 1)
 	_update_final_zone_label()
 	if final_zone_cleaned >= FINAL_ZONE_TARGET:
-		_set_message("ULTIMATE GOAL COMPLETE! The entire 60,000-unit landfill is clean!")
+		get_tree().set_meta("cleanup_game_completed", true)
+		_set_message("GAME COMPLETE! You collected all 60,000 pieces of trash!")
+		return
+	if total_trash_collected % replenishment_threshold == 0:
+		_spawn_city_replenishment(replenishment_threshold)
+
+func _spawn_city_replenishment(amount: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	# Add the replacements in spread-out city locations, not all in one pile.
+	for i in range(amount):
+		var item := Node3D.new()
+		item.set_script(TRASH_SCRIPT)
+		item.position = Vector3(rng.randf_range(-13.0, 110.0), 0.34, rng.randf_range(-29.0, 29.0))
+		add_child(item)
+		trash_nodes.append(item)
 
 
 func _pickup_trash_item(item: Node3D) -> bool:
@@ -2937,7 +2956,7 @@ func _spawn_final_cleanup_trash() -> void:
 	for i in range(remaining_objects):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.set_meta("final_cleanup_units", mini(100, remaining_units - i * 100))
+		item.set_meta("final_cleanup_units", 1)
 		item.position = _random_final_landfill_position(rng)
 		add_child(item)
 		trash_nodes.append(item)
