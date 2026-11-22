@@ -2072,7 +2072,7 @@ func _process_helper_drones(delta: float) -> void:
 			var return_pos := SELL_POINT + Vector3(0, 1.5, 0)
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
 			if drone.global_position.distance_to(return_pos) <= 2.5:
-				drone.set_meta("deposited", false)
+				drone.set_meta("deposited", true)
 			continue
 		var target := drone.get_meta("target") as Node3D
 		if not is_instance_valid(target):
@@ -2110,8 +2110,6 @@ func _process_helper_drones(delta: float) -> void:
 				target.set_meta("drone_reserved", -1)
 				drone.set_meta("target", null)
 func _drone_deposit_cycle(drone: Node3D) -> void:
-	drone.set_meta("returning", false)
-	drone.set_meta("target", null)
 	drone.set_meta("deposited", true)
 
 func _process_auto_sell(delta: float) -> void:
