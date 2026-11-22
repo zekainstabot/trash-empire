@@ -981,8 +981,7 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 	var area := Area3D.new()
 	area.name = "WallRespawnButtonArea"
 	area.position = Vector3(-0.58, -0.12, 0.0)
-	area.collision_layer = 0
-	area.collision_mask = 0
+	area.collision_layer = 1
 	area.input_ray_pickable = true
 	var collision := CollisionShape3D.new()
 	var hit_shape := BoxShape3D.new()
