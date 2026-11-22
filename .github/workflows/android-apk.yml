@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Zeka City Cleanup Empire Android APK
 
 on:
   workflow_dispatch:
@@ -116,7 +116,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Trash-Empire-Android-APK
+          name: Zeka-City-Cleanup-Empire-Android-APK
           path: build/TrashEmpire.apk
           if-no-files-found: error
           retention-days: 30
@@ -125,7 +125,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-build-${{ github.run_number }}
-          name: Trash Empire Android Build ${{ github.run_number }}
+          name: Zeka City Cleanup Empire Android Build ${{ github.run_number }}
           make_latest: true
           files: build/TrashEmpire.apk
           fail_on_unmatched_files: true
