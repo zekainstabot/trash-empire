@@ -470,7 +470,7 @@ func _make_old_tire(rng: RandomNumberGenerator) -> void:
 	for i in range(20):
 		var a := TAU * float(i) / 20.0
 		for side in [-1.0, 1.0]:
-			var lug := _flat_box(Vector3(0.105, 0.085, 0.055), Vector3(cos(a) * 0.425, 0.43 + sin(a) * 0.425, side * 0.105), Color(0.035, 0.043, 0.045))
+			var lug := _flat_box(Vector3(0.105, 0.085, 0.055), Vector3(cos(a) * 0.425, 0.43 + side * 0.105, sin(a) * 0.425), Color(0.035, 0.043, 0.045))
 			lug.rotation.y = -a
 			add_child(lug)
 	for i in range(8):
