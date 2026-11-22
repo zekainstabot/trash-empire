@@ -104,7 +104,8 @@ func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
 	var mesh: Mesh
 	var color := Color(0.42, 0.43, 0.39)
 	var lying := false
-	match rng.randi_range(0, 11):
+	var kind := rng.randi_range(0, 11)
+	match kind:
 		0: # Crushed plastic drink bottle
 			var bottle := CylinderMesh.new()
 			bottle.top_radius = 0.075
@@ -191,7 +192,17 @@ func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
 			mesh = board
 			color = Color(0.08, 0.29, 0.22)
 	item.mesh = mesh
-	item.material_override = _material(color)
+	var surface := _material(color)
+	surface.roughness = 0.82
+	surface.metallic = 0.02
+	if kind == 1 or kind == 9:
+		surface.roughness = 0.56
+		surface.metallic = 0.48
+	elif kind == 4:
+		surface.roughness = 0.96
+	elif kind == 6:
+		surface.roughness = 0.30
+	item.material_override = surface
 	item.position.y = 0.10 if lying else 0.17
 	if lying and item.rotation_degrees.x == 0.0:
 		item.rotation_degrees.z = rng.randf_range(78.0, 102.0) if mesh is CylinderMesh else rng.randf_range(-12.0, 12.0)
