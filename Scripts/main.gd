@@ -1933,7 +1933,7 @@ func _spawn_city_replenishment(amount: int) -> void:
 	for i in range(amount):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.position = Vector3(rng.randf_range(-13.0, 110.0), 0.34, rng.randf_range(-29.0, 29.0))
+		item.position = Vector3(rng.randf_range(-13.0, 110.0), 0.05, rng.randf_range(-29.0, 29.0))
 		add_child(item)
 		trash_nodes.append(item)
 
@@ -2941,7 +2941,7 @@ func _spawn_city_trash(amount: int) -> int:
 	for i in range(amount):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.position = Vector3(rng.randf_range(-7.7, -1.9), 0.34, rng.randf_range(-25.3, -19.7))
+		item.position = Vector3(rng.randf_range(-7.7, -1.9), 0.05, rng.randf_range(-25.3, -19.7))
 		add_child(item)
 		trash_nodes.append(item)
 		spawned += 1
@@ -3072,7 +3072,7 @@ func _spawn_district_two_trash(amount: int) -> void:
 		while attempts < 40:
 			var angle := rng.randf_range(0.0, TAU)
 			var radius := sqrt(rng.randf()) * 9.5
-			spawn_point = Vector3(32.0 + cos(angle) * radius, 0.34 + rng.randf_range(0.0, 0.12), sin(angle) * radius)
+			spawn_point = Vector3(32.0 + cos(angle) * radius, 0.05 + rng.randf_range(0.0, 0.02), sin(angle) * radius)
 			if _is_clear_trash_spawn(spawn_point):
 				break
 			attempts += 1
@@ -3097,7 +3097,7 @@ func _refill_first_district() -> void:
 	var attempts := 0
 	while spawned < amount and attempts < amount * 100:
 		attempts += 1
-		var point := Vector3(rng.randf_range(-11.5, max_city_x), 0.34, rng.randf_range(-31.0, 31.0))
+		var point := Vector3(rng.randf_range(-11.5, max_city_x), 0.05, rng.randf_range(-31.0, 31.0))
 		if not _is_clear_trash_spawn(point):
 			continue
 		var item := Node3D.new()
@@ -3140,10 +3140,10 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 		max_x = 43.5
 	elif yard_stage >= 3:
 		max_x = 107.5
-	var point := Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
+	var point := Vector3(rng.randf_range(-11.5, max_x), 0.05, rng.randf_range(-10.0, 11.5))
 	var attempts := 0
 	while not _is_clear_trash_spawn(point) and attempts < 60:
-		point = Vector3(rng.randf_range(-11.5, max_x), 0.34, rng.randf_range(-10.0, 11.5))
+		point = Vector3(rng.randf_range(-11.5, max_x), 0.05, rng.randf_range(-10.0, 11.5))
 		attempts += 1
 	return point
 
