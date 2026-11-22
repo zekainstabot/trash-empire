@@ -1286,10 +1286,10 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	accent.color = Color(0.22, 0.82, 0.57)
 	main_menu_panel.add_child(accent)
 	var title := Label.new()
-	title.text = "TRASH\nEMPIRE"
-	title.position = Vector2(screen.x * 0.12, screen.y * 0.17)
-	title.size = Vector2(screen.x * 0.82, screen.y * 0.24)
-	title.add_theme_font_size_override("font_size", int(screen.y * 0.065))
+	title.text = "ZEKA CITY:\nCLEANUP EMPIRE"
+	title.position = Vector2(screen.x * 0.12, screen.y * 0.14)
+	title.size = Vector2(screen.x * 0.84, screen.y * 0.30)
+	title.add_theme_font_size_override("font_size", int(screen.y * 0.052))
 	title.add_theme_color_override("font_color", Color(0.92, 0.98, 0.95))
 	title.add_theme_color_override("font_shadow_color", Color(0,0,0,0.5))
 	title.add_theme_constant_override("shadow_offset_x", 3)
@@ -1297,7 +1297,7 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	main_menu_panel.add_child(title)
 	var subtitle := Label.new()
 	subtitle.text = "BUILD YOUR RECYCLING BUSINESS"
-	subtitle.position = Vector2(screen.x * 0.12, screen.y * 0.40)
+	subtitle.position = Vector2(screen.x * 0.12, screen.y * 0.44)
 	subtitle.size = Vector2(screen.x * 0.8, 36)
 	subtitle.add_theme_font_size_override("font_size", 14)
 	subtitle.add_theme_color_override("font_color", Color(0.48, 0.83, 0.70))
@@ -1305,21 +1305,21 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	var button_width := screen.x * 0.76
 	var button_height := 66.0
 	var button_x := screen.x * 0.12
-	var play := _button("▶   PLAY", Vector2(button_x, screen.y * 0.47), Vector2(button_width, button_height), main_menu_panel)
+	var play := _button("▶   PLAY", Vector2(button_x, screen.y * 0.50), Vector2(button_width, button_height), main_menu_panel)
 	play.add_theme_font_size_override("font_size", 24)
 	play.add_theme_stylebox_override("normal", _button_style(Color(0.12, 0.62, 0.43)))
 	play.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.72, 0.51)))
 	play.pressed.connect(_close_main_menu)
 	main_menu_play_button = play
-	new_game_button = _button("NEW", Vector2(button_x, screen.y * 0.47 + 84), Vector2(button_width, 58), main_menu_panel)
+	new_game_button = _button("NEW", Vector2(button_x, screen.y * 0.50 + 84), Vector2(button_width, 58), main_menu_panel)
 	new_game_button.add_theme_stylebox_override("normal", _button_style(Color(0.18, 0.32, 0.30)))
 	new_game_button.pressed.connect(_confirm_new_game)
-	var exit_button := _button("EXIT GAME", Vector2(button_x, screen.y * 0.47 + 158), Vector2(button_width, 52), main_menu_panel)
+	var exit_button := _button("EXIT GAME", Vector2(button_x, screen.y * 0.50 + 158), Vector2(button_width, 52), main_menu_panel)
 	exit_button.add_theme_stylebox_override("normal", _button_style(Color(0.19, 0.25, 0.26)))
 	exit_button.pressed.connect(_confirm_exit_game)
 	var footer := Label.new()
 	footer.text = "RECYCLE • UPGRADE • EXPAND"
-	footer.position = Vector2(button_x, screen.y * 0.65)
+	footer.position = Vector2(button_x, screen.y * 0.68)
 	footer.size = Vector2(button_width, 28)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.add_theme_font_size_override("font_size", 12)
@@ -1352,7 +1352,7 @@ func _toggle_main_menu() -> void:
 
 func _confirm_exit_game() -> void:
 	var dialog := ConfirmationDialog.new()
-	dialog.title = "EXIT TRASH EMPIRE?"
+	dialog.title = "EXIT ZEKA CITY: CLEANUP EMPIRE?"
 	dialog.dialog_text = "Are you sure you want to leave the factory?"
 	dialog.ok_button_text = "EXIT"
 	dialog.cancel_button_text = "CANCEL"
