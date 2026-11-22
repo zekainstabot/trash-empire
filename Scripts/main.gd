@@ -2920,34 +2920,43 @@ func _spawn_city_trash(amount: int) -> int:
 	return spawned
 
 func _spawn_final_cleanup_trash() -> void:
-	# Render all 60,000 individual pieces with four GPU-instanced meshes.
-	# Only 600 lightweight pickup markers are needed for gameplay on Android.
+	# The landfill is spread over the full cleanup yard, with dense irregular
+	# piles and loose debris between them. Each pickup is a visible, detailed item.
 	var remaining_units := maxi(0, FINAL_ZONE_TARGET - final_zone_cleaned)
 	var remaining_objects := ceili(float(remaining_units) / 100.0)
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	_build_final_landfill_debris(remaining_units, rng)
-	var pickup_centers := [
-		Vector2(143.0, -15.0), Vector2(153.0, -9.0), Vector2(164.0, -16.0),
-		Vector2(176.0, -10.0), Vector2(187.0, -15.0), Vector2(147.0, 5.0),
-		Vector2(158.0, 13.0), Vector2(171.0, 6.0), Vector2(183.0, 13.0)
-	]
 	for i in range(remaining_objects):
-		var x := 137.0 + rng.randf() * 53.0
-		var z := -19.0 + rng.randf() * 38.0
-		if rng.randf() < 0.68:
-			var center: Vector2 = pickup_centers[rng.randi_range(0, pickup_centers.size() - 1)]
-			var spread := rng.randf_range(2.0, 7.0)
-			x = center.x + (rng.randf() + rng.randf() - 1.0) * spread
-			z = center.y + (rng.randf() + rng.randf() - 1.0) * spread
-		x = clampf(x, 136.5, 190.5)
-		z = clampf(z, -19.5, 19.5)
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
 		item.set_meta("final_cleanup_units", mini(100, remaining_units - i * 100))
-		item.position = Vector3(x, 0.34 + rng.randf_range(0.0, 0.42), z)
+		item.position = _random_final_landfill_position(rng)
 		add_child(item)
 		trash_nodes.append(item)
+
+
+func _random_final_landfill_position(rng: RandomNumberGenerator) -> Vector3:
+	var clusters := [
+		Vector2(142.0, -20.0), Vector2(151.0, -10.0), Vector2(160.0, -22.0),
+		Vector2(171.0, -14.0), Vector2(184.0, -21.0), Vector2(195.0, -9.0),
+		Vector2(145.0, 3.0), Vector2(157.0, 8.0), Vector2(169.0, 3.0),
+		Vector2(182.0, 9.0), Vector2(197.0, 5.0), Vector2(150.0, 22.0),
+		Vector2(165.0, 22.0), Vector2(181.0, 23.0), Vector2(195.0, 21.0)
+	]
+	var point := Vector2.ZERO
+	if rng.randf() < 0.78:
+		var center: Vector2 = clusters[rng.randi_range(0, clusters.size() - 1)]
+		point = center + Vector2(rng.randfn(0.0, 3.7), rng.randfn(0.0, 3.1))
+	else:
+		point = Vector2(rng.randf_range(137.0, 203.0), rng.randf_range(-29.0, 29.0))
+	point.x = clampf(point.x, 137.0, 203.0)
+	point.y = clampf(point.y, -29.0, 29.0)
+	var nearest_cluster_distance := 1000.0
+	for center in clusters:
+		nearest_cluster_distance = minf(nearest_cluster_distance, point.distance_to(center))
+	var small_pile_height := maxf(0.0, 1.0 - nearest_cluster_distance / 6.5) * 1.25
+	return Vector3(point.x, 0.30 + small_pile_height + rng.randf_range(0.0, 0.16), point.y)
 
 
 func _build_final_landfill_debris(remaining_units: int, rng: RandomNumberGenerator) -> void:
@@ -2999,40 +3008,21 @@ func _build_final_landfill_debris(remaining_units: int, rng: RandomNumberGenerat
 		material.albedo_color = debris_colors[kind]
 		material.roughness = 0.94
 		visual.material_override = material
-		visual.custom_aabb = AABB(Vector3(135.0, -0.5, -21.0), Vector3(57.0, 9.0, 42.0))
+		visual.custom_aabb = AABB(Vector3(135.0, -0.5, -31.0), Vector3(70.0, 6.0, 62.0))
 		add_child(visual)
-		var debris_centers := [
-			Vector2(143.0, -15.0), Vector2(153.0, -9.0), Vector2(164.0, -16.0),
-			Vector2(176.0, -10.0), Vector2(187.0, -15.0), Vector2(147.0, 5.0),
-			Vector2(158.0, 13.0), Vector2(171.0, 6.0), Vector2(183.0, 13.0)
-		]
 		for instance_index in range(count):
-			var x := 136.0 + rng.randf() * 55.0
-			var z := -20.0 + rng.randf() * 40.0
-			var clustered := rng.randf() < 0.72
-			if clustered:
-				var center: Vector2 = debris_centers[rng.randi_range(0, debris_centers.size() - 1)]
-				var spread := rng.randf_range(2.5, 8.0)
-				x = center.x + (rng.randf() + rng.randf() - 1.0) * spread
-				z = center.y + (rng.randf() + rng.randf() - 1.0) * spread
-			x = clampf(x, 135.5, 191.5)
-			z = clampf(z, -20.5, 20.5)
-			# Smaller scattered litter sits low; clustered patches form uneven heaps.
-			var mound_height := 0.0
-			if clustered:
-				mound_height = rng.randf_range(0.08, 1.05)
-			var y := 0.10 + mound_height + rng.randf_range(0.0, 0.48)
+			var position := _random_final_landfill_position(rng)
 			var random_scale := Vector3(
-				rng.randf_range(0.72, 1.28),
-				rng.randf_range(0.72, 1.25),
-				rng.randf_range(0.72, 1.28)
+				rng.randf_range(0.72, 1.35),
+				rng.randf_range(0.72, 1.30),
+				rng.randf_range(0.72, 1.35)
 			)
 			var basis := Basis.from_euler(Vector3(
 				rng.randf_range(-0.65, 0.65),
 				rng.randf_range(0.0, TAU),
 				rng.randf_range(-0.65, 0.65)
 			)).scaled(random_scale)
-			multimesh.set_instance_transform(instance_index, Transform3D(basis, Vector3(x, y, z)))
+			multimesh.set_instance_transform(instance_index, Transform3D(basis, position))
 
 func _update_final_zone_label() -> void:
 	if is_instance_valid(final_zone_label):
