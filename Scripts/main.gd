@@ -51,6 +51,13 @@ var trash_nodes: Array[Node3D] = []
 var final_zone_cleaned := 0
 var final_zone_label: Label
 const FINAL_ZONE_TARGET := 60000
+const FINAL_LANDFILL_CLUSTERS := [
+	Vector2(142.0, -20.0), Vector2(151.0, -10.0), Vector2(160.0, -22.0),
+	Vector2(171.0, -14.0), Vector2(184.0, -21.0), Vector2(195.0, -9.0),
+	Vector2(145.0, 3.0), Vector2(157.0, 8.0), Vector2(169.0, 3.0),
+	Vector2(182.0, 9.0), Vector2(197.0, 5.0), Vector2(150.0, 22.0),
+	Vector2(165.0, 22.0), Vector2(181.0, 23.0), Vector2(195.0, 21.0)
+]
 var money_label: Label
 var bag_label: Label
 var message_label: Label
@@ -2937,23 +2944,16 @@ func _spawn_final_cleanup_trash() -> void:
 
 
 func _random_final_landfill_position(rng: RandomNumberGenerator) -> Vector3:
-	var clusters := [
-		Vector2(142.0, -20.0), Vector2(151.0, -10.0), Vector2(160.0, -22.0),
-		Vector2(171.0, -14.0), Vector2(184.0, -21.0), Vector2(195.0, -9.0),
-		Vector2(145.0, 3.0), Vector2(157.0, 8.0), Vector2(169.0, 3.0),
-		Vector2(182.0, 9.0), Vector2(197.0, 5.0), Vector2(150.0, 22.0),
-		Vector2(165.0, 22.0), Vector2(181.0, 23.0), Vector2(195.0, 21.0)
-	]
 	var point := Vector2.ZERO
 	if rng.randf() < 0.78:
-		var center: Vector2 = clusters[rng.randi_range(0, clusters.size() - 1)]
+		var center: Vector2 = FINAL_LANDFILL_CLUSTERS[rng.randi_range(0, FINAL_LANDFILL_CLUSTERS.size() - 1)]
 		point = center + Vector2(rng.randfn(0.0, 3.7), rng.randfn(0.0, 3.1))
 	else:
 		point = Vector2(rng.randf_range(137.0, 203.0), rng.randf_range(-29.0, 29.0))
 	point.x = clampf(point.x, 137.0, 203.0)
 	point.y = clampf(point.y, -29.0, 29.0)
 	var nearest_cluster_distance := 1000.0
-	for center in clusters:
+	for center in FINAL_LANDFILL_CLUSTERS:
 		nearest_cluster_distance = minf(nearest_cluster_distance, point.distance_to(center))
 	var small_pile_height := maxf(0.0, 1.0 - nearest_cluster_distance / 6.5) * 1.25
 	return Vector3(point.x, 0.30 + small_pile_height + rng.randf_range(0.0, 0.16), point.y)
