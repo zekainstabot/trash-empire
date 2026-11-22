@@ -2667,40 +2667,64 @@ func _create_city_truck(index: int) -> Node3D:
 	var wheels: Array[Node3D] = []
 	for side in [-1.0, 1.0]:
 		for wheel_z in [-1.18, 1.12]:
-			# The pivot axis runs across the axle; the tire mesh is rotated separately.
+			# Each wheel spins around the axle (local X), while the tire itself
+			# is a solid cylinder whose axis also runs across the truck.
 			var wheel_pivot := Node3D.new()
 			wheel_pivot.name = "TruckWheelPivot"
-			wheel_pivot.position = Vector3(side * 0.98, 0.42, wheel_z)
+			wheel_pivot.position = Vector3(side * 1.04, 0.42, wheel_z)
 			truck.add_child(wheel_pivot)
-			# Proper truck tire: a rounded torus with its axle across the chassis.
-			var wheel := MeshInstance3D.new()
-			wheel.name = "TruckRubberTire"
-			var wheel_mesh := TorusMesh.new()
-			wheel_mesh.inner_radius = 0.245
-			wheel_mesh.outer_radius = 0.40
-			wheel.mesh = wheel_mesh
-			wheel.rotation_degrees.y = 90.0
-			wheel.material_override = _mat(Color(0.035, 0.043, 0.047))
-			wheel_pivot.add_child(wheel)
+
+			var tire := MeshInstance3D.new()
+			tire.name = "TruckRubberTire"
+			var tire_mesh := CylinderMesh.new()
+			tire_mesh.top_radius = 0.40
+			tire_mesh.bottom_radius = 0.40
+			tire_mesh.height = 0.34
+			tire_mesh.radial_segments = 32
+			tire.mesh = tire_mesh
+			tire.rotation_degrees.z = 90.0
+			tire.material_override = _mat(Color(0.025, 0.031, 0.034))
+			wheel_pivot.add_child(tire)
+
+			# Deep sidewall rim, recessed into the tire so it cannot float outside it.
 			var rim := MeshInstance3D.new()
 			rim.name = "TruckWheelRim"
 			var rim_mesh := CylinderMesh.new()
-			rim_mesh.top_radius = 0.245
-			rim_mesh.bottom_radius = 0.245
-			rim_mesh.height = 0.20
+			rim_mesh.top_radius = 0.255
+			rim_mesh.bottom_radius = 0.255
+			rim_mesh.height = 0.035
+			rim_mesh.radial_segments = 32
 			rim.mesh = rim_mesh
+			rim.position.x = side * 0.174
 			rim.rotation_degrees.z = 90.0
-			rim.material_override = _mat(Color(0.25, 0.30, 0.31))
+			rim.material_override = _mat(Color(0.29, 0.34, 0.35))
 			wheel_pivot.add_child(rim)
+
 			var hub := MeshInstance3D.new()
+			hub.name = "TruckWheelHub"
 			var hub_mesh := CylinderMesh.new()
-			hub_mesh.top_radius = 0.105
-			hub_mesh.bottom_radius = 0.105
-			hub_mesh.height = 0.235
+			hub_mesh.top_radius = 0.12
+			hub_mesh.bottom_radius = 0.12
+			hub_mesh.height = 0.045
+			hub_mesh.radial_segments = 24
 			hub.mesh = hub_mesh
+			hub.position.x = side * 0.205
 			hub.rotation_degrees.z = 90.0
-			hub.material_override = _mat(Color(0.62, 0.66, 0.64))
+			hub.material_override = _mat(Color(0.68, 0.71, 0.68))
 			wheel_pivot.add_child(hub)
+
+			# Six visible lug nuts make the wheel read as a real truck wheel.
+			for lug_index in range(6):
+				var angle := TAU * float(lug_index) / 6.0
+				var lug := MeshInstance3D.new()
+				lug.name = "TruckWheelLug"
+				var lug_mesh := SphereMesh.new()
+				lug_mesh.radius = 0.025
+				lug_mesh.height = 0.05
+				lug.mesh = lug_mesh
+				lug.position = Vector3(side * 0.207, sin(angle) * 0.17, cos(angle) * 0.17)
+				lug.material_override = _mat(Color(0.82, 0.83, 0.78))
+				wheel_pivot.add_child(lug)
 			wheels.append(wheel_pivot)
 	truck.set_meta("wheels", wheels)
 	_city_truck_box(truck, "TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.72, 0.66, 0.48))
