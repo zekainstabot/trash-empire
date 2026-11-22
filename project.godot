@@ -1,11 +1,11 @@
-; Trash Empire — Godot 4 project
+; Zeka City: Cleanup Empire — Godot 4 project
 config_version=5
 
 [application]
-config/name="Trash Empire"
+config/name="Zeka City: Cleanup Empire"
 run/main_scene="res://Scenes/Main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
-config/description="A 3D recycling and upgrade simulator."
+config/description="Zeka City: Cleanup Empire — a 3D collection, recycling, and upgrade simulator."
 config/icon="res://icon.svg"
 
 [display]
