@@ -1117,7 +1117,11 @@ func _animate_robot(delta: float) -> void:
 	robot_visual.position.y = bob
 	robot_visual.rotation.z = sin(robot_anim_time * 5.0) * 0.025 if moving else sin(robot_anim_time * 1.5) * 0.012
 	robot_left_arm.rotation.x = stride * 0.65
-	robot_right_arm.rotation.x = -stride * 0.65 - (0.18 if auto_pickup_level > 0 else 0.0)
+	var normal_right_arm := -stride * 0.65 - (0.18 if auto_pickup_level > 0 else 0.0)
+	# Lift the magnet hand while it is pulling the selected piece of trash.
+	var magnet_is_working := auto_pickup_level > 0 and is_instance_valid(auto_pickup_target)
+	var arm_target_angle := -1.05 if magnet_is_working else normal_right_arm
+	robot_right_arm.rotation.x = lerp_angle(robot_right_arm.rotation.x, arm_target_angle, clampf(delta * 9.0, 0.0, 1.0))
 	robot_left_leg.rotation.x = -stride * 0.48
 	robot_right_leg.rotation.x = stride * 0.48
 	robot_head.rotation.y = sin(robot_anim_time * 1.3) * 0.045
