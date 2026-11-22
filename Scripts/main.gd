@@ -7,7 +7,8 @@ var player: CharacterBody3D
 var camera: Camera3D
 var camera_pivot: Node3D
 var money := 0.0
-var carried := 0
+var carried := 0 # occupied backpack slots
+var carried_bulky := 0 # bulky items occupying two slots each
 var capacity := 4
 var collection_range := 2.0
 var upgrade_level := 1
@@ -1394,6 +1395,7 @@ func _start_new_world() -> void:
 	money = 0
 	final_zone_cleaned = 0
 	carried = 0
+	carried_bulky = 0
 	capacity = 4
 	upgrade_level = 1
 	speed_upgrade_level = 1
@@ -1908,6 +1910,25 @@ func _register_final_cleanup_pickup(item: Node3D) -> void:
 		_set_message("ULTIMATE GOAL COMPLETE! The entire 60,000-unit landfill is clean!")
 
 
+func _pickup_trash_item(item: Node3D) -> bool:
+	if not is_instance_valid(item):
+		return false
+	var weight := 2 if item.has_meta("bulky") else 1
+	if carried + weight > capacity:
+		return false
+	if item.has_meta("rare_type"):
+		var rare_type := String(item.get_meta("rare_type"))
+		var bonus := 8.0 if rare_type == "gold" else 2.0
+		money += bonus
+		_set_message("%s rare scrap found! Bonus +%.2f ZC" % [rare_type.to_upper(), bonus])
+	_register_final_cleanup_pickup(item)
+	if weight == 2:
+		carried_bulky += 1
+	carried += weight
+	item.queue_free()
+	trash_nodes.erase(item)
+	return true
+
 func _collect_nearby() -> void:
 	if carried >= capacity:
 		_set_message("Bag full! Return to the recycling station.")
@@ -1919,33 +1940,25 @@ func _collect_nearby() -> void:
 		var nearest: Node3D
 		var best := collection_range
 		for item in trash_nodes:
-			if is_instance_valid(item):
+			if is_instance_valid(item) and carried + (2 if item.has_meta("bulky") else 1) <= capacity:
 				var distance := player.global_position.distance_to(item.global_position)
 				if distance < best:
 					best = distance
 					nearest = item
 		if nearest == null:
 			break
-		if nearest.has_meta("rare_type"):
-			var rare_type := String(nearest.get_meta("rare_type"))
-			var bonus := 8.0 if rare_type == "gold" else 2.0
-			money += bonus
-			_set_message("%s rare scrap found! Bonus +%.2f ZC" % [rare_type.to_upper(), bonus])
-
-		_register_final_cleanup_pickup(nearest)
-		nearest.queue_free()
-		trash_nodes.erase(nearest)
-		carried += 1
+		if not _pickup_trash_item(nearest):
+			break
 		collected += 1
 	if collected > 0:
 		_update_ui()
 		_save_game()
 		if carried >= capacity:
-			_set_message("BACKPACK FULL! Collected %d pieces. Return to the recycling station." % collected)
+			_set_message("BACKPACK FULL! Collected %d item(s). Return to recycling." % collected)
 		else:
-			_set_message("Collected %d pieces! Keep cleaning the yard." % collected)
+			_set_message("Collected %d item(s)! Keep cleaning the yard." % collected)
 	else:
-		_set_message("Get closer to a piece of trash.")
+		_set_message("Get closer to trash that fits in your backpack.")
 
 func _process_auto_pickup(delta: float) -> void:
 	if auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
@@ -1976,7 +1989,7 @@ func _process_auto_pickup(delta: float) -> void:
 		var nearest: Node3D
 		var best_distance := collection_range + 1.0 + float(auto_pickup_level - 1) * 0.55
 		for item in trash_nodes:
-			if not is_instance_valid(item):
+			if not is_instance_valid(item) or carried + (2 if item.has_meta("bulky") else 1) > capacity:
 				continue
 			var distance := player.global_position.distance_to(item.global_position)
 			if distance < best_distance:
@@ -1984,10 +1997,8 @@ func _process_auto_pickup(delta: float) -> void:
 				nearest = item
 		if nearest == null:
 			break
-		_register_final_cleanup_pickup(nearest)
-		nearest.queue_free()
-		trash_nodes.erase(nearest)
-		carried += 1
+		if not _pickup_trash_item(nearest):
+			break
 		collected += 1
 
 	if collected > 0:
@@ -2039,7 +2050,7 @@ func _process_helper_drones(delta: float) -> void:
 		var nearest: Node3D
 		var best_distance := 5.0 + float(drone_level - 1) * 2.0
 		for item in trash_nodes:
-			if not is_instance_valid(item):
+			if not is_instance_valid(item) or carried + (2 if item.has_meta("bulky") else 1) > capacity:
 				continue
 			var distance := player.global_position.distance_to(item.global_position)
 			if distance < best_distance:
@@ -2047,10 +2058,8 @@ func _process_helper_drones(delta: float) -> void:
 				nearest = item
 		if nearest == null:
 			break
-		_register_final_cleanup_pickup(nearest)
-		nearest.queue_free()
-		trash_nodes.erase(nearest)
-		carried += 1
+		if not _pickup_trash_item(nearest):
+			break
 		collected += 1
 	if collected > 0:
 		_update_ui()
@@ -2068,10 +2077,15 @@ func _process_auto_sell(delta: float) -> void:
 	var seconds_per_item := maxf(0.35, 1.8 - float(unload_upgrade_level - 1) * 0.18)
 	if unload_timer >= seconds_per_item:
 		unload_timer = 0.0
-		carried -= 1
+		var sold_bulky := carried_bulky > 0
+		if sold_bulky:
+			carried -= 2
+			carried_bulky -= 1
+		else:
+			carried -= 1
 		var factory_multipliers := [1.0, 2.0, 4.0, 8.0]
 		var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
-		var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25)
+		var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25) * (2.0 if sold_bulky else 1.0)
 		if randf() < float(luck_upgrade_level - 1) * 0.10:
 			item_value *= 2.0
 		money += item_value
