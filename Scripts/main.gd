@@ -1993,16 +1993,33 @@ func _process_auto_pickup(delta: float) -> void:
 		auto_pickup_timer = 0.0
 		return
 
-	# A visible magnet effect: nearby litter glides toward the player before collection.
+	# Select exactly one eligible item. Only this item is pulled by the magnet.
 	var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85 + float(magnet_power_level - 1) * 0.7
 	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65 + float(magnet_power_level - 1) * 1.1
+	var nearest: Node3D = null
+	var best_distance := magnet_range
 	for item in trash_nodes:
 		if not is_instance_valid(item):
 			continue
+		var weight := 2 if item.has_meta("bulky") else 1
+		if carried + weight > capacity:
+			continue
+		if item.get_meta("drone_reserved", -1) != -1:
+			continue
 		var distance := player.global_position.distance_to(item.global_position)
-		if distance <= magnet_range and distance > 0.85:
-			var target := player.global_position + Vector3(0.0, 0.25, 0.0)
-			item.global_position = item.global_position.move_toward(target, pull_speed * delta)
+		if distance < best_distance:
+			best_distance = distance
+			nearest = item
+
+	if nearest == null:
+		auto_pickup_timer = 0.0
+		return
+
+	# Pull only the chosen item toward the robot's hand/backpack intake.
+	var pickup_point := player.global_position + Vector3(0.0, 0.25, 0.0)
+	if best_distance > 0.85:
+		nearest.global_position = nearest.global_position.move_toward(pickup_point, pull_speed * delta)
+		return
 
 	auto_pickup_timer += delta
 	var interval := maxf(0.18, 0.72 - float(auto_pickup_level - 1) * 0.12)
@@ -2010,29 +2027,10 @@ func _process_auto_pickup(delta: float) -> void:
 		return
 	auto_pickup_timer = 0.0
 
-	# Higher levels collect several nearby pieces per pulse instead of only one.
-	var collect_limit := mini(1 + int(floor(float(auto_pickup_level) / 2.0)), 5)
-	var collected := 0
-	while collected < collect_limit and carried < capacity:
-		var nearest: Node3D
-		var best_distance := collection_range + 1.0 + float(auto_pickup_level - 1) * 0.55
-		for item in trash_nodes:
-			if not is_instance_valid(item) or carried + (2 if item.has_meta("bulky") else 1) > capacity:
-				continue
-			var distance := player.global_position.distance_to(item.global_position)
-			if distance < best_distance:
-				best_distance = distance
-				nearest = item
-		if nearest == null:
-			break
-		if not _pickup_trash_item(nearest):
-			break
-		collected += 1
-
-	if collected > 0:
+	if _pickup_trash_item(nearest):
 		_update_ui()
 		_save_game()
-		_set_message("AUTO MAGNET  +%d" % collected)
+		_set_message("AUTO MAGNET  +1")
 	if carried >= capacity:
 		_set_message("Bag full! Return to the recycling station.")
 
