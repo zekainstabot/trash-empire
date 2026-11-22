@@ -1,4 +1,4 @@
-name: انتشار Zeka City: Cleanup Empire (APK + AAB)
+name: 'انتشار Zeka City: Cleanup Empire (APK + AAB)'
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build_release:
-    name: Build, sign, and publish Zeka City: Cleanup Empire
+    name: 'Build, sign, and publish Zeka City: Cleanup Empire'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -128,7 +128,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: Zeka City: Cleanup Empire v1.0.${{ github.run_number }}
+          name: 'Zeka City: Cleanup Empire v1.0.${{ github.run_number }}'
           generate_release_notes: true
           files: |
             build/TrashEmpire-release.apk
