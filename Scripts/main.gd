@@ -2857,11 +2857,17 @@ func _process_city_truck(delta: float) -> void:
 					truck.visible = false
 					truck.set_meta("phase", 0)
 					truck.set_meta("timer", 0.0)
+		# Roll the complete wheel assembly around its axle while the truck is moving.
+		# The axle is the truck's local X axis; update the pivot's local rotation
+		# directly so the tire, rim, hub and lug nuts all rotate as one assembly.
 		var wheels: Array = truck.get_meta("wheels", [])
-		if phase in [1, 3, 5, 6]:
+		if phase in [1, 3, 5, 6] and truck.visible:
+			var wheel_roll := delta * 7.5
+			if phase in [5, 6]:
+				wheel_roll = -wheel_roll
 			for wheel in wheels:
 				if is_instance_valid(wheel):
-					wheel.rotate_object_local(Vector3.RIGHT, delta * 4.0)
+					wheel.rotation.x = wrapf(wheel.rotation.x + wheel_roll, -PI, PI)
 
 func _move_city_truck(truck: Node3D, target: Vector3, delta: float) -> bool:
 	var direction := target - truck.position
