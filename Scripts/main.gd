@@ -52,7 +52,7 @@ var unload_upgrade_button: Button
 var trash_nodes: Array[Node3D] = []
 var final_zone_cleaned := 0
 var total_trash_collected := 0
-var replenishment_threshold := 1000
+var replenishment_threshold := 500
 var final_zone_label: Label
 const FINAL_ZONE_TARGET := 60000
 const FINAL_LANDFILL_CLUSTERS := [
@@ -2348,15 +2348,9 @@ func _process_trash_respawn(delta: float) -> void:
 	if respawn_timer < _trash_respawn_interval_minutes() * 60.0:
 		return
 	respawn_timer = 0.0
-	var target_count := 24
-	if yard_stage >= 2:
-		target_count += 48
-	if yard_stage >= 3:
-		target_count += 96
-	var alive_count := 0
-	for item in trash_nodes:
-		if is_instance_valid(item):
-			alive_count += 1
+	# Automatic refill targets 500 regular city pickups; endgame bundles are excluded.
+	var target_count := 500
+	var alive_count := _count_regular_trash()
 	var amount := maxi(0, target_count - alive_count)
 	if amount > 0:
 		_spawn_trash(amount)
@@ -2942,7 +2936,8 @@ func _city_truck_interval() -> float:
 	return intervals[clampi(city_truck_upgrade_level, 0, 3)]
 
 func _city_truck_load() -> int:
-	return 18 + (yard_stage - 1) * 6
+	# Every municipal truck delivers a full 500-piece load.
+	return 500
 
 func _city_dump_capacity() -> int:
 	return _city_truck_load() * 5
@@ -3081,6 +3076,13 @@ func _update_final_zone_label() -> void:
 		final_zone_label.text = "FINAL CLEANUP  %d / 60,000" % final_zone_cleaned
 
 
+func _count_regular_trash() -> int:
+	var count := 0
+	for item in trash_nodes:
+		if is_instance_valid(item) and not item.is_queued_for_deletion() and not item.has_meta("final_cleanup_units"):
+			count += 1
+	return count
+
 func _spawn_trash(amount: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
@@ -3111,12 +3113,9 @@ func _spawn_district_two_trash(amount: int) -> void:
 		trash_nodes.append(item)
 
 func _refill_first_district() -> void:
-	# Each lever pull adds up to 100 items, while the entire city is capped at 1,000.
-	var alive_count := 0
-	for item in trash_nodes:
-		if is_instance_valid(item) and not item.is_queued_for_deletion():
-			alive_count += 1
-	var amount := mini(100, maxi(0, 1000 - alive_count))
+	# Each lever pull adds up to 500 items, while the regular city supply is capped at 1,000.
+	var alive_count := _count_regular_trash()
+	var amount := mini(500, maxi(0, 1000 - alive_count))
 	if amount <= 0:
 		_set_message("CITY TRASH LIMIT REACHED: 1,000 / 1,000")
 		return
