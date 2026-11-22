@@ -1591,51 +1591,51 @@ func _build_skill_tree(parent: Control) -> void:
 
 		for branch in category.branches:
 			var upgrade_row := HBoxContainer.new()
-			upgrade_row.custom_minimum_size = Vector2(0, 88)
+			upgrade_row.custom_minimum_size = Vector2(0, 104)
 			upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			upgrade_row.add_theme_constant_override("separation", 12)
+			upgrade_row.add_theme_constant_override("separation", 9)
 			category_body.add_child(upgrade_row)
-	
+
 			var upgrade_info := VBoxContainer.new()
 			upgrade_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			upgrade_info.size_flags_stretch_ratio = 1.0
-			upgrade_info.add_theme_constant_override("separation", 3)
+			upgrade_info.add_theme_constant_override("separation", 4)
 			upgrade_row.add_child(upgrade_info)
-	
+
 			var row := Button.new()
-			row.custom_minimum_size = Vector2(0, 52)
+			row.custom_minimum_size = Vector2(0, 58)
 			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			row.add_theme_font_size_override("font_size", 14)
-			row.add_theme_color_override("font_color", Color.WHITE)
-			row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.17, 0.18)))
-			row.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.28, 0.25)))
-			row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.12, 0.13)))
-			row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.10, 0.11)))
+			row.add_theme_color_override("font_color", Color(0.96, 1.0, 0.98))
+			row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.19, 0.19)))
+			row.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.32, 0.27)))
+			row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.14, 0.13)))
+			row.add_theme_stylebox_override("disabled", _button_style(Color(0.08, 0.13, 0.12)))
 			row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
 			upgrade_info.add_child(row)
-	
+
 			var description := Label.new()
 			description.text = String(descriptions.get(String(branch), "Improves this part of your operation."))
-			description.position = Vector2(12, 48)
-			description.size = Vector2(340, 34)
+			description.custom_minimum_size = Vector2(0, 30)
+			description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			description.add_theme_font_size_override("font_size", 11)
-			description.add_theme_color_override("font_color", Color(0.69, 0.78, 0.75))
-			row.add_child(description)
-	
+			description.add_theme_color_override("font_color", Color(0.69, 0.80, 0.76))
+			upgrade_info.add_child(description)
+
 			var price_panel := PanelContainer.new()
-			price_panel.custom_minimum_size = Vector2(92, 66)
+			price_panel.custom_minimum_size = Vector2(96, 72)
 			price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.12, 0.095)))
+			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.15, 0.105)))
 			upgrade_row.add_child(price_panel)
 			var price_label := Label.new()
-			price_label.text = "—"
+			price_label.text = "BUY"
 			price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			price_label.add_theme_font_size_override("font_size", 17)
-			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
+			price_label.add_theme_font_size_override("font_size", 15)
+			price_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.72))
 			price_panel.add_child(price_label)
-			skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch])})
+			skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch]), "price_panel": price_panel})
 
 		folder.pressed.connect(_select_upgrade_category.bind(category_index, category_bodies, folder_buttons, category_titles, detail_title))
 
@@ -1819,36 +1819,45 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"packaging": await _upgrade_packaging()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":12.0,"bulk_pickup":18.0}
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":12.0,"bulk_pickup":30.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
 		var unlocked := _skill_branch_unlocked(branch)
 		var button := node.button as Button
 		var price_label := node.price_label as Label
+		var price_panel := node.price_panel as PanelContainer
 		var icon := _skill_icon(branch)
-		if current >= 3 and branch != "capacity":
+		var maxed := current >= 3
+		var price := _upgrade_cost(float(base_costs.get(branch, 4.0)), current + 1)
+		if branch == "capacity":
+			price = _upgrade_cost(5.0, upgrade_level)
+		if maxed and branch != "capacity":
 			button.text = "%s  %s\nMAX LEVEL  •  LV 3" % [icon, node.title]
 			button.disabled = true
-			price_label.text = "MAX"
-			price_label.add_theme_color_override("font_color", Color(0.65, 0.82, 0.72))
+			price_label.text = "MAX\nLEVEL"
+			price_label.add_theme_color_override("font_color", Color(0.72, 0.84, 0.76))
+			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.14, 0.11)))
 		elif not unlocked:
-			button.text = "%s  %s\nLEVEL %d" % [icon, node.title, current + 1]
-			button.disabled = false
-			price_label.text = "%.0f ZC" % _upgrade_cost(float(base_costs.get(branch, 4.0)), current + 1)
-			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
+			button.text = "%s  %s\nLOCKED" % [icon, node.title]
+			button.disabled = true
+			price_label.text = "LOCKED"
+			price_label.add_theme_color_override("font_color", Color(0.72, 0.76, 0.74))
 		else:
-			var price := _upgrade_cost(float(base_costs.get(branch, 4.0)), current + 1)
 			var next_level := current + 1
+			var effect_text := "NEXT LEVEL  •  LV %d" % next_level
 			if branch == "capacity":
-				next_level = upgrade_level
-				price = _upgrade_cost(5.0, upgrade_level)
-				button.text = "%s  %s\nNEXT LEVEL  •  +3 BAG SLOTS" % [icon, node.title]
+				effect_text = "NEXT LEVEL  •  +3 BAG SLOTS"
+			button.text = "%s  %s\n%s" % [icon, node.title, effect_text]
+			button.disabled = payment_active
+			if payment_active:
+				price_label.text = "BUYING..."
+				price_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.38))
+				price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.20, 0.15, 0.055)))
 			else:
-				button.text = "%s  %s\nLEVEL %d" % [icon, node.title, next_level]
-			price_label.text = "%.0f ZC" % price
-			price_label.add_theme_color_override("font_color", Color(0.48, 1.0, 0.68))
-			button.disabled = false
+				price_label.text = "BUY\n%.0f ZC" % price
+				price_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.72) if money >= price else Color(1.0, 0.72, 0.48))
+				price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.15, 0.105) if money >= price else Color(0.16, 0.095, 0.07)))
 
 func _skill_key_owned(key: String) -> bool:
 	var parts := key.rsplit("_", true, 1)
