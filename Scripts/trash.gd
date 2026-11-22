@@ -14,6 +14,18 @@ func _ready() -> void:
 	if is_bulky:
 		set_meta("bulky", true)
 		scale = Vector3(1.45, 1.45, 1.45)
+
+	# Android uses one low-poly mesh per litter item to reduce draw calls.
+	if OS.get_name() == "Android":
+		_make_mobile_trash(rng)
+		rotation.y = rng.randf_range(0.0, TAU)
+		if has_meta("rare_type"):
+			_add_rare_visual(String(get_meta("rare_type")))
+		if has_meta("final_cleanup_units"):
+			spin_speed = 0.0
+			set_process(false)
+		return
+
 	match rng.randi_range(0, 30):
 		0:
 			_make_plastic_bottle(rng)
@@ -85,6 +97,58 @@ func _ready() -> void:
 	if has_meta("final_cleanup_units"):
 		spin_speed = 0.0
 		set_process(false)
+
+func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
+	var item := MeshInstance3D.new()
+	var colors := [
+		Color(0.20, 0.62, 0.48), Color(0.68, 0.73, 0.75),
+		Color(0.88, 0.82, 0.66), Color(0.88, 0.22, 0.12),
+		Color(0.58, 0.39, 0.22), Color(0.48, 0.43, 0.34),
+		Color(0.18, 0.34, 0.30), Color(0.72, 0.31, 0.16)
+	]
+	item.material_override = _material(colors[rng.randi_range(0, colors.size() - 1)])
+	match rng.randi_range(0, 5):
+		0:
+			var box := BoxMesh.new()
+			box.size = Vector3(rng.randf_range(0.30, 0.58), rng.randf_range(0.06, 0.22), rng.randf_range(0.24, 0.48))
+			item.mesh = box
+		1:
+			var bottle := CylinderMesh.new()
+			bottle.top_radius = 0.11
+			bottle.bottom_radius = 0.16
+			bottle.height = 0.48
+			bottle.radial_segments = 6
+			item.mesh = bottle
+			item.rotation_degrees.z = 90.0
+		2:
+			var can := CylinderMesh.new()
+			can.top_radius = 0.14
+			can.bottom_radius = 0.14
+			can.height = 0.30
+			can.radial_segments = 6
+			item.mesh = can
+		3:
+			var scrap := SphereMesh.new()
+			scrap.radius = 0.24
+			scrap.height = 0.30
+			scrap.radial_segments = 6
+			scrap.rings = 3
+			item.mesh = scrap
+		4:
+			var tire := TorusMesh.new()
+			tire.inner_radius = 0.16
+			tire.outer_radius = 0.30
+			tire.rings = 6
+			tire.ring_segments = 8
+			item.mesh = tire
+			item.rotation_degrees.x = 90.0
+		5:
+			var carton := BoxMesh.new()
+			carton.size = Vector3(0.30, 0.36, 0.28)
+			item.mesh = carton
+	item.position.y = 0.12
+	add_child(item)
+
 
 func _add_rare_visual(rare_type: String) -> void:
 	var gold := rare_type == "gold"
