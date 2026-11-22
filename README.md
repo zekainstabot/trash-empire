@@ -1,6 +1,6 @@
-# Trash Empire
+# Zeka City: Cleanup Empire
 
-A 3D collection, recycling, and upgrade simulator built with **Godot 4**.
+A 3D collection, recycling, and upgrade simulator set in the Zeka universe. built with **Godot 4**.
 
 ## Current playable prototype
 - Procedurally generated 3D recycling yard
