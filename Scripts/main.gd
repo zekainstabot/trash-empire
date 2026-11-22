@@ -2049,12 +2049,31 @@ func _build_helper_drones() -> void:
 		var drone := Node3D.new()
 		drone.name = "HelperDrone%d" % (i + 1)
 		add_child(drone)
-		_add_robot_box(drone, "DroneBody", Vector3.ZERO, Vector3(0.34, 0.20, 0.30), Color(0.70, 0.78, 0.78))
-		_add_robot_box(drone, "DroneFront", Vector3(0, -0.015, -0.16), Vector3(0.20, 0.10, 0.035), Color(0.12, 0.82, 0.68))
-		_add_robot_sphere(drone, "DroneEye", Vector3(0, 0.02, -0.19), 0.045, Color(0.35, 1.0, 0.78))
-		for side in [-1.0, 1.0]:
-			_add_robot_box(drone, "DroneRotorArm", Vector3(side * 0.27, 0.04, 0), Vector3(0.25, 0.035, 0.06), Color(0.25, 0.32, 0.34))
-			_add_robot_sphere(drone, "DroneRotor", Vector3(side * 0.40, 0.10, 0), 0.10, Color(0.16, 0.22, 0.24))
+
+		# Compact industrial quadcopter: rounded fuselage, four arms and
+		# four clearly visible propeller units (front faces -Z).
+		_add_robot_sphere(drone, "DroneMainShell", Vector3.ZERO, 0.22, Color(0.72, 0.79, 0.80))
+		_add_robot_box(drone, "DroneTopBattery", Vector3(0, 0.13, 0.015), Vector3(0.22, 0.075, 0.19), Color(0.18, 0.25, 0.28))
+		_add_robot_box(drone, "DroneFrontNose", Vector3(0, -0.015, -0.19), Vector3(0.18, 0.10, 0.12), Color(0.12, 0.34, 0.37))
+		_add_robot_sphere(drone, "DroneCameraLens", Vector3(0, -0.015, -0.255), 0.055, Color(0.08, 0.92, 0.83))
+		_add_robot_sphere(drone, "DroneStatusLight", Vector3(0, 0.17, 0.12), 0.025, Color(0.30, 1.0, 0.62))
+
+		for sx in [-1.0, 1.0]:
+			for sz in [-1.0, 1.0]:
+				var rotor_pos := Vector3(sx * 0.39, 0.045, sz * 0.36)
+				var arm := _add_robot_box(drone, "DroneArm", Vector3(sx * 0.20, 0.035, sz * 0.18), Vector3(0.43, 0.055, 0.075), Color(0.27, 0.34, 0.36))
+				arm.rotation_degrees.y = -35.0 if sx == sz else 35.0
+				_add_robot_sphere(drone, "MotorHousing", rotor_pos, 0.085, Color(0.13, 0.19, 0.21))
+				_add_robot_box(drone, "PropellerBladeA", rotor_pos + Vector3(0, 0.075, 0), Vector3(0.31, 0.018, 0.045), Color(0.10, 0.15, 0.17))
+				var blade_b := _add_robot_box(drone, "PropellerBladeB", rotor_pos + Vector3(0, 0.078, 0), Vector3(0.31, 0.014, 0.035), Color(0.16, 0.23, 0.25))
+				blade_b.rotation_degrees.y = 90.0
+				_add_robot_sphere(drone, "MotorCap", rotor_pos + Vector3(0, 0.105, 0), 0.035, Color(0.13, 0.82, 0.70))
+
+		# Two landing skids make it read as a real utility drone, not a floating toy.
+		for skid_x in [-0.13, 0.13]:
+			_add_robot_box(drone, "LandingStrut", Vector3(skid_x, -0.19, 0.025), Vector3(0.035, 0.20, 0.045), Color(0.20, 0.27, 0.29))
+			_add_robot_box(drone, "LandingSkid", Vector3(skid_x, -0.285, 0.025), Vector3(0.055, 0.035, 0.38), Color(0.12, 0.18, 0.20))
+
 		drone.visible = i < drone_level
 		drone.global_position = player.global_position + Vector3(0, 2.3, 0) if is_instance_valid(player) else Vector3.ZERO
 		drone.set_meta("target", null)
