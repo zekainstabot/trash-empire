@@ -3081,28 +3081,23 @@ func _spawn_district_two_trash(amount: int) -> void:
 		trash_nodes.append(item)
 
 func _refill_first_district() -> void:
-	# Manual wall lever refills the whole currently unlocked city, not only district one.
-	var target_count := 24
-	if yard_stage >= 2:
-		target_count += 48
-	if yard_stage >= 3:
-		target_count += 96
-	target_count += (spawn_upgrade_level - 1) * 6
+	# Each lever pull adds up to 100 items, while the entire city is capped at 1,000.
 	var alive_count := 0
 	for item in trash_nodes:
 		if is_instance_valid(item) and not item.is_queued_for_deletion():
 			alive_count += 1
-	var amount := maxi(0, target_count - alive_count)
+	var amount := mini(100, maxi(0, 1000 - alive_count))
 	if amount <= 0:
-		_set_message("CITY TRASH SUPPLY IS FULL!")
+		_set_message("CITY TRASH LIMIT REACHED: 1,000 / 1,000")
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
+	var max_city_x := minf(111.5, 15.5 + float(maxi(0, yard_stage - 1)) * 32.0)
 	var spawned := 0
 	var attempts := 0
-	while spawned < amount and attempts < amount * 80:
+	while spawned < amount and attempts < amount * 100:
 		attempts += 1
-		var point := Vector3(rng.randf_range(-11.5, 107.5), 0.34, rng.randf_range(-31.0, 31.0))
+		var point := Vector3(rng.randf_range(-11.5, max_city_x), 0.34, rng.randf_range(-31.0, 31.0))
 		if not _is_clear_trash_spawn(point):
 			continue
 		var item := Node3D.new()
@@ -3112,7 +3107,7 @@ func _refill_first_district() -> void:
 		trash_nodes.append(item)
 		spawned += 1
 	_update_ui()
-	_set_message("CITY REFILLED: %d new trash pieces across unlocked districts." % spawned)
+	_set_message("RESPAWN COMPLETE: %d new trash | City supply: %d / 1,000" % [spawned, alive_count + spawned])
 
 func _is_city_truck_lane_position(point: Vector3) -> bool:
 	var on_service_road := point.x >= -9.2 and point.x <= -5.2 and point.z >= -8.5 and point.z <= 34.0
