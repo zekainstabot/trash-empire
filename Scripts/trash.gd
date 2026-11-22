@@ -4,12 +4,8 @@ class_name TrashItem
 var spin_speed := 0.0
 
 func _ready() -> void:
-	# Final-landfill pickup markers are intentionally invisible: the 60,000
-	# visible debris pieces are rendered efficiently by MultiMesh in main.gd.
-	if has_meta("final_cleanup_units"):
-		spin_speed = 0.0
-		set_process(false)
-		return
+	# Endgame pickups remain full visible TrashItems so the player can
+	# actually approach and collect the marked 100-unit bundles.
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	spin_speed = rng.randf_range(-0.45, 0.45)
