@@ -26,7 +26,7 @@ func _ready() -> void:
 			set_process(false)
 		return
 
-	match rng.randi_range(0, 30):
+	match rng.randi_range(0, 31):
 		0:
 			_make_plastic_bottle(rng)
 		1:
@@ -89,6 +89,8 @@ func _ready() -> void:
 			_make_cable_bundle(rng)
 		30:
 			_make_safety_helmet(rng)
+		31:
+			_make_old_television(rng)
 	rotation.y = rng.randf_range(0.0, TAU)
 	if has_meta("rare_type"):
 		_add_rare_visual(String(get_meta("rare_type")))
@@ -202,6 +204,14 @@ func _make_plastic_bottle(rng: RandomNumberGenerator) -> void:
 	var cap := _cylinder_piece(0.075, 0.075, 0.09, Vector3(0.38, 0.02, 0), Color(0.92, 0.70, 0.12))
 	cap.rotation_degrees.z = 90
 	add_child(cap)
+	# Raised molded grip rings and a recessed base make the bottle silhouette less toy-like.
+	for x in [-0.15, -0.08, 0.08, 0.15]:
+		var ridge := _cylinder_piece(0.132, 0.145, 0.018, Vector3(x, 0.02, 0), Color(0.17, 0.54, 0.42, 0.88))
+		ridge.rotation_degrees.z = 90
+		add_child(ridge)
+	var base_ring := _cylinder_piece(0.15, 0.15, 0.025, Vector3(-0.22, 0.02, 0), Color(0.12, 0.43, 0.34))
+	base_ring.rotation_degrees.z = 90
+	add_child(base_ring)
 	var label := _flat_box(Vector3(0.13, 0.09, 0.018), Vector3(-0.02, 0.02, -0.135), Color(0.90, 0.94, 0.82))
 	add_child(label)
 	rotation.z = rng.randf_range(-0.12, 0.12)
@@ -296,8 +306,15 @@ func _make_soda_bottle(rng: RandomNumberGenerator) -> void:
 func _make_old_shoe(rng: RandomNumberGenerator) -> void:
 	add_child(_flat_box(Vector3(0.48, 0.16, 0.25), Vector3(0.03, 0.10, 0), Color(0.25, 0.22, 0.18)))
 	add_child(_flat_box(Vector3(0.24, 0.20, 0.23), Vector3(-0.10, 0.23, 0), Color(0.38, 0.32, 0.25)))
-	for i in range(3):
-		add_child(_flat_box(Vector3(0.12, 0.025, 0.025), Vector3(-0.10 + i * 0.06, 0.27, -0.12), Color(0.80, 0.75, 0.66)))
+	# Distinct toe cap, layered rubber sole, heel and worn lace eyelets.
+	add_child(_flat_box(Vector3(0.54, 0.055, 0.27), Vector3(0.03, 0.025, 0), Color(0.12, 0.12, 0.11)))
+	add_child(_flat_box(Vector3(0.18, 0.07, 0.24), Vector3(-0.19, 0.16, 0), Color(0.30, 0.27, 0.23)))
+	for i in range(4):
+		var lace := _flat_box(Vector3(0.13, 0.018, 0.025), Vector3(-0.12 + i * 0.045, 0.285, -0.13), Color(0.82, 0.78, 0.68))
+		lace.rotation.z = -0.12
+		add_child(lace)
+	for side in [-1.0, 1.0]:
+		add_child(_cylinder_piece(0.018, 0.018, 0.025, Vector3(-0.13, 0.27, side * 0.13), Color(0.68, 0.64, 0.56)))
 	rotation.z = rng.randf_range(-0.15, 0.15)
 
 func _make_gear(rng: RandomNumberGenerator) -> void:
@@ -445,6 +462,17 @@ func _make_old_tire(rng: RandomNumberGenerator) -> void:
 	var hub := _cylinder_piece(0.22, 0.22, 0.10, Vector3(0, 0.43, 0), Color(0.38, 0.42, 0.42))
 	hub.rotation_degrees.x = 90.0
 	add_child(hub)
+	# Individual chunky tread lugs around both shoulders of the discarded tyre.
+	for i in range(20):
+		var a := TAU * float(i) / 20.0
+		for side in [-1.0, 1.0]:
+			var lug := _flat_box(Vector3(0.105, 0.085, 0.055), Vector3(cos(a) * 0.425, 0.43 + sin(a) * 0.425, side * 0.105), Color(0.035, 0.043, 0.045))
+			lug.rotation.y = -a
+			add_child(lug)
+	for i in range(8):
+		var bolt := _cylinder_piece(0.018, 0.018, 0.018, Vector3(cos(TAU * i / 8.0) * 0.14, 0.43 + sin(TAU * i / 8.0) * 0.14, -0.065), Color(0.66, 0.67, 0.62))
+		bolt.rotation_degrees.x = 90
+		add_child(bolt)
 	rotation.y = rng.randf_range(0.0, TAU)
 
 func _make_paint_bucket(rng: RandomNumberGenerator) -> void:
@@ -487,6 +515,37 @@ func _make_cable_bundle(rng: RandomNumberGenerator) -> void:
 		cable.rotation.z = rng.randf_range(-0.35, 0.35)
 		cable.material_override = _material([Color(0.12, 0.14, 0.16), Color(0.72, 0.24, 0.13), Color(0.12, 0.38, 0.62)][i])
 		add_child(cable)
+
+
+func _make_old_television(rng: RandomNumberGenerator) -> void:
+	# Abandoned CRT television: deep rear cabinet, curved-looking glass face,
+	# thick bezel, side controls, ventilation slots and a snapped aerial.
+	var cabinet := _flat_box(Vector3(0.78, 0.58, 0.48), Vector3(0, 0.32, 0.02), Color(0.23, 0.25, 0.24))
+	cabinet.rotation.y = rng.randf_range(-0.12, 0.12)
+	add_child(cabinet)
+	var screen := _flat_box(Vector3(0.59, 0.40, 0.035), Vector3(-0.035, 0.35, -0.235), Color(0.055, 0.075, 0.08))
+	add_child(screen)
+	var glass := _flat_box(Vector3(0.54, 0.35, 0.012), Vector3(-0.035, 0.35, -0.258), Color(0.12, 0.19, 0.20, 0.88))
+	add_child(glass)
+	for x in [-0.36, 0.29]:
+		add_child(_flat_box(Vector3(0.055, 0.48, 0.055), Vector3(x, 0.35, -0.255), Color(0.37, 0.38, 0.35)))
+	for y in [0.11, 0.59]:
+		add_child(_flat_box(Vector3(0.70, 0.055, 0.055), Vector3(-0.035, y, -0.255), Color(0.37, 0.38, 0.35)))
+	# Broken glass cracks on the screen.
+	for i in range(4):
+		var crack := _flat_box(Vector3(rng.randf_range(0.12, 0.25), 0.008, 0.006), Vector3(rng.randf_range(-0.20, 0.14), rng.randf_range(0.22, 0.48), -0.268), Color(0.63, 0.72, 0.70))
+		crack.rotation.z = rng.randf_range(-0.9, 0.9)
+		add_child(crack)
+	var control_panel := _flat_box(Vector3(0.12, 0.34, 0.045), Vector3(0.34, 0.34, -0.25), Color(0.18, 0.19, 0.18))
+	add_child(control_panel)
+	for y in [0.25, 0.39, 0.49]:
+		var knob := _cylinder_piece(0.035, 0.035, 0.025, Vector3(0.34, y, -0.282), Color(0.72, 0.70, 0.62))
+		knob.rotation_degrees.x = 90
+		add_child(knob)
+	for i in range(5):
+		add_child(_flat_box(Vector3(0.018, 0.24, 0.018), Vector3(-0.20 + i * 0.09, 0.32, 0.27), Color(0.10, 0.11, 0.10)))
+	add_child(_flat_box(Vector3(0.22, 0.045, 0.18), Vector3(0, 0.025, 0.02), Color(0.16, 0.17, 0.16)))
+	rotation.y = rng.randf_range(0.0, TAU)
 
 func _make_safety_helmet(rng: RandomNumberGenerator) -> void:
 	var shell := MeshInstance3D.new()
