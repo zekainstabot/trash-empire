@@ -99,116 +99,71 @@ func _ready() -> void:
 		set_process(false)
 
 func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
-	# One main mesh per pickup keeps Android fast while using recognizable waste silhouettes.
-	var item := MeshInstance3D.new()
-	var mesh: Mesh
-	var color := Color(0.42, 0.43, 0.39)
-	var lying := false
-	var kind := rng.randi_range(0, 11)
-	match kind:
-		0: # Crushed plastic drink bottle
-			var bottle := CylinderMesh.new()
-			bottle.top_radius = 0.075
-			bottle.bottom_radius = 0.15
-			bottle.height = 0.48
-			bottle.radial_segments = 8
-			mesh = bottle
-			color = [Color(0.22, 0.48, 0.40), Color(0.58, 0.68, 0.63), Color(0.72, 0.78, 0.72)][rng.randi_range(0, 2)]
-			lying = true
-		1: # Dented aluminium can
-			var can := CylinderMesh.new()
-			can.top_radius = 0.125
-			can.bottom_radius = 0.14
-			can.height = 0.30
-			can.radial_segments = 10
-			mesh = can
-			color = [Color(0.65, 0.68, 0.66), Color(0.72, 0.25, 0.16), Color(0.18, 0.38, 0.58)][rng.randi_range(0, 2)]
-		2: # Crumpled paper
-			var paper := SphereMesh.new()
-			paper.radius = 0.22
-			paper.height = 0.30
-			paper.radial_segments = 7
-			paper.rings = 4
-			mesh = paper
-			color = [Color(0.78, 0.73, 0.62), Color(0.58, 0.54, 0.46), Color(0.88, 0.84, 0.74)][rng.randi_range(0, 2)]
-		3: # Torn cardboard
-			var cardboard := BoxMesh.new()
-			cardboard.size = Vector3(0.54, 0.055, 0.40)
-			mesh = cardboard
-			color = [Color(0.48, 0.32, 0.19), Color(0.62, 0.43, 0.26), Color(0.72, 0.55, 0.34)][rng.randi_range(0, 2)]
-		4: # Discarded tire
-			var tire := TorusMesh.new()
-			tire.inner_radius = 0.17
-			tire.outer_radius = 0.31
-			tire.rings = 8
-			tire.ring_segments = 12
-			mesh = tire
-			color = Color(0.055, 0.065, 0.064)
-			item.rotation_degrees.x = 90.0
-		5: # Crushed drink carton
-			var carton := BoxMesh.new()
-			carton.size = Vector3(0.30, 0.40, 0.26)
-			mesh = carton
-			color = Color(0.76, 0.77, 0.67)
-		6: # Broken glass jar
-			var jar := CylinderMesh.new()
-			jar.top_radius = 0.12
-			jar.bottom_radius = 0.16
-			jar.height = 0.32
-			jar.radial_segments = 9
-			mesh = jar
-			color = Color(0.34, 0.57, 0.49)
-		7: # Worn shoe
-			var shoe := BoxMesh.new()
-			shoe.size = Vector3(0.48, 0.17, 0.25)
-			mesh = shoe
-			color = [Color(0.20, 0.19, 0.16), Color(0.34, 0.25, 0.19), Color(0.18, 0.22, 0.25)][rng.randi_range(0, 2)]
-			lying = true
-		8: # Thin plastic bag / wrapper
-			var bag := BoxMesh.new()
-			bag.size = Vector3(0.48, 0.035, 0.36)
-			mesh = bag
-			color = [Color(0.66, 0.72, 0.67), Color(0.68, 0.58, 0.46), Color(0.52, 0.63, 0.68)][rng.randi_range(0, 2)]
-		9: # Rusted pipe offcut
-			var pipe := CylinderMesh.new()
-			pipe.top_radius = 0.085
-			pipe.bottom_radius = 0.085
-			pipe.height = 0.66
-			pipe.radial_segments = 8
-			mesh = pipe
-			color = Color(0.43, 0.25, 0.16)
-			lying = true
-		10: # Old paint bucket
-			var bucket := CylinderMesh.new()
-			bucket.top_radius = 0.16
-			bucket.bottom_radius = 0.19
-			bucket.height = 0.34
-			bucket.radial_segments = 10
-			mesh = bucket
-			color = Color(0.62, 0.30, 0.19)
-		11: # Damaged electronic board
-			var board := BoxMesh.new()
-			board.size = Vector3(0.46, 0.045, 0.32)
-			mesh = board
-			color = Color(0.08, 0.29, 0.22)
-	item.mesh = mesh
-	var surface := _material(color)
-	surface.roughness = 0.82
-	surface.metallic = 0.02
-	if kind == 1 or kind == 9:
-		surface.roughness = 0.56
-		surface.metallic = 0.48
-	elif kind == 4:
-		surface.roughness = 0.96
-	elif kind == 6:
-		surface.roughness = 0.30
-	item.material_override = surface
-	item.position.y = 0.10 if lying else 0.17
-	if lying and item.rotation_degrees.x == 0.0:
-		item.rotation_degrees.z = rng.randf_range(78.0, 102.0) if mesh is CylinderMesh else rng.randf_range(-12.0, 12.0)
-	item.rotation.y = rng.randf_range(0.0, TAU)
-	item.scale *= Vector3(rng.randf_range(0.88, 1.16), rng.randf_range(0.88, 1.12), rng.randf_range(0.88, 1.16))
-	add_child(item)
+	# Use the same recognizable, multi-part object models on Android as desktop.
+	# Keep meshes modest, but do not replace real objects with generic primitives.
+	match rng.randi_range(0, 30):
+		0:
+			_make_plastic_bottle(rng)
+		1:
+			_make_crushed_can(rng)
+		2:
+			_make_paper_cup(rng)
+		3:
+			_make_food_wrapper(rng)
+		4:
+			_make_crumpled_paper(rng)
+		5:
+			_make_cardboard_scrap(rng)
+		6:
+			_make_battery(rng)
+		7:
+			_make_broken_glass(rng)
+		8:
+			_make_soda_bottle(rng)
+		9:
+			_make_old_shoe(rng)
+		10:
+			_make_gear(rng)
+		11:
+			_make_screws(rng)
+		12:
+			_make_wrench(rng)
+		13:
+			_make_newspaper(rng)
+		14:
+			_make_crushed_carton(rng)
+		15:
+			_make_food_box(rng)
+		16:
+			_make_rusted_pipe(rng)
+		17:
+			_make_circuit_board(rng)
+		18:
+			_make_broken_fan(rng)
+		19:
+			_make_scrap_spring(rng)
+		20:
+			_make_oil_can(rng)
+		21:
+			_make_banana_peel(rng)
+		22:
+			_make_plastic_bag(rng)
+		23:
+			_make_milk_carton(rng)
+		24:
+			_make_old_tire(rng)
+		25:
+			_make_paint_bucket(rng)
+		26:
+			_make_toy_blocks(rng)
+		27:
+			_make_glass_jar(rng)
+		28:
+			_make_takeaway_tray(rng)
+		29:
+			_make_cable_bundle(rng)
+		30:
+			_make_safety_helmet(rng)
 
 
 func _add_rare_visual(rare_type: String) -> void:
