@@ -29,6 +29,8 @@ var drone_level := 0
 var drone_timer := 0.0
 var helper_drones: Array[Node3D] = []
 var auto_pickup_timer := 0.0
+var auto_pickup_scan_timer := 0.0
+var auto_pickup_target: Node3D
 var recycling_bonus := 1.0
 var skill_buttons: Array[Button] = []
 var skill_branch_panels: Array[PanelContainer] = []
@@ -1991,34 +1993,36 @@ func _collect_nearby() -> void:
 func _process_auto_pickup(delta: float) -> void:
 	if auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
 		auto_pickup_timer = 0.0
+		auto_pickup_scan_timer = 0.0
+		auto_pickup_target = null
 		return
 
-	# Select exactly one eligible item. Only this item is pulled by the magnet.
-	var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85 + float(magnet_power_level - 1) * 0.7
-	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65 + float(magnet_power_level - 1) * 1.1
-	var nearest: Node3D = null
-	var best_distance := magnet_range
-	for item in trash_nodes:
-		if not is_instance_valid(item):
-			continue
-		var weight := 2 if item.has_meta("bulky") else 1
-		if carried + weight > capacity:
-			continue
-		if item.get_meta("drone_reserved", -1) != -1:
-			continue
-		var distance := player.global_position.distance_to(item.global_position)
-		if distance < best_distance:
-			best_distance = distance
-			nearest = item
+	auto_pickup_scan_timer -= delta
+	if not is_instance_valid(auto_pickup_target) or auto_pickup_target.get_meta("drone_reserved", -1) != -1 or auto_pickup_scan_timer <= 0.0:
+		auto_pickup_target = null
+		auto_pickup_scan_timer = 0.22
+		var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85 + float(magnet_power_level - 1) * 0.7
+		var best_distance := magnet_range
+		for item in trash_nodes:
+			if not is_instance_valid(item):
+				continue
+			var weight := 2 if item.has_meta("bulky") else 1
+			if carried + weight > capacity or item.get_meta("drone_reserved", -1) != -1:
+				continue
+			var distance := player.global_position.distance_to(item.global_position)
+			if distance < best_distance:
+				best_distance = distance
+				auto_pickup_target = item
 
-	if nearest == null:
+	if not is_instance_valid(auto_pickup_target):
 		auto_pickup_timer = 0.0
 		return
 
-	# Pull only the chosen item toward the robot's hand/backpack intake.
+	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65 + float(magnet_power_level - 1) * 1.1
 	var pickup_point := player.global_position + Vector3(0.0, 0.25, 0.0)
-	if best_distance > 0.85:
-		nearest.global_position = nearest.global_position.move_toward(pickup_point, pull_speed * delta)
+	var distance_to_target := player.global_position.distance_to(auto_pickup_target.global_position)
+	if distance_to_target > 0.85:
+		auto_pickup_target.global_position = auto_pickup_target.global_position.move_toward(pickup_point, pull_speed * delta)
 		return
 
 	auto_pickup_timer += delta
@@ -2026,8 +2030,9 @@ func _process_auto_pickup(delta: float) -> void:
 	if auto_pickup_timer < interval:
 		return
 	auto_pickup_timer = 0.0
-
-	if _pickup_trash_item(nearest):
+	var picked := auto_pickup_target
+	auto_pickup_target = null
+	if _pickup_trash_item(picked):
 		_update_ui()
 		_save_game()
 		_set_message("AUTO MAGNET  +1")
@@ -2075,20 +2080,25 @@ func _process_helper_drones(delta: float) -> void:
 		var target := drone.get_meta("target") as Node3D
 		if not is_instance_valid(target):
 			target = null
-			var best_distance := 18.0 + float(drone_level - 1) * 6.0
-			for item in trash_nodes:
-				if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
-					continue
-				var weight := 2 if item.has_meta("bulky") else 1
-				if carried + weight > capacity:
-					continue
-				var distance := drone.global_position.distance_to(item.global_position)
-				if distance < best_distance:
-					best_distance = distance
-					target = item
-			if target != null:
-				target.set_meta("drone_reserved", i)
-				drone.set_meta("target", target)
+			var scan_cooldown := float(drone.get_meta("scan_cooldown", 0.0)) - delta
+			if scan_cooldown <= 0.0:
+				drone.set_meta("scan_cooldown", 0.45)
+				var best_distance := 18.0 + float(drone_level - 1) * 6.0
+				for item in trash_nodes:
+					if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
+						continue
+					var weight := 2 if item.has_meta("bulky") else 1
+					if carried + weight > capacity:
+						continue
+					var distance := drone.global_position.distance_to(item.global_position)
+					if distance < best_distance:
+						best_distance = distance
+						target = item
+				if target != null:
+					target.set_meta("drone_reserved", i)
+					drone.set_meta("target", target)
+			else:
+				drone.set_meta("scan_cooldown", scan_cooldown)
 		if target == null:
 			var idle_pos := player.global_position + Vector3(cos(robot_anim_time + float(i)) * 3.0, 2.3, sin(robot_anim_time + float(i)) * 3.0)
 			drone.global_position = drone.global_position.move_toward(idle_pos, drone_speed * delta)
