@@ -2920,24 +2920,98 @@ func _spawn_city_trash(amount: int) -> int:
 	return spawned
 
 func _spawn_final_cleanup_trash() -> void:
-	# 600 collectible clusters represent 60,000 units without 60,000 Android nodes.
-	var remaining_objects := ceili(float(FINAL_ZONE_TARGET - final_zone_cleaned) / 100.0)
+	# Render all 60,000 individual pieces with four GPU-instanced meshes.
+	# Only 600 lightweight pickup markers are needed for gameplay on Android.
+	var remaining_units := maxi(0, FINAL_ZONE_TARGET - final_zone_cleaned)
+	var remaining_objects := ceili(float(remaining_units) / 100.0)
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
+	_build_final_landfill_debris(remaining_units, rng)
 	for i in range(remaining_objects):
 		var column := i % 30
 		var row := int(i / 30)
 		var x := 141.8 + float(column) * 1.48 + rng.randf_range(-0.22, 0.22)
 		var z := -14.0 + float(row) * 1.48 + rng.randf_range(-0.22, 0.22)
-		# A broad low mound keeps every collectible within practical reach.
 		var mound_radius := sqrt(pow((x - 163.5) / 22.5, 2.0) + pow(z / 15.5, 2.0))
 		var mound_height := maxf(0.0, 1.0 - mound_radius) * 0.62
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.set_meta("final_cleanup_units", 100)
+		item.set_meta("final_cleanup_units", mini(100, remaining_units - i * 100))
 		item.position = Vector3(x, 0.34 + mound_height + rng.randf_range(0.0, 0.08), z)
 		add_child(item)
 		trash_nodes.append(item)
+
+
+func _build_final_landfill_debris(remaining_units: int, rng: RandomNumberGenerator) -> void:
+	if remaining_units <= 0:
+		return
+	var debris_meshes: Array[Mesh] = []
+	var box := BoxMesh.new()
+	box.size = Vector3(0.62, 0.20, 0.46)
+	debris_meshes.append(box)
+	var bottle := CylinderMesh.new()
+	bottle.top_radius = 0.13
+	bottle.bottom_radius = 0.18
+	bottle.height = 0.52
+	bottle.radial_segments = 8
+	debris_meshes.append(bottle)
+	var scrap := SphereMesh.new()
+	scrap.radius = 0.25
+	scrap.height = 0.34
+	scrap.radial_segments = 8
+	scrap.rings = 5
+	debris_meshes.append(scrap)
+	var tire := TorusMesh.new()
+	tire.inner_radius = 0.13
+	tire.outer_radius = 0.29
+	tire.rings = 8
+	tire.ring_segments = 12
+	debris_meshes.append(tire)
+	var debris_colors := [
+		Color(0.48, 0.34, 0.22),
+		Color(0.18, 0.43, 0.39),
+		Color(0.57, 0.59, 0.53),
+		Color(0.075, 0.085, 0.08)
+	]
+	var debris_names := ["LandfillCardboard", "LandfillBottles", "LandfillScrap", "LandfillTires"]
+	var base_count := int(remaining_units / 4)
+	var extra_count := remaining_units % 4
+	for kind in range(4):
+		var count := base_count + (1 if kind < extra_count else 0)
+		if count <= 0:
+			continue
+		var multimesh := MultiMesh.new()
+		multimesh.transform_format = MultiMesh.TRANSFORM_3D
+		multimesh.mesh = debris_meshes[kind]
+		multimesh.instance_count = count
+		var visual := MultiMeshInstance3D.new()
+		visual.name = debris_names[kind]
+		visual.multimesh = multimesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = debris_colors[kind]
+		material.roughness = 0.94
+		visual.material_override = material
+		visual.custom_aabb = AABB(Vector3(135.0, -0.5, -21.0), Vector3(57.0, 9.0, 42.0))
+		add_child(visual)
+		for instance_index in range(count):
+			var angle := rng.randf_range(0.0, TAU)
+			var radius := sqrt(rng.randf()) * 22.0
+			var x := 163.5 + cos(angle) * radius
+			var z := sin(angle) * radius * 0.68
+			var normalized_radius := radius / 22.0
+			var mound_height := pow(maxf(0.0, 1.0 - normalized_radius), 1.35) * 2.8
+			var y := 0.12 + mound_height + rng.randf_range(0.0, 0.75)
+			var random_scale := Vector3(
+				rng.randf_range(0.72, 1.28),
+				rng.randf_range(0.72, 1.25),
+				rng.randf_range(0.72, 1.28)
+			)
+			var basis := Basis.from_euler(Vector3(
+				rng.randf_range(-0.65, 0.65),
+				rng.randf_range(0.0, TAU),
+				rng.randf_range(-0.65, 0.65)
+			)).scaled(random_scale)
+			multimesh.set_instance_transform(instance_index, Transform3D(basis, Vector3(x, y, z)))
 
 func _update_final_zone_label() -> void:
 	if is_instance_valid(final_zone_label):
