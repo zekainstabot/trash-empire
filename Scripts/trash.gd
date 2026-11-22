@@ -194,7 +194,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
 	item.material_override = _material(color)
 	item.position.y = 0.10 if lying else 0.17
 	if lying and item.rotation_degrees.x == 0.0:
-		item.rotation_degrees.z = rng.randf_range(-0.25, 0.25) if mesh is CylinderMesh else rng.randf_range(-12.0, 12.0)
+		item.rotation_degrees.z = rng.randf_range(78.0, 102.0) if mesh is CylinderMesh else rng.randf_range(-12.0, 12.0)
 	item.rotation.y = rng.randf_range(0.0, TAU)
 	item.scale *= Vector3(rng.randf_range(0.88, 1.16), rng.randf_range(0.88, 1.12), rng.randf_range(0.88, 1.16))
 	add_child(item)
