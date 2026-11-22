@@ -977,17 +977,20 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 	label.modulate = Color(1.0, 0.88, 0.62)
 	root.add_child(label)
 
-	# Keep the whole panel tappable without adding a floor obstacle.
+	# The hit area is placed in front of the panel face and drives the actual lever.
 	var area := Area3D.new()
 	area.name = "WallRespawnButtonArea"
-	area.position = Vector3(-0.42, -0.20, 0.0)
+	area.position = Vector3(-0.58, -0.12, 0.0)
+	area.collision_layer = 0
+	area.collision_mask = 0
+	area.input_ray_pickable = true
 	var collision := CollisionShape3D.new()
 	var hit_shape := BoxShape3D.new()
-	hit_shape.size = Vector3(0.9, 1.55, 1.65)
+	hit_shape.size = Vector3(1.15, 1.65, 1.72)
 	collision.shape = hit_shape
 	area.add_child(collision)
 	root.add_child(area)
-	area.input_event.connect(_on_world_action_input.bind(action))
+	area.input_event.connect(_on_pull_lever_input.bind(action, lever_pivot))
 	return root
 
 func _box_child(parent: Node3D, node_name: String, local_position: Vector3, dimensions: Vector3, color: Color) -> MeshInstance3D:
@@ -3079,30 +3082,38 @@ func _spawn_district_two_trash(amount: int) -> void:
 		trash_nodes.append(item)
 
 func _refill_first_district() -> void:
-	var existing_first_district := 0
+	# Manual wall lever refills the whole currently unlocked city, not only district one.
+	var target_count := 24
+	if yard_stage >= 2:
+		target_count += 48
+	if yard_stage >= 3:
+		target_count += 96
+	target_count += (spawn_upgrade_level - 1) * 6
+	var alive_count := 0
 	for item in trash_nodes:
-		if is_instance_valid(item) and item.global_position.x >= -15.0 and item.global_position.x <= 15.0:
-			existing_first_district += 1
-	var refill_target := 18 + (spawn_upgrade_level - 1) * 4
-	var amount := maxi(0, refill_target - existing_first_district)
-	if amount == 0:
-		_set_message("First district is already full of trash!")
+		if is_instance_valid(item) and not item.is_queued_for_deletion():
+			alive_count += 1
+	var amount := maxi(0, target_count - alive_count)
+	if amount <= 0:
+		_set_message("CITY TRASH SUPPLY IS FULL!")
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(amount):
+	var spawned := 0
+	var attempts := 0
+	while spawned < amount and attempts < amount * 80:
+		attempts += 1
+		var point := Vector3(rng.randf_range(-11.5, 107.5), 0.34, rng.randf_range(-31.0, 31.0))
+		if not _is_clear_trash_spawn(point):
+			continue
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		var spawn_point := Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
-		var attempts := 0
-		while not _is_clear_trash_spawn(spawn_point) and attempts < 60:
-			spawn_point = Vector3(rng.randf_range(-11.5, 11.5), 0.34, rng.randf_range(-10.0, 11.5))
-			attempts += 1
-		item.position = spawn_point
+		item.position = point
 		add_child(item)
 		trash_nodes.append(item)
+		spawned += 1
 	_update_ui()
-	_set_message("First district refilled! %d new trash pieces spawned." % amount)
+	_set_message("CITY REFILLED: %d new trash pieces across unlocked districts." % spawned)
 
 func _is_city_truck_lane_position(point: Vector3) -> bool:
 	var on_service_road := point.x >= -9.2 and point.x <= -5.2 and point.z >= -8.5 and point.z <= 34.0
