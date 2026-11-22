@@ -2110,6 +2110,9 @@ func _process_helper_drones(delta: float) -> void:
 			else:
 				drone.set_meta("scan_cooldown", scan_cooldown)
 		if target == null:
+			if int(drone.get_meta("cargo_slots", 0)) > 0:
+				drone.set_meta("returning", true)
+				continue
 			var idle_pos := player.global_position + Vector3(cos(robot_anim_time + float(i)) * 3.0, 2.3, sin(robot_anim_time + float(i)) * 3.0)
 			drone.global_position = drone.global_position.move_toward(idle_pos, drone_speed * delta)
 			continue
