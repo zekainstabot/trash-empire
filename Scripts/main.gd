@@ -2560,17 +2560,20 @@ func _pay_gradually(cost: float) -> bool:
 	if payment_active or money < cost:
 		return false
 	payment_active = true
+	_refresh_upgrade_prices()
 	var paid := 0.0
-	_set_message("Payment in progress...")
+	_set_message("PURCHASING UPGRADE...")
 	while paid < cost - 0.001:
 		await get_tree().process_frame
 		if not is_inside_tree():
 			payment_active = false
+			_refresh_upgrade_prices()
 			return false
 		var delta := get_process_delta_time()
 		var amount := minf(minf(cost - paid, money), (cost / 3.0) * _spending_speed_multiplier() * delta)
 		if amount <= 0.0:
 			payment_active = false
+			_refresh_upgrade_prices()
 			_set_message("Payment stopped: not enough money.")
 			return false
 		money -= amount
@@ -2579,6 +2582,7 @@ func _pay_gradually(cost: float) -> bool:
 	_update_ui()
 	_save_game()
 	payment_active = false
+	_refresh_upgrade_prices()
 	return true
 
 func _process_expansion_zone(_delta: float) -> void:
