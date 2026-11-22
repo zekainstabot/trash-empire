@@ -7,6 +7,11 @@ func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	spin_speed = rng.randf_range(-0.45, 0.45)
+	# A subset of litter is bulky: it occupies two backpack slots and pays double.
+	var is_bulky := rng.randf() < 0.10
+	if is_bulky:
+		set_meta("bulky", true)
+		scale = Vector3(1.45, 1.45, 1.45)
 	match rng.randi_range(0, 30):
 		0:
 			_make_plastic_bottle(rng)
