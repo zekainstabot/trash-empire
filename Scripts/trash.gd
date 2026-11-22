@@ -99,54 +99,104 @@ func _ready() -> void:
 		set_process(false)
 
 func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
+	# One main mesh per pickup keeps Android fast while using recognizable waste silhouettes.
 	var item := MeshInstance3D.new()
-	var colors := [
-		Color(0.20, 0.62, 0.48), Color(0.68, 0.73, 0.75),
-		Color(0.88, 0.82, 0.66), Color(0.88, 0.22, 0.12),
-		Color(0.58, 0.39, 0.22), Color(0.48, 0.43, 0.34),
-		Color(0.18, 0.34, 0.30), Color(0.72, 0.31, 0.16)
-	]
-	item.material_override = _material(colors[rng.randi_range(0, colors.size() - 1)])
-	match rng.randi_range(0, 5):
-		0:
-			var box := BoxMesh.new()
-			box.size = Vector3(rng.randf_range(0.30, 0.58), rng.randf_range(0.06, 0.22), rng.randf_range(0.24, 0.48))
-			item.mesh = box
-		1:
+	var mesh: Mesh
+	var color := Color(0.42, 0.43, 0.39)
+	var lying := false
+	match rng.randi_range(0, 11):
+		0: # Crushed plastic drink bottle
 			var bottle := CylinderMesh.new()
-			bottle.top_radius = 0.11
-			bottle.bottom_radius = 0.16
+			bottle.top_radius = 0.075
+			bottle.bottom_radius = 0.15
 			bottle.height = 0.48
-			bottle.radial_segments = 6
-			item.mesh = bottle
-			item.rotation_degrees.z = 90.0
-		2:
+			bottle.radial_segments = 8
+			mesh = bottle
+			color = [Color(0.22, 0.48, 0.40), Color(0.58, 0.68, 0.63), Color(0.72, 0.78, 0.72)][rng.randi_range(0, 2)]
+			lying = true
+		1: # Dented aluminium can
 			var can := CylinderMesh.new()
-			can.top_radius = 0.14
+			can.top_radius = 0.125
 			can.bottom_radius = 0.14
 			can.height = 0.30
-			can.radial_segments = 6
-			item.mesh = can
-		3:
-			var scrap := SphereMesh.new()
-			scrap.radius = 0.24
-			scrap.height = 0.30
-			scrap.radial_segments = 6
-			scrap.rings = 3
-			item.mesh = scrap
-		4:
+			can.radial_segments = 10
+			mesh = can
+			color = [Color(0.65, 0.68, 0.66), Color(0.72, 0.25, 0.16), Color(0.18, 0.38, 0.58)][rng.randi_range(0, 2)]
+		2: # Crumpled paper
+			var paper := SphereMesh.new()
+			paper.radius = 0.22
+			paper.height = 0.30
+			paper.radial_segments = 7
+			paper.rings = 4
+			mesh = paper
+			color = [Color(0.78, 0.73, 0.62), Color(0.58, 0.54, 0.46), Color(0.88, 0.84, 0.74)][rng.randi_range(0, 2)]
+		3: # Torn cardboard
+			var cardboard := BoxMesh.new()
+			cardboard.size = Vector3(0.54, 0.055, 0.40)
+			mesh = cardboard
+			color = [Color(0.48, 0.32, 0.19), Color(0.62, 0.43, 0.26), Color(0.72, 0.55, 0.34)][rng.randi_range(0, 2)]
+		4: # Discarded tire
 			var tire := TorusMesh.new()
-			tire.inner_radius = 0.16
-			tire.outer_radius = 0.30
-			tire.rings = 6
-			tire.ring_segments = 8
-			item.mesh = tire
+			tire.inner_radius = 0.17
+			tire.outer_radius = 0.31
+			tire.rings = 8
+			tire.ring_segments = 12
+			mesh = tire
+			color = Color(0.055, 0.065, 0.064)
 			item.rotation_degrees.x = 90.0
-		5:
+		5: # Crushed drink carton
 			var carton := BoxMesh.new()
-			carton.size = Vector3(0.30, 0.36, 0.28)
-			item.mesh = carton
-	item.position.y = 0.12
+			carton.size = Vector3(0.30, 0.40, 0.26)
+			mesh = carton
+			color = Color(0.76, 0.77, 0.67)
+		6: # Broken glass jar
+			var jar := CylinderMesh.new()
+			jar.top_radius = 0.12
+			jar.bottom_radius = 0.16
+			jar.height = 0.32
+			jar.radial_segments = 9
+			mesh = jar
+			color = Color(0.34, 0.57, 0.49)
+		7: # Worn shoe
+			var shoe := BoxMesh.new()
+			shoe.size = Vector3(0.48, 0.17, 0.25)
+			mesh = shoe
+			color = [Color(0.20, 0.19, 0.16), Color(0.34, 0.25, 0.19), Color(0.18, 0.22, 0.25)][rng.randi_range(0, 2)]
+			lying = true
+		8: # Thin plastic bag / wrapper
+			var bag := BoxMesh.new()
+			bag.size = Vector3(0.48, 0.035, 0.36)
+			mesh = bag
+			color = [Color(0.66, 0.72, 0.67), Color(0.68, 0.58, 0.46), Color(0.52, 0.63, 0.68)][rng.randi_range(0, 2)]
+		9: # Rusted pipe offcut
+			var pipe := CylinderMesh.new()
+			pipe.top_radius = 0.085
+			pipe.bottom_radius = 0.085
+			pipe.height = 0.66
+			pipe.radial_segments = 8
+			mesh = pipe
+			color = Color(0.43, 0.25, 0.16)
+			lying = true
+		10: # Old paint bucket
+			var bucket := CylinderMesh.new()
+			bucket.top_radius = 0.16
+			bucket.bottom_radius = 0.19
+			bucket.height = 0.34
+			bucket.radial_segments = 10
+			mesh = bucket
+			color = Color(0.62, 0.30, 0.19)
+		11: # Damaged electronic board
+			var board := BoxMesh.new()
+			board.size = Vector3(0.46, 0.045, 0.32)
+			mesh = board
+			color = Color(0.08, 0.29, 0.22)
+	item.mesh = mesh
+	item.material_override = _material(color)
+	item.position.y = 0.10 if lying else 0.17
+	if lying and item.rotation_degrees.x == 0.0:
+		item.rotation_degrees.z = rng.randf_range(-0.25, 0.25) if mesh is CylinderMesh else rng.randf_range(-12.0, 12.0)
+	item.rotation.y = rng.randf_range(0.0, TAU)
+	item.scale *= Vector3(rng.randf_range(0.88, 1.16), rng.randf_range(0.88, 1.12), rng.randf_range(0.88, 1.16))
 	add_child(item)
 
 
