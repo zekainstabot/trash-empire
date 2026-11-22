@@ -2068,6 +2068,12 @@ func _process_helper_drones(delta: float) -> void:
 		var drone := helper_drones[i]
 		if not is_instance_valid(drone) or not drone.visible:
 			continue
+		if drone.get_meta("returning", false):
+			var return_pos := SELL_POINT + Vector3(0, 1.5, 0)
+			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
+			if drone.global_position.distance_to(return_pos) <= 2.5:
+				drone.set_meta("deposited", false)
+			continue
 		var target := drone.get_meta("target") as Node3D
 		if not is_instance_valid(target):
 			target = null
@@ -2096,16 +2102,26 @@ func _process_helper_drones(delta: float) -> void:
 			drone_timer = 0.0
 			if _pickup_trash_item(target):
 				drone.set_meta("target", null)
+				drone.set_meta("returning", true)
 				_update_ui()
 				_save_game()
 				_set_message("DRONE CLEANUP  +1")
 			else:
 				target.set_meta("drone_reserved", -1)
 				drone.set_meta("target", null)
+func _drone_deposit_cycle(drone: Node3D) -> void:
+	drone.set_meta("returning", false)
+	drone.set_meta("target", null)
+	drone.set_meta("deposited", true)
+
 func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
 	var inside_zone := player.global_position.distance_to(SELL_POINT) <= 2.35
+	for drone in helper_drones:
+		if is_instance_valid(drone) and drone.visible and drone.get_meta("returning", false) and drone.global_position.distance_to(SELL_POINT + Vector3(0, 1.5, 0)) <= 3.0:
+			inside_zone = true
+			_drone_deposit_cycle(drone)
 	if not inside_zone or carried <= 0:
 		unload_timer = 0.0
 		return
