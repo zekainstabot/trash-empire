@@ -1,4 +1,4 @@
-name: انتشار بازی (APK + AAB)
+name: انتشار Zeka City: Cleanup Empire (APK + AAB)
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build_release:
-    name: Build, sign, and publish Trash Empire
+    name: Build, sign, and publish Zeka City: Cleanup Empire
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -117,7 +117,7 @@ jobs:
       - name: Upload signed store packages
         uses: actions/upload-artifact@v4
         with:
-          name: Trash-Empire-Store-Release
+          name: Zeka-City-Cleanup-Empire-Store-Release
           path: |
             build/TrashEmpire-release.apk
             build/TrashEmpire-release.aab
@@ -128,7 +128,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: Trash Empire v1.0.${{ github.run_number }}
+          name: Zeka City: Cleanup Empire v1.0.${{ github.run_number }}
           generate_release_notes: true
           files: |
             build/TrashEmpire-release.apk
