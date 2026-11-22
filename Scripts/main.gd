@@ -2097,6 +2097,8 @@ func _process_helper_drones(delta: float) -> void:
 				cargo_items.append(lifting_item)
 				drone.set_meta("cargo_items", cargo_items)
 				drone.set_meta("lifting_item", null)
+				if int(drone.get_meta("cargo_slots", 0)) >= int(drone.get_meta("cargo_capacity", 5)):
+					drone.set_meta("returning", true)
 			continue
 		if int(drone.get_meta("cargo_slots", 0)) >= int(drone.get_meta("cargo_capacity", 5)):
 			drone.set_meta("returning", true)
@@ -2148,10 +2150,9 @@ func _process_helper_drones(delta: float) -> void:
 				if weight == 2:
 					drone.set_meta("cargo_bulky", int(drone.get_meta("cargo_bulky", 0)) + 1)
 				drone.set_meta("cargo_slots", slots + weight)
+				trash_nodes.erase(target)
 				drone.set_meta("lifting_item", target)
 				drone.set_meta("target", null)
-				if slots + weight >= drone_capacity:
-					drone.set_meta("returning", true)
 				_update_ui()
 				_save_game()
 				_set_message("DRONE CARGO  %d/%d" % [slots + weight, drone_capacity])
