@@ -2054,6 +2054,11 @@ func _build_helper_drones() -> void:
 		drone.visible = i < drone_level
 		drone.global_position = player.global_position + Vector3(0, 2.3, 0) if is_instance_valid(player) else Vector3.ZERO
 		drone.set_meta("target", null)
+		drone.set_meta("cargo_slots", 0)
+		drone.set_meta("cargo_bulky", 0)
+		drone.set_meta("cargo_capacity", 5)
+		drone.set_meta("returning", false)
+		drone.set_meta("deposit_timer", 0.0)
 		helper_drones.append(drone)
 
 func _refresh_helper_drone_visibility() -> void:
@@ -2077,6 +2082,9 @@ func _process_helper_drones(delta: float) -> void:
 			if drone.global_position.distance_to(return_pos) <= 2.5:
 				drone.set_meta("deposited", true)
 			continue
+		if int(drone.get_meta("cargo_slots", 0)) >= int(drone.get_meta("cargo_capacity", 5)):
+			drone.set_meta("returning", true)
+			continue
 		var target := drone.get_meta("target") as Node3D
 		if not is_instance_valid(target):
 			target = null
@@ -2088,7 +2096,9 @@ func _process_helper_drones(delta: float) -> void:
 					if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
 						continue
 					var weight := 2 if item.has_meta("bulky") else 1
-					if carried + weight > capacity:
+					var drone_slots := int(drone.get_meta("cargo_slots", 0))
+					var drone_capacity := int(drone.get_meta("cargo_capacity", 5))
+					if drone_slots + weight > drone_capacity:
 						continue
 					var distance := drone.global_position.distance_to(item.global_position)
 					if distance < best_distance:
@@ -2108,26 +2118,69 @@ func _process_helper_drones(delta: float) -> void:
 		drone.look_at(destination, Vector3.UP)
 		if drone.global_position.distance_to(destination) < 0.85 and drone_timer >= interval:
 			drone_timer = 0.0
-			if _pickup_trash_item(target):
+			var weight := 2 if target.has_meta("bulky") else 1
+			var slots := int(drone.get_meta("cargo_slots", 0))
+			var drone_capacity := int(drone.get_meta("cargo_capacity", 5))
+			if slots + weight <= drone_capacity:
+				_register_final_cleanup_pickup(target)
+				if target.has_meta("rare_type"):
+					var rare_type := String(target.get_meta("rare_type"))
+					money += 8.0 if rare_type == "gold" else 2.0
+				if weight == 2:
+					drone.set_meta("cargo_bulky", int(drone.get_meta("cargo_bulky", 0)) + 1)
+				drone.set_meta("cargo_slots", slots + weight)
+				target.queue_free()
+				trash_nodes.erase(target)
 				drone.set_meta("target", null)
-				drone.set_meta("returning", true)
+				if slots + weight >= drone_capacity:
+					drone.set_meta("returning", true)
 				_update_ui()
 				_save_game()
-				_set_message("DRONE CLEANUP  +1")
+				_set_message("DRONE CARGO  %d/%d" % [slots + weight, drone_capacity])
 			else:
 				target.set_meta("drone_reserved", -1)
 				drone.set_meta("target", null)
 func _drone_deposit_cycle(drone: Node3D) -> void:
-	drone.set_meta("deposited", true)
+	if not is_instance_valid(drone) or not drone.get_meta("returning", false):
+		return
+	var slots := int(drone.get_meta("cargo_slots", 0))
+	if slots <= 0:
+		drone.set_meta("returning", false)
+		drone.set_meta("deposited", false)
+		return
+	var timer := float(drone.get_meta("deposit_timer", 0.0)) + get_process_delta_time()
+	var seconds_per_item := maxf(0.35, 1.8 - float(unload_upgrade_level - 1) * 0.18)
+	if timer < seconds_per_item:
+		drone.set_meta("deposit_timer", timer)
+		return
+	drone.set_meta("deposit_timer", 0.0)
+	var bulky := int(drone.get_meta("cargo_bulky", 0)) > 0
+	if bulky:
+		drone.set_meta("cargo_bulky", int(drone.get_meta("cargo_bulky", 0)) - 1)
+		drone.set_meta("cargo_slots", slots - 2)
+	else:
+		drone.set_meta("cargo_slots", slots - 1)
+	var factory_multipliers := [1.0, 2.0, 4.0, 8.0]
+	var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
+	var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25) * (2.0 if bulky else 1.0)
+	money += item_value
+	_spawn_conveyor_item(item_value)
+	_update_ui()
+	_save_game()
+	if int(drone.get_meta("cargo_slots", 0)) <= 0:
+		drone.set_meta("returning", false)
+		drone.set_meta("deposited", false)
+		drone.set_meta("scan_cooldown", 0.8)
+		_set_message("Drone unloaded its cargo and is collecting again.")
 
 func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
-	var inside_zone := player.global_position.distance_to(SELL_POINT) <= 2.35
+	# Drone cargo is processed separately; it never triggers a sale of the player's bag.
 	for drone in helper_drones:
 		if is_instance_valid(drone) and drone.visible and drone.get_meta("returning", false) and drone.global_position.distance_to(SELL_POINT + Vector3(0, 1.5, 0)) <= 3.0:
-			inside_zone = true
 			_drone_deposit_cycle(drone)
+	var inside_zone := player.global_position.distance_to(SELL_POINT) <= 2.35
 	if not inside_zone or carried <= 0:
 		unload_timer = 0.0
 		return
