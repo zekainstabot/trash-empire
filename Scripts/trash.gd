@@ -91,6 +91,8 @@ func _ready() -> void:
 			_make_safety_helmet(rng)
 		31:
 			_make_old_television(rng)
+		31:
+			_make_old_television(rng)
 	rotation.y = rng.randf_range(0.0, TAU)
 	if has_meta("rare_type"):
 		_add_rare_visual(String(get_meta("rare_type")))
@@ -103,7 +105,7 @@ func _ready() -> void:
 func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
 	# Use the same recognizable, multi-part object models on Android as desktop.
 	# Keep meshes modest, but do not replace real objects with generic primitives.
-	match rng.randi_range(0, 30):
+	match rng.randi_range(0, 31):
 		0:
 			_make_plastic_bottle(rng)
 		1:
@@ -166,6 +168,8 @@ func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
 			_make_cable_bundle(rng)
 		30:
 			_make_safety_helmet(rng)
+		31:
+			_make_old_television(rng)
 
 
 func _add_rare_visual(rare_type: String) -> void:
