@@ -3603,8 +3603,50 @@ func _factory_row_z(row: int) -> float:
 	return -26.0 + float(row) * 13.0
 
 func _factory_row_product(row: int) -> String:
-	var products := ["RECYCLED PLASTIC PELLETS", "METAL INGOTS", "PAPER ROLLS", "GLASS BOTTLES", "ECO BUILDING BRICKS"]
+	var products := ["TELEVISIONS", "DINING TABLES", "CHAIRS", "REFRIGERATORS", "FLOOR LAMPS"]
 	return products[clampi(row, 0, products.size() - 1)]
+
+func _build_factory_finished_product(row: int) -> void:
+	var x := 181.5
+	var z := _factory_row_z(row)
+	var frame := Color(0.10, 0.13, 0.15)
+	var trim := Color(0.48, 0.54, 0.55)
+	var wood := [Color(0.48, 0.27, 0.13), Color(0.62, 0.39, 0.20), Color(0.34, 0.22, 0.15)][row % 3]
+	_box("FactoryFinishedProductStand%d" % row, Vector3(x, 0.52, z), Vector3(3.2, 0.9, 3.0), Color(0.16, 0.23, 0.22), false)
+	match row:
+		0:
+			# Fully assembled flat-screen television.
+			_box("FinishedTVFrame", Vector3(x, 1.72, z - 0.25), Vector3(2.25, 1.42, 0.16), frame, false)
+			_box("FinishedTVScreen", Vector3(x, 1.75, z - 0.345), Vector3(2.03, 1.19, 0.025), Color(0.08, 0.28, 0.38), false)
+			_box("FinishedTVStandNeck", Vector3(x, 0.98, z - 0.25), Vector3(0.18, 0.42, 0.16), trim, false)
+			_box("FinishedTVFeet", Vector3(x, 0.76, z - 0.25), Vector3(1.15, 0.09, 0.42), frame, false)
+			_box("FinishedTVPowerLight", Vector3(x + 0.92, 1.08, z - 0.35), Vector3(0.08, 0.045, 0.025), Color(0.15, 0.95, 0.48), false)
+		1:
+			# A finished wooden dining table with four legs.
+			_box("FinishedTableTop", Vector3(x, 1.48, z), Vector3(2.55, 0.18, 1.65), wood, false)
+			for lx in [-1.05, 1.05]:
+				for lz in [-0.62, 0.62]:
+					_box("FinishedTableLeg", Vector3(x + lx, 0.91, z + lz), Vector3(0.14, 1.05, 0.14), wood.darkened(0.12), false)
+		2:
+			# A complete chair with seat, backrest and four legs.
+			_box("FinishedChairSeat", Vector3(x, 1.12, z + 0.28), Vector3(1.45, 0.18, 1.25), wood, false)
+			_box("FinishedChairBack", Vector3(x, 1.88, z + 0.83), Vector3(1.45, 1.35, 0.16), wood, false)
+			for lx in [-0.58, 0.58]:
+				for lz in [-0.22, 0.78]:
+					_box("FinishedChairLeg", Vector3(x + lx, 0.62, z + lz), Vector3(0.13, 0.95, 0.13), wood.darkened(0.12), false)
+		3:
+			# A full-size refrigerator with a separate freezer door and handle.
+			_box("FinishedFridgeBody", Vector3(x, 1.72, z), Vector3(1.65, 2.55, 1.45), Color(0.68, 0.74, 0.76), false)
+			_box("FinishedFridgeFreezer", Vector3(x, 2.48, z - 0.74), Vector3(1.55, 0.92, 0.045), Color(0.79, 0.83, 0.84), false)
+			_box("FinishedFridgeDoor", Vector3(x, 1.48, z - 0.75), Vector3(1.55, 1.02, 0.045), Color(0.74, 0.79, 0.80), false)
+			_box("FinishedFridgeHandle", Vector3(x + 0.58, 1.53, z - 0.82), Vector3(0.08, 0.72, 0.10), trim, false)
+		4:
+			# A complete floor lamp with base, upright and shade.
+			_cylinder("FinishedLampBase", Vector3(x, 0.72, z), 0.62, 0.18, frame, false)
+			_cylinder("FinishedLampPole", Vector3(x, 1.62, z), 0.075, 1.72, trim, false)
+			_cylinder("FinishedLampShade", Vector3(x, 2.55, z), 0.62, 0.58, Color(0.92, 0.75, 0.38), false)
+			_cylinder("FinishedLampBulb", Vector3(x, 2.28, z), 0.20, 0.22, Color(1.0, 0.94, 0.68), false)
+	_label_3d("READY: " + _factory_row_product(row), Vector3(x, 1.08, z - 1.65), 0.12)
 
 func _build_recycling_mega_factory() -> void:
 	# Five independent production lines, each with three dedicated machines.
@@ -3658,11 +3700,12 @@ func _build_recycling_mega_factory() -> void:
 			_box("MegaFactoryConveyorBelt", Vector3(belt_x, 1.02, z), Vector3(6.8, 0.08, 1.3), Color(0.035, 0.05, 0.055), false)
 			for side_z in [z - 0.72, z + 0.72]:
 				_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.22, side_z), Vector3(6.8, 0.28, 0.09), steel, false)
-		# Finished goods are visibly staged at the end of this line only.
-		_box("FactoryProductOutput", Vector3(181.5, 0.48, z), Vector3(3.0, 0.8, 2.8), Color(0.18, 0.27, 0.25), false)
-		_label_3d(_factory_row_product(row), Vector3(181.5, 1.15, z - 1.55), 0.12)
-		for crate_index in range(3):
-			_box("FactoryProductCrate", Vector3(180.5 + float(crate_index % 2) * 1.5, 0.98, z - 0.5 + float(crate_index / 2) * 1.0), Vector3(0.85, 0.75, 0.85), [Color(0.12, 0.55, 0.56), Color(0.66, 0.62, 0.42), Color(0.30, 0.58, 0.38)][row % 3], false)
+		# A finished usable product appears only after all three machines in this line are built.
+		if mega_factory_built_count >= (row + 1) * 3:
+			_build_factory_finished_product(row)
+		else:
+			_box("FactoryProductOutput", Vector3(181.5, 0.48, z), Vector3(3.0, 0.8, 2.8), Color(0.18, 0.27, 0.25), false)
+			_label_3d("3 MACHINES REQUIRED", Vector3(181.5, 1.15, z - 1.55), 0.12)
 	# Utility equipment is kept along the rear service strip, away from the five lines.
 	for tank_index in range(3):
 		var tx := 181.0 + float(tank_index) * 2.8
@@ -3732,6 +3775,9 @@ func _process_mega_factory_build(delta: float) -> void:
 		mega_factory_build_timer = 0.0
 		if index < mega_factory_machine_labels.size() and is_instance_valid(mega_factory_machine_labels[index]):
 			mega_factory_machine_labels[index].text = "BUILT"
+		if mega_factory_built_count % 3 == 0:
+			_build_factory_finished_product(int(index / 3))
+			_set_message("Production line complete! %s is now being manufactured." % _factory_row_product(int(index / 3)))
 		_update_ui()
 		_save_game()
 		if mega_factory_built_count < 15:
