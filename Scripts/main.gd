@@ -1200,6 +1200,7 @@ func _build_ui() -> void:
 
 	# Keep the existing HUD panel; replace only the status text beneath it with missions.
 	var mission_title := _label("MISSIONS", Vector2(20, 132), 14, layer)
+	mission_title.name = "MissionTitle"
 	mission_title.add_theme_color_override("font_color", Color(0.42, 0.88, 0.72))
 	mission_label = _label("", Vector2(20, 153), 13, layer)
 	mission_label.size = Vector2(maxf(280.0, screen.x - 40.0), 76)
@@ -3323,17 +3324,20 @@ func _set_message(_value: String) -> void:
 func _update_missions() -> void:
 	if not is_instance_valid(mission_label):
 		return
-	var collect_done := total_trash_collected >= 10
-	var bag_done := upgrade_level >= 2
-	var drone_done := drone_level >= 1
-	var collect_mark := "✓" if collect_done else "○"
-	var bag_mark := "✓" if bag_done else "○"
-	var drone_mark := "✓" if drone_done else "○"
-	mission_label.text = "%s Collect trash: %d / 10\n%s Upgrade backpack: %s\n%s Hire a helper drone: %s" % [
-		collect_mark, mini(total_trash_collected, 10),
-		bag_mark, "DONE" if bag_done else "1 upgrade",
-		drone_mark, "DONE" if drone_done else "1 drone"
-	]
+	# Show exactly one mission at a time. Completing it removes it and reveals
+	# the next mission; mission completion never changes the underlying gameplay.
+	var mission_title := mission_label.get_parent().get_node_or_null("MissionTitle")
+	if total_trash_collected < 10:
+		mission_label.text = "Collect trash: %d / 10" % total_trash_collected
+	elif upgrade_level < 1:
+		mission_label.text = "Upgrade your backpack"
+	elif drone_level < 1:
+		mission_label.text = "Unlock your first helper drone"
+	else:
+		mission_label.text = ""
+	if is_instance_valid(mission_title):
+		mission_title.visible = mission_label.text != ""
+	mission_label.visible = mission_label.text != ""
 
 func _anchor_bottom_right(control: Control) -> void:
 	control.anchor_left = 1.0
