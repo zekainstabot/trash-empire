@@ -1544,20 +1544,21 @@ func _build_ui() -> void:
 	panel.size = Vector2(270, 126)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.065, 0.075, 0.88)))
 	layer.add_child(panel)
-	money_label = _label("ZC  0", Vector2(32, 27), 22, layer)
+	money_label = _label("CASH  0 ZC", Vector2(32, 27), 22, layer)
 	bag_label = _label("BAG  0 / 5", Vector2(32, 64), 18, layer)
-	final_zone_label = _label("FINAL CLEANUP  0 / 60,000", Vector2(32, 94), 14, layer)
+	final_zone_label = _label("LANDFILL  0 / 60,000", Vector2(32, 94), 14, layer)
 	final_zone_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.30))
 	_update_final_zone_label()
 
 	# Large, high-contrast mission card. Keep instructions short and readable on phones.
 	var mission_card := Panel.new()
 	mission_card.name = "MissionCard"
-	mission_card.position = Vector2(18, 134)
-	mission_card.size = Vector2(clampf(screen.x - 36.0, 284.0, 480.0), 112.0)
+	var wide_layout := screen.x > screen.y
+	mission_card.position = Vector2(220 if wide_layout else 18, 134)
+	mission_card.size = Vector2(clampf(screen.x - (238.0 if wide_layout else 36.0), 284.0, 480.0), 132.0)
 	mission_card.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.075, 0.068, 0.96)))
 	layer.add_child(mission_card)
-	var mission_title := _label("CURRENT MISSION", Vector2(14, 9), 14, mission_card)
+	var mission_title := _label("NEXT STEP", Vector2(14, 9), 14, mission_card)
 	mission_title.name = "MissionTitle"
 	mission_title.add_theme_color_override("font_color", Color(0.38, 1.0, 0.72))
 	mission_label = _label("", Vector2(14, 34), 16, mission_card)
@@ -1574,7 +1575,7 @@ func _build_ui() -> void:
 	message_label.visible = false
 	_update_missions()
 
-	var collect := _button("PICK UP", Vector2(-124, -150), Vector2(104, 104), layer)
+	var collect := _button("COLLECT", Vector2(-124, -150), Vector2(104, 104), layer)
 	_anchor_bottom_right(collect)
 	collect.add_theme_stylebox_override("normal", _circle_button_style(Color(0.08, 0.34, 0.29, 0.58)))
 	collect.add_theme_stylebox_override("hover", _circle_button_style(Color(0.12, 0.46, 0.37, 0.68)))
