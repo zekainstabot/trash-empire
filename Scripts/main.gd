@@ -2867,8 +2867,6 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 		rover.set_meta("cargo_slots", slots - 2)
 	else:
 		rover.set_meta("cargo_slots", slots - 1)
-	var multipliers := [1.0, 2.0, 4.0, 8.0]
-	var factory_multiplier: float = multipliers[clampi(factory_stage - 1, 0, 3)]
 	var item_value := _recycling_item_value(bulky)
 	money += item_value
 	_spawn_conveyor_item(item_value)
@@ -2906,8 +2904,6 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		drone.set_meta("cargo_slots", slots - 2)
 	else:
 		drone.set_meta("cargo_slots", slots - 1)
-	var factory_multipliers := [1.0, 2.0, 4.0, 8.0]
-	var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
 	var item_value := _recycling_item_value(bulky)
 	money += item_value
 	_spawn_conveyor_item(item_value)
@@ -2942,8 +2938,6 @@ func _process_auto_sell(delta: float) -> void:
 			carried_bulky -= 1
 		else:
 			carried -= 1
-		var factory_multipliers := [1.0, 2.0, 4.0, 8.0]
-		var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
 		var item_value := _recycling_item_value(sold_bulky)
 		if randf() < float(luck_upgrade_level - 1) * 0.10:
 			item_value *= 2.0
@@ -3615,7 +3609,7 @@ func _sorting_robot_item_reward() -> float:
 	return 0.35 * factory_multipliers[clampi(factory_stage - 1, 0, 4)]
 
 func _factory_row_unit_price(row: int) -> float:
-	var prices := [18.0, 24.0, 15.0, 32.0, 14.0]
+	var prices := [30.0, 26.0, 18.0, 42.0, 16.0]
 	return prices[clampi(row, 0, prices.size() - 1)]
 
 func _factory_row_truck_revenue(row: int) -> float:
@@ -3846,7 +3840,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	)
 
 func _mega_factory_machine_cost(index: int) -> float:
-	var costs := [45.0, 65.0, 90.0, 120.0, 160.0, 210.0, 260.0, 320.0, 390.0, 460.0, 540.0, 630.0, 730.0, 840.0, 960.0]
+	var costs := [35.0, 50.0, 70.0, 85.0, 110.0, 140.0, 165.0, 195.0, 230.0, 270.0, 320.0, 375.0, 435.0, 500.0, 570.0]
 	return costs[clampi(index, 0, costs.size() - 1)]
 
 func _build_mega_factory_machine(index: int) -> void:
