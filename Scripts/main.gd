@@ -320,14 +320,14 @@ func _build_city_rework_layout() -> void:
 
 	# Residential and civic buildings are arranged as real blocks, leaving clear
 	# pedestrian routes and keeping the four sorting-station plots unobstructed.
-	_build_city_block_building(Vector3(7.0, 0.0, -22.0), "APARTMENTS", Color(0.72, 0.67, 0.56), 3, 8.0)
-	_build_city_block_building(Vector3(40.0, 0.0, -22.0), "CITY HALL", Color(0.70, 0.73, 0.68), 2, 10.0)
-	_build_city_block_building(Vector3(72.0, 0.0, -22.0), "LIBRARY", Color(0.70, 0.57, 0.43), 2, 8.0)
-	_build_city_block_building(Vector3(99.0, 0.0, -22.0), "CLINIC", Color(0.73, 0.76, 0.72), 2, 7.0)
-	_build_city_block_building(Vector3(7.0, 0.0, 22.0), "RESIDENCES", Color(0.67, 0.70, 0.73), 3, 8.5)
-	_build_city_block_building(Vector3(40.0, 0.0, 22.0), "SCHOOL", Color(0.76, 0.66, 0.48), 2, 7.0)
-	_build_city_block_building(Vector3(72.0, 0.0, 22.0), "FIRE STATION", Color(0.68, 0.43, 0.37), 2, 7.0)
-	_build_city_block_building(Vector3(99.0, 0.0, 22.0), "SUPERMARKET", Color(0.52, 0.66, 0.58), 1, 6.0)
+	_build_city_block_building(Vector3(6.0, 0.0, -31.0), "APARTMENTS", Color(0.72, 0.67, 0.56), 3, 8.0)
+	_build_city_block_building(Vector3(38.0, 0.0, -31.0), "CITY HALL", Color(0.70, 0.73, 0.68), 2, 10.0)
+	_build_city_block_building(Vector3(70.0, 0.0, -31.0), "LIBRARY", Color(0.70, 0.57, 0.43), 2, 8.0)
+	_build_city_block_building(Vector3(96.0, 0.0, -31.0), "CLINIC", Color(0.73, 0.76, 0.72), 2, 7.0)
+	_build_city_block_building(Vector3(6.0, 0.0, 31.0), "RESIDENCES", Color(0.67, 0.70, 0.73), 3, 8.5)
+	_build_city_block_building(Vector3(38.0, 0.0, 31.0), "SCHOOL", Color(0.76, 0.66, 0.48), 2, 7.0)
+	_build_city_block_building(Vector3(70.0, 0.0, 31.0), "FIRE STATION", Color(0.68, 0.43, 0.37), 2, 7.0)
+	_build_city_block_building(Vector3(96.0, 0.0, 31.0), "SUPERMARKET", Color(0.52, 0.66, 0.58), 1, 6.0)
 
 	# A proper public park occupies the open civic block, with paths and seating.
 	_box("CityParkLawn", Vector3(70.0, 0.055, 11.5), Vector3(19.0, 0.11, 12.0), Color(0.25, 0.48, 0.27), false)
