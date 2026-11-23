@@ -3361,7 +3361,7 @@ func _create_expansion_zone() -> void:
 	zone.add_child(ring)
 	var label := Label3D.new()
 	label.name = "UnlockZoneLabel"
-	label.text = "CITY EXPANSION\nDISTRICT 02\nCOST: 25 ZC\nSTEP ON PAD TO BUILD"
+	label.text = "CITY DISTRICT 02\nALREADY OPEN"
 	# Floor lettering sits just above the pad surface and faces upward.
 	label.position = Vector3(0, 0.205, 0)
 	label.rotation_degrees.x = -90.0
@@ -3609,7 +3609,7 @@ func _sorting_robot_item_reward() -> float:
 	return 0.35 * factory_multipliers[clampi(factory_stage - 1, 0, 4)]
 
 func _factory_row_unit_price(row: int) -> float:
-	var prices := [30.0, 26.0, 18.0, 42.0, 16.0]
+	var prices := [12.0, 15.0, 10.0, 24.0, 15.0]
 	return prices[clampi(row, 0, prices.size() - 1)]
 
 func _factory_row_truck_revenue(row: int) -> float:
@@ -3779,7 +3779,7 @@ func _process_factory_row_shipping(delta: float) -> void:
 	if mega_factory_built_count < 3 or factory_shipping_busy:
 		return
 	factory_shipping_timer += delta
-	if factory_shipping_timer < 12.0:
+	if factory_shipping_timer < 30.0:
 		return
 	factory_shipping_timer = 0.0
 	var available_rows: Array[int] = []
@@ -3840,7 +3840,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	)
 
 func _mega_factory_machine_cost(index: int) -> float:
-	var costs := [35.0, 50.0, 70.0, 85.0, 110.0, 140.0, 165.0, 195.0, 230.0, 270.0, 320.0, 375.0, 435.0, 500.0, 570.0]
+	var costs := [25.0, 35.0, 50.0, 60.0, 80.0, 100.0, 120.0, 140.0, 165.0, 190.0, 225.0, 260.0, 300.0, 350.0, 400.0]
 	return costs[clampi(index, 0, costs.size() - 1)]
 
 func _build_mega_factory_machine(index: int) -> void:
