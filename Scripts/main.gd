@@ -2424,12 +2424,12 @@ func _pickup_trash_item(item: Node3D) -> bool:
 		var bonus := 8.0 if rare_type == "gold" else 2.0
 		money += bonus
 		_set_message("%s rare scrap found! Bonus +%.2f ZC" % [rare_type.to_upper(), bonus])
-	_register_final_cleanup_pickup(item)
 	if weight == 2:
 		carried_bulky += 1
 	carried += weight
 	item.queue_free()
 	trash_nodes.erase(item)
+	_register_final_cleanup_pickup(item)
 	return true
 
 func _collect_nearby() -> void:
@@ -4342,15 +4342,11 @@ func _is_clear_trash_spawn(point: Vector3) -> bool:
 	return true
 
 func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
-	var max_x := 11.5
-	if yard_stage == 2:
-		max_x = 43.5
-	elif yard_stage >= 3:
-		max_x = 107.5
-	var point := Vector3(rng.randf_range(-11.5, max_x), 0.05, rng.randf_range(-10.0, 11.5))
+	# Spread the capped supply across the playable city only, never into the empty landfill.
+	var point := Vector3(rng.randf_range(-11.5, 107.5), 0.05, rng.randf_range(-29.0, 29.0))
 	var attempts := 0
-	while not _is_clear_trash_spawn(point) and attempts < 60:
-		point = Vector3(rng.randf_range(-11.5, max_x), 0.05, rng.randf_range(-10.0, 11.5))
+	while not _is_clear_trash_spawn(point) and attempts < 100:
+		point = Vector3(rng.randf_range(-11.5, 107.5), 0.05, rng.randf_range(-29.0, 29.0))
 		attempts += 1
 	return point
 
