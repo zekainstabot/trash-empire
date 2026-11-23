@@ -1685,6 +1685,9 @@ func _select_upgrade_category(index: int, bodies: Array, folders: Array, titles:
 
 
 func _purchase_upgrade_branch(branch: String) -> void:
+	if payment_active:
+		_set_message("Another upgrade is already being processed. Please wait.")
+		return
 	if not _skill_branch_unlocked(branch):
 		_set_message("This upgrade is not available yet.")
 		return
@@ -2650,32 +2653,21 @@ func _spending_speed_multiplier() -> float:
 	return 1.8 / seconds_per_item
 
 func _pay_gradually(cost: float) -> bool:
-	if payment_active or money < cost:
+	# Validate and charge atomically to prevent partial-payment failures.
+	if payment_active:
+		_set_message("Another upgrade is already being processed. Please wait.")
 		return false
+	if money + 0.0001 < cost:
+		_set_message("Not enough ZC. Required: %.1f | Available: %.1f" % [cost, money])
+		_refresh_upgrade_prices()
+		return false
+
 	payment_active = true
-	_refresh_upgrade_prices()
-	var paid := 0.0
-	_set_message("PURCHASING UPGRADE...")
-	while paid < cost - 0.001:
-		await get_tree().process_frame
-		if not is_inside_tree():
-			payment_active = false
-			_refresh_upgrade_prices()
-			return false
-		var delta := get_process_delta_time()
-		var amount := minf(minf(cost - paid, money), (cost / 3.0) * _spending_speed_multiplier() * delta)
-		if amount <= 0.0:
-			payment_active = false
-			_refresh_upgrade_prices()
-			_set_message("Payment stopped: not enough money.")
-			return false
-		money -= amount
-		paid += amount
-		_update_ui()
+	money = maxf(0.0, money - cost)
 	_update_ui()
 	_save_game()
-	payment_active = false
 	_refresh_upgrade_prices()
+	payment_active = false
 	return true
 
 func _process_expansion_zone(_delta: float) -> void:
