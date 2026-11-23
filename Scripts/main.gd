@@ -452,6 +452,34 @@ func _spawn_sorting_station(station_index: int) -> void:
 		robot.set_meta("mode", "idle")
 
 
+func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
+	var robot := Node3D.new()
+	robot.name = "SortingRobot_%d" % category_index
+	_add_robot_box(robot, "SortingRobotBody", Vector3(0, 0.68, 0), Vector3(0.95, 0.72, 0.82), robot_color)
+	_add_robot_box(robot, "SortingRobotTop", Vector3(0, 1.13, 0.02), Vector3(0.62, 0.20, 0.58), Color(0.16, 0.22, 0.24))
+	_add_robot_sphere(robot, "SortingRobotHead", Vector3(0, 1.48, -0.08), 0.31, Color(0.68, 0.76, 0.76))
+	_add_robot_box(robot, "SortingRobotVisor", Vector3(0, 1.48, -0.36), Vector3(0.40, 0.16, 0.035), Color(0.10, 0.92, 0.78))
+	_add_robot_box(robot, "SortingRobotFrontCollector", Vector3(0, 0.40, -0.62), Vector3(0.82, 0.16, 0.38), Color(0.75, 0.80, 0.77))
+	for side in [-1.0, 1.0]:
+		for z in [-0.28, 0.28]:
+			var wheel := MeshInstance3D.new()
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.22
+			wheel_mesh.bottom_radius = 0.22
+			wheel_mesh.height = 0.14
+			wheel.mesh = wheel_mesh
+			wheel.position = Vector3(side * 0.52, 0.25, z)
+			wheel.rotation_degrees.z = 90
+			wheel.material_override = _mat(Color(0.045, 0.055, 0.06))
+			robot.add_child(wheel)
+	robot.set_meta("category_index", category_index)
+	robot.set_meta("target", null)
+	robot.set_meta("cargo", null)
+	robot.set_meta("mode", "idle")
+	robot.set_meta("scan_timer", 0.0)
+	return robot
+
+
 func _refresh_sorting_district() -> void:
 	for i in range(mini(4, sorting_robots.size())):
 		if is_instance_valid(sorting_robots[i]):
