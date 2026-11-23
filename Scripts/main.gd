@@ -2584,8 +2584,6 @@ func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
 	# Drone cargo is processed separately; it never triggers a sale of the player's bag.
-	if is_instance_valid(ground_collector) and ground_collector.visible and ground_collector.get_meta("returning", false) and Vector2(ground_collector.global_position.x - SELL_POINT.x, ground_collector.global_position.z - SELL_POINT.z).length() <= 1.6:
-		_ground_collector_deposit_cycle(ground_collector, delta)
 	for drone in helper_drones:
 		if is_instance_valid(drone) and drone.visible and drone.get_meta("returning", false) and drone.global_position.distance_to(SELL_POINT + Vector3(0, 1.5, 0)) <= 3.0:
 			_drone_deposit_cycle(drone)
