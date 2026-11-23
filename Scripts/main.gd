@@ -78,6 +78,7 @@ var total_trash_collected := 0
 var replenishment_threshold := 500
 var final_zone_label: Label
 const FINAL_ZONE_TARGET := 60000
+const FINAL_ZONE_MISSION_TARGET := 1000
 const FINAL_LANDFILL_CLUSTERS := [
 	Vector2(-6.0, -22.0), Vector2(8.0, 18.0), Vector2(22.0, -14.0),
 	Vector2(38.0, 8.0), Vector2(54.0, -23.0), Vector2(70.0, 18.0),
@@ -4610,7 +4611,7 @@ func _mission_is_complete(stage: int) -> bool:
 		17:
 			return total_trash_collected >= 100
 		18:
-			return final_zone_cleaned >= FINAL_ZONE_TARGET
+			return final_zone_cleaned >= FINAL_ZONE_MISSION_TARGET
 		19:
 			return ground_robot_level >= 1
 		20:
@@ -4668,7 +4669,7 @@ func _update_missions() -> void:
 		"Make packages faster.\nOpen UPGRADES → FLEET → PACKAGING SPEED.",
 		"Build factory waste storage.\nBring 120 ZC to the marked tank pad, then deposit collected waste.",
 		"Collect 100 pieces of trash.\nProgress: %d / 100" % mini(total_trash_collected, 100),
-		"Clean 60,000 pieces in the final landfill.\nProgress: %d / 60,000" % mini(final_zone_cleaned, FINAL_ZONE_TARGET),
+		"Clean 1,000 pieces in the final landfill.\nProgress: %d / 1,000" % mini(final_zone_cleaned, FINAL_ZONE_MISSION_TARGET),
 		"Build a ground collector.\nUnlock the GROUND COLLECTOR ROBOT in UPGRADES.",
 		"Improve all sorting robots.\nBuy SORTING ROBOT EFFICIENCY level 1.",
 		"Speed up the factory line.\nBuy CONVEYOR & FACTORY SPEED level 1.",
