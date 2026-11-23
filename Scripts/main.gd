@@ -54,6 +54,7 @@ var skill_scroll_velocity := Vector2.ZERO
 var skill_scroll_tween: Tween
 var skill_touch_last_position := Vector2.ZERO
 var skill_touch_moved := false
+var collection_tool_extension := 0.0
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -1090,17 +1091,19 @@ func _build_player() -> void:
 	_add_robot_box(magnet_tool, "MagnetLeftPole", Vector3(-0.12, -0.14, 0), Vector3(0.10, 0.22, 0.16), Color(0.88, 0.20, 0.18))
 	_add_robot_box(magnet_tool, "MagnetRightPole", Vector3(0.12, -0.14, 0), Vector3(0.10, 0.22, 0.16), Color(0.18, 0.42, 0.92))
 	_add_robot_box(magnet_tool, "MagnetGrip", Vector3(0, 0.10, 0), Vector3(0.12, 0.10, 0.18), Color(0.65, 0.72, 0.73))
-	magnet_tool.visible = auto_pickup_level > 0 or magnet_power_level > 1
+	magnet_tool.visible = (auto_pickup_level > 0 or magnet_power_level > 1) and suction_level <= 0
 
 	# Separate vacuum attachment on the opposite arm, unlocked by suction upgrades.
 	suction_tool = Node3D.new()
 	suction_tool.name = "ArmMountedVacuum"
 	suction_tool.position = Vector3(0.0, -0.53, -0.08)
-	robot_left_arm.add_child(suction_tool)
+	robot_right_arm.add_child(suction_tool)
 	_add_robot_box(suction_tool, "VacuumMotor", Vector3(0, -0.02, 0.02), Vector3(0.24, 0.25, 0.28), Color(0.12, 0.22, 0.25))
 	_add_robot_box(suction_tool, "VacuumTube", Vector3(0, -0.10, -0.20), Vector3(0.13, 0.12, 0.34), Color(0.48, 0.58, 0.59))
 	_add_robot_box(suction_tool, "VacuumMouth", Vector3(0, -0.12, -0.40), Vector3(0.34, 0.16, 0.12), Color(0.10, 0.75, 0.68))
 	suction_tool.visible = suction_level > 0
+	if suction_level > 0:
+		magnet_tool.visible = false
 	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.20, 0.52, 0))
 	robot_right_leg = _robot_leg(robot_visual, "RightLeg", Vector3(0.20, 0.52, 0))
 	_build_helper_drones()
@@ -1147,11 +1150,19 @@ func _animate_robot(delta: float) -> void:
 	robot_visual.position.y = bob
 	robot_visual.rotation.z = sin(robot_anim_time * 5.0) * 0.025 if moving else sin(robot_anim_time * 1.5) * 0.012
 	robot_left_arm.rotation.x = stride * 0.65
-	var normal_right_arm := -stride * 0.65 - (0.18 if auto_pickup_level > 0 else 0.0)
-	# Lift the magnet hand while it is pulling the selected piece of trash.
-	var magnet_is_working := auto_pickup_level > 0 and is_instance_valid(auto_pickup_target)
-	var arm_target_angle := -1.05 if magnet_is_working else normal_right_arm
-	robot_right_arm.rotation.x = lerp_angle(robot_right_arm.rotation.x, arm_target_angle, clampf(delta * 9.0, 0.0, 1.0))
+	var magnet_is_working := suction_level <= 0 and auto_pickup_level > 0 and is_instance_valid(auto_pickup_target)
+	var vacuum_is_working := suction_level > 0 and is_instance_valid(suction_target)
+	var tool_is_working := magnet_is_working or vacuum_is_working
+	var normal_right_arm := -stride * 0.65 - (0.18 if auto_pickup_level > 0 or suction_level > 0 else 0.0)
+	# The equipped attachment reaches forward while it pulls a selected item.
+	var arm_target_angle := -1.12 if tool_is_working else normal_right_arm
+	robot_right_arm.rotation.x = lerp_angle(robot_right_arm.rotation.x, arm_target_angle, clampf(delta * (13.0 if tool_is_working else 8.0), 0.0, 1.0))
+	var extension_target := 0.34 if tool_is_working else 0.0
+	collection_tool_extension = lerpf(collection_tool_extension, extension_target, clampf(delta * 10.0, 0.0, 1.0))
+	if is_instance_valid(magnet_tool):
+		magnet_tool.position.z = -0.08 - collection_tool_extension
+	if is_instance_valid(suction_tool):
+		suction_tool.position.z = -0.08 - collection_tool_extension
 	robot_left_leg.rotation.x = -stride * 0.48
 	robot_right_leg.rotation.x = stride * 0.48
 	robot_head.rotation.y = sin(robot_anim_time * 1.3) * 0.045
@@ -2210,8 +2221,9 @@ func _process_auto_pickup(delta: float) -> void:
 		auto_pickup_timer = 0.0
 		return
 
-	var pull_speed := 2.8 + float(maxi(auto_pickup_level - 1, 0)) * 0.65 + float(magnet_power_level - 1) * 1.1
-	var pickup_point := Vector3(player.global_position.x, auto_pickup_target.global_position.y, player.global_position.z)
+	var pull_speed := 3.8 + float(maxi(auto_pickup_level - 1, 0)) * 0.85 + float(magnet_power_level - 1) * 1.25
+	var forward := -player.global_transform.basis.z
+	var pickup_point := Vector3(player.global_position.x + forward.x * 0.78, auto_pickup_target.global_position.y, player.global_position.z + forward.z * 0.78)
 	var item_xz := Vector2(auto_pickup_target.global_position.x, auto_pickup_target.global_position.z)
 	var pickup_xz := Vector2(pickup_point.x, pickup_point.z)
 	var distance_to_target := item_xz.distance_to(pickup_xz)
@@ -2277,11 +2289,12 @@ func _process_vacuum_suction(delta: float) -> void:
 		suction_pull_timer = 0.0
 		return
 
-	var pickup_point := Vector3(player.global_position.x, suction_target.global_position.y, player.global_position.z)
+	var forward := -player.global_transform.basis.z
+	var pickup_point := Vector3(player.global_position.x + forward.x * 0.92, suction_target.global_position.y, player.global_position.z + forward.z * 0.92)
 	var item_xz := Vector2(suction_target.global_position.x, suction_target.global_position.z)
 	var distance_to_target := item_xz.distance_to(Vector2(pickup_point.x, pickup_point.z))
-	var vacuum_speed := 3.2 + float(suction_level) * 1.7
-	if distance_to_target > 0.68:
+	var vacuum_speed := 4.2 + float(suction_level) * 1.9
+	if distance_to_target > 0.78:
 		suction_target.global_position = suction_target.global_position.move_toward(pickup_point, vacuum_speed * delta)
 		suction_pull_timer = 0.0
 		return
@@ -2855,7 +2868,7 @@ func _upgrade_magnet_power() -> void:
 		return
 	magnet_power_level += 1
 	if is_instance_valid(magnet_tool):
-		magnet_tool.visible = true
+		magnet_tool.visible = suction_level <= 0
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
@@ -2874,10 +2887,14 @@ func _upgrade_suction() -> void:
 	suction_level = mini(suction_level + 1, 3)
 	if is_instance_valid(suction_tool):
 		suction_tool.visible = true
+	if is_instance_valid(magnet_tool):
+		magnet_tool.visible = false
+	auto_pickup_target = null
+	auto_pickup_timer = 0.0
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
-	_set_message("Vacuum upgraded! Suction range and power increased.")
+	_set_message("Vacuum equipped! It replaces the hand magnet and has stronger suction.")
 
 func _upgrade_trash_value() -> void:
 	var cost := _upgrade_cost(12.0, trash_value_upgrade_level)
