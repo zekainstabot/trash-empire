@@ -3861,8 +3861,11 @@ func _create_factory_row_truck(row: int) -> Node3D:
 func _process_factory_row_shipping(delta: float) -> void:
 	if mega_factory_built_count < 1 or factory_shipping_busy:
 		return
+	# The truck's full loading and delivery route already takes time.
+	# Keep only a short turnaround pause after it returns instead of adding
+	# another 30-second idle period before the next available shipment.
 	factory_shipping_timer += delta
-	if factory_shipping_timer < 30.0:
+	if factory_shipping_timer < 5.0:
 		return
 	factory_shipping_timer = 0.0
 	var available_rows: Array[int] = []
