@@ -79,6 +79,7 @@ var replenishment_threshold := 500
 var final_zone_label: Label
 const FINAL_ZONE_TARGET := 60000
 const FINAL_ZONE_MISSION_TARGET := 1000
+const MISSION_ORDER := [0, 1, 2, 4, 5, 6, 7, 3, 8, 9, 10, 12, 16, 31, 22, 23, 13, 14, 15, 19, 20, 21, 24, 25, 26, 27, 28, 29, 17, 18, 30]
 const FINAL_LANDFILL_CLUSTERS := [
 	Vector2(-6.0, -22.0), Vector2(8.0, 18.0), Vector2(22.0, -14.0),
 	Vector2(38.0, 8.0), Vector2(54.0, -23.0), Vector2(70.0, 18.0),
@@ -1560,12 +1561,17 @@ func _build_ui() -> void:
 	mission_title.name = "MissionTitle"
 	mission_title.add_theme_color_override("font_color", Color(0.38, 1.0, 0.72))
 	mission_label = _label("", Vector2(14, 34), 16, mission_card)
-	mission_label.size = Vector2(mission_card.size.x - 28.0, 70.0)
+	mission_label.size = Vector2(mission_card.size.x - 28.0, 54.0)
 	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	mission_label.add_theme_color_override("font_color", Color(0.98, 1.0, 0.99))
 	mission_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
 	mission_label.add_theme_constant_override("shadow_offset_x", 1)
 	mission_label.add_theme_constant_override("shadow_offset_y", 1)
+	message_label = _label("", Vector2(14, 91), 12, mission_card)
+	message_label.size = Vector2(mission_card.size.x - 28.0, 30.0)
+	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.30))
+	message_label.visible = false
 	_update_missions()
 
 	var collect := _button("PICK UP", Vector2(-124, -150), Vector2(104, 104), layer)
@@ -3523,6 +3529,7 @@ func _save_game() -> void:
 	save.set_value("progress", "final_zone_cleaned", final_zone_cleaned)
 	save.set_value("progress", "total_trash_collected", total_trash_collected)
 	save.set_value("progress", "tutorial_mission_stage", tutorial_mission_stage)
+	save.set_value("progress", "tutorial_mission_version", 2)
 	save.set_value("progress", "carried", carried)
 	save.set_value("progress", "capacity", capacity)
 	save.set_value("progress", "bag_level", upgrade_level)
@@ -3628,6 +3635,11 @@ func _load_game() -> void:
 		teddy_stock_values.append(float(stored_value))
 	collection_range = 2.0 + float(equipment_upgrade_level - 1) * 0.65
 	recycling_bonus = 1.0 + float(technology_upgrade_level - 1) * 0.15
+	# Migrate old saves to the clearer tutorial order without resetting player progress.
+	if int(save.get_value("progress", "tutorial_mission_version", 0)) < 2:
+		tutorial_mission_stage = 0
+		while tutorial_mission_stage < MISSION_ORDER.size() and _mission_is_complete(MISSION_ORDER[tutorial_mission_stage]):
+			tutorial_mission_stage += 1
 
 
 func _build_final_landfill_details() -> void:
@@ -4671,10 +4683,20 @@ func _update_ui() -> void:
 	_refresh_factory_machine_status()
 	_update_missions()
 
-func _set_message(_value: String) -> void:
-	# Gameplay status chatter is intentionally no longer shown under the HUD;
-	# the space is reserved for persistent missions.
-	pass
+func _set_message(value: String) -> void:
+	if not is_instance_valid(message_label):
+		return
+	message_label.text = value
+	message_label.visible = not value.is_empty()
+	if value.is_empty():
+		return
+	var toast_tween := create_tween()
+	toast_tween.tween_interval(3.2)
+	toast_tween.tween_callback(func():
+		if is_instance_valid(message_label) and message_label.text == value:
+			message_label.visible = false
+	)
+
 
 func _mission_is_complete(stage: int) -> bool:
 	match stage:
@@ -4740,61 +4762,69 @@ func _mission_is_complete(stage: int) -> bool:
 			return respawn_level >= 2
 		30:
 			return total_trash_collected >= 1000
+		31:
+			return factory_row_input_stock.size() > 0 and (factory_row_input_stock[0] >= 3 or factory_total_products_made >= 1)
 	return false
 
 
 func _update_missions() -> void:
 	if not is_instance_valid(mission_label):
 		return
-	# Missions teach the complete gameplay loop and unlock in a strict sequence.
-	# Completed missions disappear; progress is saved and never shown again.
+	# One clear next action at a time. Completed steps disappear permanently.
 	var previous_stage := tutorial_mission_stage
-	while tutorial_mission_stage < 30 and _mission_is_complete(tutorial_mission_stage):
+	while tutorial_mission_stage < MISSION_ORDER.size() and _mission_is_complete(MISSION_ORDER[tutorial_mission_stage]):
 		tutorial_mission_stage += 1
 	if tutorial_mission_stage != previous_stage:
 		_save_game()
 
-	var missions: Array[String] = [
-		"Collect 5 pieces of trash.\nProgress: %d / 5" % mini(total_trash_collected, 5),
-		"Recycle your trash.\nStand on the YELLOW recycling pad until your bag is empty.",
-		"Buy your first upgrade.\nTap UPGRADES, choose an item, then tap its card.",
-		"Get a helper drone.\nOpen UPGRADES → FLEET → HELPER DRONES.",
-		"Collect 25 pieces of trash.\nProgress: %d / 25" % mini(total_trash_collected, 25),
-		"Expand your backpack.\nOpen UPGRADES → ROBOT → BACKPACK CAPACITY.",
-		"Move faster.\nOpen UPGRADES → ROBOT → MOVEMENT SPEED.",
-		"Increase pickup range.\nOpen UPGRADES → ROBOT → PICKUP RANGE.",
-		"Unlock Auto Pickup.\nOpen UPGRADES → ROBOT → AUTO PICKUP.",
-		"Unlock automatic trash respawn.\nOpen UPGRADES → ECONOMY → AUTO RESPAWN.",
-		"Earn more from each item.\nOpen UPGRADES → ECONOMY → TRASH VALUE.",
-		"Expand to the next district.\nUse the district expansion point in the city.",
-		"Upgrade the recycling factory.\nUse the factory upgrade point beside the factory.",
-		"Send delivery trucks more often.\nOpen UPGRADES → FLEET → TRUCK FREQUENCY.",
-		"Carry more boxes per truck.\nOpen UPGRADES → FLEET → TRUCK CAPACITY.",
-		"Make packages faster.\nOpen UPGRADES → FLEET → PACKAGING SPEED.",
-		"Build factory waste storage.\nBring 120 ZC to the marked tank pad, then deposit collected waste.",
-		"Collect 100 pieces of trash.\nProgress: %d / 100" % mini(total_trash_collected, 100),
-		"Clean 1,000 pieces in the final landfill.\nProgress: %d / 1,000" % mini(final_zone_cleaned, FINAL_ZONE_MISSION_TARGET),
-		"Build a ground collector.\nUnlock the GROUND COLLECTOR ROBOT in UPGRADES.",
-		"Improve all sorting robots.\nBuy SORTING ROBOT EFFICIENCY level 1.",
-		"Speed up the factory line.\nBuy CONVEYOR & FACTORY SPEED level 1.",
-		"Feed the first machine.\nLoad at least 3 pieces of waste and wait for the first recycled product.",
-		"Build your second factory machine.\nStand on the next machine pad and complete its construction.",
-		"Expand delivery operations.\nBuy HIRE TRUCKS level 1.",
-		"Collect several pieces at once.\nUnlock MULTI-PICKUP level 1.",
+	var mission_texts: Array[String] = [
+		"Collect 5 pieces of litter.\nUse COLLECT near the rubbish.",
+		"Empty your backpack.\nGo to the YELLOW recycling pad and wait until the bag is empty.",
+		"Buy your first upgrade.\nOpen UPGRADES and choose one item you can afford.",
+		"Recruit a helper drone.\nUPGRADES → FLEET → HELPER DRONES.",
+		"Collect 25 pieces of litter.\nProgress: %d / 25" % mini(total_trash_collected, 25),
+		"Increase backpack capacity.\nUPGRADES → ROBOT → BACKPACK CAPACITY.",
+		"Increase movement speed.\nUPGRADES → ROBOT → MOVEMENT SPEED.",
+		"Increase pickup range.\nUPGRADES → ROBOT → PICKUP RANGE.",
+		"Unlock automatic pickup.\nUPGRADES → ROBOT → AUTO PICKUP.",
+		"Unlock automatic litter respawn.\nUPGRADES → ECONOMY → AUTO RESPAWN.",
+		"Improve recycling technology.\nOpen UPGRADES and improve recycling value technology.",
+		"",
+		"Expand the recycling factory.\nFind the factory upgrade marker and stand on it to pay.",
+		"Improve truck dispatch frequency.\nUPGRADES → FLEET → TRUCK FREQUENCY.",
+		"Increase delivery truck capacity.\nUPGRADES → FLEET → TRUCK CAPACITY.",
+		"Speed up package preparation.\nUPGRADES → FLEET → PACKAGING SPEED.",
+		"Build factory waste storage.\nGo to the marked tank pad. It costs 120 ZC.",
+		"Collect 100 pieces of litter.\nProgress: %d / 100" % mini(total_trash_collected, 100),
+		"Clean the final landfill.\nRecycle 1,000 pieces there. Progress: %d / %d" % [mini(final_zone_cleaned, FINAL_ZONE_MISSION_TARGET), FINAL_ZONE_MISSION_TARGET],
+		"Build a ground collector robot.\nUPGRADES → ROBOT → GROUND COLLECTOR.",
+		"Improve sorting robots.\nUPGRADES → FACTORY → SORTING ROBOT EFFICIENCY.",
+		"Speed up factory conveyors.\nUPGRADES → FACTORY → CONVEYOR & FACTORY SPEED.",
+		"Make your first recycled product.\nWait while the conveyor feeds the first machine.",
+		"Build the next machine.\nStand on the next marked factory pad until construction finishes.",
+		"Expand delivery operations.\nUPGRADES → FLEET → HIRE TRUCKS.",
+		"Collect multiple pieces at once.\nUPGRADES → ROBOT → MULTI-PICKUP.",
 		"Upgrade your collection tool.\nReach MAGNET POWER level 2 or unlock VACUUM.",
-		"Find valuable rare items.\nUnlock SILVER & GOLD FINDS level 1.",
-		"Become luckier at recycling.\nUpgrade LUCK at least once.",
-		"Keep the city supplied with litter.\nUpgrade AUTO RESPAWN to level 2.",
-		"MASTER CLEANER: Collect 1,000 pieces.\nProgress: %d / 1,000" % mini(total_trash_collected, 1000)
+		"Unlock valuable rare finds.\nUPGRADES → ECONOMY → SILVER & GOLD FINDS.",
+		"Improve your luck.\nUPGRADES → ECONOMY → LUCK.",
+		"Keep litter replenishing.\nUpgrade AUTO RESPAWN to level 2.",
+		"Become the MASTER CLEANER.\nCollect 1,000 pieces. Progress: %d / 1,000" % mini(total_trash_collected, 1000),
+		"Load the factory.\nCarry litter to the storage tank and deposit at least 3 pieces."
 	]
 	var mission_title := mission_label.get_parent().get_node_or_null("MissionTitle")
-	if tutorial_mission_stage < missions.size():
-		mission_label.text = missions[tutorial_mission_stage]
+	if tutorial_mission_stage < MISSION_ORDER.size():
+		var mission_id: int = MISSION_ORDER[tutorial_mission_stage]
+		mission_label.text = mission_texts[mission_id]
+		if is_instance_valid(mission_title):
+			mission_title.text = "NEXT STEP  •  %d / %d" % [tutorial_mission_stage + 1, MISSION_ORDER.size()]
 	else:
-		mission_label.text = "ALL MISSIONS COMPLETE!\nYou cleaned the city. Great work!"
+		mission_label.text = "All core steps complete!\nKeep expanding your recycling city."
+		if is_instance_valid(mission_title):
+			mission_title.text = "CITY OPERATIONS"
 	if is_instance_valid(mission_title):
 		mission_title.visible = true
 	mission_label.visible = true
+
 
 func _anchor_bottom_right(control: Control) -> void:
 	control.anchor_left = 1.0
