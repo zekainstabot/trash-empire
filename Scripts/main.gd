@@ -1964,8 +1964,29 @@ func _spawn_city_replenishment(amount: int) -> void:
 		trash_nodes.append(item)
 
 
+func _is_city_dump_trash(item: Node3D) -> bool:
+	if not is_instance_valid(item):
+		return false
+	var p := item.global_position
+	return p.x >= -8.2 and p.x <= -1.4 and p.z >= -25.8 and p.z <= -19.2
+
+
+func _player_at_city_dump_front() -> bool:
+	if not is_instance_valid(player):
+		return false
+	var p := player.global_position
+	# The only access route is the open front (positive Z) of the bunker.
+	return p.x >= -8.0 and p.x <= -1.6 and p.z >= -19.0 and p.z <= -16.0
+
+
+func _can_collect_city_dump_trash(item: Node3D) -> bool:
+	return not _is_city_dump_trash(item) or _player_at_city_dump_front()
+
+
 func _pickup_trash_item(item: Node3D) -> bool:
 	if not is_instance_valid(item):
+		return false
+	if not _can_collect_city_dump_trash(item):
 		return false
 	var weight := 2 if item.has_meta("bulky") else 1
 	if carried + weight > capacity:
@@ -1994,7 +2015,7 @@ func _collect_nearby() -> void:
 		var nearest: Node3D
 		var best := collection_range
 		for item in trash_nodes:
-			if is_instance_valid(item) and carried + (2 if item.has_meta("bulky") else 1) <= capacity:
+			if is_instance_valid(item) and _can_collect_city_dump_trash(item) and carried + (2 if item.has_meta("bulky") else 1) <= capacity:
 				var distance := player.global_position.distance_to(item.global_position)
 				if distance < best:
 					best = distance
@@ -2028,7 +2049,7 @@ func _process_auto_pickup(delta: float) -> void:
 		var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85 + float(magnet_power_level - 1) * 0.7
 		var best_distance := magnet_range
 		for item in trash_nodes:
-			if not is_instance_valid(item):
+			if not is_instance_valid(item) or not _can_collect_city_dump_trash(item):
 				continue
 			var weight := 2 if item.has_meta("bulky") else 1
 			if carried + weight > capacity or item.get_meta("drone_reserved", -1) != -1:
@@ -2154,7 +2175,7 @@ func _process_helper_drones(delta: float) -> void:
 				drone.set_meta("scan_cooldown", 0.45)
 				var best_distance := 18.0 + float(drone_level - 1) * 6.0
 				for item in trash_nodes:
-					if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
+					if not is_instance_valid(item) or _is_city_dump_trash(item) or item.get_meta("drone_reserved", -1) != -1:
 						continue
 					var weight := 2 if item.has_meta("bulky") else 1
 					var drone_slots := int(drone.get_meta("cargo_slots", 0))
@@ -3106,7 +3127,7 @@ func _spawn_city_trash(amount: int) -> int:
 	for i in range(amount):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.position = Vector3(rng.randf_range(-7.7, -1.9), 0.05, rng.randf_range(-25.3, -19.7))
+		item.position = Vector3(rng.randf_range(-7.55, -2.05), 0.05, rng.randf_range(-25.25, -19.85))
 		add_child(item)
 		trash_nodes.append(item)
 		spawned += 1
