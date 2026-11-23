@@ -981,8 +981,12 @@ func _build_factory_expansion() -> void:
 	for stage in range(factory_built_stage + 1, factory_stage + 1):
 		var first_new_child := get_child_count()
 		_build_factory_module(stage)
-		var start_z := -4.9 if stage == 2 else (5.0 if stage == 3 else (15.0 if stage == 4 else 25.0))
-		var end_z := -1.7 if stage == 2 else (10.0 if stage == 3 else (20.0 if stage == 4 else 30.0))
+		# Keep each transfer belt in the open gap between machine housings.
+		# The previous coordinates ran the belts into the center of the next machine,
+		# hiding most of each belt inside the solid machine body.
+		var z_positions := [0.0, 0.0, 0.0, 10.0, 20.0, 30.0]
+		var start_z := -4.9 if stage == 2 else (z_positions[stage - 1] + 1.8)
+		var end_z := -1.7 if stage == 2 else (z_positions[stage] - 1.7)
 		_build_factory_link(start_z, end_z)
 		var new_nodes: Array[Node] = []
 		for child_index in range(first_new_child, get_child_count()):
