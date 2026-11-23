@@ -527,6 +527,11 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 	return robot
 
 
+func _factory_waste_drop_point() -> Vector3:
+	# Shared unloading bay directly in front of the relocated factory waste tank.
+	return Vector3(124.8, 0.0, 8.5)
+
+
 func _refresh_sorting_district() -> void:
 	for i in range(mini(4, sorting_robots.size())):
 		if is_instance_valid(sorting_robots[i]):
@@ -550,18 +555,19 @@ func _process_sorting_robots(delta: float) -> void:
 		var mode := String(robot.get_meta("mode", "idle"))
 		var target := robot.get_meta("target") as Node3D
 		if mode == "return":
-			var drop_point: Vector3 = bin_positions[i] + Vector3(0, 0.9, 1.25)
+			var drop_point := _factory_waste_drop_point() + Vector3(0, 0.85, 0)
 			robot.global_position = robot.global_position.move_toward(drop_point, _sorting_robot_speed() * delta)
-			if robot.global_position.distance_to(drop_point) < 0.55:
+			if robot.global_position.distance_to(drop_point) < 0.8:
 				var cargo := robot.get_meta("cargo") as Node3D
 				if is_instance_valid(cargo):
 					if not waste_tank_built or waste_tank_inventory >= WASTE_TANK_CAPACITY:
-						_set_message("Sorting robot is waiting for available waste tank capacity.")
+						_set_message("Sorting robot is waiting at the factory tank for storage to become available.")
 						continue
 					cargo.queue_free()
 					robot.set_meta("cargo", null)
 					sorting_bin_counts[i] += 1
 					waste_tank_inventory += 1
+					_refresh_waste_tank_inventory_label()
 					_refresh_sorting_district()
 					_update_ui()
 					_save_game()
@@ -2763,7 +2769,7 @@ func _process_helper_drones(delta: float) -> void:
 		if not is_instance_valid(drone) or not drone.visible:
 			continue
 		if drone.get_meta("returning", false):
-			var return_pos := SELL_POINT + Vector3(0, 1.5, 0)
+			var return_pos := _factory_waste_drop_point() + Vector3(0, 1.5, 0)
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
 			if drone.global_position.distance_to(return_pos) <= 2.5:
 				drone.set_meta("deposited", true)
@@ -2849,7 +2855,7 @@ func _process_ground_collector(delta: float) -> void:
 	var capacity_slots := 3 + maxi(ground_robot_level - 1, 0) * 2
 	rover.set_meta("cargo_capacity", capacity_slots)
 	if bool(rover.get_meta("returning", false)):
-		var home := SELL_POINT + Vector3(0, 0.0, 0)
+		var home := _factory_waste_drop_point()
 		rover.global_position = rover.global_position.move_toward(home, speed * delta)
 		if Vector2(rover.global_position.x - home.x, rover.global_position.z - home.z).length() < 1.4:
 			_ground_collector_deposit_cycle(rover, delta)
@@ -2971,7 +2977,7 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 	drone.set_meta("deposit_timer", 0.0)
 	var bulky := int(drone.get_meta("cargo_bulky", 0)) > 0
 	if not waste_tank_built or waste_tank_inventory >= WASTE_TANK_CAPACITY:
-		_set_message("Drone is waiting for available waste tank capacity.")
+		_set_message("Drone is waiting at the factory tank for storage to become available.")
 		return
 	var cargo_items: Array = drone.get_meta("cargo_items", [])
 	if not cargo_items.is_empty():
@@ -2986,12 +2992,8 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		drone.set_meta("cargo_slots", slots - 2)
 	else:
 		drone.set_meta("cargo_slots", slots - 1)
-	var item_value := _recycling_item_value(bulky)
-	if waste_tank_built:
-		waste_tank_inventory += 1
-	else:
-		money += item_value
-		_spawn_conveyor_item(item_value)
+	waste_tank_inventory += 1
+	_refresh_waste_tank_inventory_label()
 	_update_ui()
 	_save_game()
 	if int(drone.get_meta("cargo_slots", 0)) <= 0:
@@ -3007,9 +3009,10 @@ func _process_auto_sell(delta: float) -> void:
 		return
 	# Drone cargo is processed separately; it never triggers a sale of the player's bag.
 	for drone in helper_drones:
-		if is_instance_valid(drone) and drone.visible and drone.get_meta("returning", false) and drone.global_position.distance_to(SELL_POINT + Vector3(0, 1.5, 0)) <= 3.0:
+		if is_instance_valid(drone) and drone.visible and drone.get_meta("returning", false) and drone.global_position.distance_to(_factory_waste_drop_point() + Vector3(0, 1.5, 0)) <= 3.0:
 			_drone_deposit_cycle(drone)
-	var inside_zone := player.global_position.distance_to(SELL_POINT) <= 2.35
+	var unloading_point := _factory_waste_drop_point() if waste_tank_built else SELL_POINT
+	var inside_zone := player.global_position.distance_to(unloading_point) <= 2.35
 	if not inside_zone or carried <= 0:
 		unload_timer = 0.0
 		return
