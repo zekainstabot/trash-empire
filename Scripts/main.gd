@@ -843,10 +843,6 @@ func _build_first_district_details() -> void:
 	# Marked pedestrian crossing and a small information board.
 	for i in range(5):
 		_box("PedestrianCrossingStripe", Vector3(-8.0, 0.055, -1.0 + float(i) * 0.72), Vector3(4.5, 0.035, 0.32), Color(0.82, 0.84, 0.78), false)
-	# City-center information sign behind the factory-side planter.
-	_box("DistrictInfoBoard", Vector3(5.8, 1.25, 11.2), Vector3(1.5, 2.5, 0.18), Color(0.18, 0.28, 0.25), true)
-	_box("DistrictInfoHeader", Vector3(5.8, 2.05, 11.09), Vector3(1.32, 0.34, 0.035), Color(0.25, 0.52, 0.39), false)
-	_label_3d("CITY\nCENTER", Vector3(5.8, 1.25, 11.05), 0.24)
 	# Extra warm lighting around the starting area.
 	_make_lamp(Vector3(5.5, 0, 7.5))
 	_make_lamp(Vector3(-5.0, 0, 13.0))
