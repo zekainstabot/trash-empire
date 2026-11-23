@@ -103,6 +103,7 @@ var district_build_paid := 0.0
 var district_build_save_timer := 0.0
 var district_no_money_notified := false
 var payment_active := false
+var active_upgrade_branch := ""
 var teddy_stock_values: Array[float] = []
 var shipping_active := false
 var truck_dispatch_timer := 0.0
@@ -1838,6 +1839,8 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"fleet": await _upgrade_fleet()
 		"truck_capacity": await _upgrade_truck_capacity()
 		"packaging": await _upgrade_packaging()
+	active_upgrade_branch = ""
+	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
 	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":12.0,"bulk_pickup":30.0}
@@ -1872,7 +1875,7 @@ func _refresh_upgrade_prices() -> void:
 				effect_text = "NEXT LEVEL  •  +3 BAG SLOTS"
 			title_label.text = "%s  %s" % [icon, node.title]
 			button.disabled = payment_active
-			if payment_active:
+			if payment_active and branch == active_upgrade_branch:
 				price_label.text = "BUYING..."
 				price_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.38))
 				price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.20, 0.15, 0.055)))
