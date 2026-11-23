@@ -3318,6 +3318,7 @@ func _update_ui() -> void:
 	bag_label.add_theme_constant_override("outline_size", 5 if is_full else 2)
 	if is_full:
 		bag_label.text += "  FULL!"
+	_update_missions()
 
 func _set_message(_value: String) -> void:
 	# Gameplay status chatter is intentionally no longer shown under the HUD;
