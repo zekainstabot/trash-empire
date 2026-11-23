@@ -124,6 +124,7 @@ var delivery_trucks: Array[Node3D] = []
 var city_truck: Node3D
 var city_trucks: Array[Node3D] = []
 var district_collection_truck: Node3D
+var district_truck_level := 0
 var district_collection_route: Array[Vector3] = [Vector3(24.0, 0.0, -15.0), Vector3(40.0, 0.0, 15.0), Vector3(58.0, 0.0, -15.0), Vector3(76.0, 0.0, 15.0), Vector3(96.0, 0.0, -15.0), Vector3(104.0, 0.0, 15.0)]
 var city_fleet_upgrade_level := 0
 var city_trash_reserved := 0
@@ -1557,13 +1558,13 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","ground_robot","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","ground_robot","district_truck","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","ground_robot":"GROUND COLLECTOR ROBOT","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","ground_robot":"GROUND COLLECTOR ROBOT","district_truck":"DISTRICT COLLECTION TRUCK","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
 	var descriptions := {
@@ -1583,6 +1584,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"suction":"Unlock an arm-mounted vacuum. Each upgrade increases suction reach and pull speed.",
 		"drones":"Add helper drones that collect trash for you.",
 		"ground_robot":"Unlock a ground rover that drives to trash, loads it, then returns to the recycling point. Upgrades improve speed and cargo capacity.",
+		"district_truck":"Buy a garbage truck that patrols distant city streets, collects scattered trash, and unloads it into your waste bunker.",
 		"city_truck":"Make city garbage trucks arrive more often.",
 		"city_fleet":"Add more city trucks to deliver larger loads.",
 		"dispatch":"Send product delivery trucks more frequently.",
@@ -1784,6 +1786,7 @@ func _skill_icon(branch: String) -> String:
 		"suction": return "🌪"
 		"drones": return "🚁"
 		"ground_robot": return "🤖"
+		"district_truck": return "🚛"
 		"city_truck": return "🚛"
 		"city_fleet": return "🚚"
 		"dispatch": return "⏱️"
@@ -1848,6 +1851,7 @@ func _skill_level(branch: String) -> int:
 		"suction": return suction_level
 		"drones": return drone_level
 		"ground_robot": return ground_robot_level
+		"district_truck": return district_truck_level
 		"city_truck": return city_truck_upgrade_level
 		"city_fleet": return city_fleet_upgrade_level
 		"dispatch": return dispatch_upgrade_level
@@ -1886,6 +1890,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"suction": await _upgrade_suction()
 		"drones": await _upgrade_drones()
 		"ground_robot": await _upgrade_ground_robot()
+		"district_truck": await _upgrade_district_truck()
 		"city_truck": await _upgrade_city_truck_frequency()
 		"city_fleet": await _upgrade_city_fleet()
 		"dispatch": await _upgrade_dispatch()
@@ -1896,7 +1901,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"suction":35.0,"drones":25.0,"ground_robot":45.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"suction":35.0,"drones":25.0,"ground_robot":45.0,"district_truck":90.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -1907,11 +1912,11 @@ func _refresh_upgrade_prices() -> void:
 		var price_panel := node.price_panel as PanelContainer
 		var level_label := node.level_label as Label
 		var icon := _skill_icon(branch)
-		var maxed := current >= 3
+		var maxed := current >= (1 if branch == "district_truck" else 3)
 		var price := _upgrade_cost(float(base_costs.get(branch, 4.0)), current + 1)
 		if branch == "capacity":
 			price = _upgrade_cost(5.0, upgrade_level)
-		level_label.text = "LEVEL %d / 3" % mini(current, 3)
+		level_label.text = "LEVEL %d / %d" % [mini(current, 1 if branch == "district_truck" else 3), 1 if branch == "district_truck" else 3]
 		if maxed:
 			title_label.text = "%s  %s" % [icon, node.title]
 			button.disabled = true
@@ -2750,6 +2755,27 @@ func _upgrade_drones() -> void:
 	_set_message("Helper drone upgraded! %d drone(s) now collect trash automatically." % drone_level)
 
 
+func _upgrade_district_truck() -> void:
+	if district_truck_level >= 1:
+		_set_message("District collection truck already hired.")
+		return
+	var cost := _upgrade_cost(90.0, 1)
+	if money < cost:
+		_set_message("You need %.1f ZC to hire the district collection truck." % cost)
+		return
+	if not await _pay_gradually(cost):
+		return
+	district_truck_level = 1
+	if not is_instance_valid(district_collection_truck):
+		_create_district_collection_truck()
+	district_collection_truck.visible = true
+	district_collection_truck.set_meta("collection_phase", 0)
+	district_collection_truck.set_meta("collection_timer", 0.0)
+	_refresh_upgrade_prices()
+	_update_ui()
+	_save_game()
+	_set_message("District collection truck hired! It now patrols distant streets and unloads into your waste bunker.")
+
 func _upgrade_ground_robot() -> void:
 	if ground_robot_level >= 3:
 		_set_message("Ground collector robot is fully upgraded.")
@@ -3047,6 +3073,7 @@ func _save_game() -> void:
 	save.set_value("progress", "suction_level", suction_level)
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "ground_robot_level", ground_robot_level)
+	save.set_value("progress", "district_truck_level", district_truck_level)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
 	save.set_value("progress", "city_truck_upgrade_level", city_truck_upgrade_level)
 	save.set_value("progress", "city_fleet_upgrade_level", city_fleet_upgrade_level)
@@ -3085,6 +3112,7 @@ func _load_game() -> void:
 	suction_level = clampi(int(save.get_value("progress", "suction_level", 0)), 0, 3)
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	ground_robot_level = clampi(int(save.get_value("progress", "ground_robot_level", 0)), 0, 3)
+	district_truck_level = clampi(int(save.get_value("progress", "district_truck_level", 0)), 0, 1)
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
 	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
 	city_fleet_upgrade_level = clampi(int(save.get_value("progress", "city_fleet_upgrade_level", 0)), 0, 3)
@@ -3360,7 +3388,7 @@ func _create_district_collection_truck() -> void:
 		district_collection_truck.queue_free()
 	district_collection_truck = _create_city_truck(99)
 	district_collection_truck.name = "DistrictCollectionTruck"
-	district_collection_truck.visible = true
+	district_collection_truck.visible = district_truck_level > 0
 	district_collection_truck.position = district_collection_route[0]
 	district_collection_truck.set_meta("collection_phase", 0)
 	district_collection_truck.set_meta("route_index", 0)
@@ -3373,7 +3401,7 @@ func _create_district_collection_truck() -> void:
 
 
 func _process_district_collection_truck(delta: float) -> void:
-	if not is_instance_valid(district_collection_truck):
+	if district_truck_level <= 0 or not is_instance_valid(district_collection_truck):
 		return
 	var truck := district_collection_truck
 	var phase := int(truck.get_meta("collection_phase", 0))
