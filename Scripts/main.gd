@@ -3454,7 +3454,6 @@ func _save_game() -> void:
 	save.set_value("progress", "ground_robot_level", ground_robot_level)
 	save.set_value("progress", "sorting_robot_levels", sorting_robot_levels)
 	save.set_value("progress", "sorting_bin_counts", sorting_bin_counts)
-	save.set_value("progress", "district_truck_level", district_truck_level)
 	save.set_value("progress", "sorting_robot_upgrade_level", sorting_robot_upgrade_level)
 	save.set_value("progress", "conveyor_speed_upgrade_level", conveyor_speed_upgrade_level)
 	save.set_value("progress", "repair_robot_level", repair_robot_level)
@@ -3506,7 +3505,6 @@ func _load_game() -> void:
 	sorting_bin_counts = save.get_value("progress", "sorting_bin_counts", [0, 0, 0, 0])
 	while sorting_robot_levels.size() < 4: sorting_robot_levels.append(0)
 	while sorting_bin_counts.size() < 4: sorting_bin_counts.append(0)
-	district_truck_level = clampi(int(save.get_value("progress", "district_truck_level", 0)), 0, 3)
 	sorting_robot_upgrade_level = clampi(int(save.get_value("progress", "sorting_robot_upgrade_level", 0)), 0, 3)
 	conveyor_speed_upgrade_level = clampi(int(save.get_value("progress", "conveyor_speed_upgrade_level", 0)), 0, 3)
 	repair_robot_level = clampi(int(save.get_value("progress", "repair_robot_level", 0)), 0, 3)
@@ -3929,7 +3927,6 @@ func _build_city_dump_area() -> void:
 	city_trash_reserved = 0
 	_refresh_city_truck_fleet()
 	_reset_city_truck_fleet()
-	_create_district_collection_truck()
 
 func _on_waste_tank_build_entered(body: Node3D) -> void:
 	if body != player or waste_tank_built:
@@ -4606,8 +4603,6 @@ func _mission_is_complete(stage: int) -> bool:
 			return sorting_robot_upgrade_level >= 1
 		21:
 			return conveyor_speed_upgrade_level >= 1
-		22:
-			return district_truck_level >= 1
 		23:
 			return city_fleet_upgrade_level >= 1
 		24:
