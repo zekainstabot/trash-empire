@@ -3082,9 +3082,16 @@ func _process_city_truck(delta: float) -> void:
 		var target := truck.position
 		match phase:
 			0:
-				if timer >= _city_truck_interval():
+				# Do not dispatch or reveal a truck until the depot can fit its
+				# entire load. Reserve that space before it starts driving so
+				# multiple fleet trucks can never overbook the bunker.
+				var next_load := _city_truck_load()
+				var free_capacity := _city_dump_capacity() - _city_dump_trash_count() - city_trash_reserved
+				if timer >= _city_truck_interval() and free_capacity >= next_load:
+					city_trash_reserved += next_load
+					truck.set_meta("reserved", true)
 					truck.visible = true
-					truck.set_meta("load", _city_truck_load())
+					truck.set_meta("load", next_load)
 					truck.set_meta("phase", 1)
 					truck.set_meta("timer", 0.0)
 					phase = 1
@@ -3094,10 +3101,9 @@ func _process_city_truck(delta: float) -> void:
 					truck.set_meta("phase", 2)
 					truck.set_meta("timer", 0.0)
 			2:
-				var load_amount := int(truck.get_meta("load", _city_truck_load()))
-				if _city_dump_trash_count() + city_trash_reserved + load_amount <= _city_dump_capacity():
-					city_trash_reserved += load_amount
-					truck.set_meta("reserved", true)
+				# Capacity was reserved before dispatch; proceed without
+				# waiting at the depot entrance or reserving the same load twice.
+				if bool(truck.get_meta("reserved", false)):
 					truck.set_meta("phase", 3)
 					truck.set_meta("timer", 0.0)
 			3:
@@ -3154,7 +3160,8 @@ func _city_truck_load() -> int:
 	return 500
 
 func _city_dump_capacity() -> int:
-	return _city_truck_load() * 5
+	# The bunker holds exactly three full municipal truckloads.
+	return _city_truck_load() * 3
 
 func _city_dump_trash_count() -> int:
 	var count := 0
