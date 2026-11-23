@@ -452,31 +452,20 @@ func _make_milk_carton(rng: RandomNumberGenerator) -> void:
 	add_child(_cylinder_piece(0.045, 0.045, 0.07, Vector3(0.08, 0.57, 0), Color(0.94, 0.91, 0.76)))
 
 func _make_old_tire(rng: RandomNumberGenerator) -> void:
+	# A clean, recognizable discarded tire. Keep the center hollow and avoid
+	# detached tread blocks or bolts that look like extra debris around it.
 	var tire := MeshInstance3D.new()
+	tire.name = "DiscardedTire"
 	var torus := TorusMesh.new()
 	torus.inner_radius = 0.25
 	torus.outer_radius = 0.43
-	torus.rings = 12
-	torus.ring_segments = 20
+	torus.rings = 16
+	torus.ring_segments = 32
 	tire.mesh = torus
 	tire.position.y = 0.43
 	tire.rotation_degrees.x = 90.0
 	tire.material_override = _material(Color(0.055, 0.065, 0.067))
 	add_child(tire)
-	var hub := _cylinder_piece(0.22, 0.22, 0.10, Vector3(0, 0.43, 0), Color(0.38, 0.42, 0.42))
-	hub.rotation_degrees.x = 90.0
-	add_child(hub)
-	# Individual chunky tread lugs around both shoulders of the discarded tyre.
-	for i in range(20):
-		var a := TAU * float(i) / 20.0
-		for side in [-1.0, 1.0]:
-			var lug := _flat_box(Vector3(0.105, 0.085, 0.055), Vector3(cos(a) * 0.425, 0.43 + side * 0.105, sin(a) * 0.425), Color(0.035, 0.043, 0.045))
-			lug.rotation.y = -a
-			add_child(lug)
-	for i in range(8):
-		var bolt := _cylinder_piece(0.018, 0.018, 0.018, Vector3(cos(TAU * i / 8.0) * 0.14, 0.43 + sin(TAU * i / 8.0) * 0.14, -0.065), Color(0.66, 0.67, 0.62))
-		bolt.rotation_degrees.x = 90
-		add_child(bolt)
 	rotation.y = rng.randf_range(0.0, TAU)
 
 func _make_paint_bucket(rng: RandomNumberGenerator) -> void:
