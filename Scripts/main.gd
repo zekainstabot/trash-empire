@@ -3981,8 +3981,11 @@ func _on_waste_tank_build_entered(body: Node3D) -> void:
 			_set_message("Factory tank is full (%d / %d)." % [waste_tank_inventory, WASTE_TANK_CAPACITY])
 			return
 		waste_tank_inventory += accepted
-		var remaining_items := item_count - accepted
-		carried = remaining_items + carried_bulky
+		var regular_items := maxi(0, carried - carried_bulky * 2)
+		var accepted_regular := mini(regular_items, accepted)
+		var accepted_bulky := mini(carried_bulky, accepted - accepted_regular)
+		carried -= accepted_regular + accepted_bulky * 2
+		carried_bulky -= accepted_bulky
 		_update_ui()
 		_save_game()
 		_set_message("Loaded %d pieces into factory storage. Tank: %d / %d" % [accepted, waste_tank_inventory, WASTE_TANK_CAPACITY])
@@ -4560,6 +4563,8 @@ func _mission_is_complete(stage: int) -> bool:
 			return sorting_robot_upgrade_level >= 1
 		21:
 			return conveyor_speed_upgrade_level >= 1
+		22:
+			return factory_row_product_stock[0] >= 1
 		23:
 			return mega_factory_built_count >= 2
 		24:
@@ -4613,6 +4618,7 @@ func _update_missions() -> void:
 		"Build a ground collector.\nUnlock the GROUND COLLECTOR ROBOT in UPGRADES.",
 		"Improve all sorting robots.\nBuy SORTING ROBOT EFFICIENCY level 1.",
 		"Speed up the factory line.\nBuy CONVEYOR & FACTORY SPEED level 1.",
+		"Feed the first machine.\nLoad at least 3 pieces of waste and wait for the first recycled product.",
 		"Build your second factory machine.\nStand on the next machine pad and complete its construction.",
 		"Expand delivery operations.\nBuy HIRE TRUCKS level 1.",
 		"Collect several pieces at once.\nUnlock MULTI-PICKUP level 1.",
@@ -4735,6 +4741,7 @@ func _process_factory_production(delta: float) -> void:
 			factory_row_input_stock[row] -= 3
 			factory_row_product_stock[row] += 1
 			_set_message("%s produced! Stock: %d" % [_factory_row_product(row), factory_row_product_stock[row]])
+			_update_missions()
 			_save_game()
 
 func _animate_conveyor(delta: float) -> void:
