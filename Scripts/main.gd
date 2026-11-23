@@ -3718,6 +3718,7 @@ func _create_city_truck(index: int) -> Node3D:
 	_city_truck_sphere(truck, "TruckCabRoof", Vector3(0, 1.72, -1.17), Vector3(0.88, 0.43, 0.66), Color(0.82, 0.64, 0.36))
 	_city_truck_sphere(truck, "TruckHood", Vector3(0, 1.08, -1.73), Vector3(0.88, 0.30, 0.42), Color(0.72, 0.51, 0.27))
 	_city_truck_sphere(truck, "TruckWindshield", Vector3(0, 1.53, -1.72), Vector3(0.70, 0.29, 0.035), Color(0.10, 0.22, 0.27))
+	_city_truck_add_driver(truck)
 	_city_truck_box(truck, "TruckGrille", Vector3(0, 0.96, -2.08), Vector3(0.78, 0.30, 0.045), Color(0.16, 0.20, 0.21))
 	# Open-top cargo bed: a floor and four raised sides keep collected litter visibly inside.
 	_city_truck_box(truck, "TruckCargoFloor", Vector3(0, 0.88, 0.72), Vector3(1.82, 0.12, 1.78), Color(0.16, 0.25, 0.22))
@@ -3821,8 +3822,34 @@ func _city_truck_sphere(parent: Node3D, node_name: String, pos: Vector3, dimensi
 	mesh.mesh = shape
 	mesh.position = pos
 	mesh.scale = dimensions
-	mesh.material_override = _mat(color)
+	var material := _mat(color)
+	if node_name == "TruckWindshield":
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.albedo_color = Color(color.r, color.g, color.b, 0.42)
+	mesh.material_override = material
 	parent.add_child(mesh)
+
+func _city_truck_add_driver(truck: Node3D) -> void:
+	# A seated municipal driver, visible through the slightly tinted windshield.
+	_city_truck_sphere(truck, "TruckDriverTorso", Vector3(0.0, 1.34, -1.28), Vector3(0.34, 0.43, 0.25), Color(0.16, 0.29, 0.48))
+	_city_truck_sphere(truck, "TruckDriverHead", Vector3(0.0, 1.76, -1.34), Vector3(0.25, 0.29, 0.24), Color(0.72, 0.51, 0.36))
+	_city_truck_sphere(truck, "TruckDriverHair", Vector3(0.0, 1.91, -1.33), Vector3(0.26, 0.13, 0.25), Color(0.12, 0.10, 0.085))
+	_city_truck_sphere(truck, "TruckDriverLeftArm", Vector3(-0.27, 1.39, -1.48), Vector3(0.13, 0.30, 0.13), Color(0.16, 0.29, 0.48))
+	_city_truck_sphere(truck, "TruckDriverRightArm", Vector3(0.27, 1.39, -1.48), Vector3(0.13, 0.30, 0.13), Color(0.16, 0.29, 0.48))
+	_city_truck_sphere(truck, "TruckDriverLeftHand", Vector3(-0.22, 1.30, -1.62), Vector3(0.10, 0.10, 0.09), Color(0.72, 0.51, 0.36))
+	_city_truck_sphere(truck, "TruckDriverRightHand", Vector3(0.22, 1.30, -1.62), Vector3(0.10, 0.10, 0.09), Color(0.72, 0.51, 0.36))
+	var steering_wheel := MeshInstance3D.new()
+	steering_wheel.name = "TruckSteeringWheel"
+	var steering_mesh := TorusMesh.new()
+	steering_mesh.inner_radius = 0.16
+	steering_mesh.outer_radius = 0.205
+	steering_mesh.rings = 10
+	steering_mesh.ring_segments = 20
+	steering_wheel.mesh = steering_mesh
+	steering_wheel.position = Vector3(0.0, 1.31, -1.64)
+	steering_wheel.rotation_degrees.x = 90.0
+	steering_wheel.material_override = _mat(Color(0.055, 0.065, 0.07))
+	truck.add_child(steering_wheel)
 
 func _city_truck_box(parent: Node3D, node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
 	var mesh := MeshInstance3D.new()
