@@ -1599,50 +1599,56 @@ func _build_skill_tree(parent: Control) -> void:
 		category_bodies.append(category_body)
 
 		for branch in category.branches:
-			var upgrade_row := HBoxContainer.new()
-			upgrade_row.custom_minimum_size = Vector2(0, 104)
+			# One large touch target per upgrade: the title, description and price
+			# all belong to the same button, so players can tap anywhere on the card.
+			var upgrade_row := Button.new()
+			upgrade_row.custom_minimum_size = Vector2(0, 116)
 			upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			upgrade_row.add_theme_constant_override("separation", 9)
+			upgrade_row.add_theme_stylebox_override("normal", _button_style(Color(0.075, 0.15, 0.15)))
+			upgrade_row.add_theme_stylebox_override("hover", _button_style(Color(0.11, 0.25, 0.21)))
+			upgrade_row.add_theme_stylebox_override("pressed", _button_style(Color(0.06, 0.12, 0.12)))
+			upgrade_row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.11, 0.105)))
+			upgrade_row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
 			category_body.add_child(upgrade_row)
+
+			var card_content := HBoxContainer.new()
+			card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			card_content.add_theme_constant_override("separation", 12)
+			card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			upgrade_row.add_child(card_content)
 
 			var upgrade_info := VBoxContainer.new()
 			upgrade_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			upgrade_info.size_flags_stretch_ratio = 1.0
-			upgrade_info.add_theme_constant_override("separation", 4)
-			upgrade_row.add_child(upgrade_info)
+			upgrade_info.alignment = BoxContainer.ALIGNMENT_CENTER
+			upgrade_info.add_theme_constant_override("separation", 7)
+			upgrade_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card_content.add_child(upgrade_info)
 
-			var row := Button.new()
-			row.custom_minimum_size = Vector2(0, 58)
-			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_theme_font_size_override("font_size", 14)
-			row.add_theme_color_override("font_color", Color(0.96, 1.0, 0.98))
-			row.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.19, 0.19)))
-			row.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.32, 0.27)))
-			row.add_theme_stylebox_override("pressed", _button_style(Color(0.07, 0.14, 0.13)))
-			row.add_theme_stylebox_override("disabled", _button_style(Color(0.08, 0.13, 0.12)))
-			row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
-			upgrade_info.add_child(row)
-
+			var row := upgrade_row
 			var description := Label.new()
 			description.text = String(descriptions.get(String(branch), "Improves this part of your operation."))
-			description.custom_minimum_size = Vector2(0, 30)
+			description.custom_minimum_size = Vector2(0, 34)
 			description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			description.add_theme_font_size_override("font_size", 11)
-			description.add_theme_color_override("font_color", Color(0.69, 0.80, 0.76))
+			description.add_theme_font_size_override("font_size", 13)
+			description.add_theme_color_override("font_color", Color(0.75, 0.85, 0.81))
+			description.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			upgrade_info.add_child(description)
 
 			var price_panel := PanelContainer.new()
-			price_panel.custom_minimum_size = Vector2(96, 72)
+			price_panel.custom_minimum_size = Vector2(112, 82)
 			price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.15, 0.105)))
-			upgrade_row.add_child(price_panel)
+			price_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card_content.add_child(price_panel)
 			var price_label := Label.new()
 			price_label.text = "BUY"
 			price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			price_label.add_theme_font_size_override("font_size", 15)
+			price_label.add_theme_font_size_override("font_size", 16)
 			price_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.72))
+			price_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			price_panel.add_child(price_label)
 			skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch]), "price_panel": price_panel})
 
