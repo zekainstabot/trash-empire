@@ -3707,8 +3707,6 @@ func _build_recycling_mega_factory() -> void:
 				_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.22, side_z), Vector3(6.8, 0.28, 0.09), steel, false)
 		# Large loading doors sit just outside the entrance of each production row.
 		_box("FactoryLoadingDoorFrame", Vector3(143.5, 3.2, z), Vector3(0.55, 6.4, 6.2), dark_steel, false)
-		_box("FactoryLoadingDoorLeft", Vector3(143.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), teal, false)
-		_box("FactoryLoadingDoorRight", Vector3(143.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), teal, false)
 		_box("FactoryLoadingDoorHeader", Vector3(143.4, 6.5, z), Vector3(0.8, 0.45, 6.5), safety, false)
 		_label_3d("LOADING BAY %d" % (row + 1), Vector3(143.0, 7.0, z - 2.0), 0.13)
 		# A finished usable product appears only after all three machines in this line are built.
