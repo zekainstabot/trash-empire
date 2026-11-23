@@ -116,7 +116,12 @@ var factory_build_zones_root: Node3D
 var factory_build_label: Label3D
 var factory_build_paid := 0.0
 var factory_build_save_timer := 0.0
-var mega_factory_built_count := 0
+var mega_factory_built_count := 1
+var factory_row_input_stock: Array[int] = [0, 0, 0, 0, 0]
+var factory_row_product_stock: Array[int] = [0, 0, 0, 0, 0]
+var factory_production_timer := 0.0
+var waste_tank_inventory := 0
+const WASTE_TANK_CAPACITY := 300
 var mega_factory_build_paid := 0.0
 var mega_factory_build_timer := 0.0
 var mega_factory_machine_labels: Array[Label3D] = []
@@ -209,6 +214,7 @@ func _process(delta: float) -> void:
 	_process_mega_factory_build(delta)
 	_process_factory_row_shipping(delta)
 	_process_waste_feed_conveyor(delta)
+	_process_factory_production(delta)
 	if is_instance_valid(player) and player.global_position.y < -3.0:
 		_recover_player()
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
@@ -224,7 +230,6 @@ func _process(delta: float) -> void:
 	_process_ground_collector(delta)
 	_process_sorting_robots(delta)
 	_process_trash_respawn(delta)
-	_process_city_truck(delta)
 	_animate_city_pedestrians(delta)
 
 func _build_world() -> void:
@@ -1768,7 +1773,11 @@ func _start_new_world() -> void:
 	shipping_active = false
 	factory_build_paid = 0.0
 	factory_build_save_timer = 0.0
-	mega_factory_built_count = 0
+	mega_factory_built_count = 1
+	factory_row_input_stock = [0, 0, 0, 0, 0]
+	factory_row_product_stock = [0, 0, 0, 0, 0]
+	factory_production_timer = 0.0
+	waste_tank_inventory = 0
 	mega_factory_build_paid = 0.0
 	mega_factory_build_timer = 0.0
 	if is_instance_valid(factory_visual_root):
@@ -1830,13 +1839,13 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","ground_robot","sorting_robot","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging","conveyor_speed"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","ground_robot","sorting_robot","dispatch","fleet","truck_capacity","packaging","conveyor_speed"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","ground_robot":"GROUND COLLECTOR ROBOT","sorting_robot":"SORTING ROBOT EFFICIENCY","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","ground_robot":"GROUND COLLECTOR ROBOT","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","repair_robot":"MAINTENANCE ROBOT"
 	}
 	var descriptions := {
@@ -1858,8 +1867,6 @@ func _build_skill_tree(parent: Control) -> void:
 		"ground_robot":"Unlock a ground rover that drives to trash, loads it, then returns to the recycling point. Upgrades improve speed and cargo capacity.",
 		"sorting_robot":"Increase all built sorting robots’ travel speed and search radius.",
 		
-		"city_truck":"Make city garbage trucks arrive more often.",
-		"city_fleet":"Add more city trucks to deliver larger loads.",
 		"dispatch":"Send product delivery trucks more frequently.",
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
@@ -2354,8 +2361,10 @@ func _reset_joystick() -> void:
 func _register_final_cleanup_pickup(item: Node3D) -> void:
 	if not is_instance_valid(item):
 		return
-	# Every collected city item counts once, regardless of backpack slot usage.
+	# Count every pickup; only the endgame landfill contributes to its cleanup goal.
 	total_trash_collected += 1
+	if item.global_position.x >= 135.0:
+		final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + 1)
 	_update_final_zone_label()
 	_update_missions()
 	_maintain_city_trash_supply()
@@ -3470,6 +3479,9 @@ func _save_game() -> void:
 	save.set_value("progress", "factory_stage", factory_stage)
 	save.set_value("progress", "factory_build_paid", factory_build_paid)
 	save.set_value("progress", "mega_factory_built_count", mega_factory_built_count)
+	save.set_value("progress", "factory_row_input_stock", factory_row_input_stock)
+	save.set_value("progress", "factory_row_product_stock", factory_row_product_stock)
+	save.set_value("progress", "waste_tank_inventory", waste_tank_inventory)
 	save.set_value("progress", "mega_factory_build_paid", mega_factory_build_paid)
 	save.set_value("progress", "waste_tank_built", waste_tank_built)
 	save.set_value("progress", "teddy_stock_values", teddy_stock_values)
@@ -3482,7 +3494,7 @@ func _load_game() -> void:
 	money = float(save.get_value("progress", "money", 0.0))
 	final_zone_cleaned = clampi(int(save.get_value("progress", "final_zone_cleaned", 0)), 0, FINAL_ZONE_TARGET)
 	total_trash_collected = int(save.get_value("progress", "total_trash_collected", final_zone_cleaned))
-	tutorial_mission_stage = clampi(int(save.get_value("progress", "tutorial_mission_stage", 0)), 0, 18)
+	tutorial_mission_stage = clampi(int(save.get_value("progress", "tutorial_mission_stage", 0)), 0, 30)
 	carried = int(save.get_value("progress", "carried", 0))
 	capacity = int(save.get_value("progress", "capacity", 4))
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
@@ -3521,7 +3533,12 @@ func _load_game() -> void:
 	district_build_paid = 0.0
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
 	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0, 160.0][factory_stage])
-	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 0)), 0, 15)
+	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 1)), 1, 15)
+	factory_row_input_stock = save.get_value("progress", "factory_row_input_stock", [0, 0, 0, 0, 0])
+	factory_row_product_stock = save.get_value("progress", "factory_row_product_stock", [0, 0, 0, 0, 0])
+	while factory_row_input_stock.size() < 5: factory_row_input_stock.append(0)
+	while factory_row_product_stock.size() < 5: factory_row_product_stock.append(0)
+	waste_tank_inventory = clampi(int(save.get_value("progress", "waste_tank_inventory", 0)), 0, WASTE_TANK_CAPACITY)
 	mega_factory_build_paid = clampf(float(save.get_value("progress", "mega_factory_build_paid", 0.0)), 0.0, _mega_factory_machine_cost(mega_factory_built_count))
 	waste_tank_built = bool(save.get_value("progress", "waste_tank_built", false))
 	teddy_stock_values.clear()
@@ -3738,6 +3755,32 @@ func _build_recycling_mega_factory() -> void:
 	_box("FactoryEntranceCanopy", Vector3(137.0, 5.0, 0.0), Vector3(12.0, 0.35, 31.0), teal, false)
 	for z in [-13.0, 13.0]:
 		_box("FactoryCanopySupport", Vector3(132.0, 2.5, z), Vector3(0.35, 5.0, 0.35), dark_steel, false)
+	_build_first_machine_feed_trigger()
+
+func _build_first_machine_feed_trigger() -> void:
+	var trigger := Area3D.new()
+	trigger.name = "FirstMachineManualFeed"
+	trigger.position = Vector3(151.0, 1.0, _factory_row_z(0))
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(5.8, 2.2, 4.6)
+	shape.shape = box
+	trigger.add_child(shape)
+	trigger.body_entered.connect(_on_first_machine_feed_entered)
+	add_child(trigger)
+
+func _on_first_machine_feed_entered(body: Node3D) -> void:
+	if body != player or mega_factory_built_count < 1 or carried <= 0:
+		return
+	var item_count := maxi(0, carried - carried_bulky)
+	if item_count <= 0:
+		return
+	factory_row_input_stock[0] += item_count
+	carried = 0
+	carried_bulky = 0
+	_update_ui()
+	_save_game()
+	_set_message("Loaded %d pieces directly into the first machine. Input: %d" % [item_count, factory_row_input_stock[0]])
 
 func _create_factory_row_truck(row: int) -> Node3D:
 	var truck := Node3D.new()
@@ -3769,8 +3812,7 @@ func _create_factory_row_truck(row: int) -> Node3D:
 	add_child(truck)
 	return truck
 
-func _process_factory_row_shipping(delta: float) -> void:
-	if mega_factory_built_count < 3 or factory_shipping_busy:
+	if mega_factory_built_count < 1 or factory_shipping_busy:
 		return
 	factory_shipping_timer += delta
 	if factory_shipping_timer < 30.0:
@@ -3778,7 +3820,7 @@ func _process_factory_row_shipping(delta: float) -> void:
 	factory_shipping_timer = 0.0
 	var available_rows: Array[int] = []
 	for row in range(5):
-		if mega_factory_built_count >= (row + 1) * 3:
+		if mega_factory_built_count >= row * 3 + 1 and factory_row_product_stock[row] >= 3:
 			available_rows.append(row)
 	if available_rows.is_empty():
 		return
@@ -3826,6 +3868,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		door_left.queue_free()
 		door_right.queue_free()
 		factory_shipping_busy = false
+		factory_row_product_stock[row] = maxi(0, factory_row_product_stock[row] - 3)
 		var revenue := _factory_row_truck_revenue(row)
 		money += revenue
 		_update_ui()
@@ -3921,15 +3964,26 @@ func _build_city_dump_area() -> void:
 	if waste_tank_built:
 		_build_waste_tank_structure()
 		waste_tank_build_label.visible = false
-	# Create the municipal fleet even while the tank is awaiting purchase.
-	city_trucks.clear()
-	city_truck = null
-	city_trash_reserved = 0
-	_refresh_city_truck_fleet()
-	_reset_city_truck_fleet()
+	# No city garbage trucks are spawned; the player supplies the tank.
 
 func _on_waste_tank_build_entered(body: Node3D) -> void:
-	if body != player or waste_tank_built:
+	if body != player:
+		return
+	if waste_tank_built:
+		if carried <= 0:
+			_set_message("Collect waste first, then return here to load the factory tank.")
+			return
+		var item_count := maxi(0, carried - carried_bulky)
+		var accepted := mini(item_count, WASTE_TANK_CAPACITY - waste_tank_inventory)
+		if accepted <= 0:
+			_set_message("Factory tank is full (%d / %d)." % [waste_tank_inventory, WASTE_TANK_CAPACITY])
+			return
+		waste_tank_inventory += accepted
+		carried = 0
+		carried_bulky = 0
+		_update_ui()
+		_save_game()
+		_set_message("Loaded %d pieces into factory storage. Tank: %d / %d" % [accepted, waste_tank_inventory, WASTE_TANK_CAPACITY])
 		return
 	const BUILD_COST := 120.0
 	if money < BUILD_COST:
@@ -3942,8 +3996,7 @@ func _on_waste_tank_build_entered(body: Node3D) -> void:
 		waste_tank_build_label.visible = false
 	_update_ui()
 	_save_game()
-	_reset_city_truck_fleet()
-	_set_message("Waste storage built! City trucks and factory feed conveyor are now active.")
+	_set_message("Waste storage built! Return here with collected waste to feed the conveyor.")
 
 func _build_waste_tank_structure() -> void:
 	if is_instance_valid(waste_tank_root):
@@ -4169,40 +4222,22 @@ func _city_truck_box(parent: Node3D, node_name: String, pos: Vector3, size: Vect
 	parent.add_child(mesh)
 
 func _refresh_city_truck_fleet() -> void:
-	var target_count := clampi(1 + city_fleet_upgrade_level, 1, 4)
-	while city_trucks.size() < target_count:
-		var new_truck := _create_city_truck(city_trucks.size())
-		city_trucks.append(new_truck)
-	if not city_trucks.is_empty():
-		city_truck = city_trucks[0]
+	_reset_city_truck_fleet()
 
 func _reset_city_truck_fleet() -> void:
+	# Municipal garbage collection is retired; only product-delivery trucks remain.
 	city_trash_reserved = 0
-	var target_count := clampi(1 + city_fleet_upgrade_level, 1, 4)
-	while city_trucks.size() > target_count:
-		var removed_truck: Node3D = city_trucks.pop_back()
-		if is_instance_valid(removed_truck):
-			removed_truck.queue_free()
-	if not city_trucks.is_empty():
-		city_truck = city_trucks[0]
-	for index in range(city_trucks.size()):
-		var truck := city_trucks[index]
-		if not is_instance_valid(truck):
-			continue
-		truck.position = city_truck_start
-		truck.visible = false
-		truck.rotation = Vector3.ZERO
-		truck.set_meta("phase", 0)
-		truck.set_meta("timer", maxf(0.0, _city_truck_interval() - float(index) * 12.0))
-		truck.set_meta("reserved", false)
-		truck.set_meta("load", _city_truck_load())
+	for truck in city_trucks:
+		if is_instance_valid(truck):
+			truck.queue_free()
+	city_trucks.clear()
+	city_truck = null
 	city_truck_phase = 0
 	city_truck_timer = 0.0
 
-
-func _process_city_truck(delta: float) -> void:
-	if city_trucks.is_empty() or not waste_tank_built:
-		return
+func _process_city_truck(_delta: float) -> void:
+	# Municipal garbage collection is retired.
+	return
 	for truck_index in range(city_trucks.size()):
 		var truck := city_trucks[truck_index]
 		if not is_instance_valid(truck):
@@ -4592,7 +4627,7 @@ func _mission_is_complete(stage: int) -> bool:
 		15:
 			return packaging_upgrade_level >= 1
 		16:
-			return city_truck_upgrade_level >= 1
+			return waste_tank_built
 		17:
 			return total_trash_collected >= 100
 		18:
@@ -4604,7 +4639,7 @@ func _mission_is_complete(stage: int) -> bool:
 		21:
 			return conveyor_speed_upgrade_level >= 1
 		23:
-			return city_fleet_upgrade_level >= 1
+			return mega_factory_built_count >= 2
 		24:
 			return fleet_upgrade_level >= 1
 		25:
@@ -4725,19 +4760,12 @@ func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, co
 	return mesh
 
 func _process_waste_feed_conveyor(delta: float) -> void:
-	if not waste_tank_built or waste_feed_busy:
+	if not waste_tank_built or waste_feed_busy or waste_tank_inventory <= 0:
 		return
 	waste_feed_timer += delta
 	if waste_feed_timer < 0.55:
 		return
 	waste_feed_timer = 0.0
-	var selected_item: Node3D
-	for item in trash_nodes:
-		if is_instance_valid(item) and _is_city_dump_trash(item):
-			selected_item = item
-			break
-	if not is_instance_valid(selected_item):
-		return
 	var active_rows: Array[int] = []
 	for row in range(5):
 		if mega_factory_built_count >= row * 3 + 1:
@@ -4746,22 +4774,46 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 		return
 	var selected_row := active_rows[waste_feed_line_index % active_rows.size()]
 	waste_feed_line_index += 1
-	trash_nodes.erase(selected_item)
+	waste_tank_inventory -= 1
+	var selected_item := Node3D.new()
+	selected_item.name = "FactoryWasteConveyorItem"
+	selected_item.set_script(TRASH_SCRIPT)
+	selected_item.position = Vector3(124.8, 1.25, 0.0)
+	add_child(selected_item)
 	waste_feed_busy = true
 	var target_z := _factory_row_z(selected_row)
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(selected_item, "global_position", Vector3(124.8, 1.25, 0.0), 0.35)
-	tween.tween_property(selected_item, "global_position", Vector3(146.0, 1.25, 0.0), 1.35)
+	tween.tween_property(selected_item, "global_position", Vector3(137.0, 1.25, 0.0), 0.8)
+	tween.tween_property(selected_item, "global_position", Vector3(146.0, 1.25, 0.0), 0.8)
 	tween.tween_property(selected_item, "global_position", Vector3(147.0, 1.25, target_z), 0.65)
 	tween.tween_property(selected_item, "global_position", Vector3(150.4, 1.25, target_z), 0.45)
-	tween.tween_callback(_finish_waste_feed_item.bind(selected_item))
+	tween.tween_callback(_finish_waste_feed_item.bind(selected_item, selected_row))
 
-func _finish_waste_feed_item(item: Node3D) -> void:
+func _finish_waste_feed_item(item: Node3D, row: int) -> void:
 	if is_instance_valid(item):
 		item.queue_free()
+	if row >= 0 and row < factory_row_input_stock.size():
+		factory_row_input_stock[row] += 1
 	waste_feed_busy = false
+	_save_game()
+
+func _process_factory_production(delta: float) -> void:
+	if machine_broken:
+		return
+	factory_production_timer += delta
+	if factory_production_timer < 1.2:
+		return
+	factory_production_timer = 0.0
+	for row in range(5):
+		if mega_factory_built_count < row * 3 + 1:
+			continue
+		if factory_row_input_stock[row] >= 3:
+			factory_row_input_stock[row] -= 3
+			factory_row_product_stock[row] += 1
+			_set_message("%s produced! Stock: %d" % [_factory_row_product(row), factory_row_product_stock[row]])
+			_save_game()
 
 func _animate_conveyor(delta: float) -> void:
 	var conveyor_speed := _conveyor_speed_multiplier()
