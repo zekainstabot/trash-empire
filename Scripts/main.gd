@@ -689,8 +689,8 @@ func _build_factory_expansion() -> void:
 	for stage in range(factory_built_stage + 1, factory_stage + 1):
 		var first_new_child := get_child_count()
 		_build_factory_module(stage)
-		var start_z := -4.9 if stage == 2 else (1.9 if stage == 3 else (8.9 if stage == 4 else 15.9))
-		var end_z := -1.7 if stage == 2 else (5.3 if stage == 3 else (12.3 if stage == 4 else 19.3))
+		var start_z := -4.9 if stage == 2 else (3.0 if stage == 3 else (13.0 if stage == 4 else 23.0))
+		var end_z := -1.7 if stage == 2 else (7.0 if stage == 3 else (17.0 if stage == 4 else 27.0))
 		_build_factory_link(start_z, end_z)
 		var new_nodes: Array[Node] = []
 		for child_index in range(first_new_child, get_child_count()):
@@ -710,7 +710,7 @@ func _refresh_factory_build_zones() -> void:
 	factory_build_label = null
 	if factory_stage >= 5:
 		return
-	var z_positions := [0.0, 0.0, 0.0, 7.0, 14.0, 21.0]
+	var z_positions := [0.0, 0.0, 0.0, 10.0, 20.0, 30.0]
 	var stage := factory_stage + 1
 	var z: float = z_positions[stage]
 	var first_new_child := get_child_count()
@@ -765,7 +765,7 @@ func _process_factory_build(delta: float) -> void:
 		factory_build_save_timer = 0.0
 		_build_factory_expansion()
 		# Move the player clear of the newly spawned machine collision immediately.
-		player.global_position = Vector3(3.5, maxf(player.global_position.y, 0.0), minf(z_positions[factory_stage] + 2.8, 28.2))
+		player.global_position = Vector3(3.5, maxf(player.global_position.y, 0.0), minf(z_positions[factory_stage] + 2.8, 37.2))
 		player.velocity = Vector3.ZERO
 		player.reset_physics_interpolation()
 		_refresh_factory_upgrade_button()
@@ -857,7 +857,7 @@ func _build_factory_module(stage: int) -> void:
 		_box("PackagingCartonStack", Vector3(5.95, 1.10, z + 0.80), Vector3(0.85, 1.10, 0.82), Color(0.67, 0.46, 0.23), false)
 		_label_3d("PACKED TOYS", Vector3(9.25, 2.15, z + 0.82), 0.15)
 		_create_delivery_truck(0)
-		_build_delivery_conveyor(Vector3(9.95, 0.82, z + 0.25), Vector3(15.75, 0.82, 26.25))
+		_build_delivery_conveyor(Vector3(9.95, 0.82, z + 0.25), Vector3(15.25, 0.82, z + 0.25))
 	# A compact status beacon makes each station readable from a distance.
 	_box("FactoryModule%dStatusHousing" % stage, Vector3(9.45, 2.05, z - 0.82), Vector3(0.34, 0.48, 0.30), Color(0.035, 0.06, 0.07), false)
 	_cylinder("FactoryModule%dStatusLamp" % stage, Vector3(9.45, 2.30, z - 0.82), 0.12, 0.10, Color(0.10, 0.95, 0.56), false)
@@ -3712,7 +3712,7 @@ func _build_delivery_conveyor(start_point: Vector3, end_point: Vector3) -> void:
 func _create_delivery_truck(index: int) -> void:
 	var truck := Node3D.new()
 	truck.name = "TeddyDeliveryTruck%d" % (index + 1)
-	var dock_z := 27.1 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
+	var dock_z := 30.0 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
 	truck.position = Vector3(17.4, 0.0, dock_z)
 	var cargo := MeshInstance3D.new()
 	var cargo_mesh := BoxMesh.new()
@@ -3771,7 +3771,7 @@ func _dispatch_truck_fleet() -> void:
 		if not is_instance_valid(truck):
 			continue
 		dispatch_trucks_remaining += 1
-		var dock_z := 27.1 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
+		var dock_z := 30.0 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
 		var arrive := create_tween()
 		arrive.set_trans(Tween.TRANS_SINE)
 		arrive.set_ease(Tween.EASE_OUT)
