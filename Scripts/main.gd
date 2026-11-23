@@ -289,35 +289,56 @@ func _build_city_rework_layout() -> void:
 	_box("FinalCleanupGround", Vector3(160.0, -0.34, 0.0), Vector3(96.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
 	_box("FinalCleanupWorkPad", Vector3(160.0, 0.018, 0.0), Vector3(90.0, 0.035, 62.0), Color(0.34, 0.38, 0.30), false)
 
-	# Main east-west boulevard with proper curbs, sidewalks and lane markings.
-	_box("CityGrandBoulevard", Vector3(49.0, 0.025, 0.0), Vector3(132.0, 0.05, 8.2), asphalt, false)
+	# Dark charcoal asphalt, raised curbs and layered markings make this read as a
+	# paved multi-lane boulevard rather than a flat grey platform.
+	var road_asphalt := Color(0.105, 0.112, 0.118)
+	var road_worn := Color(0.135, 0.143, 0.148)
+	var road_white := Color(0.91, 0.91, 0.84)
+	var road_yellow := Color(0.96, 0.72, 0.12)
+	_box("CityGrandBoulevard", Vector3(49.0, 0.025, 0.0), Vector3(132.0, 0.05, 8.2), road_asphalt, false)
+	# Subtle resurfaced asphalt strips add material variation without visual clutter.
+	for patch_x in range(-10, 111, 18):
+		_box("BoulevardAsphaltPatch", Vector3(float(patch_x), 0.052, 0.0), Vector3(8.0, 0.006, 7.65), road_worn, false)
 	for side in [-1.0, 1.0]:
 		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(132.0, 0.18, 0.28), curb, false)
+		_box("BoulevardEdgeLine", Vector3(49.0, 0.061, side * 3.72), Vector3(132.0, 0.025, 0.12), road_white, false)
 		_box("BoulevardSidewalk", Vector3(49.0, 0.075, side * 6.0), Vector3(132.0, 0.15, 3.2), sidewalk, false)
 		_box("BoulevardGrassVerge", Vector3(49.0, 0.025, side * 8.0), Vector3(132.0, 0.05, 1.0), grass.lightened(0.08), false)
-	for dash_x in range(-12, 115, 7):
-		_box("BoulevardLaneDash", Vector3(float(dash_x), 0.058, 0.0), Vector3(3.0, 0.016, 0.13), white, false)
+	# Double yellow no-passing divider and broken white lane separators.
+	for offset in [-0.13, 0.13]:
+		_box("BoulevardDoubleYellow", Vector3(49.0, 0.064, offset), Vector3(132.0, 0.025, 0.075), road_yellow, false)
+	for lane_z in [-1.55, 1.55]:
+		for dash_x in range(-12, 115, 8):
+			_box("BoulevardLaneDash", Vector3(float(dash_x), 0.064, lane_z), Vector3(4.0, 0.022, 0.095), road_white, false)
 
-	# Four connected north-south streets create recognizable city blocks.
+	# Four perpendicular streets with their own asphalt, center lines, edge lines,
+	# stop bars and zebra crossings at the boulevard junctions.
 	for street_x in [16.0, 48.0, 80.0, 104.0]:
-		_box("CityCrossStreet", Vector3(street_x, 0.028, 0.0), Vector3(6.8, 0.056, 66.0), asphalt, false)
+		_box("CityCrossStreet", Vector3(street_x, 0.028, 0.0), Vector3(6.8, 0.056, 66.0), road_asphalt, false)
 		for side in [-1.0, 1.0]:
 			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 66.0), curb, false)
 			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 66.0), sidewalk, false)
-		for z in range(-28, 29, 8):
-			_box("CrossStreetCenterMark", Vector3(street_x, 0.06, float(z)), Vector3(0.12, 0.016, 2.7), white, false)
-		# Zebra crossings at the main boulevard.
-		for stripe in range(6):
-			_box("CityZebraCrossing", Vector3(street_x - 2.0 + float(stripe) * 0.8, 0.065, 5.2), Vector3(0.48, 0.018, 1.5), white, false)
-			_box("CityZebraCrossing", Vector3(street_x - 2.0 + float(stripe) * 0.8, 0.065, -5.2), Vector3(0.48, 0.018, 1.5), white, false)
+			_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, 0.0), Vector3(0.09, 0.022, 66.0), road_white, false)
+		for offset in [-0.13, 0.13]:
+			_box("CrossStreetDoubleYellow", Vector3(street_x + offset, 0.064, 0.0), Vector3(0.075, 0.025, 66.0), road_yellow, false)
+		for lane_z in [-1.35, 1.35]:
+			for dash_z in range(-29, 30, 9):
+				_box("CrossStreetLaneDash", Vector3(street_x + lane_z, 0.064, float(dash_z)), Vector3(0.09, 0.022, 4.2), road_white, false)
+		for cross_z in [-5.1, 5.1]:
+			for stripe in range(7):
+				_box("CityZebraCrossing", Vector3(street_x - 2.55 + float(stripe) * 0.85, 0.068, cross_z), Vector3(0.52, 0.025, 1.45), road_white, false)
+			_box("CrossStreetStopBar", Vector3(street_x, 0.069, cross_z + (1.05 if cross_z > 0.0 else -1.05)), Vector3(5.8, 0.025, 0.13), road_white, false)
 
-	# Side streets, parking bays and block access lanes.
+	# Narrow neighborhood streets get realistic edge paint, broken center markings,
+	# parking-bay separators and curbside pavements.
 	for street_z in [-22.0, 22.0]:
-		_box("NeighborhoodStreet", Vector3(49.0, 0.024, street_z), Vector3(132.0, 0.048, 5.4), asphalt, false)
+		_box("NeighborhoodStreet", Vector3(49.0, 0.024, street_z), Vector3(132.0, 0.048, 5.4), road_asphalt, false)
 		for side in [-1.0, 1.0]:
 			_box("NeighborhoodSidewalk", Vector3(49.0, 0.07, street_z + side * 3.45), Vector3(132.0, 0.14, 1.5), sidewalk, false)
-		for dash_x in range(-10, 115, 8):
-			_box("NeighborhoodLaneDash", Vector3(float(dash_x), 0.055, street_z), Vector3(3.0, 0.012, 0.10), white, false)
+			_box("NeighborhoodEdgeLine", Vector3(49.0, 0.057, street_z + side * 2.45), Vector3(132.0, 0.02, 0.075), road_white, false)
+		_box("NeighborhoodCenterLine", Vector3(49.0, 0.058, street_z), Vector3(132.0, 0.02, 0.09), road_yellow, false)
+		for dash_x in range(-10, 115, 10):
+			_box("NeighborhoodParkingDivider", Vector3(float(dash_x), 0.059, street_z + 2.0), Vector3(0.08, 0.02, 0.85), road_white, false)
 
 	# Residential and civic buildings are arranged as real blocks, leaving clear
 	# pedestrian routes and keeping the four sorting-station plots unobstructed.
