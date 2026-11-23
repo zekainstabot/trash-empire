@@ -239,128 +239,179 @@ func _process(delta: float) -> void:
 	_animate_city_pedestrians(delta)
 
 func _build_world() -> void:
+	# Clean daylight lighting for the redesigned, open city.
 	var world_env := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky_resource := Sky.new()
 	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.16, 0.38, 0.68)
-	sky_material.sky_horizon_color = Color(0.72, 0.82, 0.92)
-	sky_material.ground_bottom_color = Color(0.20, 0.24, 0.25)
-	sky_material.ground_horizon_color = Color(0.55, 0.61, 0.63)
-	sky_material.sun_angle_max = 18.0
+	sky_material.sky_top_color = Color(0.18, 0.42, 0.72)
+	sky_material.sky_horizon_color = Color(0.78, 0.86, 0.91)
+	sky_material.ground_bottom_color = Color(0.24, 0.30, 0.27)
+	sky_material.ground_horizon_color = Color(0.57, 0.65, 0.59)
 	sky_material.use_debanding = true
 	sky_resource.sky_material = sky_material
 	env.sky = sky_resource
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.72, 0.77, 0.82)
-	env.ambient_light_energy = 0.92
+	env.ambient_light_color = Color(0.78, 0.82, 0.79)
+	env.ambient_light_energy = 1.0
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.08
-	env.tonemap_white = 5.0
+	env.tonemap_exposure = 1.0
 	world_env.environment = env
 	add_child(world_env)
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -32, 0)
-	sun.light_energy = 1.28
+	sun.light_energy = 1.18
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.035
-	sun.directional_shadow_max_distance = 75.0
+	sun.directional_shadow_max_distance = 90.0
 	add_child(sun)
 
-	# Main concrete yard and worn work zones.
-	_box("ConcreteYard", Vector3(0, -0.3, 0), Vector3(32, 0.6, 72), Color(0.34, 0.37, 0.35), true)
-	_box("RoadLane", Vector3(-8.0, 0.012, 1.0), Vector3(5.0, 0.025, 70.0), Color(0.19, 0.22, 0.22), false)
-	for z in range(-11, 13, 4):
-		_box("RoadDash", Vector3(-8.0, 0.03, z), Vector3(0.13, 0.025, 1.7), Color(0.88, 0.77, 0.38), false)
+	_build_city_rework_layout()
 	_build_city_dump_area()
-	# Endgame landfill: a continuous, walkable extension of the city.
-	_box("FinalCleanupGround", Vector3(160, -0.3, 0), Vector3(96, 0.6, 72), Color(0.30, 0.32, 0.27), true)
-	_box("FinalCleanupWorkPad", Vector3(160, 0.018, 0), Vector3(90, 0.035, 62), Color(0.28, 0.30, 0.26), false)
-	_box("FinalZoneAccessRoad", Vector3(122, 0.025, 0), Vector3(28, 0.05, 8.0), Color(0.14, 0.17, 0.18), false)
-	_box("FinalZoneRoadCenterLine", Vector3(122, 0.055, 0), Vector3(26, 0.012, 0.13), Color(0.91, 0.78, 0.43), false)
-	_box("FinalZoneEntryApron", Vector3(135, 0.045, 0), Vector3(8, 0.08, 15), Color(0.34, 0.35, 0.30), false)
-	_box("FinalZoneSignPost", Vector3(119, 2.0, -7.0), Vector3(0.22, 4.0, 0.22), Color(0.22, 0.25, 0.24), false)
-	_box("FinalZoneSignBoard", Vector3(119, 3.35, -7.0), Vector3(9.5, 1.8, 0.28), Color(0.08, 0.27, 0.25), false)
-	_label_3d("RECYCLING FACTORY", Vector3(119, 3.45, -6.82), 0.42)
-	for marker_x in range(118, 207, 8):
-		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, -34.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
-		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, 34.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
-	_box("PlayerStartZone", Vector3(0, 0.02, 7), Vector3(7, 0.04, 5), Color(0.39, 0.40, 0.35), false)
-
-	# Perimeter walls, fencing, and gate.
-	_box("BackWall", Vector3(0, 2.0, -35.5), Vector3(32, 4, 0.5), Color(0.28, 0.32, 0.31), true)
-	_box("LeftWall", Vector3(-15.5, 2.0, 0), Vector3(0.5, 4, 72), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictTwoGround", Vector3(32, -0.3, 0), Vector3(32, 0.6, 72), Color(0.20, 0.43, 0.22), true)
-	_box("DistrictTwoGrassPatch", Vector3(32, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.25, 0.50, 0.22), false)
-	_box("DistrictThreeGround", Vector3(64, -0.3, 0), Vector3(32, 0.6, 72), Color(0.32, 0.34, 0.29), true)
-	# Open the east edge into a boulevard leading to the new market quarter.
-	_box("DistrictFourGround", Vector3(96, -0.3, 0), Vector3(32, 0.6, 72), Color(0.29, 0.34, 0.30), true)
-	_box("DistrictFourGrassPatch", Vector3(96, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.27, 0.43, 0.25), false)
-	# Wide service gateway into the new city recycling factory.
-	_box("DistrictFourOuterWallNorth", Vector3(111.5, 2.0, -22.0), Vector3(0.5, 4.0, 28.0), Color(0.28, 0.32, 0.31), true)
-	_box("DistrictFourOuterWallSouth", Vector3(111.5, 2.0, 22.0), Vector3(0.5, 4.0, 28.0), Color(0.28, 0.32, 0.31), true)
-	for gate_z in [-8.0, 8.0]:
-		_box("LandfillGatePillar", Vector3(111.5, 2.1, gate_z), Vector3(0.8, 4.2, 0.8), Color(0.20, 0.26, 0.25), true)
-		_box("LandfillGateCap", Vector3(111.5, 4.25, gate_z), Vector3(1.1, 0.22, 1.1), Color(0.83, 0.62, 0.19), false)
-	_box("LandfillGateHeader", Vector3(111.5, 4.15, 0), Vector3(0.45, 0.28, 15.5), Color(0.14, 0.22, 0.21), false)
-	_label_3d("RECYCLING FACTORY", Vector3(113.0, 4.65, 0), 0.34)
-	for x in range(-14, 15, 2):
-		# Keep a wide, player-accessible entrance aligned with the road.
-		if x >= -12 and x <= -4:
-			continue
-		_box("FencePost", Vector3(x, 1.35, 35.0), Vector3(0.16, 2.7, 0.16), Color(0.20, 0.24, 0.24), true)
-	# Wide 8-metre opening: both the player and municipal trucks can enter freely.
-	for rail_y in [2.45, 0.45]:
-		_box("FenceRailServiceLeft", Vector3(-13.5, rail_y, 35.0), Vector3(3.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-		_box("FenceRailServiceRight", Vector3(5.5, rail_y, 35.0), Vector3(19.0, 0.14, 0.14), Color(0.18, 0.22, 0.22), false)
-	_box("GateLeft", Vector3(-12.0, 1.3, 35.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
-	_box("GateRight", Vector3(-4.0, 1.3, 35.0), Vector3(0.14, 2.6, 0.14), Color(0.82, 0.62, 0.18), false)
-	_add_invisible_barrier("MainFrontSafety", Vector3(0, 1.0, 36.0), Vector3(32, 2.0, 0.5))
-
-	# Residential building: moved to the quiet west edge, away from the factory line.
-	_build_apartment_block()
-
-	# Clearly marked unloading pad directly in front of the conveyor intake.
-	_box("UnloadPad", Vector3(1.35, 0.018, -6.5), Vector3(3.5, 0.035, 3.2), Color(0.95, 0.66, 0.12), false)
-	_box("UnloadBorderFront", Vector3(1.35, 0.045, -8.12), Vector3(3.55, 0.045, 0.12), Color(1.0, 0.88, 0.28), false)
-	_box("UnloadBorderBack", Vector3(1.35, 0.045, -4.88), Vector3(3.55, 0.045, 0.12), Color(1.0, 0.88, 0.28), false)
-	_box("UnloadBorderLeft", Vector3(-0.43, 0.045, -6.5), Vector3(0.12, 0.045, 3.2), Color(1.0, 0.88, 0.28), false)
-	_box("UnloadBorderRight", Vector3(3.13, 0.045, -6.5), Vector3(0.12, 0.045, 3.2), Color(1.0, 0.88, 0.28), false)
-	_label_3d("UNLOAD HERE", Vector3(1.35, 0.12, -7.45), 0.28)
-
-	# The old central-city processing line was removed; recycling equipment is in the dedicated factory district.
-
-	# Ordinary neighborhood waste bins, distributed around the streets.
-	_make_street_bin(Vector3(-14.2, 0, -17.0), Color(0.20, 0.29, 0.27))
-	_make_street_bin(Vector3(13.8, 0, 8.5), Color(0.28, 0.34, 0.32))
-	_make_street_bin(Vector3(29.0, 0, -15.5), Color(0.22, 0.30, 0.36))
-	_make_barrel(Vector3(-13.25, 0, 4.0), Color(0.76, 0.31, 0.16))
-	_make_barrel(Vector3(-13.25, 0, 6.0), Color(0.18, 0.43, 0.67))
-	_make_tire_stack(Vector3(12.0, 0, 4.5))
-	_make_lamp(Vector3(-13.4, 0, -12.5))
-	_make_lamp(Vector3(13.4, 0, 10.5))
-	_make_tree(Vector3(-13.0, 0, 9.0))
-	_make_tree(Vector3(-13.0, 0, 1.0))
-	_box("SpawnPad", Vector3(0, 0.05, 7), Vector3(4.5, 0.08, 3.5), Color(0.48, 0.48, 0.39), false)
-	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 34.5), 0.65)
-	_build_first_district_details()
-	_build_yard_environment_details()
-	_build_industrial_set_dressing()
-	_build_random_residential_blocks()
-	_build_connected_city_streets()
-	_build_city_polish()
-	_build_city_life_details()
-	_build_city_pedestrians()
 	_build_recycling_mega_factory()
-	_build_commercial_district()
 	_build_sorting_district()
-	_build_ad_billboards()
-
+	_build_city_pedestrians()
 	refill_world_button = _create_gear_refill_button(Vector3(0.0, 2.0, -35.20), Callable(self, "_refill_first_district"))
 	refill_world_button.rotation_degrees.y = 90.0
-	# Central-city factory machines are intentionally removed.
+
+
+func _build_city_rework_layout() -> void:
+	# One continuous, walkable city surface replaces the old fenced concrete yard.
+	var grass := Color(0.27, 0.43, 0.29)
+	var asphalt := Color(0.105, 0.125, 0.14)
+	var sidewalk := Color(0.61, 0.62, 0.57)
+	var curb := Color(0.78, 0.77, 0.68)
+	var white := Color(0.90, 0.88, 0.79)
+	_box("CityTerrain", Vector3(49.0, -0.34, 0.0), Vector3(132.0, 0.68, 74.0), grass, true)
+	_box("FinalCleanupGround", Vector3(160.0, -0.34, 0.0), Vector3(96.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
+	_box("FinalCleanupWorkPad", Vector3(160.0, 0.018, 0.0), Vector3(90.0, 0.035, 62.0), Color(0.34, 0.38, 0.30), false)
+
+	# Main east-west boulevard with proper curbs, sidewalks and lane markings.
+	_box("CityGrandBoulevard", Vector3(49.0, 0.025, 0.0), Vector3(132.0, 0.05, 8.2), asphalt, false)
+	for side in [-1.0, 1.0]:
+		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(132.0, 0.18, 0.28), curb, false)
+		_box("BoulevardSidewalk", Vector3(49.0, 0.075, side * 6.0), Vector3(132.0, 0.15, 3.2), sidewalk, false)
+		_box("BoulevardGrassVerge", Vector3(49.0, 0.025, side * 8.0), Vector3(132.0, 0.05, 1.0), grass.lightened(0.08), false)
+	for dash_x in range(-12, 115, 7):
+		_box("BoulevardLaneDash", Vector3(float(dash_x), 0.058, 0.0), Vector3(3.0, 0.016, 0.13), white, false)
+
+	# Four connected north-south streets create recognizable city blocks.
+	for street_x in [16.0, 48.0, 80.0, 104.0]:
+		_box("CityCrossStreet", Vector3(street_x, 0.028, 0.0), Vector3(6.8, 0.056, 66.0), asphalt, false)
+		for side in [-1.0, 1.0]:
+			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 66.0), curb, false)
+			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 66.0), sidewalk, false)
+		for z in range(-28, 29, 8):
+			_box("CrossStreetCenterMark", Vector3(street_x, 0.06, float(z)), Vector3(0.12, 0.016, 2.7), white, false)
+		# Zebra crossings at the main boulevard.
+		for stripe in range(6):
+			_box("CityZebraCrossing", Vector3(street_x - 2.0 + float(stripe) * 0.8, 0.065, 5.2), Vector3(0.48, 0.018, 1.5), white, false)
+			_box("CityZebraCrossing", Vector3(street_x - 2.0 + float(stripe) * 0.8, 0.065, -5.2), Vector3(0.48, 0.018, 1.5), white, false)
+
+	# Side streets, parking bays and block access lanes.
+	for street_z in [-22.0, 22.0]:
+		_box("NeighborhoodStreet", Vector3(49.0, 0.024, street_z), Vector3(132.0, 0.048, 5.4), asphalt, false)
+		for side in [-1.0, 1.0]:
+			_box("NeighborhoodSidewalk", Vector3(49.0, 0.07, street_z + side * 3.45), Vector3(132.0, 0.14, 1.5), sidewalk, false)
+		for dash_x in range(-10, 115, 8):
+			_box("NeighborhoodLaneDash", Vector3(float(dash_x), 0.055, street_z), Vector3(3.0, 0.012, 0.10), white, false)
+
+	# Residential and civic buildings are arranged as real blocks, leaving clear
+	# pedestrian routes and keeping the four sorting-station plots unobstructed.
+	_build_city_block_building(Vector3(7.0, 0.0, -22.0), "APARTMENTS", Color(0.72, 0.67, 0.56), 3, 8.0)
+	_build_city_block_building(Vector3(40.0, 0.0, -22.0), "CITY HALL", Color(0.70, 0.73, 0.68), 2, 10.0)
+	_build_city_block_building(Vector3(72.0, 0.0, -22.0), "LIBRARY", Color(0.70, 0.57, 0.43), 2, 8.0)
+	_build_city_block_building(Vector3(99.0, 0.0, -22.0), "CLINIC", Color(0.73, 0.76, 0.72), 2, 7.0)
+	_build_city_block_building(Vector3(7.0, 0.0, 22.0), "RESIDENCES", Color(0.67, 0.70, 0.73), 3, 8.5)
+	_build_city_block_building(Vector3(40.0, 0.0, 22.0), "SCHOOL", Color(0.76, 0.66, 0.48), 2, 7.0)
+	_build_city_block_building(Vector3(72.0, 0.0, 22.0), "FIRE STATION", Color(0.68, 0.43, 0.37), 2, 7.0)
+	_build_city_block_building(Vector3(99.0, 0.0, 22.0), "SUPERMARKET", Color(0.52, 0.66, 0.58), 1, 6.0)
+
+	# A proper public park occupies the open civic block, with paths and seating.
+	_box("CityParkLawn", Vector3(56.0, 0.055, 13.0), Vector3(19.0, 0.11, 12.0), Color(0.25, 0.48, 0.27), false)
+	_box("ParkPathLong", Vector3(56.0, 0.12, 13.0), Vector3(17.0, 0.04, 1.5), sidewalk, false)
+	_box("ParkPathCross", Vector3(56.0, 0.125, 13.0), Vector3(1.5, 0.04, 10.0), sidewalk, false)
+	_cylinder("CityParkFountainBasin", Vector3(56.0, 0.30, 13.0), 1.55, 0.42, Color(0.48, 0.53, 0.50), false)
+	_cylinder("CityParkFountainWater", Vector3(56.0, 0.53, 13.0), 1.30, 0.05, Color(0.19, 0.55, 0.69), false)
+	_cylinder("CityParkFountainCore", Vector3(56.0, 0.83, 13.0), 0.24, 0.58, Color(0.70, 0.72, 0.67), false)
+	for bench_pos in [Vector3(49.0, 0.0, 13.0), Vector3(63.0, 0.0, 13.0)]:
+		_make_bench(bench_pos)
+	for tree_pos in [Vector3(48.0, 0.0, 8.5), Vector3(64.0, 0.0, 8.5), Vector3(48.0, 0.0, 17.5), Vector3(64.0, 0.0, 17.5)]:
+		_build_neighborhood_tree(tree_pos)
+
+	# Player's starting plaza and waste drop-off remain easy to find.
+	_box("PlayerWelcomePlaza", Vector3(0.0, 0.035, 7.0), Vector3(12.0, 0.07, 12.0), Color(0.53, 0.54, 0.49), false)
+	_box("PlayerWelcomeInset", Vector3(0.0, 0.078, 7.0), Vector3(10.8, 0.018, 10.8), Color(0.62, 0.62, 0.55), false)
+	_box("SpawnPad", Vector3(0.0, 0.105, 7.0), Vector3(4.5, 0.035, 3.5), Color(0.78, 0.68, 0.43), false)
+	_label_3d("ZEKA CITY", Vector3(0.0, 3.2, 34.0), 0.65)
+	_box("UnloadPad", Vector3(1.35, 0.12, -6.5), Vector3(3.5, 0.035, 3.2), Color(0.94, 0.66, 0.13), false)
+	_label_3d("WASTE DROP-OFF", Vector3(1.35, 0.45, -7.45), 0.24)
+
+	# Public waste bins are placed beside sidewalks, never in the traffic lanes.
+	for bin_pos in [Vector3(-11.0, 0.0, -7.0), Vector3(12.0, 0.0, 9.0), Vector3(29.0, 0.0, -12.0), Vector3(61.0, 0.0, -8.0), Vector3(91.0, 0.0, 9.0), Vector3(108.0, 0.0, -10.0)]:
+		_make_street_bin(bin_pos, Color(0.18, 0.34, 0.31))
+	for barrel_pos in [Vector3(-11.5, 0.0, 3.0), Vector3(13.0, 0.0, 12.0)]:
+		_make_barrel(barrel_pos, Color(0.72, 0.34, 0.18))
+
+	# Street furniture: lamps, traffic lights, signs and parking.
+	for lamp_pos in [Vector3(13.0, 0.0, -8.0), Vector3(19.0, 0.0, 8.0), Vector3(45.0, 0.0, -8.0), Vector3(51.0, 0.0, 8.0), Vector3(77.0, 0.0, -8.0), Vector3(83.0, 0.0, 8.0), Vector3(101.0, 0.0, -8.0), Vector3(107.0, 0.0, 8.0)]:
+		_make_lamp(lamp_pos)
+	for signal_x in [16.0, 48.0, 80.0, 104.0]:
+		for signal_side in [-1.0, 1.0]:
+			var signal_pos := Vector3(signal_x + signal_side * 4.4, 0.0, signal_side * 5.8)
+			_box("TrafficSignalPole", signal_pos + Vector3(0, 1.55, 0), Vector3(0.11, 3.1, 0.11), Color(0.16, 0.20, 0.21), false)
+			_box("TrafficSignalHead", signal_pos + Vector3(0, 2.85, 0), Vector3(0.34, 0.78, 0.28), Color(0.055, 0.075, 0.08), false)
+			for light_i in range(3):
+				_cylinder("TrafficLightLens", signal_pos + Vector3(0, 3.08 - float(light_i) * 0.23, 0.16), 0.07, 0.045, [Color(0.82, 0.18, 0.14), Color(0.92, 0.69, 0.16), Color(0.20, 0.72, 0.34)][light_i], false)
+	for car_pos in [Vector3(22.0, 0.0, -10.0), Vector3(44.0, 0.0, 10.0), Vector3(68.0, 0.0, -10.0), Vector3(92.0, 0.0, 10.0)]:
+		_make_parked_car(car_pos)
+
+	# Trees line the sidewalks and create green pockets between buildings.
+	for tree_pos in [Vector3(20.0, 0.0, -8.0), Vector3(28.0, 0.0, 8.0), Vector3(44.0, 0.0, -8.0), Vector3(52.0, 0.0, 8.0), Vector3(76.0, 0.0, -8.0), Vector3(84.0, 0.0, 8.0), Vector3(100.0, 0.0, -8.0), Vector3(108.0, 0.0, 8.0)]:
+		_build_neighborhood_tree(tree_pos)
+
+	# Road connection from the city into the industrial recycling campus.
+	_box("FactoryAccessRoad", Vector3(133.0, 0.03, 0.0), Vector3(36.0, 0.06, 8.2), asphalt, false)
+	_box("FactoryAccessCenterLine", Vector3(133.0, 0.065, 0.0), Vector3(35.0, 0.012, 0.13), white, false)
+	_box("FactoryGateApron", Vector3(115.0, 0.045, 0.0), Vector3(10.0, 0.09, 16.0), Color(0.45, 0.47, 0.43), false)
+	_box("FactoryGatePostLeft", Vector3(111.5, 2.0, -8.0), Vector3(0.8, 4.0, 0.8), Color(0.18, 0.25, 0.25), false)
+	_box("FactoryGatePostRight", Vector3(111.5, 2.0, 8.0), Vector3(0.8, 4.0, 0.8), Color(0.18, 0.25, 0.25), false)
+	_box("FactoryGateHeader", Vector3(111.5, 4.1, 0.0), Vector3(0.45, 0.28, 15.5), Color(0.12, 0.20, 0.21), false)
+	_label_3d("RECYCLING DISTRICT", Vector3(113.0, 4.55, 0.0), 0.30)
+
+	# The final clean-up district has a marked public access road and boundary.
+	_box("FinalZoneAccessRoad", Vector3(122.0, 0.03, 0.0), Vector3(28.0, 0.06, 8.0), asphalt, false)
+	_box("FinalZoneRoadCenterLine", Vector3(122.0, 0.065, 0.0), Vector3(26.0, 0.012, 0.13), white, false)
+	_box("FinalZoneEntryApron", Vector3(135.0, 0.05, 0.0), Vector3(8.0, 0.10, 15.0), Color(0.43, 0.45, 0.40), false)
+	for marker_x in range(118, 207, 8):
+		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.05, -34.0), Vector3(0.7, 0.1, 0.7), Color(0.88, 0.62, 0.12), false)
+		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.05, 34.0), Vector3(0.7, 0.1, 0.7), Color(0.88, 0.62, 0.12), false)
+
+
+func _build_city_block_building(center: Vector3, sign_text: String, facade: Color, floors: int, width: float) -> void:
+	# Modular low-poly architecture with a real base, layered facade, roofline,
+	# recessed windows, balconies and a visible entrance.
+	var depth := 9.0
+	var height := float(floors) * 2.7
+	var front_z := center.z + (5.0 if center.z < 0.0 else -5.0)
+	_box("CityBuildingFoundation", center + Vector3(0, 0.18, 0), Vector3(width + 0.8, 0.36, depth + 0.8), Color(0.36, 0.37, 0.34), true)
+	_box("CityBuildingFacade", center + Vector3(0, height * 0.5 + 0.25, 0), Vector3(width, height, depth), facade, true)
+	_box("CityBuildingRoofCap", center + Vector3(0, height + 0.40, 0), Vector3(width + 0.55, 0.32, depth + 0.55), Color(0.20, 0.25, 0.27), false)
+	_box("CityBuildingCornice", center + Vector3(0, height - 0.10, front_z - center.z), Vector3(width + 0.18, 0.22, 0.22), facade.darkened(0.22), false)
+	for floor_i in range(floors):
+		var window_y := 1.55 + float(floor_i) * 2.7
+		for window_x in [-width * 0.30, 0.0, width * 0.30]:
+			_box("CityWindowFrame", center + Vector3(window_x, window_y, front_z - center.z), Vector3(1.25, 1.35, 0.16), Color(0.12, 0.18, 0.20), false)
+			_box("CityWindowGlass", center + Vector3(window_x, window_y, front_z - center.z + (0.10 if center.z < 0.0 else -0.10)), Vector3(1.03, 1.12, 0.045), Color(0.32, 0.56, 0.66), false)
+			_box("CityWindowSill", center + Vector3(window_x, window_y - 0.73, front_z - center.z), Vector3(1.4, 0.10, 0.24), Color(0.76, 0.76, 0.68), false)
+	_box("CityEntranceFrame", center + Vector3(0, 1.25, front_z - center.z), Vector3(1.55, 2.45, 0.22), Color(0.12, 0.16, 0.18), false)
+	_box("CityEntranceGlass", center + Vector3(0, 1.25, front_z - center.z + (0.13 if center.z < 0.0 else -0.13)), Vector3(1.22, 2.1, 0.05), Color(0.26, 0.48, 0.56), false)
+	_box("CityBuildingSign", center + Vector3(0, height + 1.05, front_z - center.z), Vector3(minf(width - 1.0, 7.0), 0.72, 0.22), Color(0.10, 0.20, 0.22), false)
+	_label_3d(sign_text, center + Vector3(0, height + 1.06, front_z - center.z + (0.15 if center.z < 0.0 else -0.15)), 0.22)
+	for roof_x in [-width * 0.32, width * 0.32]:
+		_box("CityRoofVent", center + Vector3(roof_x, height + 0.72, 0), Vector3(0.9, 0.5, 0.8), Color(0.32, 0.36, 0.36), false)
 
 
 func _build_sorting_district() -> void:
