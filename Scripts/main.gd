@@ -3689,6 +3689,26 @@ func _refresh_delivery_fleet() -> void:
 	while delivery_trucks.size() < _truck_fleet_size():
 		_create_delivery_truck(delivery_trucks.size())
 
+func _build_delivery_conveyor(start_point: Vector3, end_point: Vector3) -> void:
+	var midpoint := (start_point + end_point) * 0.5
+	var direction := end_point - start_point
+	var length := direction.length()
+	if length <= 0.1:
+		return
+	var yaw := atan2(direction.x, direction.z)
+	var base := Node3D.new()
+	base.name = "DeliveryConveyor"
+	base.position = midpoint
+	base.rotation.y = yaw
+	add_child(base)
+	_box_child(base, "ConveyorFrame", Vector3(0, -0.18, 0), Vector3(1.45, 0.28, length), Color(0.24, 0.27, 0.30))
+	_box_child(base, "MovingBelt", Vector3(0, 0.02, 0), Vector3(1.12, 0.12, length - 0.18), Color(0.10, 0.12, 0.13))
+	_box_child(base, "LeftGuardRail", Vector3(-0.68, 0.28, 0), Vector3(0.12, 0.42, length), Color(0.75, 0.58, 0.20))
+	_box_child(base, "RightGuardRail", Vector3(0.68, 0.28, 0), Vector3(0.12, 0.42, length), Color(0.75, 0.58, 0.20))
+	for i in range(9):
+		var z_offset := -length * 0.5 + length * float(i + 1) / 10.0
+		_box_child(base, "Support_%d" % i, Vector3(0, -0.62, z_offset), Vector3(1.25, 0.78, 0.16), Color(0.24, 0.27, 0.30))
+
 func _create_delivery_truck(index: int) -> void:
 	var truck := Node3D.new()
 	truck.name = "TeddyDeliveryTruck%d" % (index + 1)
