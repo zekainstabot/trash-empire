@@ -4022,9 +4022,20 @@ func _process_city_truck(delta: float) -> void:
 					truck.set_meta("phase", 2)
 					truck.set_meta("timer", 0.0)
 			2:
-				# Capacity was reserved before dispatch; proceed without
-				# waiting at the depot entrance or reserving the same load twice.
-				if bool(truck.get_meta("reserved", false)):
+				# Single-truck unloading bay: keep every other truck at its own
+				# queue slot until the truck in the bunker has fully driven out.
+				var dump_bay_occupied := false
+				for other_index in range(city_trucks.size()):
+					if other_index == truck_index:
+						continue
+					var other_truck := city_trucks[other_index]
+					if not is_instance_valid(other_truck):
+						continue
+					var other_phase := int(other_truck.get_meta("phase", 0))
+					if bool(other_truck.visible) and other_phase in [3, 4, 5]:
+						dump_bay_occupied = true
+						break
+				if bool(truck.get_meta("reserved", false)) and not dump_bay_occupied:
 					truck.set_meta("phase", 3)
 					truck.set_meta("timer", 0.0)
 			3:
