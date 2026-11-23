@@ -121,6 +121,8 @@ var mega_factory_built_count := 1
 var factory_row_input_stock: Array = [0, 0, 0, 0, 0]
 var factory_row_product_stock: Array = [0, 0, 0, 0, 0]
 var factory_total_products_made := 0
+const FACTORY_INPUT_CAPACITY_PER_ROW := 90
+const FACTORY_PRODUCT_CAPACITY_PER_ROW := 60
 var factory_production_timer := 0.0
 var waste_tank_inventory := 0
 const WASTE_TANK_CAPACITY := 300
@@ -3828,12 +3830,18 @@ func _on_first_machine_feed_entered(body: Node3D) -> void:
 	var item_count := maxi(0, carried - carried_bulky)
 	if item_count <= 0:
 		return
-	factory_row_input_stock[0] += item_count
-	carried = 0
-	carried_bulky = 0
+	var accepted := mini(item_count, FACTORY_INPUT_CAPACITY_PER_ROW - factory_row_input_stock[0])
+	if accepted <= 0:
+		_set_message("First machine input is full. Wait for production.")
+		return
+	factory_row_input_stock[0] += accepted
+	var remaining := item_count - accepted
+	carried = remaining + carried_bulky
+	if accepted >= item_count:
+		carried_bulky = 0
 	_update_ui()
 	_save_game()
-	_set_message("Loaded %d pieces directly into the first machine. Input: %d" % [item_count, factory_row_input_stock[0]])
+	_set_message("Loaded %d pieces directly into the first machine. Input: %d" % [accepted, factory_row_input_stock[0]])
 
 func _create_factory_row_truck(row: int) -> Node3D:
 	var truck := Node3D.new()
@@ -4767,7 +4775,7 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	waste_feed_timer = 0.0
 	var active_rows: Array[int] = []
 	for row in range(5):
-		if mega_factory_built_count >= row * 3 + 1:
+		if mega_factory_built_count >= row * 3 + 1 and factory_row_input_stock[row] < FACTORY_INPUT_CAPACITY_PER_ROW:
 			active_rows.append(row)
 	if active_rows.is_empty():
 		return
@@ -4809,6 +4817,8 @@ func _process_factory_production(delta: float) -> void:
 	factory_production_timer = 0.0
 	for row in range(5):
 		if mega_factory_built_count < row * 3 + 1:
+			continue
+		if factory_row_product_stock[row] >= FACTORY_PRODUCT_CAPACITY_PER_ROW:
 			continue
 		if factory_row_input_stock[row] >= 3:
 			factory_row_input_stock[row] -= 3
