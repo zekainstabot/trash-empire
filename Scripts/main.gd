@@ -327,6 +327,7 @@ func _build_world() -> void:
 	_build_city_life_details()
 	_build_city_pedestrians()
 	_build_commercial_district()
+	_build_ad_billboards()
 
 	refill_world_button = _create_gear_refill_button(Vector3(0.0, 2.0, -35.20), Callable(self, "_refill_first_district"))
 	refill_world_button.rotation_degrees.y = 90.0
@@ -4172,6 +4173,59 @@ func _build_commercial_district() -> void:
 	_box("MarketWelcomeArchSign", Vector3(79.8, 4.75, 0), Vector3(0.38, 0.78, 5.8), Color(0.08, 0.31, 0.39), false)
 	_label_3d("MARKET DISTRICT", Vector3(79.55, 4.75, 0), 0.24)
 
+
+func _build_ad_billboards() -> void:
+	# Full-size roadside advertising structures: grounded supports, steel frames,
+	# double-sided panels and illuminated lettering. They are decorative only.
+	_create_ad_billboard(
+		Vector3(16.0, 0.0, -8.5),
+		"ZEKA MEDIA",
+		"CREATE. SHARE. DISCOVER.",
+		Color(0.08, 0.20, 0.34),
+		Color(0.10, 0.78, 0.82)
+	)
+	_create_ad_billboard(
+		Vector3(48.0, 0.0, 8.5),
+		"SAVE THE CITY",
+		"EVERY PIECE OF TRASH COUNTS",
+		Color(0.08, 0.27, 0.19),
+		Color(0.83, 0.76, 0.31)
+	)
+	_create_ad_billboard(
+		Vector3(80.0, 0.0, -8.5),
+		"PLAY ZEKA CITY",
+		"CLEANUP EMPIRE  •  BUILD A CLEANER WORLD",
+		Color(0.24, 0.13, 0.29),
+		Color(0.93, 0.57, 0.20)
+	)
+
+
+func _create_ad_billboard(center: Vector3, headline: String, subtitle: String, panel_color: Color, accent_color: Color) -> void:
+	var width := 9.2
+	var board_bottom := 4.35
+	var board_height := 3.35
+	# Heavy concrete footings keep both steel columns visibly planted in the ground.
+	for side_x in [-3.35, 3.35]:
+		_box("AdBillboardConcreteFooting", center + Vector3(side_x, 0.20, 0), Vector3(1.0, 0.40, 1.0), Color(0.31, 0.33, 0.32), false)
+		_box("AdBillboardSteelColumn", center + Vector3(side_x, 2.55, 0), Vector3(0.30, 5.1, 0.34), Color(0.20, 0.24, 0.26), false)
+		_box("AdBillboardColumnTrim", center + Vector3(side_x, 4.85, 0.20), Vector3(0.42, 0.16, 0.48), accent_color, false)
+	# Main sign body and raised perimeter frame.
+	_box("AdBillboardBackPanel", center + Vector3(0, board_bottom + board_height * 0.5, 0), Vector3(width, board_height, 0.48), Color(0.055, 0.075, 0.09), false)
+	_box("AdBillboardFace", center + Vector3(0, board_bottom + board_height * 0.5, 0.255), Vector3(width - 0.34, board_height - 0.34, 0.055), panel_color, false)
+	for edge_y in [board_bottom + 0.08, board_bottom + board_height - 0.08]:
+		_box("AdBillboardHorizontalFrame", center + Vector3(0, edge_y, 0.31), Vector3(width, 0.16, 0.16), accent_color, false)
+	for edge_x in [-width * 0.5 + 0.08, width * 0.5 - 0.08]:
+		_box("AdBillboardVerticalFrame", center + Vector3(edge_x, board_bottom + board_height * 0.5, 0.31), Vector3(0.16, board_height, 0.16), accent_color, false)
+	# Cross-bracing and maintenance platform make the structure read as real street furniture.
+	_box("AdBillboardRearCrossbar", center + Vector3(0, 4.15, -0.30), Vector3(7.0, 0.18, 0.20), Color(0.24, 0.28, 0.29), false)
+	_box("AdBillboardServiceRail", center + Vector3(0, 4.05, -0.48), Vector3(7.5, 0.12, 0.85), Color(0.18, 0.22, 0.23), false)
+	# Billboard lettering is world-space 3D text, not a HUD overlay.
+	_label_3d(headline, center + Vector3(0, board_bottom + 2.18, 0.43), 0.62)
+	_label_3d(subtitle, center + Vector3(0, board_bottom + 0.88, 0.43), 0.19)
+	# Slim floodlights sit above the sign and point toward its face.
+	for light_x in [-2.8, 0.0, 2.8]:
+		_box("AdBillboardFloodlightArm", center + Vector3(light_x, board_bottom + board_height + 0.28, 0.08), Vector3(0.12, 0.42, 0.12), Color(0.22, 0.25, 0.26), false)
+		_box("AdBillboardFloodlight", center + Vector3(light_x, board_bottom + board_height + 0.08, 0.38), Vector3(0.85, 0.10, 0.28), Color(0.94, 0.84, 0.55), false)
 
 func _build_market_shop(center: Vector3, shop_name: String, facade: Color, index: int) -> void:
 	var front_dir := 1.0 if center.z < 0.0 else -1.0
