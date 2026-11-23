@@ -3716,8 +3716,12 @@ func _create_city_truck(index: int) -> Node3D:
 	_city_truck_box(truck, "TruckCab", Vector3(0, 1.35, -1.12), Vector3(1.85, 1.25, 1.25), Color(0.78, 0.62, 0.35))
 	_city_truck_box(truck, "TruckWindshield", Vector3(0, 1.55, -1.77), Vector3(1.38, 0.62, 0.045), Color(0.18, 0.30, 0.34))
 	_city_truck_box(truck, "TruckGrille", Vector3(0, 0.92, -1.79), Vector3(0.82, 0.28, 0.05), Color(0.20, 0.25, 0.26))
-	_city_truck_box(truck, "TruckCargo", Vector3(0, 1.38, 0.72), Vector3(1.92, 1.15, 1.85), Color(0.20, 0.34, 0.29))
-	_city_truck_box(truck, "TruckCargoTop", Vector3(0, 1.98, 0.72), Vector3(1.98, 0.12, 1.92), Color(0.25, 0.39, 0.33))
+	# Open-top cargo bed: a floor and four raised sides keep collected litter visibly inside.
+	_city_truck_box(truck, "TruckCargoFloor", Vector3(0, 0.88, 0.72), Vector3(1.82, 0.12, 1.78), Color(0.16, 0.25, 0.22))
+	_city_truck_box(truck, "TruckCargoSideLeft", Vector3(-0.91, 1.34, 0.72), Vector3(0.10, 0.92, 1.82), Color(0.20, 0.34, 0.29))
+	_city_truck_box(truck, "TruckCargoSideRight", Vector3(0.91, 1.34, 0.72), Vector3(0.10, 0.92, 1.82), Color(0.20, 0.34, 0.29))
+	_city_truck_box(truck, "TruckCargoFrontWall", Vector3(0, 1.34, -0.18), Vector3(1.82, 0.92, 0.10), Color(0.20, 0.34, 0.29))
+	_city_truck_box(truck, "TruckCargoRearWall", Vector3(0, 1.34, 1.62), Vector3(1.82, 0.92, 0.10), Color(0.20, 0.34, 0.29))
 	var wheels: Array[Node3D] = []
 	for side in [-1.0, 1.0]:
 		for wheel_z in [-1.18, 1.12]:
@@ -3925,7 +3929,12 @@ func _process_district_collection_truck(delta: float) -> void:
 			var keep_transform := target.global_transform
 			target.reparent(truck)
 			target.global_transform = keep_transform
-			target.position = Vector3(0.0, 2.15 + float(cargo.size()) * 0.16, 0.65 + float(cargo.size() % 3) * 0.22)
+			# Arrange litter in a compact 3-by-4 layout on the cargo-bed floor.
+			# The previous y=2.15+ placement put every item on the truck roof.
+			var cargo_index := cargo.size()
+			var cargo_column := cargo_index % 3
+			var cargo_row := int(cargo_index / 3)
+			target.position = Vector3(-0.48 + float(cargo_column) * 0.48, 0.94, 0.15 + float(cargo_row) * 0.40)
 			cargo.append(target)
 			truck.set_meta("collection_cargo", cargo)
 			trash_nodes.erase(target)
