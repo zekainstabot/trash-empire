@@ -818,8 +818,32 @@ func _build_factory_module(stage: int) -> void:
 		_label_3d("PACKED TEDDY BEARS", Vector3(9.3, 2.2, z + 0.7), 0.15)
 		# The initial delivery truck is joined by additional hired trucks from the skill tree.
 		_create_delivery_truck(0)
+		_build_delivery_conveyor(Vector3(9.95, 0.82, z + 0.25), Vector3(15.75, 0.82, 26.25))
 	_box("FactoryModule%dStatus" % stage, Vector3(9.25, 2.0, z - 0.75), Vector3(0.42, 0.42, 0.10), Color(0.10, 0.95, 0.56), false)
 	_add_machine_detail(stage, z, accent)
+
+
+func _build_delivery_conveyor(start_point: Vector3, end_point: Vector3) -> void:
+	# Physical angled belt joins the packaging output to the truck cargo bay.
+	var midpoint := (start_point + end_point) * 0.5
+	var direction := end_point - start_point
+	var length := direction.length()
+	var yaw := atan2(direction.x, direction.z)
+	var frame := _box("DeliveryConveyorFrame", midpoint, Vector3(1.55, 0.28, length), Color(0.08, 0.12, 0.13), true)
+	frame.rotation.y = yaw
+	var belt := _box("DeliveryConveyorBelt", midpoint + Vector3(0.0, 0.17, 0.0), Vector3(1.28, 0.07, maxf(0.2, length - 0.12)), Color(0.025, 0.04, 0.045), false)
+	belt.rotation.y = yaw
+	for side in [-1.0, 1.0]:
+		var rail_offset := Vector3(cos(yaw) * side * 0.70, 0.38, -sin(yaw) * side * 0.70)
+		var rail := _box("DeliveryConveyorRail", midpoint + rail_offset, Vector3(0.10, 0.34, length), Color(0.48, 0.54, 0.52), false)
+		rail.rotation.y = yaw
+	for i in range(maxi(3, int(length / 0.7))):
+		var t := float(i) / float(maxi(1, int(length / 0.7) - 1))
+		var roller_pos := start_point.lerp(end_point, t)
+		var roller := _cylinder("DeliveryConveyorRoller", roller_pos, 0.09, 1.30, Color(0.55, 0.60, 0.58), false)
+		roller.rotation.z = 90.0
+		roller.rotation.y = yaw
+
 
 func _add_machine_detail(stage: int, z: float, accent: Color) -> void:
 	# Realistic machine detailing: ribs, access panel, control console, pipes and vents.
