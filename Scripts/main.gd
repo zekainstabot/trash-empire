@@ -1943,9 +1943,6 @@ func _register_final_cleanup_pickup(item: Node3D) -> void:
 	total_trash_collected += 1
 	final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + 1)
 	_update_final_zone_label()
-	if tutorial_mission_stage == 0 and total_trash_collected >= 5:
-		tutorial_mission_stage = 1
-		_save_game()
 	_update_missions()
 	if final_zone_cleaned >= FINAL_ZONE_TARGET:
 		get_tree().set_meta("cleanup_game_completed", true)
@@ -2283,10 +2280,7 @@ func _process_auto_sell(delta: float) -> void:
 		_update_ui()
 		_save_game()
 		if carried == 0:
-			if tutorial_mission_stage == 1:
-				tutorial_mission_stage = 2
-				_save_game()
-				_update_missions()
+			_update_missions()
 			_set_message("Bag emptied! Teddy bears are being prepared for delivery." if factory_stage >= 4 else "Bag emptied! Money added.")
 
 func _toggle_upgrade_panel() -> void:
@@ -2305,8 +2299,6 @@ func _upgrade_bag() -> void:
 		return
 	capacity += 3
 	upgrade_level += 1
-	if tutorial_mission_stage == 2:
-		tutorial_mission_stage = 3
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
@@ -2410,8 +2402,6 @@ func _upgrade_drones() -> void:
 	if not await _pay_gradually(cost):
 		return
 	drone_level += 1
-	if tutorial_mission_stage == 3:
-		tutorial_mission_stage = 4
 	_refresh_helper_drone_visibility()
 	_update_ui()
 	_refresh_upgrade_prices()
@@ -2706,7 +2696,7 @@ func _load_game() -> void:
 	money = float(save.get_value("progress", "money", 0.0))
 	final_zone_cleaned = clampi(int(save.get_value("progress", "final_zone_cleaned", 0)), 0, FINAL_ZONE_TARGET)
 	total_trash_collected = int(save.get_value("progress", "total_trash_collected", final_zone_cleaned))
-	tutorial_mission_stage = clampi(int(save.get_value("progress", "tutorial_mission_stage", 0)), 0, 4)
+	tutorial_mission_stage = clampi(int(save.get_value("progress", "tutorial_mission_stage", 0)), 0, 18)
 	carried = int(save.get_value("progress", "carried", 0))
 	capacity = int(save.get_value("progress", "capacity", 4))
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
@@ -3342,25 +3332,89 @@ func _set_message(_value: String) -> void:
 	# the space is reserved for persistent missions.
 	pass
 
+func _mission_is_complete(stage: int) -> bool:
+	match stage:
+		0:
+			return total_trash_collected >= 5
+		1:
+			return total_trash_collected >= 5 and carried == 0
+		2:
+			return upgrade_level > 1 or speed_upgrade_level > 1 or unload_upgrade_level > 1 or equipment_upgrade_level > 1
+		3:
+			return drone_level >= 1
+		4:
+			return total_trash_collected >= 25
+		5:
+			return upgrade_level >= 2
+		6:
+			return speed_upgrade_level >= 2
+		7:
+			return equipment_upgrade_level >= 2
+		8:
+			return auto_pickup_level >= 1
+		9:
+			return respawn_level >= 1
+		10:
+			return technology_upgrade_level >= 2
+		11:
+			return yard_stage >= 2
+		12:
+			return factory_stage >= 2
+		13:
+			return dispatch_upgrade_level >= 1
+		14:
+			return truck_capacity_upgrade_level >= 1
+		15:
+			return packaging_upgrade_level >= 1
+		16:
+			return city_truck_upgrade_level >= 1
+		17:
+			return total_trash_collected >= 100
+		18:
+			return final_zone_cleaned >= FINAL_ZONE_TARGET
+	return false
+
+
 func _update_missions() -> void:
 	if not is_instance_valid(mission_label):
 		return
-	# A short guided introduction to the normal gameplay loop.
+	# Missions teach the complete gameplay loop and unlock in a strict sequence.
+	# Completed missions disappear; progress is saved and never shown again.
+	var previous_stage := tutorial_mission_stage
+	while tutorial_mission_stage < 18 and _mission_is_complete(tutorial_mission_stage):
+		tutorial_mission_stage += 1
+	if tutorial_mission_stage != previous_stage:
+		_save_game()
+
+	var missions: Array[String] = [
+		"1. Explore the yard and collect 5 pieces of trash (%d/5)" % mini(total_trash_collected, 5),
+		"2. Return to the yellow pad and recycle your collected trash",
+		"3. Open UPGRADES and buy your first upgrade",
+		"4. Unlock your first helper drone in UPGRADES",
+		"5. Keep cleaning: collect 25 pieces of trash (%d/25)" % mini(total_trash_collected, 25),
+		"6. Increase your backpack capacity",
+		"7. Upgrade your movement speed",
+		"8. Improve your magnet collection range",
+		"9. Unlock automatic pickup",
+		"10. Upgrade the trash respawn system",
+		"11. Increase the value earned from recycling",
+		"12. Expand into the next city district",
+		"13. Upgrade the recycling factory",
+		"14. Unlock a delivery truck dispatch upgrade",
+		"15. Increase delivery truck capacity",
+		"16. Upgrade package production",
+		"17. Upgrade the city cleanup truck",
+		"18. Reach 100 collected pieces of trash (%d/100)" % mini(total_trash_collected, 100),
+		"19. Final challenge: clean the landfill — collect all 60,000 pieces (%d/60000)" % final_zone_cleaned
+	]
 	var mission_title := mission_label.get_parent().get_node_or_null("MissionTitle")
-	match tutorial_mission_stage:
-		0:
-			mission_label.text = "1. Move around and use PICK UP to collect 5 pieces of trash (%d/5)" % mini(total_trash_collected, 5)
-		1:
-			mission_label.text = "2. Return to the conveyor and stand on the unloading pad to recycle your trash"
-		2:
-			mission_label.text = "3. Open UPGRADES and purchase your first upgrade"
-		3:
-			mission_label.text = "4. Unlock a helper drone in UPGRADES to automate collection"
-		_:
-			mission_label.text = ""
+	if tutorial_mission_stage < missions.size():
+		mission_label.text = missions[tutorial_mission_stage]
+	else:
+		mission_label.text = "ALL MISSIONS COMPLETE! The city is clean."
 	if is_instance_valid(mission_title):
-		mission_title.visible = mission_label.text != ""
-	mission_label.visible = mission_label.text != ""
+		mission_title.visible = true
+	mission_label.visible = true
 
 func _anchor_bottom_right(control: Control) -> void:
 	control.anchor_left = 1.0
