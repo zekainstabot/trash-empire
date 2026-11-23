@@ -5284,9 +5284,6 @@ func _build_commercial_district() -> void:
 		_make_bin(bin_pos, Color(0.12, 0.42, 0.34), "MARKET")
 	for x in range(92, 101, 2):
 		_box("MarketCrosswalkStripe", Vector3(float(x), 0.075, 7.0), Vector3(0.9, 0.02, 0.42), Color(0.91, 0.89, 0.80), false)
-	_box("MarketWelcomeArchTop", Vector3(79.8, 4.2, 0), Vector3(0.34, 0.34, 6.8), Color(0.16, 0.30, 0.34), false)
-	_box("MarketWelcomeArchSign", Vector3(79.8, 4.75, 0), Vector3(0.38, 0.78, 5.8), Color(0.08, 0.31, 0.39), false)
-	_label_3d("MARKET DISTRICT", Vector3(79.55, 4.75, 0), 0.24)
 
 
 func _build_ad_billboards() -> void:
