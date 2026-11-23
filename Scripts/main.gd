@@ -133,6 +133,7 @@ var factory_shipping_trucks: Array[Node3D] = []
 var waste_tank_built := false
 var waste_tank_root: Node3D
 var waste_tank_build_label: Label3D
+var waste_tank_inventory_label: Label3D
 var waste_feed_timer := 0.0
 var waste_feed_busy := false
 var waste_feed_line_index := 0
@@ -4104,6 +4105,19 @@ func _build_waste_tank_structure() -> void:
 	for child in waste_tank_root.get_children():
 		if child is Node3D:
 			child.position.x += 129.6
+	waste_tank_inventory_label = Label3D.new()
+	waste_tank_inventory_label.name = "WasteTankInventoryLabel"
+	waste_tank_inventory_label.position = Vector3(124.8, 3.25, -22.5)
+	waste_tank_inventory_label.text = "WASTE  %d / %d" % [waste_tank_inventory, WASTE_TANK_CAPACITY]
+	waste_tank_inventory_label.font_size = 22
+	waste_tank_inventory_label.pixel_size = 0.009
+	waste_tank_inventory_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	waste_tank_inventory_label.modulate = Color(0.72, 1.0, 0.86)
+	waste_tank_root.add_child(waste_tank_inventory_label)
+
+func _refresh_waste_tank_inventory_label() -> void:
+	if is_instance_valid(waste_tank_inventory_label):
+		waste_tank_inventory_label.text = "WASTE  %d / %d" % [waste_tank_inventory, WASTE_TANK_CAPACITY]
 
 func _create_city_truck(index: int) -> Node3D:
 	var truck := Node3D.new()
@@ -4539,7 +4553,6 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 		attempts += 1
 	return point
 
-func _update_ui() -> void:
 	money_label.text = "ZC  %.1f" % money
 	bag_label.text = "BACKPACK  %d / %d" % [carried, capacity]
 	var is_full := carried >= capacity
@@ -4549,6 +4562,7 @@ func _update_ui() -> void:
 	bag_label.add_theme_constant_override("outline_size", 5 if is_full else 2)
 	if is_full:
 		bag_label.text += "  FULL!"
+	_refresh_waste_tank_inventory_label()
 	_update_missions()
 
 func _set_message(_value: String) -> void:
@@ -4742,6 +4756,7 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	var selected_row := active_rows[waste_feed_line_index % active_rows.size()]
 	waste_feed_line_index += 1
 	waste_tank_inventory -= 1
+	_refresh_waste_tank_inventory_label()
 	var selected_item := Node3D.new()
 	selected_item.name = "FactoryWasteConveyorItem"
 	selected_item.set_script(TRASH_SCRIPT)
