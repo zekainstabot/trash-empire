@@ -330,15 +330,15 @@ func _build_city_rework_layout() -> void:
 	_build_city_block_building(Vector3(99.0, 0.0, 22.0), "SUPERMARKET", Color(0.52, 0.66, 0.58), 1, 6.0)
 
 	# A proper public park occupies the open civic block, with paths and seating.
-	_box("CityParkLawn", Vector3(56.0, 0.055, 13.0), Vector3(19.0, 0.11, 12.0), Color(0.25, 0.48, 0.27), false)
-	_box("ParkPathLong", Vector3(56.0, 0.12, 13.0), Vector3(17.0, 0.04, 1.5), sidewalk, false)
-	_box("ParkPathCross", Vector3(56.0, 0.125, 13.0), Vector3(1.5, 0.04, 10.0), sidewalk, false)
-	_cylinder("CityParkFountainBasin", Vector3(56.0, 0.30, 13.0), 1.55, 0.42, Color(0.48, 0.53, 0.50), false)
-	_cylinder("CityParkFountainWater", Vector3(56.0, 0.53, 13.0), 1.30, 0.05, Color(0.19, 0.55, 0.69), false)
-	_cylinder("CityParkFountainCore", Vector3(56.0, 0.83, 13.0), 0.24, 0.58, Color(0.70, 0.72, 0.67), false)
-	for bench_pos in [Vector3(49.0, 0.0, 13.0), Vector3(63.0, 0.0, 13.0)]:
+	_box("CityParkLawn", Vector3(70.0, 0.055, 11.5), Vector3(19.0, 0.11, 12.0), Color(0.25, 0.48, 0.27), false)
+	_box("ParkPathLong", Vector3(70.0, 0.12, 11.5), Vector3(17.0, 0.04, 1.5), sidewalk, false)
+	_box("ParkPathCross", Vector3(70.0, 0.125, 11.5), Vector3(1.5, 0.04, 10.0), sidewalk, false)
+	_cylinder("CityParkFountainBasin", Vector3(70.0, 0.30, 11.5), 1.55, 0.42, Color(0.48, 0.53, 0.50), false)
+	_cylinder("CityParkFountainWater", Vector3(70.0, 0.53, 11.5), 1.30, 0.05, Color(0.19, 0.55, 0.69), false)
+	_cylinder("CityParkFountainCore", Vector3(70.0, 0.83, 11.5), 0.24, 0.58, Color(0.70, 0.72, 0.67), false)
+	for bench_pos in [Vector3(63.0, 0.0, 11.5), Vector3(77.0, 0.0, 11.5)]:
 		_make_bench(bench_pos)
-	for tree_pos in [Vector3(48.0, 0.0, 8.5), Vector3(64.0, 0.0, 8.5), Vector3(48.0, 0.0, 17.5), Vector3(64.0, 0.0, 17.5)]:
+	for tree_pos in [Vector3(63.0, 0.0, 7.0), Vector3(77.0, 0.0, 7.0), Vector3(63.0, 0.0, 16.0), Vector3(77.0, 0.0, 16.0)]:
 		_build_neighborhood_tree(tree_pos)
 
 	# Player's starting plaza and waste drop-off remain easy to find.
@@ -5696,7 +5696,7 @@ func _build_city_pedestrians() -> void:
 	]
 	var index := 0
 	for district_x in [32.0, 64.0]:
-		for side_z in [-3.35, 3.35]:
+		for side_z in [-6.0, 6.0]:
 			for offset in [-8.0, 0.0, 8.0]:
 				var start := Vector3(district_x + offset, 0.0, side_z)
 				var walker := Node3D.new()
