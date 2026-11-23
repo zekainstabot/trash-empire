@@ -2098,7 +2098,7 @@ func _collect_nearby() -> void:
 		_set_message("Get closer to trash that fits in your backpack.")
 
 func _process_auto_pickup(delta: float) -> void:
-	if (auto_pickup_level <= 0 and suction_level <= 0) or not is_instance_valid(player) or carried >= capacity:
+	if auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
 		auto_pickup_timer = 0.0
 		auto_pickup_scan_timer = 0.0
 		auto_pickup_target = null
