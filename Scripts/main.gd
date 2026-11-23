@@ -127,6 +127,7 @@ const WASTE_TANK_CAPACITY := 300
 var mega_factory_build_paid := 0.0
 var mega_factory_build_timer := 0.0
 var mega_factory_machine_labels: Array[Label3D] = []
+var factory_machine_status_label: Label3D
 var factory_shipping_timer := 0.0
 var factory_shipping_busy := false
 var factory_shipping_row := 0
@@ -3811,6 +3812,15 @@ func _build_first_machine_feed_trigger() -> void:
 	trigger.body_entered.connect(_on_first_machine_feed_entered)
 	add_child(trigger)
 	_label_3d("ADD WASTE HERE", Vector3(151.0, 2.25, _factory_row_z(0) - 2.7), 0.20)
+	factory_machine_status_label = Label3D.new()
+	factory_machine_status_label.name = "FactoryMachineStatusLabel"
+	factory_machine_status_label.position = Vector3(151.0, 4.8, _factory_row_z(0) + 2.35)
+	factory_machine_status_label.font_size = 20
+	factory_machine_status_label.pixel_size = 0.009
+	factory_machine_status_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	factory_machine_status_label.modulate = Color(0.68, 1.0, 0.82)
+	add_child(factory_machine_status_label)
+	_refresh_factory_machine_status()
 
 func _on_first_machine_feed_entered(body: Node3D) -> void:
 	if body != player or mega_factory_built_count < 1 or carried <= 0:
@@ -4120,6 +4130,10 @@ func _build_waste_tank_structure() -> void:
 func _refresh_waste_tank_inventory_label() -> void:
 	if is_instance_valid(waste_tank_inventory_label):
 		waste_tank_inventory_label.text = "WASTE  %d / %d" % [waste_tank_inventory, WASTE_TANK_CAPACITY]
+
+func _refresh_factory_machine_status() -> void:
+	if is_instance_valid(factory_machine_status_label):
+		factory_machine_status_label.text = "INPUT %d   |   PRODUCTS %d" % [factory_row_input_stock[0], factory_row_product_stock[0]]
 
 func _create_city_truck(index: int) -> Node3D:
 	var truck := Node3D.new()
@@ -4566,6 +4580,7 @@ func _update_ui() -> void:
 	if is_full:
 		bag_label.text += "  FULL!"
 	_refresh_waste_tank_inventory_label()
+	_refresh_factory_machine_status()
 	_update_missions()
 
 func _set_message(_value: String) -> void:
@@ -4782,6 +4797,7 @@ func _finish_waste_feed_item(item: Node3D, row: int) -> void:
 	if row >= 0 and row < factory_row_input_stock.size():
 		factory_row_input_stock[row] += 1
 	waste_feed_busy = false
+	_refresh_factory_machine_status()
 	_save_game()
 
 func _process_factory_production(delta: float) -> void:
@@ -4798,6 +4814,7 @@ func _process_factory_production(delta: float) -> void:
 			factory_row_input_stock[row] -= 3
 			factory_row_product_stock[row] += 1
 			factory_total_products_made += 1
+			_refresh_factory_machine_status()
 			_set_message("%s produced! Stock: %d" % [_factory_row_product(row), factory_row_product_stock[row]])
 			_update_missions()
 			_save_game()
