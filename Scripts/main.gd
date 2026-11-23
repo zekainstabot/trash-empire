@@ -2177,7 +2177,8 @@ func _collect_nearby() -> void:
 		_set_message("Get closer to trash that fits in your backpack.")
 
 func _process_auto_pickup(delta: float) -> void:
-	if auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
+	# The vacuum replaces the magnet as the active hand collector once purchased.
+	if suction_level > 0 or auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
 		auto_pickup_timer = 0.0
 		auto_pickup_scan_timer = 0.0
 		auto_pickup_target = null
@@ -2261,6 +2262,8 @@ func _process_vacuum_suction(delta: float) -> void:
 
 	suction_scan_timer -= delta
 	var target_valid := is_instance_valid(suction_target) and trash_nodes.has(suction_target)
+	if target_valid and suction_target.get_meta("drone_reserved", -1) != -1:
+		target_valid = false
 	if not target_valid or suction_target == auto_pickup_target or suction_scan_timer <= 0.0:
 		suction_target = null
 		suction_scan_timer = 0.10
