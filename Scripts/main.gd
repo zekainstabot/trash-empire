@@ -31,6 +31,9 @@ var suction_target: Node3D
 var suction_scan_timer := 0.0
 var suction_pull_timer := 0.0
 var drone_level := 0
+var ground_robot_level := 0
+var ground_collector: Node3D
+var ground_collector_timer := 0.0
 var drone_timer := 0.0
 var helper_drones: Array[Node3D] = []
 var auto_pickup_timer := 0.0
@@ -179,6 +182,7 @@ func _process(delta: float) -> void:
 	_process_auto_pickup(delta)
 	_process_vacuum_suction(delta)
 	_process_helper_drones(delta)
+	_process_ground_collector(delta)
 	_process_trash_respawn(delta)
 	_process_city_truck(delta)
 	_animate_city_pedestrians(delta)
@@ -1094,6 +1098,7 @@ func _build_player() -> void:
 	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.20, 0.52, 0))
 	robot_right_leg = _robot_leg(robot_visual, "RightLeg", Vector3(0.20, 0.52, 0))
 	_build_helper_drones()
+	_build_ground_collector()
 
 	var backpack := _add_robot_box(robot_visual, "BatteryPack", Vector3(0, 1.03, 0.34), Vector3(0.55, 0.62, 0.28), Color(0.12, 0.22, 0.26))
 	_add_robot_box(robot_visual, "BatteryStripe", Vector3(0, 1.04, 0.495), Vector3(0.34, 0.08, 0.025), Color(0.28, 0.95, 0.67))
@@ -1549,13 +1554,13 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","ground_robot","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","ground_robot":"GROUND COLLECTOR ROBOT","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
 	var descriptions := {
@@ -1574,6 +1579,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"magnet_power":"Pull trash toward you from farther away.",
 		"suction":"Unlock an arm-mounted vacuum. Each upgrade increases suction reach and pull speed.",
 		"drones":"Add helper drones that collect trash for you.",
+		"ground_robot":"Unlock a ground rover that drives to trash, loads it, then returns to the recycling point. Upgrades improve speed and cargo capacity.",
 		"city_truck":"Make city garbage trucks arrive more often.",
 		"city_fleet":"Add more city trucks to deliver larger loads.",
 		"dispatch":"Send product delivery trucks more frequently.",
@@ -1774,6 +1780,7 @@ func _skill_icon(branch: String) -> String:
 		"magnet_power": return "🧲"
 		"suction": return "🌪"
 		"drones": return "🚁"
+		"ground_robot": return "🤖"
 		"city_truck": return "🚛"
 		"city_fleet": return "🚚"
 		"dispatch": return "⏱️"
@@ -1837,6 +1844,7 @@ func _skill_level(branch: String) -> int:
 		"magnet_power": return magnet_power_level - 1
 		"suction": return suction_level
 		"drones": return drone_level
+		"ground_robot": return ground_robot_level
 		"city_truck": return city_truck_upgrade_level
 		"city_fleet": return city_fleet_upgrade_level
 		"dispatch": return dispatch_upgrade_level
@@ -1874,6 +1882,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"magnet_power": await _upgrade_magnet_power()
 		"suction": await _upgrade_suction()
 		"drones": await _upgrade_drones()
+		"ground_robot": await _upgrade_ground_robot()
 		"city_truck": await _upgrade_city_truck_frequency()
 		"city_fleet": await _upgrade_city_fleet()
 		"dispatch": await _upgrade_dispatch()
@@ -1884,7 +1893,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"suction":35.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"suction":35.0,"drones":25.0,"ground_robot":45.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -2279,6 +2288,48 @@ func _refresh_helper_drone_visibility() -> void:
 		if is_instance_valid(helper_drones[i]):
 			helper_drones[i].visible = i < drone_level
 
+
+func _build_ground_collector() -> void:
+	if is_instance_valid(ground_collector):
+		ground_collector.queue_free()
+	ground_collector = Node3D.new()
+	ground_collector.name = "GroundTrashCollector"
+	add_child(ground_collector)
+	# Low, four-wheel autonomous collection rover with a front loading scoop.
+	_add_robot_box(ground_collector, "RoverChassis", Vector3(0, 0.48, 0), Vector3(1.05, 0.42, 1.35), Color(0.13, 0.24, 0.27))
+	_add_robot_box(ground_collector, "RoverTop", Vector3(0, 0.76, 0.05), Vector3(0.72, 0.18, 0.78), Color(0.24, 0.42, 0.43))
+	_add_robot_box(ground_collector, "RoverFrontScoop", Vector3(0, 0.22, -0.78), Vector3(0.92, 0.12, 0.34), Color(0.72, 0.78, 0.72))
+	_add_robot_box(ground_collector, "RoverSensor", Vector3(0, 0.82, -0.30), Vector3(0.28, 0.12, 0.12), Color(0.12, 0.95, 0.76))
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			var wheel := MeshInstance3D.new()
+			wheel.name = "RoverWheel"
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.25
+			wheel_mesh.bottom_radius = 0.25
+			wheel_mesh.height = 0.16
+			wheel_mesh.radial_segments = 16
+			wheel.mesh = wheel_mesh
+			wheel.position = Vector3(sx * 0.55, 0.28, sz * 0.43)
+			wheel.rotation_degrees.z = 90.0
+			wheel.material_override = _mat(Color(0.055, 0.07, 0.075))
+			ground_collector.add_child(wheel)
+	ground_collector.visible = ground_robot_level > 0
+	ground_collector.global_position = Vector3(SELL_POINT.x + 3.0, 0.0, SELL_POINT.z + 2.0)
+	ground_collector.set_meta("target", null)
+	ground_collector.set_meta("cargo_slots", 0)
+	ground_collector.set_meta("cargo_items", [])
+	ground_collector.set_meta("cargo_bulky", 0)
+	ground_collector.set_meta("cargo_capacity", 3)
+	ground_collector.set_meta("returning", false)
+	ground_collector.set_meta("deposit_timer", 0.0)
+	ground_collector.set_meta("scan_cooldown", 0.0)
+
+func _refresh_ground_collector() -> void:
+	if is_instance_valid(ground_collector):
+		ground_collector.visible = ground_robot_level > 0
+		ground_collector.set_meta("cargo_capacity", 3 + maxi(ground_robot_level - 1, 0) * 2)
+
 func _process_helper_drones(delta: float) -> void:
 	if drone_level <= 0 or not is_instance_valid(player):
 		return
@@ -2370,6 +2421,124 @@ func _process_helper_drones(delta: float) -> void:
 			else:
 				target.set_meta("drone_reserved", -1)
 				drone.set_meta("target", null)
+
+func _process_ground_collector(delta: float) -> void:
+	if ground_robot_level <= 0 or not is_instance_valid(ground_collector):
+		return
+	var rover := ground_collector
+	var speed := 3.0 + float(ground_robot_level - 1) * 1.15
+	var capacity_slots := 3 + maxi(ground_robot_level - 1, 0) * 2
+	rover.set_meta("cargo_capacity", capacity_slots)
+	if bool(rover.get_meta("returning", false)):
+		var home := SELL_POINT + Vector3(0, 0.0, 0)
+		rover.global_position = rover.global_position.move_toward(home, speed * delta)
+		if Vector2(rover.global_position.x - home.x, rover.global_position.z - home.z).length() < 1.4:
+			_ground_collector_deposit_cycle(rover, delta)
+		return
+
+	var cargo_slots := int(rover.get_meta("cargo_slots", 0))
+	if cargo_slots >= capacity_slots:
+		rover.set_meta("returning", true)
+		rover.set_meta("target", null)
+		return
+
+	var target := rover.get_meta("target") as Node3D
+	if not is_instance_valid(target) or not trash_nodes.has(target):
+		target = null
+		var cooldown := float(rover.get_meta("scan_cooldown", 0.0)) - delta
+		if cooldown <= 0.0:
+			rover.set_meta("scan_cooldown", 0.35)
+			var nearest := 20.0 + float(ground_robot_level - 1) * 7.0
+			var rover_xz := Vector2(rover.global_position.x, rover.global_position.z)
+			for item in trash_nodes:
+				if not is_instance_valid(item) or _is_city_dump_trash(item) or item.get_meta("drone_reserved", -1) != -1:
+					continue
+				var weight := 2 if item.has_meta("bulky") else 1
+				if cargo_slots + weight > capacity_slots:
+					continue
+				var distance := rover_xz.distance_to(Vector2(item.global_position.x, item.global_position.z))
+				if distance < nearest:
+					nearest = distance
+					target = item
+			if is_instance_valid(target):
+				target.set_meta("drone_reserved", -2)
+				rover.set_meta("target", target)
+		else:
+			rover.set_meta("scan_cooldown", cooldown)
+	if not is_instance_valid(target):
+		if cargo_slots > 0:
+			rover.set_meta("returning", true)
+		return
+
+	var destination := target.global_position + Vector3(0, 0.05, 0)
+	var rover_destination := Vector3(destination.x, rover.global_position.y, destination.z)
+	rover.global_position = rover.global_position.move_toward(rover_destination, speed * delta)
+	if Vector2(rover.global_position.x - destination.x, rover.global_position.z - destination.z).length() > 0.72:
+		rover.look_at(Vector3(destination.x, rover.global_position.y, destination.z), Vector3.UP)
+		return
+
+	var weight := 2 if target.has_meta("bulky") else 1
+	if cargo_slots + weight <= capacity_slots:
+		_register_final_cleanup_pickup(target)
+		if target.has_meta("rare_type"):
+			var rare_type := String(target.get_meta("rare_type"))
+			money += 8.0 if rare_type == "gold" else 2.0
+		if weight == 2:
+			rover.set_meta("cargo_bulky", int(rover.get_meta("cargo_bulky", 0)) + 1)
+		rover.set_meta("cargo_slots", cargo_slots + weight)
+		var cargo_items: Array = rover.get_meta("cargo_items", [])
+		var keep_transform := target.global_transform
+		target.reparent(rover)
+		target.global_transform = keep_transform
+		target.position = Vector3(0, 0.88 + float(cargo_items.size()) * 0.12, 0.0)
+		cargo_items.append(target)
+		rover.set_meta("cargo_items", cargo_items)
+		trash_nodes.erase(target)
+		rover.set_meta("target", null)
+		if cargo_slots + weight >= capacity_slots:
+			rover.set_meta("returning", true)
+		_update_ui()
+		_save_game()
+	else:
+		target.set_meta("drone_reserved", -1)
+		rover.set_meta("target", null)
+
+func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
+	var slots := int(rover.get_meta("cargo_slots", 0))
+	if slots <= 0:
+		rover.set_meta("returning", false)
+		return
+	var timer := float(rover.get_meta("deposit_timer", 0.0)) + delta
+	var seconds_per_item := maxf(0.35, 1.35 - float(ground_robot_level - 1) * 0.18)
+	if timer < seconds_per_item:
+		rover.set_meta("deposit_timer", timer)
+		return
+	rover.set_meta("deposit_timer", 0.0)
+	var bulky := int(rover.get_meta("cargo_bulky", 0)) > 0
+	var cargo_items: Array = rover.get_meta("cargo_items", [])
+	if not cargo_items.is_empty():
+		var cargo_item = cargo_items.pop_front()
+		if is_instance_valid(cargo_item):
+			if cargo_item.get_parent() == rover:
+				rover.remove_child(cargo_item)
+			cargo_item.queue_free()
+	rover.set_meta("cargo_items", cargo_items)
+	if bulky:
+		rover.set_meta("cargo_bulky", int(rover.get_meta("cargo_bulky", 0)) - 1)
+		rover.set_meta("cargo_slots", slots - 2)
+	else:
+		rover.set_meta("cargo_slots", slots - 1)
+	var multipliers := [1.0, 2.0, 4.0, 8.0]
+	var factory_multiplier: float = multipliers[clampi(factory_stage - 1, 0, 3)]
+	var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25) * (2.0 if bulky else 1.0)
+	money += item_value
+	_spawn_conveyor_item(item_value)
+	_update_ui()
+	_save_game()
+	if int(rover.get_meta("cargo_slots", 0)) <= 0:
+		rover.set_meta("returning", false)
+		rover.set_meta("scan_cooldown", 0.8)
+
 func _drone_deposit_cycle(drone: Node3D) -> void:
 	if not is_instance_valid(drone) or not drone.get_meta("returning", false):
 		return
@@ -2415,6 +2584,8 @@ func _process_auto_sell(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
 	# Drone cargo is processed separately; it never triggers a sale of the player's bag.
+	if is_instance_valid(ground_collector) and ground_collector.visible and ground_collector.get_meta("returning", false) and Vector2(ground_collector.global_position.x - SELL_POINT.x, ground_collector.global_position.z - SELL_POINT.z).length() <= 1.6:
+		_ground_collector_deposit_cycle(ground_collector, delta)
 	for drone in helper_drones:
 		if is_instance_valid(drone) and drone.visible and drone.get_meta("returning", false) and drone.global_position.distance_to(SELL_POINT + Vector3(0, 1.5, 0)) <= 3.0:
 			_drone_deposit_cycle(drone)
@@ -2576,6 +2747,26 @@ func _upgrade_drones() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Helper drone upgraded! %d drone(s) now collect trash automatically." % drone_level)
+
+
+func _upgrade_ground_robot() -> void:
+	if ground_robot_level >= 3:
+		_set_message("Ground collector robot is fully upgraded.")
+		return
+	var cost := _upgrade_cost(45.0, ground_robot_level + 1)
+	if money < cost:
+		_set_message("You need %.1f ZC to complete this purchase." % cost)
+		return
+	if not await _pay_gradually(cost):
+		return
+	ground_robot_level = mini(ground_robot_level + 1, 3)
+	if not is_instance_valid(ground_collector):
+		_build_ground_collector()
+	_refresh_ground_collector()
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Ground collector robot level %d: speed and cargo capacity increased." % ground_robot_level)
 
 func _upgrade_magnet_power() -> void:
 	var cost := _upgrade_cost(15.0, magnet_power_level)
@@ -2854,6 +3045,7 @@ func _save_game() -> void:
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
 	save.set_value("progress", "suction_level", suction_level)
 	save.set_value("progress", "drone_level", drone_level)
+	save.set_value("progress", "ground_robot_level", ground_robot_level)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
 	save.set_value("progress", "city_truck_upgrade_level", city_truck_upgrade_level)
 	save.set_value("progress", "city_fleet_upgrade_level", city_fleet_upgrade_level)
@@ -2891,6 +3083,7 @@ func _load_game() -> void:
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
 	suction_level = clampi(int(save.get_value("progress", "suction_level", 0)), 0, 3)
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
+	ground_robot_level = clampi(int(save.get_value("progress", "ground_robot_level", 0)), 0, 3)
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
 	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
 	city_fleet_upgrade_level = clampi(int(save.get_value("progress", "city_fleet_upgrade_level", 0)), 0, 3)
