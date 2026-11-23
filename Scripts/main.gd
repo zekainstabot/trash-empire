@@ -777,7 +777,7 @@ func _update_factory_build_label() -> void:
 	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY", "PACKAGING + TRUCK"]
 	var cost: float = costs[factory_stage]
 	var remaining := maxf(0.0, cost - factory_build_paid)
-	factory_build_label.text = "CITY FACTORY EXPANSION\nNEXT: %s\nTOTAL COST   %.0f ZC\nPAID   %.1f ZC   •   LEFT   %.1f ZC\nSTAND ON PLATFORM TO BUILD" % [names[factory_stage + 1], cost, factory_build_paid, remaining]
+	factory_build_label.text = "%.1f ZC" % remaining
 
 func _build_factory_module(stage: int) -> void:
 	var z_positions := [0.0, 0.0, -0.5, 5.0, 10.5, 16.0]
