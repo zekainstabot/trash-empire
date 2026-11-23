@@ -4238,88 +4238,8 @@ func _reset_city_truck_fleet() -> void:
 	city_truck_timer = 0.0
 
 func _process_city_truck(_delta: float) -> void:
-	# Municipal garbage collection is retired.
+	# Municipal garbage collection is retired; factory input is player supplied.
 	return
-	for truck_index in range(city_trucks.size()):
-		var truck := city_trucks[truck_index]
-		if not is_instance_valid(truck):
-			continue
-		var phase := int(truck.get_meta("phase", 0))
-		var timer := float(truck.get_meta("timer", 0.0)) + delta
-		truck.set_meta("timer", timer)
-		var queue_point: Vector3 = truck.get_meta("queue_position", Vector3(-7.2, 0.0, -15.0))
-		var target := truck.position
-		match phase:
-			0:
-				# Do not dispatch or reveal a truck until the depot can fit its
-				# entire load. Reserve that space before it starts driving so
-				# multiple fleet trucks can never overbook the bunker.
-				var next_load := _city_truck_load()
-				var free_capacity := _city_dump_capacity() - _city_dump_trash_count() - city_trash_reserved
-				if timer >= _city_truck_interval() and free_capacity >= next_load:
-					city_trash_reserved += next_load
-					truck.set_meta("reserved", true)
-					truck.visible = true
-					truck.set_meta("load", next_load)
-					truck.set_meta("phase", 1)
-					truck.set_meta("timer", 0.0)
-					phase = 1
-			1:
-				target = queue_point
-				if _move_city_truck(truck, target, delta):
-					truck.set_meta("phase", 2)
-					truck.set_meta("timer", 0.0)
-			2:
-				# Single-truck unloading bay: keep every other truck at its own
-				# queue slot until the truck in the bunker has fully driven out.
-				var dump_bay_occupied := false
-				for other_index in range(city_trucks.size()):
-					if other_index == truck_index:
-						continue
-					var other_truck := city_trucks[other_index]
-					if not is_instance_valid(other_truck):
-						continue
-					var other_phase := int(other_truck.get_meta("phase", 0))
-					if bool(other_truck.visible) and other_phase in [3, 4, 5]:
-						dump_bay_occupied = true
-						break
-				if bool(truck.get_meta("reserved", false)) and not dump_bay_occupied:
-					truck.set_meta("phase", 3)
-					truck.set_meta("timer", 0.0)
-			3:
-				target = city_truck_dump
-				if _move_city_truck(truck, target, delta):
-					truck.set_meta("phase", 4)
-					truck.set_meta("timer", 0.0)
-			4:
-				if timer >= 2.5:
-					var delivered := _spawn_city_trash(int(truck.get_meta("load", _city_truck_load())))
-					city_trash_reserved = maxi(0, city_trash_reserved - int(truck.get_meta("load", _city_truck_load())))
-					truck.set_meta("reserved", false)
-					_set_message("City truck unloaded %d bags. Depot: %d / %d" % [delivered, _city_dump_trash_count(), _city_dump_capacity()])
-					truck.set_meta("phase", 5)
-					truck.set_meta("timer", 0.0)
-			5:
-				target = queue_point
-				if _move_city_truck(truck, target, delta):
-					truck.set_meta("phase", 6)
-			6:
-				target = city_truck_start
-				if _move_city_truck(truck, target, delta):
-					truck.visible = false
-					truck.set_meta("phase", 0)
-					truck.set_meta("timer", 0.0)
-		# Roll the complete wheel assembly around its axle while the truck is moving.
-		# The axle is the truck's local X axis; update the pivot's local rotation
-		# directly so the tire, rim, hub and lug nuts all rotate as one assembly.
-		var wheels: Array = truck.get_meta("wheels", [])
-		if phase in [1, 3, 5, 6] and truck.visible:
-			var wheel_roll := delta * 7.5
-			if phase in [5, 6]:
-				wheel_roll = -wheel_roll
-			for wheel in wheels:
-				if is_instance_valid(wheel):
-					wheel.rotation.x = wrapf(wheel.rotation.x + wheel_roll, -PI, PI)
 
 func _move_city_truck(truck: Node3D, target: Vector3, delta: float, move_speed: float = 3.8) -> bool:
 	var direction := target - truck.position
