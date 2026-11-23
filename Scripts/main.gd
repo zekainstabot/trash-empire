@@ -118,8 +118,8 @@ var factory_build_label: Label3D
 var factory_build_paid := 0.0
 var factory_build_save_timer := 0.0
 var mega_factory_built_count := 1
-var factory_row_input_stock: Array[int] = [0, 0, 0, 0, 0]
-var factory_row_product_stock: Array[int] = [0, 0, 0, 0, 0]
+var factory_row_input_stock: Array = [0, 0, 0, 0, 0]
+var factory_row_product_stock: Array = [0, 0, 0, 0, 0]
 var factory_total_products_made := 0
 var factory_production_timer := 0.0
 var waste_tank_inventory := 0
