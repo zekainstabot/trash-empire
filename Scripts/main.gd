@@ -3746,59 +3746,75 @@ func _build_factory_finished_product(row: int) -> void:
 	_label_3d("READY: " + _factory_row_product(row), Vector3(x, 1.08, z - 1.65), 0.12)
 
 func _build_recycling_mega_factory() -> void:
-	# Five independent production lines, each with three dedicated machines.
-	var steel := Color(0.12, 0.18, 0.20)
+	# Clean, open industrial hall: five parallel lines with clear service lanes.
+	var steel := Color(0.16, 0.22, 0.24)
 	var dark_steel := Color(0.055, 0.085, 0.095)
 	var teal := Color(0.08, 0.48, 0.48)
 	var safety := Color(0.96, 0.66, 0.12)
-	_box("MegaFactoryFoundation", Vector3(166.0, 0.08, 0.0), Vector3(72.0, 0.16, 72.0), Color(0.38, 0.41, 0.39), false)
-	_box("MegaFactoryBackWall", Vector3(190.0, 5.0, 0.0), Vector3(0.7, 10.0, 66.0), steel, false)
-	_box("MegaFactoryNorthWall", Vector3(166.0, 5.0, -33.0), Vector3(48.0, 10.0, 0.7), steel, false)
-	_box("MegaFactorySouthWall", Vector3(166.0, 5.0, 33.0), Vector3(48.0, 10.0, 0.7), steel, false)
-	_box("MegaFactoryRoof", Vector3(166.0, 10.2, 0.0), Vector3(49.0, 0.45, 66.5), dark_steel, false)
-	_box("MegaFactoryRoofSkylight", Vector3(166.0, 10.46, 0.0), Vector3(34.0, 0.08, 3.2), Color(0.18, 0.52, 0.58), false)
-	for x in range(145, 190, 9):
-		_box("FactoryRoofRib", Vector3(float(x), 10.48, 0.0), Vector3(0.16, 0.12, 66.0), steel, false)
-		_box("FactoryFrontColumn", Vector3(float(x), 4.8, 32.4), Vector3(0.65, 9.6, 0.65), dark_steel, false)
-		_box("FactoryFrontSafetyStripe", Vector3(float(x), 0.18, 31.2), Vector3(1.2, 0.035, 0.16), safety, false)
-	# Main waste intake conveyor and five-way distributor to the first machine in each line.
-	_box("WasteFeedMainFrame", Vector3(137.0, 0.72, 0.0), Vector3(20.0, 0.32, 1.9), dark_steel, false)
-	_box("WasteFeedMainBelt", Vector3(137.0, 0.94, 0.0), Vector3(19.7, 0.08, 1.55), Color(0.025, 0.045, 0.05), false)
-	for side_z in [-0.95, 0.95]:
-		_box("WasteFeedMainRail", Vector3(137.0, 1.16, side_z), Vector3(19.8, 0.35, 0.12), steel, false)
-	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.74, 0.0), Vector3(1.8, 0.32, 54.0), dark_steel, false)
-	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.96, 0.0), Vector3(1.45, 0.08, 53.5), Color(0.025, 0.045, 0.05), false)
-	for side_x in [146.05, 147.95]:
-		_box("WasteFeedDistributorRail", Vector3(side_x, 1.17, 0.0), Vector3(0.12, 0.35, 53.5), steel, false)
-	for row in range(5):
-		var feed_z := _factory_row_z(row)
-		_box("WasteFeedBranchFrame", Vector3(149.0, 0.73, feed_z), Vector3(4.2, 0.30, 1.25), dark_steel, false)
-		_box("WasteFeedBranchBelt", Vector3(149.0, 0.95, feed_z), Vector3(4.0, 0.08, 1.0), Color(0.025, 0.045, 0.05), false)
-		_box("WasteFeedBranchRail", Vector3(149.0, 1.15, feed_z - 0.62), Vector3(4.0, 0.28, 0.08), steel, false)
+	var belt_color := Color(0.035, 0.055, 0.06)
+	var concrete := Color(0.39, 0.43, 0.42)
+
+	# Large, uncluttered factory floor and simple perimeter.
+	_box("MegaFactoryFoundation", Vector3(166.0, 0.08, 0.0), Vector3(72.0, 0.16, 72.0), concrete, false)
+	_box("FactoryServiceLane", Vector3(166.0, 0.18, -31.0), Vector3(65.0, 0.08, 3.0), Color(0.29, 0.33, 0.33), false)
+	_box("FactoryFrontApron", Vector3(137.0, 0.16, 0.0), Vector3(13.0, 0.12, 64.0), Color(0.31, 0.35, 0.34), false)
+
+	# Roof is supported by a small number of aligned columns. The front stays open
+	# so every machine, conveyor and loading bay remains visible to the player.
+	_box("MegaFactoryRoof", Vector3(166.0, 10.3, 0.0), Vector3(55.0, 0.5, 68.0), dark_steel, false)
+	_box("MegaFactoryRoofSkylight", Vector3(166.0, 10.58, 0.0), Vector3(36.0, 0.08, 5.0), Color(0.18, 0.52, 0.58), false)
+	for x in [141.0, 154.0, 167.0, 180.0, 193.0]:
+		for z in [-33.0, 33.0]:
+			_box("FactoryStructuralColumn", Vector3(x, 5.0, z), Vector3(0.55, 10.0, 0.55), steel, false)
+	for x in range(144, 194, 8):
+		_box("FactoryRoofRib", Vector3(float(x), 10.62, 0.0), Vector3(0.12, 0.12, 66.0), steel, false)
+	_box("MegaFactoryBackWall", Vector3(201.0, 5.0, 0.0), Vector3(0.55, 10.0, 66.0), steel, false)
+
+	# One straight main feed belt, one straight distribution spine, five short branches.
+	_box("WasteFeedMainFrame", Vector3(137.0, 0.68, 0.0), Vector3(18.0, 0.30, 1.8), dark_steel, false)
+	_box("WasteFeedMainBelt", Vector3(137.0, 0.88, 0.0), Vector3(17.7, 0.08, 1.35), belt_color, false)
+	for side_z in [-0.78, 0.78]:
+		_box("WasteFeedMainRail", Vector3(137.0, 1.08, side_z), Vector3(17.7, 0.28, 0.08), steel, false)
+	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
+	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.89, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
+	for side_x in [146.12, 147.88]:
+		_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, 0.0), Vector3(0.08, 0.28, 53.5), steel, false)
+
 	mega_factory_machine_labels.clear()
 	for row in range(5):
 		var z := _factory_row_z(row)
-		# Physical divider and a clear product sign keep each production line separate.
-		_box("FactoryRowDivider", Vector3(166.0, 0.22, z + 6.35), Vector3(44.0, 0.30, 0.16), safety, false)
+		var row_number := row + 1
+		# A clean painted lane with a divider only in the middle of each gap.
+		_box("FactoryRowFloor%d" % row, Vector3(174.0, 0.19, z), Vector3(48.0, 0.06, 10.8), Color(0.34, 0.38, 0.37), false)
+		_box("FactoryRowDivider%d" % row, Vector3(174.0, 0.24, z + 6.35), Vector3(48.0, 0.10, 0.14), safety, false)
+		_box("FactoryRowEdge%d" % row, Vector3(174.0, 0.24, z - 6.35), Vector3(48.0, 0.10, 0.14), teal, false)
+
 		var product_label := Label3D.new()
 		product_label.name = "FactoryProductLine%d" % row
-		product_label.text = "LINE %d  •  %s" % [row + 1, _factory_row_product(row)]
-		product_label.position = Vector3(166.0, 4.6, z - 4.6)
-		product_label.font_size = 27
+		product_label.text = "LINE %d  |  %s" % [row_number, _factory_row_product(row)]
+		product_label.position = Vector3(174.0, 5.0, z - 4.8)
+		product_label.font_size = 26
 		product_label.pixel_size = 0.009
 		product_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		product_label.modulate = Color(0.65, 1.0, 0.88)
+		product_label.modulate = Color(0.72, 1.0, 0.90)
 		add_child(product_label)
+
+		# Short branch belt enters only the first machine's marked intake.
+		_box("WasteFeedBranchFrame%d" % row, Vector3(149.0, 0.68, z), Vector3(3.5, 0.28, 1.15), dark_steel, false)
+		_box("WasteFeedBranchBelt%d" % row, Vector3(149.0, 0.89, z), Vector3(3.35, 0.08, 0.88), belt_color, false)
+		for side_z in [z - 0.56, z + 0.56]:
+			_box("WasteFeedBranchRail%d" % row, Vector3(149.0, 1.08, side_z), Vector3(3.35, 0.25, 0.07), steel, false)
+
 		for machine_index in range(3):
 			var x := 151.0 + float(machine_index) * 13.0
 			var station_index := row * 3 + machine_index
-			_box("MegaProcessBuildPad", Vector3(x, 0.16, z), Vector3(5.4, 0.22, 4.2), dark_steel, false)
-			_box("MegaProcessPadAccent", Vector3(x, 0.29, z - 1.95), Vector3(4.8, 0.08, 0.12), safety, false)
+			_box("MegaProcessBuildPad", Vector3(x, 0.30, z), Vector3(5.8, 0.16, 4.8), dark_steel, false)
+			_box("MegaProcessPadAccent", Vector3(x, 0.40, z - 2.22), Vector3(4.9, 0.06, 0.10), safety, false)
 			var build_label := Label3D.new()
 			build_label.name = "MegaFactoryMachineLabel%d" % station_index
 			build_label.text = "BUILT" if station_index < mega_factory_built_count else "BUILD\n%.0f ZC" % _mega_factory_machine_cost(station_index)
-			build_label.position = Vector3(x, 0.42, z)
-			build_label.font_size = 25
+			build_label.position = Vector3(x, 0.52, z + 2.35)
+			build_label.font_size = 22
 			build_label.pixel_size = 0.009
 			build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 			build_label.modulate = Color(1.0, 0.88, 0.38)
@@ -3806,38 +3822,51 @@ func _build_recycling_mega_factory() -> void:
 			mega_factory_machine_labels.append(build_label)
 			if station_index < mega_factory_built_count:
 				_build_mega_factory_machine(station_index)
-		for belt_x in [157.5, 170.5]:
-			_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.82, z), Vector3(7.0, 0.28, 1.5), dark_steel, false)
-			_box("MegaFactoryConveyorBelt", Vector3(belt_x, 1.02, z), Vector3(6.8, 0.08, 1.3), Color(0.035, 0.05, 0.055), false)
-			for side_z in [z - 0.72, z + 0.72]:
-				_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.22, side_z), Vector3(6.8, 0.28, 0.09), steel, false)
-		# Large loading doors sit just outside the entrance of each production row.
-		_box("FactoryLoadingDoorFrame", Vector3(143.5, 3.2, z), Vector3(0.55, 6.4, 6.2), dark_steel, false)
-		_box("FactoryLoadingDoorHeader", Vector3(143.4, 6.5, z), Vector3(0.8, 0.45, 6.5), safety, false)
-		_label_3d("LOADING BAY %d" % (row + 1), Vector3(143.0, 7.0, z - 2.0), 0.13)
-		# A finished usable product appears only after all three machines in this line are built.
+
+		# Conveyor segments sit only in the gaps between machines, never through them.
+		for belt_index in range(2):
+			var belt_x := 157.5 + float(belt_index) * 13.0
+			_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.78, z), Vector3(7.0, 0.24, 1.25), dark_steel, false)
+			_box("MegaFactoryConveyorBelt", Vector3(belt_x, 0.95, z), Vector3(6.85, 0.07, 1.02), belt_color, false)
+			for side_z in [z - 0.61, z + 0.61]:
+				_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.14, side_z), Vector3(6.85, 0.22, 0.07), steel, false)
+
+		# Five identical loading portals: two posts and a header, with a clear opening.
+		for side_z in [-3.15, 3.15]:
+			_box("FactoryLoadingDoorPost", Vector3(143.4, 3.0, z + side_z), Vector3(0.48, 6.0, 0.48), dark_steel, false)
+		_box("FactoryLoadingDoorHeader", Vector3(143.4, 6.05, z), Vector3(0.5, 0.42, 6.75), safety, false)
+		_box("FactoryLoadingDoorTrack", Vector3(143.1, 5.72, z), Vector3(0.18, 0.12, 5.6), teal, false)
+		_label_3d("BAY %d" % row_number, Vector3(143.0, 6.65, z - 2.0), 0.15)
+
+		# Dedicated output pad on the far end of each production line.
+		_box("FactoryProductOutputPad", Vector3(190.0, 0.34, z), Vector3(5.0, 0.22, 4.8), dark_steel, false)
 		if mega_factory_built_count >= row * 3 + 1:
 			_build_factory_finished_product(row)
 		else:
-			_box("FactoryProductOutput", Vector3(181.5, 0.48, z), Vector3(3.0, 0.8, 2.8), Color(0.18, 0.27, 0.25), false)
-			_label_3d("BUILD FIRST MACHINE", Vector3(181.5, 1.15, z - 1.55), 0.12)
-	# Utility equipment is kept along the rear service strip, away from the five lines.
+			_label_3d("AWAITING LINE START", Vector3(190.0, 1.2, z - 2.2), 0.13)
+
+	# Utility equipment is grouped in a dedicated rear service strip.
 	for tank_index in range(3):
-		var tx := 181.0 + float(tank_index) * 2.8
-		_cylinder("RecyclingStorageSilo", Vector3(tx, 3.0, -31.0), 1.15, 5.8, Color(0.55, 0.62, 0.61), false)
-		_cylinder("RecyclingSiloCap", Vector3(tx, 6.0, -31.0), 1.22, 0.35, teal, false)
-		_cylinder("WaterTreatmentTank", Vector3(tx, 1.65, 30.0), 1.35, 3.2, Color(0.18, 0.38, 0.42), false)
-	for stack_x in [184.0, 188.0]:
-		_cylinder("FactoryExhaustStack", Vector3(stack_x, 8.2, 7.0), 0.52, 6.8, steel, false)
-		_cylinder("FactoryStackRim", Vector3(stack_x, 11.65, 7.0), 0.68, 0.24, safety, false)
-	_box("FactoryLoadingDock", Vector3(137.0, 0.22, 0.0), Vector3(13.0, 0.44, 30.0), Color(0.25, 0.29, 0.29), false)
-	for z in [-24.0, -12.0, 0.0, 12.0, 24.0]:
-		_box("FactoryTruckLane", Vector3(137.0, 0.47, z), Vector3(11.0, 0.035, 0.16), safety, false)
-	_box("FactoryNameBoard", Vector3(166.0, 7.2, 33.45), Vector3(20.0, 2.4, 0.35), dark_steel, false)
-	_label_3d("ZEKA RECYCLING\n5 INDEPENDENT PRODUCTION LINES", Vector3(166.0, 7.15, 33.25), 0.34)
+		var tx := 181.0 + float(tank_index) * 4.0
+		_cylinder("RecyclingStorageSilo", Vector3(tx, 3.0, -29.0), 1.15, 5.8, Color(0.55, 0.62, 0.61), false)
+		_cylinder("RecyclingSiloCap", Vector3(tx, 6.0, -29.0), 1.22, 0.35, teal, false)
+	for tank_index in range(3):
+		var tx := 181.0 + float(tank_index) * 4.0
+		_cylinder("WaterTreatmentTank", Vector3(tx, 1.65, 29.0), 1.35, 3.2, Color(0.18, 0.38, 0.42), false)
+	for stack_x in [193.0, 197.0]:
+		_cylinder("FactoryExhaustStack", Vector3(stack_x, 8.2, 8.0), 0.52, 6.8, steel, false)
+		_cylinder("FactoryStackRim", Vector3(stack_x, 11.65, 8.0), 0.68, 0.24, safety, false)
+
+	# Marked truck lane runs parallel to the building face and stays clear of doors.
+	_box("FactoryLoadingDock", Vector3(137.0, 0.22, 0.0), Vector3(12.0, 0.28, 62.0), Color(0.25, 0.29, 0.29), false)
+	for z in [-26.0, -13.0, 0.0, 13.0, 26.0]:
+		_box("FactoryTruckLane", Vector3(137.0, 0.39, z), Vector3(10.0, 0.035, 0.14), safety, false)
+
+	_box("FactoryNameBoard", Vector3(166.0, 7.5, 34.0), Vector3(22.0, 2.0, 0.35), dark_steel, false)
+	_label_3d("ZEKA RECYCLING  |  PRODUCTION HALL", Vector3(166.0, 7.45, 33.78), 0.31)
 	_box("FactoryEntranceCanopy", Vector3(137.0, 5.0, 0.0), Vector3(12.0, 0.35, 31.0), teal, false)
-	for z in [-13.0, 13.0]:
-		_box("FactoryCanopySupport", Vector3(132.0, 2.5, z), Vector3(0.35, 5.0, 0.35), dark_steel, false)
+	for z in [-14.0, 14.0]:
+		_box("FactoryCanopySupport", Vector3(131.5, 2.5, z), Vector3(0.35, 5.0, 0.35), dark_steel, false)
 	_build_first_machine_feed_trigger()
 
 func _build_first_machine_feed_trigger() -> void:
