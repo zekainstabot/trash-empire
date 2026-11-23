@@ -497,10 +497,16 @@ func _process_sorting_robots(delta: float) -> void:
 			if robot.global_position.distance_to(drop_point) < 0.55:
 				var cargo := robot.get_meta("cargo") as Node3D
 				if is_instance_valid(cargo):
+					if waste_tank_built and waste_tank_inventory >= WASTE_TANK_CAPACITY:
+						_set_message("Factory tank is full; sorting robot is waiting.")
+						continue
 					cargo.queue_free()
 					robot.set_meta("cargo", null)
 					sorting_bin_counts[i] += 1
-					money += _sorting_robot_item_reward()
+					if waste_tank_built:
+						waste_tank_inventory += 1
+					else:
+						money += _sorting_robot_item_reward()
 					_refresh_sorting_district()
 					_update_ui()
 					_save_game()
@@ -2883,8 +2889,14 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 	else:
 		rover.set_meta("cargo_slots", slots - 1)
 	var item_value := _recycling_item_value(bulky)
-	money += item_value
-	_spawn_conveyor_item(item_value)
+	if waste_tank_built:
+		if waste_tank_inventory >= WASTE_TANK_CAPACITY:
+			_set_message("Factory tank is full; ground collector is waiting to unload.")
+			return
+		waste_tank_inventory += 1
+	else:
+		money += item_value
+		_spawn_conveyor_item(item_value)
 	_update_ui()
 	_save_game()
 	if int(rover.get_meta("cargo_slots", 0)) <= 0:
@@ -2906,6 +2918,9 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		return
 	drone.set_meta("deposit_timer", 0.0)
 	var bulky := int(drone.get_meta("cargo_bulky", 0)) > 0
+	if waste_tank_built and waste_tank_inventory >= WASTE_TANK_CAPACITY:
+		_set_message("Factory tank is full; drone is waiting to unload.")
+		return
 	var cargo_items: Array = drone.get_meta("cargo_items", [])
 	if not cargo_items.is_empty():
 		var cargo_item = cargo_items.pop_front()
@@ -2920,8 +2935,11 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 	else:
 		drone.set_meta("cargo_slots", slots - 1)
 	var item_value := _recycling_item_value(bulky)
-	money += item_value
-	_spawn_conveyor_item(item_value)
+	if waste_tank_built:
+		waste_tank_inventory += 1
+	else:
+		money += item_value
+		_spawn_conveyor_item(item_value)
 	_update_ui()
 	_save_game()
 	if int(drone.get_meta("cargo_slots", 0)) <= 0:
@@ -2947,6 +2965,23 @@ func _process_auto_sell(delta: float) -> void:
 	var seconds_per_item := maxf(0.35, 1.8 - float(unload_upgrade_level - 1) * 0.18)
 	if unload_timer >= seconds_per_item:
 		unload_timer = 0.0
+		if waste_tank_built:
+			if waste_tank_inventory >= WASTE_TANK_CAPACITY:
+				_set_message("Factory tank is full. Conveyor will resume when space is available.")
+				return
+			var deposited_bulky := carried_bulky > 0
+			if deposited_bulky:
+				carried -= 2
+				carried_bulky -= 1
+			else:
+				carried -= 1
+			waste_tank_inventory += 1
+			_update_ui()
+			_save_game()
+			if carried == 0:
+				_update_missions()
+			_set_message("Waste sent to factory tank. Storage: %d / %d" % [waste_tank_inventory, WASTE_TANK_CAPACITY])
+			return
 		var sold_bulky := carried_bulky > 0
 		if sold_bulky:
 			carried -= 2
