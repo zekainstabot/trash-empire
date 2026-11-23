@@ -2062,6 +2062,11 @@ func _process_auto_pickup(delta: float) -> void:
 	if not is_instance_valid(auto_pickup_target):
 		auto_pickup_timer = 0.0
 		return
+	# Never let a previously selected bunker item be magnet-pulled through a side wall.
+	if _is_city_dump_trash(auto_pickup_target) and not _player_at_city_dump_front():
+		auto_pickup_target = null
+		auto_pickup_timer = 0.0
+		return
 
 	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65 + float(magnet_power_level - 1) * 1.1
 	var pickup_point := player.global_position + Vector3(0.0, 0.25, 0.0)
