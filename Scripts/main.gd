@@ -3712,10 +3712,13 @@ func _create_city_truck(index: int) -> Node3D:
 	truck.set_meta("load", _city_truck_load())
 	truck.set_meta("reserved", false)
 	add_child(truck)
-	_city_truck_box(truck, "TruckChassis", Vector3(0, 0.72, 0), Vector3(2.0, 0.35, 3.5), Color(0.12, 0.16, 0.17))
-	_city_truck_box(truck, "TruckCab", Vector3(0, 1.35, -1.12), Vector3(1.85, 1.25, 1.25), Color(0.78, 0.62, 0.35))
-	_city_truck_box(truck, "TruckWindshield", Vector3(0, 1.55, -1.77), Vector3(1.38, 0.62, 0.045), Color(0.18, 0.30, 0.34))
-	_city_truck_box(truck, "TruckGrille", Vector3(0, 0.92, -1.79), Vector3(0.82, 0.28, 0.05), Color(0.20, 0.25, 0.26))
+	# Rounded chassis and sculpted cab replace the old block-like toy silhouette.
+	_city_truck_sphere(truck, "TruckChassis", Vector3(0, 0.72, 0.0), Vector3(1.02, 0.19, 1.78), Color(0.10, 0.13, 0.14))
+	_city_truck_sphere(truck, "TruckCabLower", Vector3(0, 1.18, -1.12), Vector3(0.91, 0.48, 0.70), Color(0.76, 0.56, 0.29))
+	_city_truck_sphere(truck, "TruckCabRoof", Vector3(0, 1.72, -1.17), Vector3(0.88, 0.43, 0.66), Color(0.82, 0.64, 0.36))
+	_city_truck_sphere(truck, "TruckHood", Vector3(0, 1.08, -1.73), Vector3(0.88, 0.30, 0.42), Color(0.72, 0.51, 0.27))
+	_city_truck_sphere(truck, "TruckWindshield", Vector3(0, 1.53, -1.72), Vector3(0.70, 0.29, 0.035), Color(0.10, 0.22, 0.27))
+	_city_truck_box(truck, "TruckGrille", Vector3(0, 0.96, -2.08), Vector3(0.78, 0.30, 0.045), Color(0.16, 0.20, 0.21))
 	# Open-top cargo bed: a floor and four raised sides keep collected litter visibly inside.
 	_city_truck_box(truck, "TruckCargoFloor", Vector3(0, 0.88, 0.72), Vector3(1.82, 0.12, 1.78), Color(0.16, 0.25, 0.22))
 	_city_truck_box(truck, "TruckCargoSideLeft", Vector3(-0.91, 1.34, 0.72), Vector3(0.10, 0.92, 1.82), Color(0.20, 0.34, 0.29))
@@ -3775,8 +3778,8 @@ func _create_city_truck(index: int) -> Node3D:
 	truck.set_meta("wheels", wheels)
 	_city_truck_box(truck, "TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.72, 0.66, 0.48))
 	# Rounded industrial details break up the toy-like rectangular silhouette.
-	_city_truck_box(truck, "FrontSteelBumper", Vector3(0, 0.67, -1.91), Vector3(2.08, 0.20, 0.18), Color(0.30, 0.34, 0.34))
-	_city_truck_box(truck, "CabRoofCap", Vector3(0, 2.02, -1.12), Vector3(1.92, 0.12, 1.32), Color(0.62, 0.49, 0.29))
+	_city_truck_sphere(truck, "FrontSteelBumper", Vector3(0, 0.69, -2.10), Vector3(1.00, 0.10, 0.10), Color(0.28, 0.32, 0.33))
+	_city_truck_sphere(truck, "CabRoofHighlight", Vector3(0, 2.02, -1.15), Vector3(0.72, 0.045, 0.52), Color(0.91, 0.73, 0.43))
 	_city_truck_box(truck, "LeftMirrorArm", Vector3(-1.02, 1.48, -1.35), Vector3(0.28, 0.07, 0.08), Color(0.18, 0.21, 0.21))
 	_city_truck_box(truck, "RightMirrorArm", Vector3(1.02, 1.48, -1.35), Vector3(0.28, 0.07, 0.08), Color(0.18, 0.21, 0.21))
 	for side in [-1.0, 1.0]:
@@ -3804,10 +3807,22 @@ func _create_city_truck(index: int) -> Node3D:
 		lamp_mesh.radius = 0.13
 		lamp_mesh.height = 0.20
 		lamp.mesh = lamp_mesh
-		lamp.position = Vector3(x, 1.02, -1.82)
+		lamp.position = Vector3(x, 1.02, -2.12)
 		lamp.material_override = _mat(Color(0.96, 0.84, 0.48))
 		truck.add_child(lamp)
 	return truck
+
+func _city_truck_sphere(parent: Node3D, node_name: String, pos: Vector3, dimensions: Vector3, color: Color) -> void:
+	var mesh := MeshInstance3D.new()
+	mesh.name = node_name
+	var shape := SphereMesh.new()
+	shape.radial_segments = 32
+	shape.rings = 16
+	mesh.mesh = shape
+	mesh.position = pos
+	mesh.scale = dimensions
+	mesh.material_override = _mat(color)
+	parent.add_child(mesh)
 
 func _city_truck_box(parent: Node3D, node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
 	var mesh := MeshInstance3D.new()
