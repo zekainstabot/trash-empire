@@ -3776,16 +3776,7 @@ func _build_recycling_mega_factory() -> void:
 	_box("FactoryServiceLane", Vector3(166.0, 0.18, -31.0), Vector3(65.0, 0.08, 3.0), Color(0.29, 0.33, 0.33), false)
 	_box("FactoryFrontApron", Vector3(137.0, 0.16, 0.0), Vector3(13.0, 0.12, 64.0), Color(0.31, 0.35, 0.34), false)
 
-	# Roof is supported by a small number of aligned columns. The front stays open
-	# so every machine, conveyor and loading bay remains visible to the player.
-	_box("MegaFactoryRoof", Vector3(166.0, 10.3, 0.0), Vector3(55.0, 0.5, 68.0), dark_steel, false)
-	_box("MegaFactoryRoofSkylight", Vector3(166.0, 10.58, 0.0), Vector3(36.0, 0.08, 5.0), Color(0.18, 0.52, 0.58), false)
-	for x in [141.0, 154.0, 167.0, 180.0, 193.0]:
-		for z in [-33.0, 33.0]:
-			_box("FactoryStructuralColumn", Vector3(x, 5.0, z), Vector3(0.55, 10.0, 0.55), steel, false)
-	for x in range(144, 194, 8):
-		_box("FactoryRoofRib", Vector3(float(x), 10.62, 0.0), Vector3(0.12, 0.12, 66.0), steel, false)
-	_box("MegaFactoryBackWall", Vector3(201.0, 5.0, 0.0), Vector3(0.55, 10.0, 66.0), steel, false)
+	# Open-air factory: no roof, walls, or structural columns.
 
 	# One straight main feed belt, one straight distribution spine, five short branches.
 	_box("WasteFeedMainFrame", Vector3(137.0, 0.68, 0.0), Vector3(18.0, 0.30, 1.8), dark_steel, false)
