@@ -259,8 +259,8 @@ func _build_world() -> void:
 	_box("FinalZoneRoadCenterLine", Vector3(122, 0.055, 0), Vector3(26, 0.012, 0.13), Color(0.91, 0.78, 0.43), false)
 	_box("FinalZoneEntryApron", Vector3(135, 0.045, 0), Vector3(8, 0.08, 15), Color(0.34, 0.35, 0.30), false)
 	_box("FinalZoneSignPost", Vector3(119, 2.0, -7.0), Vector3(0.22, 4.0, 0.22), Color(0.22, 0.25, 0.24), false)
-	_box("FinalZoneSignBoard", Vector3(119, 3.35, -7.0), Vector3(9.5, 1.8, 0.28), Color(0.13, 0.22, 0.18), false)
-	_label_3d("CITY CLEANUP ZONE", Vector3(119, 3.45, -6.82), 0.42)
+	_box("FinalZoneSignBoard", Vector3(119, 3.35, -7.0), Vector3(9.5, 1.8, 0.28), Color(0.08, 0.27, 0.25), false)
+	_label_3d("RECYCLING FACTORY", Vector3(119, 3.45, -6.82), 0.42)
 	for marker_x in range(118, 207, 8):
 		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, -34.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
 		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, 34.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
@@ -275,14 +275,14 @@ func _build_world() -> void:
 	# Open the east edge into a boulevard leading to the new market quarter.
 	_box("DistrictFourGround", Vector3(96, -0.3, 0), Vector3(32, 0.6, 72), Color(0.29, 0.34, 0.30), true)
 	_box("DistrictFourGrassPatch", Vector3(96, 0.012, 0), Vector3(29.5, 0.025, 60.0), Color(0.27, 0.43, 0.25), false)
-	# Open a wide service gateway into the final landfill.
+	# Wide service gateway into the new city recycling factory.
 	_box("DistrictFourOuterWallNorth", Vector3(111.5, 2.0, -22.0), Vector3(0.5, 4.0, 28.0), Color(0.28, 0.32, 0.31), true)
 	_box("DistrictFourOuterWallSouth", Vector3(111.5, 2.0, 22.0), Vector3(0.5, 4.0, 28.0), Color(0.28, 0.32, 0.31), true)
 	for gate_z in [-8.0, 8.0]:
 		_box("LandfillGatePillar", Vector3(111.5, 2.1, gate_z), Vector3(0.8, 4.2, 0.8), Color(0.20, 0.26, 0.25), true)
 		_box("LandfillGateCap", Vector3(111.5, 4.25, gate_z), Vector3(1.1, 0.22, 1.1), Color(0.83, 0.62, 0.19), false)
 	_box("LandfillGateHeader", Vector3(111.5, 4.15, 0), Vector3(0.45, 0.28, 15.5), Color(0.14, 0.22, 0.21), false)
-	_label_3d("LANDFILL ACCESS", Vector3(113.0, 4.65, 0), 0.34)
+	_label_3d("RECYCLING FACTORY", Vector3(113.0, 4.65, 0), 0.34)
 	for x in range(-14, 15, 2):
 		# Keep a wide, player-accessible entrance aligned with the road.
 		if x >= -12 and x <= -4:
@@ -365,6 +365,7 @@ func _build_world() -> void:
 	_build_city_polish()
 	_build_city_life_details()
 	_build_city_pedestrians()
+	_build_recycling_mega_factory()
 	_build_commercial_district()
 	_build_sorting_district()
 	_build_ad_billboards()
@@ -3620,6 +3621,62 @@ func _build_final_landfill_details() -> void:
 	_label_3d("FINAL CLEANUP\n60,000 UNITS", Vector3(190.0, 2.35, -22.78), 0.42)
 	for x in range(140, 185, 8):
 		_box("LandfillLaneMarking", Vector3(float(x), 0.10, 25.0), Vector3(3.0, 0.025, 0.14), Color(0.87, 0.72, 0.32), false)
+
+
+
+func _build_recycling_mega_factory() -> void:
+	# Static, low-cost recycling campus replacing the former empty landfill.
+	var steel := Color(0.12, 0.18, 0.20)
+	var dark_steel := Color(0.055, 0.085, 0.095)
+	var teal := Color(0.08, 0.48, 0.48)
+	var safety := Color(0.96, 0.66, 0.12)
+	_box("MegaFactoryFoundation", Vector3(166.0, 0.08, 0.0), Vector3(65.0, 0.16, 48.0), Color(0.38, 0.41, 0.39), false)
+	# Main factory hall: roof, back and side walls, with a wide open loading front.
+	_box("MegaFactoryBackWall", Vector3(190.0, 5.0, 0.0), Vector3(0.7, 10.0, 42.0), steel, false)
+	_box("MegaFactoryNorthWall", Vector3(166.0, 5.0, -21.0), Vector3(48.0, 10.0, 0.7), steel, false)
+	_box("MegaFactorySouthWall", Vector3(166.0, 5.0, 21.0), Vector3(48.0, 10.0, 0.7), steel, false)
+	_box("MegaFactoryRoof", Vector3(166.0, 10.2, 0.0), Vector3(49.0, 0.45, 42.5), dark_steel, false)
+	_box("MegaFactoryRoofSkylight", Vector3(166.0, 10.46, 0.0), Vector3(34.0, 0.08, 3.2), Color(0.18, 0.52, 0.58), false)
+	for x in range(145, 190, 9):
+		_box("FactoryRoofRib", Vector3(float(x), 10.48, 0.0), Vector3(0.16, 0.12, 42.0), steel, false)
+		_box("FactoryFrontColumn", Vector3(float(x), 4.8, 20.4), Vector3(0.65, 9.6, 0.65), dark_steel, false)
+		_box("FactoryFrontSafetyStripe", Vector3(float(x), 0.18, 19.2), Vector3(1.2, 0.035, 0.16), safety, false)
+	# Three production rows with nine visible processing stations and transfer belts.
+	for row in range(3):
+		var z := -12.0 + float(row) * 12.0
+		for machine_index in range(3):
+			var x := 151.0 + float(machine_index) * 13.0
+			var accent: Color = [teal, Color(0.18, 0.58, 0.36), safety][machine_index]
+			_box("MegaProcessBase", Vector3(x, 0.42, z), Vector3(5.4, 0.8, 4.2), dark_steel, false)
+			_box("MegaProcessBody", Vector3(x, 2.15, z), Vector3(4.3, 2.7, 3.4), steel, false)
+			_box("MegaProcessTop", Vector3(x, 3.58, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
+			_box("MegaProcessWindow", Vector3(x, 2.25, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
+			_box("MegaProcessControl", Vector3(x + 1.65, 1.8, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
+			for wheel_x in [x - 1.5, x + 1.5]:
+				_cylinder("MegaProcessDrum", Vector3(wheel_x, 0.98, z + 2.0), 0.38, 0.22, accent, true)
+		for belt_x in [157.5, 170.5]:
+			_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.82, z), Vector3(7.0, 0.28, 1.5), dark_steel, false)
+			_box("MegaFactoryConveyorBelt", Vector3(belt_x, 1.02, z), Vector3(6.8, 0.08, 1.3), Color(0.035, 0.05, 0.055), false)
+			for side_z in [z - 0.72, z + 0.72]:
+				_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.22, side_z), Vector3(6.8, 0.28, 0.09), steel, false)
+	# Storage silos, treatment tanks and exhaust stacks.
+	for tank_index in range(3):
+		var tx := 181.0 + float(tank_index) * 2.8
+		_cylinder("RecyclingStorageSilo", Vector3(tx, 3.0, -15.0), 1.15, 5.8, Color(0.55, 0.62, 0.61), false)
+		_cylinder("RecyclingSiloCap", Vector3(tx, 6.0, -15.0), 1.22, 0.35, teal, false)
+		_cylinder("WaterTreatmentTank", Vector3(tx, 1.65, 15.0), 1.35, 3.2, Color(0.18, 0.38, 0.42), false)
+	for stack_x in [184.0, 188.0]:
+		_cylinder("FactoryExhaustStack", Vector3(stack_x, 8.2, 7.0), 0.52, 6.8, steel, false)
+		_cylinder("FactoryStackRim", Vector3(stack_x, 11.65, 7.0), 0.68, 0.24, safety, false)
+	# Loading dock and marked truck lanes at the factory entrance.
+	_box("FactoryLoadingDock", Vector3(137.0, 0.22, 0.0), Vector3(13.0, 0.44, 22.0), Color(0.25, 0.29, 0.29), false)
+	for z in [-8.0, 0.0, 8.0]:
+		_box("FactoryTruckLane", Vector3(137.0, 0.47, z), Vector3(11.0, 0.035, 0.16), safety, false)
+	_box("FactoryNameBoard", Vector3(166.0, 7.2, 21.45), Vector3(20.0, 2.4, 0.35), dark_steel, false)
+	_label_3d("ZEKA RECYCLING\nSORT  •  PROCESS  •  REUSE", Vector3(166.0, 7.15, 21.25), 0.34)
+	_box("FactoryEntranceCanopy", Vector3(137.0, 5.0, 0.0), Vector3(12.0, 0.35, 23.0), teal, false)
+	for z in [-9.0, 9.0]:
+		_box("FactoryCanopySupport", Vector3(132.0, 2.5, z), Vector3(0.35, 5.0, 0.35), dark_steel, false)
 
 
 func _build_city_dump_area() -> void:
