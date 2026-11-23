@@ -167,7 +167,7 @@ var city_truck_phase := 3
 var city_truck_timer := 0.0
 var city_truck_upgrade_level := 0
 var city_truck_start := Vector3(-7.2, 0.0, 33.0)
-var city_truck_dump := Vector3(124.8, 0.0, -22.5)
+var city_truck_dump := Vector3(124.8, 0.0, 0.0)
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -2386,7 +2386,7 @@ func _is_city_dump_trash(item: Node3D) -> bool:
 	if not is_instance_valid(item):
 		return false
 	var p := item.global_position
-	return p.x >= 121.4 and p.x <= 128.2 and p.z >= -25.8 and p.z <= -19.2
+	return p.x >= 121.4 and p.x <= 128.2 and p.z >= -3.3 and p.z <= 3.3
 
 
 func _player_at_city_dump_front() -> bool:
@@ -2394,7 +2394,7 @@ func _player_at_city_dump_front() -> bool:
 		return false
 	var p := player.global_position
 	# The only access route is the open front (positive Z) of the bunker.
-	return p.x >= 121.6 and p.x <= 128.0 and p.z >= -19.0 and p.z <= -16.0
+	return p.x >= 121.6 and p.x <= 128.0 and p.z >= 3.5 and p.z <= 6.5
 
 
 func _can_collect_city_dump_trash(item: Node3D) -> bool:
@@ -3697,9 +3697,9 @@ func _build_recycling_mega_factory() -> void:
 		_box("FactoryFrontColumn", Vector3(float(x), 4.8, 32.4), Vector3(0.65, 9.6, 0.65), dark_steel, false)
 		_box("FactoryFrontSafetyStripe", Vector3(float(x), 0.18, 31.2), Vector3(1.2, 0.035, 0.16), safety, false)
 	# Main waste intake conveyor and five-way distributor to the first machine in each line.
-	_box("WasteFeedMainFrame", Vector3(137.0, 0.72, -22.5), Vector3(20.0, 0.32, 1.9), dark_steel, false)
-	_box("WasteFeedMainBelt", Vector3(137.0, 0.94, -22.5), Vector3(19.7, 0.08, 1.55), Color(0.025, 0.045, 0.05), false)
-	for side_z in [-23.45, -21.55]:
+	_box("WasteFeedMainFrame", Vector3(137.0, 0.72, 0.0), Vector3(20.0, 0.32, 1.9), dark_steel, false)
+	_box("WasteFeedMainBelt", Vector3(137.0, 0.94, 0.0), Vector3(19.7, 0.08, 1.55), Color(0.025, 0.045, 0.05), false)
+	for side_z in [-0.95, 0.95]:
 		_box("WasteFeedMainRail", Vector3(137.0, 1.16, side_z), Vector3(19.8, 0.35, 0.12), steel, false)
 	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.74, 0.0), Vector3(1.8, 0.32, 54.0), dark_steel, false)
 	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.96, 0.0), Vector3(1.45, 0.08, 53.5), Color(0.025, 0.045, 0.05), false)
@@ -3932,12 +3932,12 @@ func _process_mega_factory_build(delta: float) -> void:
 
 func _build_city_dump_area() -> void:
 	# Waste storage is purchased and built beside the factory intake.
-	_box("FactoryWasteTankBuildPad", Vector3(124.8, 0.035, -30.0), Vector3(6.0, 0.07, 3.6), Color(0.12, 0.18, 0.18), false)
-	_box("FactoryWasteTankBuildBorder", Vector3(124.8, 0.08, -30.0), Vector3(5.6, 0.025, 3.2), Color(0.92, 0.64, 0.13), false)
+	_box("FactoryWasteTankBuildPad", Vector3(124.8, 0.035, 10.5), Vector3(6.0, 0.07, 3.6), Color(0.12, 0.18, 0.18), false)
+	_box("FactoryWasteTankBuildBorder", Vector3(124.8, 0.08, 10.5), Vector3(5.6, 0.025, 3.2), Color(0.92, 0.64, 0.13), false)
 	waste_tank_build_label = Label3D.new()
 	waste_tank_build_label.name = "WasteTankBuildLabel"
 	waste_tank_build_label.text = "BUILD WASTE STORAGE\n120 ZC"
-	waste_tank_build_label.position = Vector3(124.8, 1.45, -30.0)
+	waste_tank_build_label.position = Vector3(124.8, 1.45, 10.5)
 	waste_tank_build_label.font_size = 25
 	waste_tank_build_label.pixel_size = 0.009
 	waste_tank_build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -3945,7 +3945,7 @@ func _build_city_dump_area() -> void:
 	add_child(waste_tank_build_label)
 	var trigger := Area3D.new()
 	trigger.name = "BuildFactoryWasteTank"
-	trigger.position = Vector3(124.8, 0.9, -30.0)
+	trigger.position = Vector3(124.8, 0.9, 10.5)
 	var trigger_shape := CollisionShape3D.new()
 	var trigger_box := BoxShape3D.new()
 	trigger_box.size = Vector3(5.8, 2.0, 3.4)
@@ -3956,6 +3956,13 @@ func _build_city_dump_area() -> void:
 	if waste_tank_built:
 		_build_waste_tank_structure()
 		waste_tank_build_label.visible = false
+	# Create the municipal fleet even while the tank is awaiting purchase.
+	city_trucks.clear()
+	city_truck = null
+	city_trash_reserved = 0
+	_refresh_city_truck_fleet()
+	_reset_city_truck_fleet()
+	_create_district_collection_truck()
 
 func _on_waste_tank_build_entered(body: Node3D) -> void:
 	if body != player or waste_tank_built:
@@ -3979,7 +3986,7 @@ func _build_waste_tank_structure() -> void:
 		return
 	waste_tank_root = Node3D.new()
 	waste_tank_root.name = "FactoryWasteStorageTank"
-	waste_tank_root.position = Vector3(129.6, 0.0, 0.0)
+	waste_tank_root.position = Vector3(129.6, 0.0, 22.5)
 	add_child(waste_tank_root)
 	# Reinforced steel bunker relocated intact to the factory entrance.
 	_box("CityDumpApproachApron", Vector3(-7.0, 0.025, -18.0), Vector3(5.0, 0.05, 8.0), Color(0.22, 0.25, 0.25), false)
@@ -4346,7 +4353,7 @@ func _process_district_collection_truck(delta: float) -> void:
 				var rng := RandomNumberGenerator.new()
 				rng.randomize()
 				var pile_layer := float(_city_dump_trash_count() / 36) * 0.22
-				item.global_position = Vector3(rng.randf_range(122.05, 127.55), 0.10 + minf(pile_layer, 1.35), rng.randf_range(-25.25, -19.85))
+				item.global_position = Vector3(rng.randf_range(122.05, 127.55), 0.10 + minf(pile_layer, 1.35), rng.randf_range(-2.75, 2.65))
 				trash_nodes.append(item)
 			city_trash_reserved = maxi(0, city_trash_reserved - 1)
 			truck.set_meta("collection_cargo", cargo)
@@ -4477,7 +4484,7 @@ func _city_dump_trash_count() -> int:
 	for item in trash_nodes:
 		if is_instance_valid(item):
 			var p := item.global_position
-			if p.x >= 121.9 and p.x <= 127.5 and p.z >= -25.7 and p.z <= -19.3:
+			if p.x >= 121.9 and p.x <= 127.5 and p.z >= -3.2 and p.z <= 3.2:
 				count += 1
 	return count
 
@@ -4497,7 +4504,7 @@ func _spawn_city_trash(amount: int) -> int:
 	for i in range(allowed):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.position = Vector3(rng.randf_range(122.05, 127.55), 0.05, rng.randf_range(-25.25, -19.85))
+		item.position = Vector3(rng.randf_range(122.05, 127.55), 0.05, rng.randf_range(-2.75, 2.65))
 		add_child(item)
 		trash_nodes.append(item)
 		spawned += 1
@@ -4922,8 +4929,8 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(selected_item, "global_position", Vector3(124.8, 1.25, -22.5), 0.35)
-	tween.tween_property(selected_item, "global_position", Vector3(146.0, 1.25, -22.5), 1.35)
+	tween.tween_property(selected_item, "global_position", Vector3(124.8, 1.25, 0.0), 0.35)
+	tween.tween_property(selected_item, "global_position", Vector3(146.0, 1.25, 0.0), 1.35)
 	tween.tween_property(selected_item, "global_position", Vector3(147.0, 1.25, target_z), 0.65)
 	tween.tween_property(selected_item, "global_position", Vector3(150.4, 1.25, target_z), 0.45)
 	tween.tween_callback(_finish_waste_feed_item.bind(selected_item))
