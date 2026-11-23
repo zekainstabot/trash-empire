@@ -3768,6 +3768,7 @@ func _build_first_machine_feed_trigger() -> void:
 	trigger.add_child(shape)
 	trigger.body_entered.connect(_on_first_machine_feed_entered)
 	add_child(trigger)
+	_label_3d("ADD WASTE HERE", Vector3(151.0, 2.25, _factory_row_z(0) - 2.7), 0.20)
 
 func _on_first_machine_feed_entered(body: Node3D) -> void:
 	if body != player or mega_factory_built_count < 1 or carried <= 0:
@@ -3812,6 +3813,7 @@ func _create_factory_row_truck(row: int) -> Node3D:
 	add_child(truck)
 	return truck
 
+func _process_factory_row_shipping(delta: float) -> void:
 	if mega_factory_built_count < 1 or factory_shipping_busy:
 		return
 	factory_shipping_timer += delta
@@ -4685,13 +4687,13 @@ func _update_missions() -> void:
 		"Send delivery trucks more often.\nOpen UPGRADES → FLEET → TRUCK FREQUENCY.",
 		"Carry more boxes per truck.\nOpen UPGRADES → FLEET → TRUCK CAPACITY.",
 		"Make packages faster.\nOpen UPGRADES → FLEET → PACKAGING SPEED.",
-		"Improve city cleanup trucks.\nOpen UPGRADES → FLEET → CITY TRUCK FREQUENCY.",
+		"Build factory waste storage.\nBring 120 ZC to the marked tank pad, then deposit collected waste.",
 		"Collect 100 pieces of trash.\nProgress: %d / 100" % mini(total_trash_collected, 100),
-		"Keep the city clean.\nCity supply: %d / 1,000." % _count_regular_trash(),
+		"Clean 60,000 pieces in the final landfill.\nProgress: %d / 60,000" % mini(final_zone_cleaned, FINAL_ZONE_TARGET),
 		"Build a ground collector.\nUnlock the GROUND COLLECTOR ROBOT in UPGRADES.",
 		"Improve all sorting robots.\nBuy SORTING ROBOT EFFICIENCY level 1.",
 		"Speed up the factory line.\nBuy CONVEYOR & FACTORY SPEED level 1.",
-		"Grow your city fleet.\nBuy CITY TRUCK FLEET level 1.",
+		"Build your second factory machine.\nStand on the next machine pad and complete its construction.",
 		"Expand delivery operations.\nBuy HIRE TRUCKS level 1.",
 		"Collect several pieces at once.\nUnlock MULTI-PICKUP level 1.",
 		"Upgrade your collection tool.\nReach MAGNET POWER level 2 or unlock VACUUM.",
