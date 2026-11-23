@@ -2743,7 +2743,7 @@ func _build_ground_collector() -> void:
 			wheel.material_override = _mat(Color(0.055, 0.07, 0.075))
 			ground_collector.add_child(wheel)
 	ground_collector.visible = ground_robot_level > 0
-	ground_collector.global_position = Vector3(SELL_POINT.x + 3.0, 0.0, SELL_POINT.z + 2.0)
+	ground_collector.global_position = _factory_waste_drop_point() + Vector3(3.0, 0.0, 2.0)
 	ground_collector.set_meta("target", null)
 	ground_collector.set_meta("cargo_slots", 0)
 	ground_collector.set_meta("cargo_items", [])
