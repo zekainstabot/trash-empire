@@ -1818,6 +1818,8 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	if level != _skill_level(branch) + 1 or level > 3:
 		_set_message("This upgrade is already at its maximum level.")
 		return
+	active_upgrade_branch = branch
+	_refresh_upgrade_prices()
 	match branch:
 		"capacity": await _upgrade_bag()
 		"speed": await _upgrade_speed()
