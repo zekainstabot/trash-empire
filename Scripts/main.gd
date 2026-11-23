@@ -3986,7 +3986,7 @@ func _build_waste_tank_structure() -> void:
 		return
 	waste_tank_root = Node3D.new()
 	waste_tank_root.name = "FactoryWasteStorageTank"
-	waste_tank_root.position = Vector3(129.6, 0.0, 22.5)
+	waste_tank_root.position = Vector3(0.0, 0.0, 22.5)
 	add_child(waste_tank_root)
 	# Reinforced steel bunker relocated intact to the factory entrance.
 	_box("CityDumpApproachApron", Vector3(-7.0, 0.025, -18.0), Vector3(5.0, 0.05, 8.0), Color(0.22, 0.25, 0.25), false)
@@ -4041,7 +4041,7 @@ func _build_waste_tank_structure() -> void:
 			remove_child(child)
 			waste_tank_root.add_child(child)
 	for child in waste_tank_root.get_children():
-		if child is Node3D and child != tank_sign:
+		if child is Node3D:
 			child.position.x += 129.6
 
 func _create_city_truck(index: int) -> Node3D:
