@@ -120,6 +120,10 @@ var mega_factory_built_count := 0
 var mega_factory_build_paid := 0.0
 var mega_factory_build_timer := 0.0
 var mega_factory_machine_labels: Array[Label3D] = []
+var factory_shipping_timer := 0.0
+var factory_shipping_busy := false
+var factory_shipping_row := 0
+var factory_shipping_trucks: Array[Node3D] = []
 var factory_upgrade_button: Node3D
 var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
@@ -200,6 +204,7 @@ func _process(delta: float) -> void:
 	_process_upgrade_scroll_smoothing(delta)
 	_process_expansion_zone(delta)
 	_process_mega_factory_build(delta)
+	_process_factory_row_shipping(delta)
 	if is_instance_valid(player) and player.global_position.y < -3.0:
 		_recover_player()
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
@@ -3700,6 +3705,12 @@ func _build_recycling_mega_factory() -> void:
 			_box("MegaFactoryConveyorBelt", Vector3(belt_x, 1.02, z), Vector3(6.8, 0.08, 1.3), Color(0.035, 0.05, 0.055), false)
 			for side_z in [z - 0.72, z + 0.72]:
 				_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.22, side_z), Vector3(6.8, 0.28, 0.09), steel, false)
+		# Large loading doors sit just outside the entrance of each production row.
+		_box("FactoryLoadingDoorFrame", Vector3(143.5, 3.2, z), Vector3(0.55, 6.4, 6.2), dark_steel, false)
+		_box("FactoryLoadingDoorLeft", Vector3(143.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), teal, false)
+		_box("FactoryLoadingDoorRight", Vector3(143.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), teal, false)
+		_box("FactoryLoadingDoorHeader", Vector3(143.4, 6.5, z), Vector3(0.8, 0.45, 6.5), safety, false)
+		_label_3d("LOADING BAY %d" % (row + 1), Vector3(143.0, 7.0, z - 2.0), 0.13)
 		# A finished usable product appears only after all three machines in this line are built.
 		if mega_factory_built_count >= (row + 1) * 3:
 			_build_factory_finished_product(row)
@@ -3723,6 +3734,96 @@ func _build_recycling_mega_factory() -> void:
 	_box("FactoryEntranceCanopy", Vector3(137.0, 5.0, 0.0), Vector3(12.0, 0.35, 31.0), teal, false)
 	for z in [-13.0, 13.0]:
 		_box("FactoryCanopySupport", Vector3(132.0, 2.5, z), Vector3(0.35, 5.0, 0.35), dark_steel, false)
+
+func _create_factory_row_truck(row: int) -> Node3D:
+	var truck := Node3D.new()
+	truck.name = "FactoryProductTruck%d" % (row + 1)
+	truck.position = Vector3(132.0, 0.0, _factory_row_z(row))
+	_box_child(truck, "TruckCargoBed", Vector3(1.15, 1.35, 0.0), Vector3(4.0, 1.35, 3.0), Color(0.76, 0.79, 0.76))
+	_box_child(truck, "TruckCab", Vector3(-2.15, 1.3, 0.0), Vector3(1.65, 1.65, 2.65), Color(0.82, 0.22, 0.12))
+	_box_child(truck, "TruckWindshield", Vector3(-3.0, 1.62, 0.0), Vector3(0.06, 0.78, 1.55), Color(0.12, 0.23, 0.29))
+	for wheel_x in [-2.45, 0.0, 2.45]:
+		for wheel_z in [-1.45, 1.45]:
+			var wheel := MeshInstance3D.new()
+			var mesh := CylinderMesh.new()
+			mesh.top_radius = 0.46
+			mesh.bottom_radius = 0.46
+			mesh.height = 0.22
+			wheel.mesh = mesh
+			wheel.position = Vector3(wheel_x, 0.48, wheel_z)
+			wheel.rotation_degrees.x = 90.0
+			wheel.material_override = _mat(Color(0.035, 0.04, 0.045))
+			truck.add_child(wheel)
+	var sign := Label3D.new()
+	sign.text = _factory_row_product(row)
+	sign.position = Vector3(0.0, 2.25, 1.52)
+	sign.font_size = 18
+	sign.pixel_size = 0.012
+	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sign.modulate = Color(0.12, 0.20, 0.18)
+	truck.add_child(sign)
+	add_child(truck)
+	return truck
+
+func _process_factory_row_shipping(delta: float) -> void:
+	if mega_factory_built_count < 3 or factory_shipping_busy:
+		return
+	factory_shipping_timer += delta
+	if factory_shipping_timer < 8.0:
+		return
+	factory_shipping_timer = 0.0
+	var available_rows: Array[int] = []
+	for row in range(5):
+		if mega_factory_built_count >= (row + 1) * 3:
+			available_rows.append(row)
+	if available_rows.is_empty():
+		return
+	var selected_row := -1
+	for offset in range(5):
+		var candidate := (factory_shipping_row + offset) % 5
+		if available_rows.has(candidate):
+			selected_row = candidate
+			break
+	if selected_row < 0:
+		return
+	factory_shipping_row = (selected_row + 1) % 5
+	_dispatch_factory_row_truck(selected_row)
+
+func _dispatch_factory_row_truck(row: int) -> void:
+	factory_shipping_busy = true
+	var truck := _create_factory_row_truck(row)
+	var z := _factory_row_z(row)
+	# Open the two large sliding door leaves before the truck enters.
+	var door_left := _box("FactoryDoorMovingLeft", Vector3(143.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
+	var door_right := _box("FactoryDoorMovingRight", Vector3(143.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(door_left, "position:z", z - 3.0, 0.55)
+	tween.parallel().tween_property(door_right, "position:z", z + 3.0, 0.55)
+	tween.tween_property(truck, "position:x", 139.0, 2.0)
+	for package_index in range(3):
+		var product := Node3D.new()
+		product.name = "LoadedFactoryProduct"
+		product.position = truck.position + Vector3(1.0, 2.2 + float(package_index) * 0.02, float(package_index - 1) * 0.82)
+		var body := MeshInstance3D.new()
+		var body_mesh := BoxMesh.new()
+		body_mesh.size = Vector3(0.82, 0.72, 0.72)
+		body.mesh = body_mesh
+		body.material_override = _mat([Color(0.18, 0.36, 0.56), Color(0.52, 0.34, 0.18), Color(0.72, 0.74, 0.76), Color(0.30, 0.48, 0.38), Color(0.88, 0.72, 0.32)][row])
+		product.add_child(body)
+		add_child(product)
+		tween.tween_property(product, "position", truck.position + Vector3(1.0, 2.35, float(package_index - 1) * 0.82), 0.35)
+		tween.tween_callback(func(): product.reparent(truck))
+	tween.tween_interval(0.5)
+	tween.tween_property(truck, "position:x", 124.0, 2.4)
+	tween.tween_callback(func():
+		truck.queue_free()
+		door_left.queue_free()
+		door_right.queue_free()
+		factory_shipping_busy = false
+		_set_message("%s loaded. Truck dispatched!" % _factory_row_product(row))
+	)
 
 func _mega_factory_machine_cost(index: int) -> float:
 	var costs := [35.0, 55.0, 80.0, 110.0, 145.0, 185.0, 230.0, 285.0, 350.0, 390.0, 430.0, 470.0, 520.0, 570.0, 630.0]
