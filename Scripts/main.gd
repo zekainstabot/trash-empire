@@ -1378,7 +1378,8 @@ func _build_player() -> void:
 	player = CharacterBody3D.new()
 	player.name = "Player"
 	player.set_script(PLAYER_SCRIPT)
-	player.position = Vector3(0, 0.05, 7)
+	# Start beside the factory entrance, not in the middle of the city.
+	player.position = Vector3(3.5, 0.05, 5.5)
 	player.set("move_speed", 4.5 + float(speed_upgrade_level - 1) * 0.75)
 	add_child(player)
 
