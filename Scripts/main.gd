@@ -503,16 +503,13 @@ func _process_sorting_robots(delta: float) -> void:
 			if robot.global_position.distance_to(drop_point) < 0.55:
 				var cargo := robot.get_meta("cargo") as Node3D
 				if is_instance_valid(cargo):
-					if waste_tank_built and waste_tank_inventory >= WASTE_TANK_CAPACITY:
-						_set_message("Factory tank is full; sorting robot is waiting.")
+					if not waste_tank_built or waste_tank_inventory >= WASTE_TANK_CAPACITY:
+						_set_message("Sorting robot is waiting for available waste tank capacity.")
 						continue
 					cargo.queue_free()
 					robot.set_meta("cargo", null)
 					sorting_bin_counts[i] += 1
-					if waste_tank_built:
-						waste_tank_inventory += 1
-					else:
-						money += _sorting_robot_item_reward()
+					waste_tank_inventory += 1
 					_refresh_sorting_district()
 					_update_ui()
 					_save_game()
@@ -2773,9 +2770,6 @@ func _process_helper_drones(delta: float) -> void:
 			var drone_capacity := int(drone.get_meta("cargo_capacity", 5))
 			if slots + weight <= drone_capacity:
 				_register_final_cleanup_pickup(target)
-				if target.has_meta("rare_type"):
-					var rare_type := String(target.get_meta("rare_type"))
-					money += 4.0 if rare_type == "gold" else 1.25
 				if weight == 2:
 					drone.set_meta("cargo_bulky", int(drone.get_meta("cargo_bulky", 0)) + 1)
 				drone.set_meta("cargo_slots", slots + weight)
@@ -2847,9 +2841,6 @@ func _process_ground_collector(delta: float) -> void:
 	var weight := 2 if target.has_meta("bulky") else 1
 	if cargo_slots + weight <= capacity_slots:
 		_register_final_cleanup_pickup(target)
-		if target.has_meta("rare_type"):
-			var rare_type := String(target.get_meta("rare_type"))
-			money += 4.0 if rare_type == "gold" else 1.25
 		if weight == 2:
 			rover.set_meta("cargo_bulky", int(rover.get_meta("cargo_bulky", 0)) + 1)
 		rover.set_meta("cargo_slots", cargo_slots + weight)
@@ -2881,8 +2872,8 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 		rover.set_meta("deposit_timer", timer)
 		return
 	rover.set_meta("deposit_timer", 0.0)
-	if waste_tank_built and waste_tank_inventory >= WASTE_TANK_CAPACITY:
-		_set_message("Factory tank is full; ground collector is waiting to unload.")
+	if not waste_tank_built or waste_tank_inventory >= WASTE_TANK_CAPACITY:
+		_set_message("Ground collector is waiting for available waste tank capacity.")
 		return
 	var bulky := int(rover.get_meta("cargo_bulky", 0)) > 0
 	var cargo_items: Array = rover.get_meta("cargo_items", [])
@@ -2898,12 +2889,8 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 		rover.set_meta("cargo_slots", slots - 2)
 	else:
 		rover.set_meta("cargo_slots", slots - 1)
-	var item_value := _recycling_item_value(bulky)
-	if waste_tank_built:
-		waste_tank_inventory += 1
-	else:
-		money += item_value
-		_spawn_conveyor_item(item_value)
+	waste_tank_inventory += 1
+	_refresh_waste_tank_inventory_label()
 	_update_ui()
 	_save_game()
 	if int(rover.get_meta("cargo_slots", 0)) <= 0:
@@ -2925,8 +2912,8 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		return
 	drone.set_meta("deposit_timer", 0.0)
 	var bulky := int(drone.get_meta("cargo_bulky", 0)) > 0
-	if waste_tank_built and waste_tank_inventory >= WASTE_TANK_CAPACITY:
-		_set_message("Factory tank is full; drone is waiting to unload.")
+	if not waste_tank_built or waste_tank_inventory >= WASTE_TANK_CAPACITY:
+		_set_message("Drone is waiting for available waste tank capacity.")
 		return
 	var cargo_items: Array = drone.get_meta("cargo_items", [])
 	if not cargo_items.is_empty():
