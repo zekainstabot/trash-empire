@@ -1626,6 +1626,12 @@ func _build_skill_tree(parent: Control) -> void:
 			card_content.add_child(upgrade_info)
 
 			var row := upgrade_row
+			var title_label := Label.new()
+			title_label.add_theme_font_size_override("font_size", 17)
+			title_label.add_theme_color_override("font_color", Color(0.96, 1.0, 0.98))
+			title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			upgrade_info.add_child(title_label)
+
 			var description := Label.new()
 			description.text = String(descriptions.get(String(branch), "Improves this part of your operation."))
 			description.custom_minimum_size = Vector2(0, 34)
@@ -1650,7 +1656,7 @@ func _build_skill_tree(parent: Control) -> void:
 			price_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.72))
 			price_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			price_panel.add_child(price_label)
-			skill_node_data.append({"button": row, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch]), "price_panel": price_panel})
+			skill_node_data.append({"button": row, "title_label": title_label, "price_label": price_label, "description": description, "branch": String(branch), "title": String(titles[branch]), "price_panel": price_panel})
 
 		folder.pressed.connect(_select_upgrade_category.bind(category_index, category_bodies, folder_buttons, category_titles, detail_title))
 
@@ -1841,6 +1847,7 @@ func _refresh_upgrade_prices() -> void:
 		var unlocked := _skill_branch_unlocked(branch)
 		var button := node.button as Button
 		var price_label := node.price_label as Label
+		var title_label := node.title_label as Label
 		var price_panel := node.price_panel as PanelContainer
 		var icon := _skill_icon(branch)
 		var maxed := current >= 3
@@ -1848,13 +1855,13 @@ func _refresh_upgrade_prices() -> void:
 		if branch == "capacity":
 			price = _upgrade_cost(5.0, upgrade_level)
 		if maxed and branch != "capacity":
-			button.text = "%s  %s\nMAX LEVEL  •  LV 3" % [icon, node.title]
+			title_label.text = "%s  %s  •  MAX LEVEL" % [icon, node.title]
 			button.disabled = true
 			price_label.text = "MAX\nLEVEL"
 			price_label.add_theme_color_override("font_color", Color(0.72, 0.84, 0.76))
 			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.14, 0.11)))
 		elif not unlocked:
-			button.text = "%s  %s\nLOCKED" % [icon, node.title]
+			title_label.text = "%s  %s  •  LOCKED" % [icon, node.title]
 			button.disabled = true
 			price_label.text = "LOCKED"
 			price_label.add_theme_color_override("font_color", Color(0.72, 0.76, 0.74))
@@ -1863,7 +1870,7 @@ func _refresh_upgrade_prices() -> void:
 			var effect_text := "NEXT LEVEL  •  LV %d" % next_level
 			if branch == "capacity":
 				effect_text = "NEXT LEVEL  •  +3 BAG SLOTS"
-			button.text = "%s  %s\n%s" % [icon, node.title, effect_text]
+			title_label.text = "%s  %s" % [icon, node.title]
 			button.disabled = payment_active
 			if payment_active:
 				price_label.text = "BUYING..."
