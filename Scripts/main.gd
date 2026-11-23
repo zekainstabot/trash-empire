@@ -3807,12 +3807,6 @@ func _build_recycling_mega_factory() -> void:
 		product_label.modulate = Color(0.72, 1.0, 0.90)
 		add_child(product_label)
 
-		# Short branch belt enters only the first machine's marked intake.
-		_box("WasteFeedBranchFrame%d" % row, Vector3(149.0, 0.68, z), Vector3(3.5, 0.28, 1.15), dark_steel, false)
-		_box("WasteFeedBranchBelt%d" % row, Vector3(149.0, 0.89, z), Vector3(3.35, 0.08, 0.88), belt_color, false)
-		for side_z in [z - 0.56, z + 0.56]:
-			_box("WasteFeedBranchRail%d" % row, Vector3(149.0, 1.08, side_z), Vector3(3.35, 0.25, 0.07), steel, false)
-
 		for machine_index in range(3):
 			var x := 151.0 + float(machine_index) * 13.0
 			var station_index := row * 3 + machine_index
@@ -3830,14 +3824,7 @@ func _build_recycling_mega_factory() -> void:
 			mega_factory_machine_labels.append(build_label)
 			if station_index < mega_factory_built_count:
 				_build_mega_factory_machine(station_index)
-
-		# Conveyor segments sit only in the gaps between machines, never through them.
-		for belt_index in range(2):
-			var belt_x := 157.5 + float(belt_index) * 13.0
-			_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.78, z), Vector3(7.0, 0.24, 1.25), dark_steel, false)
-			_box("MegaFactoryConveyorBelt", Vector3(belt_x, 0.95, z), Vector3(6.85, 0.07, 1.02), belt_color, false)
-			for side_z in [z - 0.61, z + 0.61]:
-				_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.14, side_z), Vector3(6.85, 0.22, 0.07), steel, false)
+				_build_mega_factory_machine_connections(station_index)
 
 		# Five identical loading portals: two posts and a header, with a clear opening.
 		for side_z in [-3.15, 3.15]:
@@ -4048,6 +4035,27 @@ func _build_mega_factory_machine(index: int) -> void:
 		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.98, z + 2.0), 0.38, 0.22, accent, true)
 	_label_3d(["PREPARATION", "PROCESSING", "FINISHING"][column], Vector3(x, 4.0, z - 2.0), 0.15)
 
+func _build_mega_factory_machine_connections(index: int) -> void:
+	# A belt is created only after both machines at its ends exist.
+	var row := int(index / 3)
+	var column := index % 3
+	var z := _factory_row_z(row)
+	var dark_steel := Color(0.055, 0.085, 0.095)
+	var steel := Color(0.16, 0.22, 0.24)
+	var belt_color := Color(0.035, 0.055, 0.06)
+	if column == 0:
+		# Feed branch appears only after the first machine in this row is built.
+		_box("WasteFeedBranchFrame%d" % row, Vector3(149.0, 0.68, z), Vector3(3.5, 0.28, 1.15), dark_steel, false)
+		_box("WasteFeedBranchBelt%d" % row, Vector3(149.0, 0.89, z), Vector3(3.35, 0.08, 0.88), belt_color, false)
+		for side_z in [z - 0.56, z + 0.56]:
+			_box("WasteFeedBranchRail%d" % row, Vector3(149.0, 1.08, side_z), Vector3(3.35, 0.25, 0.07), steel, false)
+	if column > 0:
+		var belt_x := 151.0 + float(column - 1) * 13.0 + 6.5
+		_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.78, z), Vector3(7.0, 0.24, 1.25), dark_steel, false)
+		_box("MegaFactoryConveyorBelt", Vector3(belt_x, 0.95, z), Vector3(6.85, 0.07, 1.02), belt_color, false)
+		for side_z in [z - 0.61, z + 0.61]:
+			_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.14, side_z), Vector3(6.85, 0.22, 0.07), steel, false)
+
 func _process_mega_factory_build(delta: float) -> void:
 	if payment_active or mega_factory_built_count >= 15 or not is_instance_valid(player):
 		return
@@ -4072,6 +4080,7 @@ func _process_mega_factory_build(delta: float) -> void:
 			mega_factory_machine_labels[index].text = "BUILDING\n%.0f / %.0f ZC" % [mega_factory_build_paid, cost]
 	if mega_factory_build_paid >= cost - 0.001:
 		_build_mega_factory_machine(index)
+		_build_mega_factory_machine_connections(index)
 		mega_factory_built_count += 1
 		mega_factory_build_paid = 0.0
 		mega_factory_build_timer = 0.0
