@@ -3733,11 +3733,11 @@ func _build_recycling_mega_factory() -> void:
 		_box("FactoryLoadingDoorHeader", Vector3(143.4, 6.5, z), Vector3(0.8, 0.45, 6.5), safety, false)
 		_label_3d("LOADING BAY %d" % (row + 1), Vector3(143.0, 7.0, z - 2.0), 0.13)
 		# A finished usable product appears only after all three machines in this line are built.
-		if mega_factory_built_count >= (row + 1) * 3:
+		if mega_factory_built_count >= row * 3 + 1:
 			_build_factory_finished_product(row)
 		else:
 			_box("FactoryProductOutput", Vector3(181.5, 0.48, z), Vector3(3.0, 0.8, 2.8), Color(0.18, 0.27, 0.25), false)
-			_label_3d("3 MACHINES REQUIRED", Vector3(181.5, 1.15, z - 1.55), 0.12)
+			_label_3d("BUILD FIRST MACHINE", Vector3(181.5, 1.15, z - 1.55), 0.12)
 	# Utility equipment is kept along the rear service strip, away from the five lines.
 	for tank_index in range(3):
 		var tx := 181.0 + float(tank_index) * 2.8
@@ -3929,9 +3929,9 @@ func _process_mega_factory_build(delta: float) -> void:
 		mega_factory_build_timer = 0.0
 		if index < mega_factory_machine_labels.size() and is_instance_valid(mega_factory_machine_labels[index]):
 			mega_factory_machine_labels[index].text = "BUILT"
-		if mega_factory_built_count % 3 == 0:
+		if mega_factory_built_count % 3 == 1:
 			_build_factory_finished_product(int(index / 3))
-			_set_message("Production line complete! %s is now being manufactured." % _factory_row_product(int(index / 3)))
+			_set_message("New production line activated! %s can now be manufactured." % _factory_row_product(int(index / 3)))
 		_update_ui()
 		_save_game()
 		if mega_factory_built_count < 15:
@@ -3981,8 +3981,8 @@ func _on_waste_tank_build_entered(body: Node3D) -> void:
 			_set_message("Factory tank is full (%d / %d)." % [waste_tank_inventory, WASTE_TANK_CAPACITY])
 			return
 		waste_tank_inventory += accepted
-		carried = 0
-		carried_bulky = 0
+		var remaining_items := item_count - accepted
+		carried = remaining_items + carried_bulky
 		_update_ui()
 		_save_game()
 		_set_message("Loaded %d pieces into factory storage. Tank: %d / %d" % [accepted, waste_tank_inventory, WASTE_TANK_CAPACITY])
