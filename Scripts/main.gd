@@ -3543,7 +3543,7 @@ func _load_game() -> void:
 	district_build_paid = 0.0
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
 	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0, 160.0][factory_stage])
-	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 0)), 0, 9)
+	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 0)), 0, 15)
 	mega_factory_build_paid = clampf(float(save.get_value("progress", "mega_factory_build_paid", 0.0)), 0.0, _mega_factory_machine_cost(mega_factory_built_count))
 	teddy_stock_values.clear()
 	for stored_value in save.get_value("progress", "teddy_stock_values", []):
@@ -3599,26 +3599,43 @@ func _build_final_landfill_details() -> void:
 
 
 
+func _factory_row_z(row: int) -> float:
+	return -26.0 + float(row) * 13.0
+
+func _factory_row_product(row: int) -> String:
+	var products := ["RECYCLED PLASTIC PELLETS", "METAL INGOTS", "PAPER ROLLS", "GLASS BOTTLES", "ECO BUILDING BRICKS"]
+	return products[clampi(row, 0, products.size() - 1)]
+
 func _build_recycling_mega_factory() -> void:
-	# Static, low-cost recycling campus replacing the former empty landfill.
+	# Five independent production lines, each with three dedicated machines.
 	var steel := Color(0.12, 0.18, 0.20)
 	var dark_steel := Color(0.055, 0.085, 0.095)
 	var teal := Color(0.08, 0.48, 0.48)
 	var safety := Color(0.96, 0.66, 0.12)
-	_box("MegaFactoryFoundation", Vector3(166.0, 0.08, 0.0), Vector3(65.0, 0.16, 48.0), Color(0.38, 0.41, 0.39), false)
-	# Main factory hall: roof, back and side walls, with a wide open loading front.
-	_box("MegaFactoryBackWall", Vector3(190.0, 5.0, 0.0), Vector3(0.7, 10.0, 42.0), steel, false)
-	_box("MegaFactoryNorthWall", Vector3(166.0, 5.0, -21.0), Vector3(48.0, 10.0, 0.7), steel, false)
-	_box("MegaFactorySouthWall", Vector3(166.0, 5.0, 21.0), Vector3(48.0, 10.0, 0.7), steel, false)
-	_box("MegaFactoryRoof", Vector3(166.0, 10.2, 0.0), Vector3(49.0, 0.45, 42.5), dark_steel, false)
+	_box("MegaFactoryFoundation", Vector3(166.0, 0.08, 0.0), Vector3(72.0, 0.16, 72.0), Color(0.38, 0.41, 0.39), false)
+	_box("MegaFactoryBackWall", Vector3(190.0, 5.0, 0.0), Vector3(0.7, 10.0, 66.0), steel, false)
+	_box("MegaFactoryNorthWall", Vector3(166.0, 5.0, -33.0), Vector3(48.0, 10.0, 0.7), steel, false)
+	_box("MegaFactorySouthWall", Vector3(166.0, 5.0, 33.0), Vector3(48.0, 10.0, 0.7), steel, false)
+	_box("MegaFactoryRoof", Vector3(166.0, 10.2, 0.0), Vector3(49.0, 0.45, 66.5), dark_steel, false)
 	_box("MegaFactoryRoofSkylight", Vector3(166.0, 10.46, 0.0), Vector3(34.0, 0.08, 3.2), Color(0.18, 0.52, 0.58), false)
 	for x in range(145, 190, 9):
-		_box("FactoryRoofRib", Vector3(float(x), 10.48, 0.0), Vector3(0.16, 0.12, 42.0), steel, false)
-		_box("FactoryFrontColumn", Vector3(float(x), 4.8, 20.4), Vector3(0.65, 9.6, 0.65), dark_steel, false)
-		_box("FactoryFrontSafetyStripe", Vector3(float(x), 0.18, 19.2), Vector3(1.2, 0.035, 0.16), safety, false)
-	# Three production rows with nine visible processing stations and transfer belts.
-	for row in range(3):
-		var z := -12.0 + float(row) * 12.0
+		_box("FactoryRoofRib", Vector3(float(x), 10.48, 0.0), Vector3(0.16, 0.12, 66.0), steel, false)
+		_box("FactoryFrontColumn", Vector3(float(x), 4.8, 32.4), Vector3(0.65, 9.6, 0.65), dark_steel, false)
+		_box("FactoryFrontSafetyStripe", Vector3(float(x), 0.18, 31.2), Vector3(1.2, 0.035, 0.16), safety, false)
+	mega_factory_machine_labels.clear()
+	for row in range(5):
+		var z := _factory_row_z(row)
+		# Physical divider and a clear product sign keep each production line separate.
+		_box("FactoryRowDivider", Vector3(166.0, 0.22, z + 6.35), Vector3(44.0, 0.30, 0.16), safety, false)
+		var product_label := Label3D.new()
+		product_label.name = "FactoryProductLine%d" % row
+		product_label.text = "LINE %d  •  %s" % [row + 1, _factory_row_product(row)]
+		product_label.position = Vector3(166.0, 4.6, z - 4.6)
+		product_label.font_size = 27
+		product_label.pixel_size = 0.009
+		product_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		product_label.modulate = Color(0.65, 1.0, 0.88)
+		add_child(product_label)
 		for machine_index in range(3):
 			var x := 151.0 + float(machine_index) * 13.0
 			var station_index := row * 3 + machine_index
@@ -3641,36 +3658,38 @@ func _build_recycling_mega_factory() -> void:
 			_box("MegaFactoryConveyorBelt", Vector3(belt_x, 1.02, z), Vector3(6.8, 0.08, 1.3), Color(0.035, 0.05, 0.055), false)
 			for side_z in [z - 0.72, z + 0.72]:
 				_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.22, side_z), Vector3(6.8, 0.28, 0.09), steel, false)
-	# Storage silos, treatment tanks and exhaust stacks.
+		# Finished goods are visibly staged at the end of this line only.
+		_box("FactoryProductOutput", Vector3(181.5, 0.48, z), Vector3(3.0, 0.8, 2.8), Color(0.18, 0.27, 0.25), false)
+		_label_3d(_factory_row_product(row), Vector3(181.5, 1.15, z - 1.55), 0.12)
+		for crate_index in range(3):
+			_box("FactoryProductCrate", Vector3(180.5 + float(crate_index % 2) * 1.5, 0.98, z - 0.5 + float(crate_index / 2) * 1.0), Vector3(0.85, 0.75, 0.85), [Color(0.12, 0.55, 0.56), Color(0.66, 0.62, 0.42), Color(0.30, 0.58, 0.38)][row % 3], false)
+	# Utility equipment is kept along the rear service strip, away from the five lines.
 	for tank_index in range(3):
 		var tx := 181.0 + float(tank_index) * 2.8
-		_cylinder("RecyclingStorageSilo", Vector3(tx, 3.0, -15.0), 1.15, 5.8, Color(0.55, 0.62, 0.61), false)
-		_cylinder("RecyclingSiloCap", Vector3(tx, 6.0, -15.0), 1.22, 0.35, teal, false)
-		_cylinder("WaterTreatmentTank", Vector3(tx, 1.65, 15.0), 1.35, 3.2, Color(0.18, 0.38, 0.42), false)
+		_cylinder("RecyclingStorageSilo", Vector3(tx, 3.0, -31.0), 1.15, 5.8, Color(0.55, 0.62, 0.61), false)
+		_cylinder("RecyclingSiloCap", Vector3(tx, 6.0, -31.0), 1.22, 0.35, teal, false)
+		_cylinder("WaterTreatmentTank", Vector3(tx, 1.65, 30.0), 1.35, 3.2, Color(0.18, 0.38, 0.42), false)
 	for stack_x in [184.0, 188.0]:
 		_cylinder("FactoryExhaustStack", Vector3(stack_x, 8.2, 7.0), 0.52, 6.8, steel, false)
 		_cylinder("FactoryStackRim", Vector3(stack_x, 11.65, 7.0), 0.68, 0.24, safety, false)
-	# Loading dock and marked truck lanes at the factory entrance.
-	_box("FactoryLoadingDock", Vector3(137.0, 0.22, 0.0), Vector3(13.0, 0.44, 22.0), Color(0.25, 0.29, 0.29), false)
-	for z in [-8.0, 0.0, 8.0]:
+	_box("FactoryLoadingDock", Vector3(137.0, 0.22, 0.0), Vector3(13.0, 0.44, 30.0), Color(0.25, 0.29, 0.29), false)
+	for z in [-24.0, -12.0, 0.0, 12.0, 24.0]:
 		_box("FactoryTruckLane", Vector3(137.0, 0.47, z), Vector3(11.0, 0.035, 0.16), safety, false)
-	_box("FactoryNameBoard", Vector3(166.0, 7.2, 21.45), Vector3(20.0, 2.4, 0.35), dark_steel, false)
-	_label_3d("ZEKA RECYCLING\nSORT  •  PROCESS  •  REUSE", Vector3(166.0, 7.15, 21.25), 0.34)
-	_box("FactoryEntranceCanopy", Vector3(137.0, 5.0, 0.0), Vector3(12.0, 0.35, 23.0), teal, false)
-	for z in [-9.0, 9.0]:
+	_box("FactoryNameBoard", Vector3(166.0, 7.2, 33.45), Vector3(20.0, 2.4, 0.35), dark_steel, false)
+	_label_3d("ZEKA RECYCLING\n5 INDEPENDENT PRODUCTION LINES", Vector3(166.0, 7.15, 33.25), 0.34)
+	_box("FactoryEntranceCanopy", Vector3(137.0, 5.0, 0.0), Vector3(12.0, 0.35, 31.0), teal, false)
+	for z in [-13.0, 13.0]:
 		_box("FactoryCanopySupport", Vector3(132.0, 2.5, z), Vector3(0.35, 5.0, 0.35), dark_steel, false)
 
-
- 
 func _mega_factory_machine_cost(index: int) -> float:
-	var costs := [35.0, 55.0, 80.0, 110.0, 145.0, 185.0, 230.0, 285.0, 350.0]
+	var costs := [35.0, 55.0, 80.0, 110.0, 145.0, 185.0, 230.0, 285.0, 350.0, 390.0, 430.0, 470.0, 520.0, 570.0, 630.0]
 	return costs[clampi(index, 0, costs.size() - 1)]
 
 func _build_mega_factory_machine(index: int) -> void:
 	var row := int(index / 3)
 	var column := index % 3
 	var x := 151.0 + float(column) * 13.0
-	var z := -12.0 + float(row) * 12.0
+	var z := _factory_row_z(row)
 	var accents := [Color(0.08, 0.48, 0.48), Color(0.18, 0.58, 0.36), Color(0.96, 0.66, 0.12)]
 	var accent: Color = accents[column]
 	var steel := Color(0.12, 0.18, 0.20)
@@ -3682,14 +3701,15 @@ func _build_mega_factory_machine(index: int) -> void:
 	_box("MegaProcessMachineControl%d" % index, Vector3(x + 1.65, 1.8, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
 	for wheel_x in [x - 1.5, x + 1.5]:
 		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.98, z + 2.0), 0.38, 0.22, accent, true)
+	_label_3d(["PREPARATION", "PROCESSING", "FINISHING"][column], Vector3(x, 4.0, z - 2.0), 0.15)
 
 func _process_mega_factory_build(delta: float) -> void:
-	if payment_active or mega_factory_built_count >= 9 or not is_instance_valid(player):
+	if payment_active or mega_factory_built_count >= 15 or not is_instance_valid(player):
 		return
 	var index := mega_factory_built_count
 	var row := int(index / 3)
 	var column := index % 3
-	var target := Vector3(151.0 + float(column) * 13.0, 0.0, -12.0 + float(row) * 12.0)
+	var target := Vector3(151.0 + float(column) * 13.0, 0.0, _factory_row_z(row))
 	var player_flat := Vector2(player.global_position.x, player.global_position.z)
 	if player_flat.distance_to(Vector2(target.x, target.z)) > 2.8:
 		return
@@ -3714,10 +3734,10 @@ func _process_mega_factory_build(delta: float) -> void:
 			mega_factory_machine_labels[index].text = "BUILT"
 		_update_ui()
 		_save_game()
-		if mega_factory_built_count < 9:
-			_set_message("Machine %d / 9 installed! Move to the next marked pad." % mega_factory_built_count)
+		if mega_factory_built_count < 15:
+			_set_message("Machine %d / 15 installed! Move to the next marked pad." % mega_factory_built_count)
 		else:
-			_set_message("RECYCLING FACTORY FULLY EQUIPPED!")
+			_set_message("ALL 15 FACTORY MACHINES INSTALLED!")
 
 
 func _build_city_dump_area() -> void:
