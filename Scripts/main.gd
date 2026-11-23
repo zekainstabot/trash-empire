@@ -119,6 +119,7 @@ var factory_build_save_timer := 0.0
 var mega_factory_built_count := 1
 var factory_row_input_stock: Array[int] = [0, 0, 0, 0, 0]
 var factory_row_product_stock: Array[int] = [0, 0, 0, 0, 0]
+var factory_total_products_made := 0
 var factory_production_timer := 0.0
 var waste_tank_inventory := 0
 const WASTE_TANK_CAPACITY := 300
@@ -1782,6 +1783,7 @@ func _start_new_world() -> void:
 	mega_factory_built_count = 1
 	factory_row_input_stock = [0, 0, 0, 0, 0]
 	factory_row_product_stock = [0, 0, 0, 0, 0]
+	factory_total_products_made = 0
 	factory_production_timer = 0.0
 	waste_tank_inventory = 0
 	mega_factory_build_paid = 0.0
@@ -3516,6 +3518,7 @@ func _save_game() -> void:
 	save.set_value("progress", "mega_factory_built_count", mega_factory_built_count)
 	save.set_value("progress", "factory_row_input_stock", factory_row_input_stock)
 	save.set_value("progress", "factory_row_product_stock", factory_row_product_stock)
+	save.set_value("progress", "factory_total_products_made", factory_total_products_made)
 	save.set_value("progress", "waste_tank_inventory", waste_tank_inventory)
 	save.set_value("progress", "mega_factory_build_paid", mega_factory_build_paid)
 	save.set_value("progress", "waste_tank_built", waste_tank_built)
@@ -3571,6 +3574,7 @@ func _load_game() -> void:
 	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 1)), 1, 15)
 	factory_row_input_stock = save.get_value("progress", "factory_row_input_stock", [0, 0, 0, 0, 0])
 	factory_row_product_stock = save.get_value("progress", "factory_row_product_stock", [0, 0, 0, 0, 0])
+	factory_total_products_made = maxi(0, int(save.get_value("progress", "factory_total_products_made", 0)))
 	while factory_row_input_stock.size() < 5: factory_row_input_stock.append(0)
 	while factory_row_product_stock.size() < 5: factory_row_product_stock.append(0)
 	waste_tank_inventory = clampi(int(save.get_value("progress", "waste_tank_inventory", 0)), 0, WASTE_TANK_CAPACITY)
@@ -4599,7 +4603,7 @@ func _mission_is_complete(stage: int) -> bool:
 		21:
 			return conveyor_speed_upgrade_level >= 1
 		22:
-			return factory_row_product_stock[0] >= 1
+			return factory_total_products_made >= 1
 		23:
 			return mega_factory_built_count >= 2
 		24:
@@ -4775,6 +4779,7 @@ func _process_factory_production(delta: float) -> void:
 		if factory_row_input_stock[row] >= 3:
 			factory_row_input_stock[row] -= 3
 			factory_row_product_stock[row] += 1
+			factory_total_products_made += 1
 			_set_message("%s produced! Stock: %d" % [_factory_row_product(row), factory_row_product_stock[row]])
 			_update_missions()
 			_save_game()
