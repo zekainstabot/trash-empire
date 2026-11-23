@@ -3831,14 +3831,12 @@ func _on_first_machine_feed_entered(body: Node3D) -> void:
 	if item_count <= 0:
 		return
 	var accepted := mini(item_count, FACTORY_INPUT_CAPACITY_PER_ROW - factory_row_input_stock[0])
-	if accepted <= 0:
-		_set_message("First machine input is full. Wait for production.")
+	if accepted < item_count:
+		_set_message("First machine input is nearly full. Wait for production before unloading.")
 		return
 	factory_row_input_stock[0] += accepted
-	var remaining := item_count - accepted
-	carried = remaining + carried_bulky
-	if accepted >= item_count:
-		carried_bulky = 0
+	carried = 0
+	carried_bulky = 0
 	_update_ui()
 	_save_game()
 	_set_message("Loaded %d pieces directly into the first machine. Input: %d" % [accepted, factory_row_input_stock[0]])
