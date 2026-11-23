@@ -65,6 +65,8 @@ const FINAL_LANDFILL_CLUSTERS := [
 var money_label: Label
 var bag_label: Label
 var message_label: Label
+var mission_panel: Panel
+var mission_label: Label
 var joystick_pad: Panel
 var joystick_knob: Panel
 var joystick_touch := -1
@@ -1197,12 +1199,20 @@ func _build_ui() -> void:
 	final_zone_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.30))
 	_update_final_zone_label()
 
-	message_label = _label("Collect litter around the yard.", Vector2(20, 130), 17, layer)
-	message_label.size = Vector2(maxf(280.0, screen.x - 40.0), 48)
-	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	message_label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	message_label.add_theme_constant_override("shadow_offset_x", 2)
-	message_label.add_theme_constant_override("shadow_offset_y", 2)
+	# Replace the rotating status message with a persistent, live mission tracker.
+	mission_panel = Panel.new()
+	mission_panel.position = Vector2(18, 132)
+	mission_panel.size = Vector2(292, 112)
+	mission_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.065, 0.075, 0.88)))
+	layer.add_child(mission_panel)
+	var mission_title := _label("MISSIONS", Vector2(30, 140), 14, layer)
+	mission_title.add_theme_color_override("font_color", Color(0.42, 0.88, 0.72))
+	mission_label = _label("", Vector2(30, 161), 13, layer)
+	mission_label.size = Vector2(280, 78)
+	mission_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	mission_label.add_theme_constant_override("shadow_offset_x", 1)
+	mission_label.add_theme_constant_override("shadow_offset_y", 1)
+	_update_missions()
 
 	var collect := _button("PICK UP", Vector2(-124, -150), Vector2(104, 104), layer)
 	_anchor_bottom_right(collect)
@@ -1411,6 +1421,7 @@ func _start_new_world() -> void:
 		await _close_main_menu()
 	money = 0
 	final_zone_cleaned = 0
+	total_trash_collected = 0
 	carried = 0
 	carried_bulky = 0
 	capacity = 4
@@ -1934,6 +1945,7 @@ func _register_final_cleanup_pickup(item: Node3D) -> void:
 	total_trash_collected += 1
 	final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + 1)
 	_update_final_zone_label()
+	_update_missions()
 	if final_zone_cleaned >= FINAL_ZONE_TARGET:
 		get_tree().set_meta("cleanup_game_completed", true)
 		_set_message("GAME COMPLETE! You collected all 60,000 pieces of trash!")
@@ -2642,6 +2654,7 @@ func _save_game() -> void:
 	var save := ConfigFile.new()
 	save.set_value("progress", "money", money)
 	save.set_value("progress", "final_zone_cleaned", final_zone_cleaned)
+	save.set_value("progress", "total_trash_collected", total_trash_collected)
 	save.set_value("progress", "carried", carried)
 	save.set_value("progress", "capacity", capacity)
 	save.set_value("progress", "bag_level", upgrade_level)
@@ -2676,6 +2689,7 @@ func _load_game() -> void:
 		return
 	money = float(save.get_value("progress", "money", 0.0))
 	final_zone_cleaned = clampi(int(save.get_value("progress", "final_zone_cleaned", 0)), 0, FINAL_ZONE_TARGET)
+	total_trash_collected = int(save.get_value("progress", "total_trash_collected", final_zone_cleaned))
 	carried = int(save.get_value("progress", "carried", 0))
 	capacity = int(save.get_value("progress", "capacity", 4))
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
@@ -3305,8 +3319,25 @@ func _update_ui() -> void:
 	if is_full:
 		bag_label.text += "  FULL!"
 
-func _set_message(value: String) -> void:
-	message_label.text = value
+func _set_message(_value: String) -> void:
+	# Gameplay status chatter is intentionally no longer shown under the HUD;
+	# the space is reserved for persistent missions.
+	pass
+
+func _update_missions() -> void:
+	if not is_instance_valid(mission_label):
+		return
+	var collect_done := total_trash_collected >= 10
+	var bag_done := upgrade_level >= 2
+	var drone_done := drone_level >= 1
+	var collect_mark := "✓" if collect_done else "○"
+	var bag_mark := "✓" if bag_done else "○"
+	var drone_mark := "✓" if drone_done else "○"
+	mission_label.text = "%s Collect trash: %d / 10\n%s Upgrade backpack: %s\n%s Hire a helper drone: %s" % [
+		collect_mark, mini(total_trash_collected, 10),
+		bag_mark, "DONE" if bag_done else "1 upgrade",
+		drone_mark, "DONE" if drone_done else "1 drone"
+	]
 
 func _anchor_bottom_right(control: Control) -> void:
 	control.anchor_left = 1.0
