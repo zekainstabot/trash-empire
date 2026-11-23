@@ -4555,6 +4555,7 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 		attempts += 1
 	return point
 
+func _update_ui() -> void:
 	money_label.text = "ZC  %.1f" % money
 	bag_label.text = "BACKPACK  %d / %d" % [carried, capacity]
 	var is_full := carried >= capacity
