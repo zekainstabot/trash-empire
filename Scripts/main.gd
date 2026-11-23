@@ -4264,6 +4264,30 @@ func _mission_is_complete(stage: int) -> bool:
 			return total_trash_collected >= 100
 		18:
 			return final_zone_cleaned >= FINAL_ZONE_TARGET
+		19:
+			return ground_robot_level >= 1
+		20:
+			return sorting_robot_upgrade_level >= 1
+		21:
+			return conveyor_speed_upgrade_level >= 1
+		22:
+			return district_truck_level >= 1
+		23:
+			return city_fleet_upgrade_level >= 1
+		24:
+			return fleet_upgrade_level >= 1
+		25:
+			return bulk_pickup_level >= 1
+		26:
+			return magnet_power_level >= 2 or suction_level >= 1
+		27:
+			return rare_drop_upgrade_level >= 1
+		28:
+			return luck_upgrade_level >= 2
+		29:
+			return respawn_level >= 2
+		30:
+			return total_trash_collected >= 1000
 	return false
 
 
@@ -4273,7 +4297,7 @@ func _update_missions() -> void:
 	# Missions teach the complete gameplay loop and unlock in a strict sequence.
 	# Completed missions disappear; progress is saved and never shown again.
 	var previous_stage := tutorial_mission_stage
-	while tutorial_mission_stage < 18 and _mission_is_complete(tutorial_mission_stage):
+	while tutorial_mission_stage < 30 and _mission_is_complete(tutorial_mission_stage):
 		tutorial_mission_stage += 1
 	if tutorial_mission_stage != previous_stage:
 		_save_game()
@@ -4297,7 +4321,19 @@ func _update_missions() -> void:
 		"Make packages faster.\nOpen UPGRADES → FLEET → PACKAGING SPEED.",
 		"Improve city cleanup trucks.\nOpen UPGRADES → FLEET → CITY TRUCK FREQUENCY.",
 		"Collect 100 pieces of trash.\nProgress: %d / 100" % mini(total_trash_collected, 100),
-		"FINAL CHALLENGE: Clean the landfill.\nCollect all 60,000 pieces: %d / 60,000." % final_zone_cleaned
+		"FINAL CHALLENGE: Clean the landfill.\nCollect all 60,000 pieces: %d / 60,000." % final_zone_cleaned,
+		"Build a ground collector.\nUnlock the GROUND COLLECTOR ROBOT in UPGRADES.",
+		"Improve all sorting robots.\nBuy SORTING ROBOT EFFICIENCY level 1.",
+		"Speed up the factory line.\nBuy CONVEYOR & FACTORY SPEED level 1.",
+		"Expand city collection.\nHire the DISTRICT COLLECTION TRUCK.",
+		"Grow your city fleet.\nBuy CITY TRUCK FLEET level 1.",
+		"Expand delivery operations.\nBuy HIRE TRUCKS level 1.",
+		"Collect several pieces at once.\nUnlock MULTI-PICKUP level 1.",
+		"Upgrade your collection tool.\nReach MAGNET POWER level 2 or unlock VACUUM.",
+		"Find valuable rare items.\nUnlock SILVER & GOLD FINDS level 1.",
+		"Become luckier at recycling.\nUpgrade LUCK at least once.",
+		"Keep the city supplied with litter.\nUpgrade AUTO RESPAWN to level 2.",
+		"MASTER CLEANER: Collect 1,000 pieces.\nProgress: %d / 1,000" % mini(total_trash_collected, 1000)
 	]
 	var mission_title := mission_label.get_parent().get_node_or_null("MissionTitle")
 	if tutorial_mission_stage < missions.size():
