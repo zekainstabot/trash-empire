@@ -1200,14 +1200,21 @@ func _build_ui() -> void:
 	final_zone_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.30))
 	_update_final_zone_label()
 
-	# Keep the existing HUD panel; replace only the status text beneath it with missions.
-	var mission_title := _label("MISSIONS", Vector2(20, 132), 14, layer)
+	# Large, high-contrast mission card. Keep instructions short and readable on phones.
+	var mission_card := Panel.new()
+	mission_card.name = "MissionCard"
+	mission_card.position = Vector2(18, 134)
+	mission_card.size = Vector2(clampf(screen.x - 36.0, 284.0, 480.0), 112.0)
+	mission_card.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.075, 0.068, 0.96)))
+	layer.add_child(mission_card)
+	var mission_title := _label("CURRENT MISSION", Vector2(14, 9), 14, mission_card)
 	mission_title.name = "MissionTitle"
-	mission_title.add_theme_color_override("font_color", Color(0.42, 0.88, 0.72))
-	mission_label = _label("", Vector2(20, 153), 13, layer)
-	mission_label.size = Vector2(maxf(280.0, screen.x - 40.0), 76)
+	mission_title.add_theme_color_override("font_color", Color(0.38, 1.0, 0.72))
+	mission_label = _label("", Vector2(14, 34), 16, mission_card)
+	mission_label.size = Vector2(mission_card.size.x - 28.0, 70.0)
 	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	mission_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	mission_label.add_theme_color_override("font_color", Color(0.98, 1.0, 0.99))
+	mission_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
 	mission_label.add_theme_constant_override("shadow_offset_x", 1)
 	mission_label.add_theme_constant_override("shadow_offset_y", 1)
 	_update_missions()
@@ -3455,31 +3462,31 @@ func _update_missions() -> void:
 		_save_game()
 
 	var missions: Array[String] = [
-		"1. Explore the yard and collect 5 pieces of trash (%d/5)" % mini(total_trash_collected, 5),
-		"2. Return to the yellow pad and recycle your collected trash",
-		"3. Open UPGRADES and buy your first upgrade",
-		"4. Unlock your first helper drone in UPGRADES",
-		"5. Keep cleaning: collect 25 pieces of trash (%d/25)" % mini(total_trash_collected, 25),
-		"6. Increase your backpack capacity",
-		"7. Upgrade your movement speed",
-		"8. Improve your magnet collection range",
-		"9. Unlock automatic pickup",
-		"10. Upgrade the trash respawn system",
-		"11. Increase the value earned from recycling",
-		"12. Expand into the next city district",
-		"13. Upgrade the recycling factory",
-		"14. Unlock a delivery truck dispatch upgrade",
-		"15. Increase delivery truck capacity",
-		"16. Upgrade package production",
-		"17. Upgrade the city cleanup truck",
-		"18. Reach 100 collected pieces of trash (%d/100)" % mini(total_trash_collected, 100),
-		"19. Final challenge: clean the landfill — collect all 60,000 pieces (%d/60000)" % final_zone_cleaned
+		"Collect 5 pieces of trash.\nProgress: %d / 5" % mini(total_trash_collected, 5),
+		"Recycle your trash.\nStand on the YELLOW recycling pad until your bag is empty.",
+		"Buy your first upgrade.\nTap UPGRADES, choose an item, then tap its card.",
+		"Get a helper drone.\nOpen UPGRADES → FLEET → HELPER DRONES.",
+		"Collect 25 pieces of trash.\nProgress: %d / 25" % mini(total_trash_collected, 25),
+		"Expand your backpack.\nOpen UPGRADES → ROBOT → BACKPACK CAPACITY.",
+		"Move faster.\nOpen UPGRADES → ROBOT → MOVEMENT SPEED.",
+		"Increase pickup range.\nOpen UPGRADES → ROBOT → PICKUP RANGE.",
+		"Unlock Auto Pickup.\nOpen UPGRADES → ROBOT → AUTO PICKUP.",
+		"Unlock automatic trash respawn.\nOpen UPGRADES → ECONOMY → AUTO RESPAWN.",
+		"Earn more from each item.\nOpen UPGRADES → ECONOMY → TRASH VALUE.",
+		"Expand to the next district.\nUse the district expansion point in the city.",
+		"Upgrade the recycling factory.\nUse the factory upgrade point beside the factory.",
+		"Send delivery trucks more often.\nOpen UPGRADES → FLEET → TRUCK FREQUENCY.",
+		"Carry more boxes per truck.\nOpen UPGRADES → FLEET → TRUCK CAPACITY.",
+		"Make packages faster.\nOpen UPGRADES → FLEET → PACKAGING SPEED.",
+		"Improve city cleanup trucks.\nOpen UPGRADES → FLEET → CITY TRUCK FREQUENCY.",
+		"Collect 100 pieces of trash.\nProgress: %d / 100" % mini(total_trash_collected, 100),
+		"FINAL CHALLENGE: Clean the landfill.\nCollect all 60,000 pieces: %d / 60,000." % final_zone_cleaned
 	]
 	var mission_title := mission_label.get_parent().get_node_or_null("MissionTitle")
 	if tutorial_mission_stage < missions.size():
 		mission_label.text = missions[tutorial_mission_stage]
 	else:
-		mission_label.text = "ALL MISSIONS COMPLETE! The city is clean."
+		mission_label.text = "ALL MISSIONS COMPLETE!\nYou cleaned the city. Great work!"
 	if is_instance_valid(mission_title):
 		mission_title.visible = true
 	mission_label.visible = true
