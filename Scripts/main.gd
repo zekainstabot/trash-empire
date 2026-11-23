@@ -2972,23 +2972,11 @@ func _create_city_truck(index: int) -> Node3D:
 			hub_mesh.height = 0.045
 			hub_mesh.radial_segments = 24
 			hub.mesh = hub_mesh
-			hub.position.x = side * 0.205
+			hub.position.x = side * 0.185
 			hub.rotation_degrees.z = 90.0
 			hub.material_override = _mat(Color(0.68, 0.71, 0.68))
 			wheel_pivot.add_child(hub)
 
-			# Six visible lug nuts make the wheel read as a real truck wheel.
-			for lug_index in range(6):
-				var angle := TAU * float(lug_index) / 6.0
-				var lug := MeshInstance3D.new()
-				lug.name = "TruckWheelLug"
-				var lug_mesh := SphereMesh.new()
-				lug_mesh.radius = 0.025
-				lug_mesh.height = 0.05
-				lug.mesh = lug_mesh
-				lug.position = Vector3(side * 0.207, sin(angle) * 0.17, cos(angle) * 0.17)
-				lug.material_override = _mat(Color(0.82, 0.83, 0.78))
-				wheel_pivot.add_child(lug)
 			wheels.append(wheel_pivot)
 	truck.set_meta("wheels", wheels)
 	_city_truck_box(truck, "TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.72, 0.66, 0.48))
@@ -3970,7 +3958,6 @@ func _make_bin(pos: Vector3, color: Color, label_text: String) -> void:
 	_box("BinLidGrip", pos + Vector3(0, 1.60, -0.48), Vector3(0.55, 0.09, 0.16), Color(0.18, 0.22, 0.22), false)
 	for x in [-0.53, 0.53]:
 		_cylinder("BinWheel", pos + Vector3(x, 0.20, 0.57), 0.23, 0.16, Color(0.035, 0.045, 0.05), true)
-		_cylinder("BinAxleCap", pos + Vector3(x, 0.20, 0.48), 0.075, 0.18, Color(0.48, 0.52, 0.50), true)
 	_box("BinLabelPlate", pos + Vector3(0, 1.02, -0.755), Vector3(0.88, 0.30, 0.035), Color(0.035, 0.08, 0.09), false)
 	_label_3d(label_text, pos + Vector3(0, 1.02, -0.79), 0.18)
 
@@ -4481,7 +4468,7 @@ func _make_parked_car(pos: Vector3) -> void:
 			hub_mesh.bottom_radius = 0.15
 			hub_mesh.height = 0.025
 			hub.mesh = hub_mesh
-			hub.position = pos + Vector3(wheel_x, 0.34, wheel_z + (0.105 if wheel_z > 0.0 else -0.105))
+			hub.position = pos + Vector3(wheel_x, 0.34, wheel_z + (0.095 if wheel_z > 0.0 else -0.095))
 			hub.rotation_degrees.x = 90.0
 			hub.material_override = _mat(Color(0.48, 0.52, 0.52))
 			add_child(hub)
