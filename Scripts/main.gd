@@ -3097,7 +3097,10 @@ func _upgrade_sorting_robot() -> void:
 		return
 	var next_level := sorting_robot_upgrade_level + 1
 	var cost := _upgrade_cost(32.0, next_level)
-	if money < cost or not await _pay_gradually(cost):
+	if money < cost:
+		_set_message("You need %.1f ZC to upgrade the sorting robots." % cost)
+		return
+	if not await _pay_gradually(cost):
 		return
 	sorting_robot_upgrade_level = next_level
 	_update_ui()
@@ -3110,7 +3113,10 @@ func _upgrade_conveyor_speed() -> void:
 		return
 	var next_level := conveyor_speed_upgrade_level + 1
 	var cost := _upgrade_cost(48.0, next_level)
-	if money < cost or not await _pay_gradually(cost):
+	if money < cost:
+		_set_message("You need %.1f ZC to upgrade the factory conveyor." % cost)
+		return
+	if not await _pay_gradually(cost):
 		return
 	conveyor_speed_upgrade_level = next_level
 	_update_ui()
@@ -4411,7 +4417,7 @@ func _spawn_conveyor_item(item_value: float) -> void:
 		flake.mesh = flake_mesh
 		flake.position = Vector3(randf_range(-0.42, 0.42), randf_range(-0.12, 0.14), randf_range(-0.36, 0.36))
 		flake.rotation = Vector3(randf_range(-0.5, 0.5), randf_range(0.0, TAU), randf_range(-0.5, 0.5))
-		flake.material_override = _mat([Color(0.12, 0.62, 0.72), Color(0.20, 0.72, 0.48), Color(0.88, 0.68, 0.22 * duration_scale)][i % 3])
+		flake.material_override = _mat([Color(0.12, 0.62, 0.72), Color(0.20, 0.72, 0.48), Color(0.88, 0.68, 0.22)][i % 3])
 		flakes.add_child(flake)
 
 	# Stage 3 output: recycled plastic pellets.
@@ -4427,8 +4433,8 @@ func _spawn_conveyor_item(item_value: float) -> void:
 		pellet_mesh.radius = 0.075
 		pellet_mesh.height = 0.12
 		pellet.mesh = pellet_mesh
-		pellet.position = Vector3(randf_range(-0.42, 0.42), randf_range(-0.12, 0.16), randf_range(-0.35, 0.35 * duration_scale))
-		pellet.material_override = _mat([Color(0.12, 0.62, 0.72), Color(0.20, 0.72, 0.48), Color(0.88, 0.68, 0.22 * duration_scale)][i % 3])
+		pellet.position = Vector3(randf_range(-0.42, 0.42), randf_range(-0.12, 0.16), randf_range(-0.35, 0.35))
+		pellet.material_override = _mat([Color(0.12, 0.62, 0.72), Color(0.20, 0.72, 0.48), Color(0.88, 0.68, 0.22)][i % 3])
 		pellets.add_child(pellet)
 
 	# Stage 4 output: a teddy bear made from the recycled material.
