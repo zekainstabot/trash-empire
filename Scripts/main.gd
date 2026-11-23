@@ -928,8 +928,8 @@ func _build_factory_expansion() -> void:
 	for stage in range(factory_built_stage + 1, factory_stage + 1):
 		var first_new_child := get_child_count()
 		_build_factory_module(stage)
-		var start_z := -4.9 if stage == 2 else (3.0 if stage == 3 else (13.0 if stage == 4 else 23.0))
-		var end_z := -1.7 if stage == 2 else (7.0 if stage == 3 else (17.0 if stage == 4 else 27.0))
+		var start_z := -4.9 if stage == 2 else (5.0 if stage == 3 else (15.0 if stage == 4 else 25.0))
+		var end_z := -1.7 if stage == 2 else (10.0 if stage == 3 else (20.0 if stage == 4 else 30.0))
 		_build_factory_link(start_z, end_z)
 		var new_nodes: Array[Node] = []
 		for child_index in range(first_new_child, get_child_count()):
@@ -980,7 +980,7 @@ func _refresh_factory_build_zones() -> void:
 func _process_factory_build(delta: float) -> void:
 	if payment_active or factory_stage >= 5 or not is_instance_valid(player):
 		return
-	var z_positions := [0.0, 0.0, 0.0, 7.0, 14.0, 21.0]
+	var z_positions := [0.0, 0.0, 0.0, 10.0, 20.0, 30.0]
 	var stage := factory_stage + 1
 	var target := Vector3(7.5, 0.0, z_positions[stage])
 	var player_flat := Vector2(player.global_position.x, player.global_position.z)
