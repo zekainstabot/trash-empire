@@ -39,6 +39,11 @@ var sorting_robots: Array[Node3D] = []
 var sorting_robot_levels: Array = [0, 0, 0, 0]
 var sorting_bin_counts: Array = [0, 0, 0, 0]
 var sorting_area_root: Node3D
+var sorting_bin_positions: Array[Vector3] = [Vector3(26, 0, -20), Vector3(58, 0, 20), Vector3(90, 0, -20), Vector3(151, 0, 20)]
+var sorting_pad_positions: Array[Vector3] = [Vector3(26, 0, -16), Vector3(58, 0, 16), Vector3(90, 0, -16), Vector3(151, 0, 16)]
+var sorting_station_colors: Array[Color] = [Color(0.12, 0.42, 0.88), Color(0.88, 0.76, 0.22), Color(0.48, 0.52, 0.55), Color(0.15, 0.68, 0.42)]
+var sorting_station_names: Array[String] = ["PLASTIC", "PAPER", "METAL", "GLASS"]
+var sorting_station_categories: Array[String] = ["plastic", "paper", "metal", "glass"]
 var drone_timer := 0.0
 var helper_drones: Array[Node3D] = []
 var auto_pickup_timer := 0.0
@@ -364,71 +369,79 @@ func _build_world() -> void:
 
 
 func _build_sorting_district() -> void:
+	# Distribute four recycling stations through the existing playable city.
 	sorting_area_root = Node3D.new()
-	sorting_area_root.name = "ColorSortingDistrict"
+	sorting_area_root.name = "CitySortingStations"
 	add_child(sorting_area_root)
-	_box("SortingDistrictGround", Vector3(250, -0.32, 0), Vector3(76, 0.64, 72), Color(0.24, 0.31, 0.29), true)
-	_box("SortingDistrictConcrete", Vector3(250, 0.018, 0), Vector3(70, 0.035, 64), Color(0.34, 0.37, 0.34), false)
-	_box("SortingDistrictAccessRoad", Vector3(214, 0.025, 0), Vector3(20, 0.05, 8), Color(0.14, 0.17, 0.18), false)
-	_box("SortingDistrictRoadStripe", Vector3(214, 0.055, 0), Vector3(18, 0.018, 0.14), Color(0.92, 0.78, 0.35), false)
-	_box("SortingDistrictSign", Vector3(220, 3.0, -10.0), Vector3(0.35, 5.0, 0.35), Color(0.18, 0.23, 0.22), true)
-	_box("SortingDistrictSignBoard", Vector3(220, 4.5, -10.0), Vector3(10.0, 2.0, 0.35), Color(0.06, 0.20, 0.18), false)
-	_label_3d("SMART SORTING CENTER", Vector3(220, 4.65, -9.78), 0.38)
-	var names := ["PLASTIC", "PAPER", "METAL", "GLASS"]
-	var colors := [Color(0.12, 0.42, 0.88), Color(0.88, 0.76, 0.22), Color(0.48, 0.52, 0.55), Color(0.15, 0.68, 0.42)]
-	var categories := ["plastic", "paper", "metal", "glass"]
-	var positions := [Vector3(236, 0, -13), Vector3(248, 0, -13), Vector3(260, 0, -13), Vector3(272, 0, -13)]
 	sorting_bins.clear()
 	sorting_robots.clear()
 	for i in range(4):
-		var bin_root := Node3D.new()
-		bin_root.name = "SortingBin_" + categories[i]
-		bin_root.position = positions[i]
-		sorting_area_root.add_child(bin_root)
-		_make_bin(positions[i], colors[i], names[i])
-		var counter := Label3D.new()
-		counter.name = "SortingCounter"
-		counter.text = "0 ITEMS"
-		counter.position = Vector3(0, 2.0, -0.9)
-		counter.font_size = 26
-		counter.pixel_size = 0.005
-		counter.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		bin_root.add_child(counter)
-		sorting_bins.append(bin_root)
-		var pad_pos: Vector3 = positions[i] + Vector3(0, 0, 4.0)
-		_box("SortingRobotBuildPad", pad_pos + Vector3(0, 0.04, 0), Vector3(3.8, 0.08, 3.2), colors[i].darkened(0.45), false)
-		var build_button := Area3D.new()
-		build_button.name = "BuildSortingRobot_" + categories[i]
-		build_button.set_meta("category_index", i)
-		build_button.position = pad_pos + Vector3(0, 1.1, 0)
-		var button_mesh := MeshInstance3D.new()
-		var button_box := BoxMesh.new()
-		button_box.size = Vector3(2.9, 1.4, 0.45)
-		button_mesh.mesh = button_box
-		button_mesh.material_override = _mat(Color(0.055, 0.12, 0.13))
-		build_button.add_child(button_mesh)
-		var button_label := Label3D.new()
-		button_label.name = "SortingBuildLabel"
-		button_label.text = "BUILD ROBOT\n%s\n120 ZC" % names[i]
-		button_label.position = Vector3(0, 0, -0.25)
-		button_label.font_size = 24
-		button_label.pixel_size = 0.006
-		button_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		button_label.modulate = colors[i].lightened(0.35)
-		build_button.add_child(button_label)
-		var hit := CollisionShape3D.new()
-		var hit_shape := BoxShape3D.new()
-		hit_shape.size = Vector3(3.1, 1.6, 0.8)
-		hit.shape = hit_shape
-		build_button.add_child(hit)
-		sorting_area_root.add_child(build_button)
-		build_button.input_event.connect(_on_sorting_build_input.bind(i))
-		var robot := _make_sorting_robot(i, colors[i])
+		var pad_pos: Vector3 = sorting_pad_positions[i]
+		var color: Color = sorting_station_colors[i]
+		# Empty marked compartment: the player walks onto it to build the bin + robot.
+		_box("SortingStationPad", pad_pos + Vector3(0, 0.035, 0), Vector3(4.2, 0.07, 3.8), Color(0.10, 0.14, 0.15), false)
+		_box("SortingStationPadBorder", pad_pos + Vector3(0, 0.08, 0), Vector3(3.85, 0.025, 3.45), color, false)
+		_box("SortingStationFootprint", pad_pos + Vector3(0, 0.095, 0), Vector3(3.55, 0.025, 3.15), color.darkened(0.68), false)
+		_label_3d("STEP HERE\\nBUILD %s" % sorting_station_names[i], pad_pos + Vector3(0, 1.9, -0.3), 0.24)
+		var trigger := Area3D.new()
+		trigger.name = "BuildSortingStation_%s" % sorting_station_categories[i]
+		trigger.position = pad_pos + Vector3(0, 0.9, 0)
+		trigger.set_meta("station_index", i)
+		var trigger_shape := CollisionShape3D.new()
+		var trigger_box := BoxShape3D.new()
+		trigger_box.size = Vector3(3.6, 2.0, 3.2)
+		trigger_shape.shape = trigger_box
+		trigger.add_child(trigger_shape)
+		trigger.body_entered.connect(_on_sorting_station_entered.bind(i))
+		sorting_area_root.add_child(trigger)
+		var robot := _make_sorting_robot(i, color)
 		sorting_area_root.add_child(robot)
-		robot.global_position = pad_pos + Vector3(0, 0, 2.0)
+		robot.global_position = sorting_pad_positions[i] + Vector3(0, 0, 1.7)
 		robot.visible = false
 		sorting_robots.append(robot)
+		sorting_bins.append(null)
 	_refresh_sorting_district()
+
+
+func _on_sorting_station_entered(body: Node3D, station_index: int) -> void:
+	if body != player or station_index < 0 or station_index >= 4:
+		return
+	_build_sorting_station(station_index)
+
+
+func _build_sorting_station(station_index: int) -> void:
+	if station_index < 0 or station_index >= 4 or sorting_robot_levels[station_index] > 0:
+		return
+	const BUILD_COST := 120.0
+	if money < BUILD_COST:
+		_set_message("You need 120 ZC to build this recycling station.")
+		return
+	money -= BUILD_COST
+	sorting_robot_levels[station_index] = 1
+	var bin_pos: Vector3 = sorting_bin_positions[station_index]
+	_make_bin(bin_pos, sorting_station_colors[station_index], sorting_station_names[station_index])
+	var bin_root := Node3D.new()
+	bin_root.name = "BuiltSortingBin_%s" % sorting_station_categories[station_index]
+	bin_root.position = bin_pos
+	sorting_area_root.add_child(bin_root)
+	var counter := Label3D.new()
+	counter.name = "SortingCounter"
+	counter.text = "0 ITEMS"
+	counter.position = Vector3(0, 2.05, 0)
+	counter.font_size = 24
+	counter.pixel_size = 0.006
+	counter.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	bin_root.add_child(counter)
+	sorting_bins[station_index] = bin_root
+	var robot := sorting_robots[station_index]
+	if is_instance_valid(robot):
+		robot.visible = true
+		robot.global_position = sorting_pad_positions[station_index] + Vector3(0, 0, 1.7)
+	robot.set_meta("mode", "idle")
+	_refresh_sorting_district()
+	_update_ui()
+	_save_game()
+	_set_message("%s bin and its dedicated sorting robot are now built!" % sorting_station_names[station_index])
 
 
 func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
@@ -485,24 +498,16 @@ func _refresh_sorting_district() -> void:
 	for i in range(mini(4, sorting_robots.size())):
 		if is_instance_valid(sorting_robots[i]):
 			sorting_robots[i].visible = sorting_robot_levels[i] > 0
-		if is_instance_valid(sorting_area_root):
-			var build_button := sorting_area_root.get_node_or_null("BuildSortingRobot_" + ["plastic", "paper", "metal", "glass"][i]) as Area3D
-			if is_instance_valid(build_button):
-				var build_label := build_button.get_node_or_null("SortingBuildLabel") as Label3D
-				if is_instance_valid(build_label):
-					build_label.text = "ROBOT READY\n%s" % ["PLASTIC", "PAPER", "METAL", "GLASS"][i] if sorting_robot_levels[i] > 0 else "BUILD ROBOT\n%s\n120 ZC" % ["PLASTIC", "PAPER", "METAL", "GLASS"][i]
 	for i in range(mini(4, sorting_bins.size())):
 		if is_instance_valid(sorting_bins[i]):
 			var counter := sorting_bins[i].get_node_or_null("SortingCounter") as Label3D
 			if is_instance_valid(counter):
 				counter.text = "%d ITEMS" % sorting_bin_counts[i]
-
-
 func _process_sorting_robots(delta: float) -> void:
 	if sorting_robots.is_empty():
 		return
 	var category_names := ["plastic", "paper", "metal", "glass"]
-	var bin_positions := [Vector3(236, 0, -13), Vector3(248, 0, -13), Vector3(260, 0, -13), Vector3(272, 0, -13)]
+	var bin_positions := sorting_bin_positions
 	for i in range(mini(4, sorting_robots.size())):
 		if sorting_robot_levels[i] <= 0:
 			continue
@@ -532,15 +537,13 @@ func _process_sorting_robots(delta: float) -> void:
 			var cooldown := float(robot.get_meta("scan_timer", 0.0)) - delta
 			if cooldown <= 0.0:
 				robot.set_meta("scan_timer", 0.65)
-				var best_distance := 24.0
+				var best_distance := 22.0
 				for item in trash_nodes:
 					if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
 						continue
 					if String(item.get_meta("recycle_category", "")) != category_names[i]:
 						continue
 					var p := item.global_position
-					if p.x < 222.0 or p.x > 278.0 or absf(p.z) > 27.0:
-						continue
 					var distance := robot.global_position.distance_to(p)
 					if distance < best_distance:
 						best_distance = distance
@@ -551,7 +554,7 @@ func _process_sorting_robots(delta: float) -> void:
 			else:
 				robot.set_meta("scan_timer", cooldown)
 		if not is_instance_valid(target):
-			var idle_point: Vector3 = bin_positions[i] + Vector3(0, 0, 2.0)
+			var idle_point: Vector3 = sorting_pad_positions[i] + Vector3(0, 0, 1.7)
 			robot.global_position = robot.global_position.move_toward(idle_point, 1.8 * delta)
 			continue
 		var destination := target.global_position + Vector3(0, 0.55, 0)
@@ -1446,7 +1449,6 @@ func _build_trash() -> void:
 		trash_nodes.append(item)
 	if yard_stage >= 2:
 		_spawn_district_two_trash(48)
-	_spawn_sorting_district_trash(48)
 	_spawn_final_cleanup_trash()
 
 func _build_ui() -> void:
