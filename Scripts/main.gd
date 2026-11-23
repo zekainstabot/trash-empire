@@ -785,106 +785,81 @@ func _update_factory_build_label() -> void:
 func _build_factory_module(stage: int) -> void:
 	var z_positions := [0.0, 0.0, 0.0, 7.0, 14.0, 21.0]
 	var z: float = z_positions[stage]
-	var colors := [Color.WHITE, Color.WHITE, Color(0.82, 0.48, 0.16), Color(0.20, 0.56, 0.72), Color(0.18, 0.62, 0.39), Color(0.86, 0.60, 0.16)]
+	var colors := [Color.WHITE, Color.WHITE, Color(0.92, 0.48, 0.12), Color(0.10, 0.63, 0.76), Color(0.22, 0.68, 0.42), Color(0.94, 0.66, 0.16)]
 	var accent: Color = colors[stage]
-	_box("FactoryModule%dBase" % stage, Vector3(7.5, 0.42, z), Vector3(4.2, 0.84, 3.2), Color(0.055, 0.09, 0.11), true)
-	_box("FactoryModule%dBody" % stage, Vector3(7.5, 1.55, z), Vector3(3.35, 1.55, 2.65), accent.darkened(0.35), true)
-	_box("FactoryModule%dTop" % stage, Vector3(7.5, 2.42, z), Vector3(3.7, 0.18, 2.95), accent, false)
-	_box("FactoryModule%dFront" % stage, Vector3(7.5, 1.48, z - 1.34), Vector3(1.65, 0.78, 0.07), Color(0.035, 0.075, 0.085), false)
-	_box("FactoryModule%dWindow" % stage, Vector3(7.5, 1.58, z - 1.39), Vector3(0.85, 0.34, 0.035), accent.lightened(0.45), false)
-	for x in [6.0, 9.0]:
-		_cylinder("FactoryModule%dVent" % stage, Vector3(x, 1.62, z), 0.24, 0.18, Color(0.24, 0.30, 0.31), false)
+	# Shared industrial foundation keeps every machine aligned to the existing line.
+	_box("FactoryModule%dBase" % stage, Vector3(7.5, 0.34, z), Vector3(4.35, 0.68, 3.35), Color(0.045, 0.065, 0.075), true)
+	_box("FactoryModule%dBaseTrim" % stage, Vector3(7.5, 0.70, z), Vector3(4.12, 0.09, 3.12), accent.darkened(0.12), false)
+	_box("FactoryModule%dBody" % stage, Vector3(7.5, 1.55, z), Vector3(3.25, 1.55, 2.55), Color(0.105, 0.15, 0.17), true)
+	_box("FactoryModule%dTop" % stage, Vector3(7.5, 2.38, z), Vector3(3.65, 0.16, 2.88), Color(0.16, 0.21, 0.22), false)
+	_box("MachineAccentFront" , Vector3(7.5, 0.91, z - 1.31), Vector3(2.9, 0.12, 0.07), accent, false)
+	_box("MachineFrontGlass", Vector3(7.5, 1.62, z - 1.31), Vector3(1.35, 0.58, 0.055), Color(0.055, 0.18, 0.22), false)
+	_box("MachineFrontGlassGlow", Vector3(7.5, 1.62, z - 1.35), Vector3(1.08, 0.36, 0.025), accent.lightened(0.35), false)
+	for x in [5.95, 9.05]:
+		_box("MachineCornerArmor", Vector3(x, 1.55, z - 1.30), Vector3(0.18, 1.45, 0.12), accent.darkened(0.18), false)
+		_box("MachineFoot", Vector3(x, 0.22, z + 0.95), Vector3(0.48, 0.30, 0.55), Color(0.07, 0.09, 0.10), false)
+	_label_3d(["", "", "SHREDDER", "GRANULATOR", "TOY ASSEMBLY", "PACKAGING & DISPATCH"][stage], Vector3(7.5, 3.05, z - 0.05), 0.24)
 	if stage == 2:
-		_label_3d("INDUSTRIAL SHREDDER", Vector3(7.5, 3.0, z), 0.24)
-		for x in [7.0, 8.0]:
-			_cylinder("ShredderRoller", Vector3(x, 1.62, z - 0.62), 0.32, 0.72, Color(0.66, 0.72, 0.69), true)
+		# Heavy feed hopper and guarded twin cutting drums.
+		_box("ShredderHopperLeft", Vector3(6.82, 2.82, z - 0.35), Vector3(0.18, 0.88, 1.75), Color(0.32, 0.38, 0.39), false)
+		_box("ShredderHopperRight", Vector3(8.18, 2.82, z - 0.35), Vector3(0.18, 0.88, 1.75), Color(0.32, 0.38, 0.39), false)
+		_box("ShredderHopperBack", Vector3(7.5, 2.82, z + 0.48), Vector3(1.55, 0.88, 0.18), Color(0.27, 0.33, 0.34), false)
+		_box("ShredderFeedMouth", Vector3(7.5, 2.92, z - 0.38), Vector3(1.15, 0.12, 1.25), Color(0.025, 0.035, 0.04), false)
+		for x in [7.12, 7.88]:
+			var drum := _cylinder("ShredderCuttingDrum", Vector3(x, 1.48, z - 0.72), 0.38, 1.22, Color(0.58, 0.64, 0.64), true)
+			drum.rotation_degrees.z = 90.0
+			for tooth in range(5):
+				_box("ShredderCuttingTooth", Vector3(x, 1.48, z - 1.18 + tooth * 0.22), Vector3(0.48, 0.10, 0.09), Color(0.92, 0.67, 0.20), false)
+		_box("ShredderSafetyGrille", Vector3(7.5, 2.05, z - 1.05), Vector3(1.85, 0.10, 0.12), Color(0.94, 0.65, 0.12), false)
+		_cylinder("ShredderDriveMotor", Vector3(9.05, 1.35, z + 0.35), 0.42, 0.90, Color(0.13, 0.27, 0.31), false)
+		_label_3d("FEED / CUT / CRUSH", Vector3(7.5, 0.84, z + 1.42), 0.13)
 	elif stage == 3:
-		_label_3d("PLASTIC GRANULATOR", Vector3(7.5, 3.0, z), 0.24)
-		_box("GranulatorHopper", Vector3(7.5, 2.95, z - 0.15), Vector3(2.1, 0.65, 1.45), Color(0.32, 0.39, 0.40), false)
-		_box("GranulatorOutlet", Vector3(7.5, 0.95, z + 1.38), Vector3(1.2, 0.65, 0.42), accent.lightened(0.2), false)
+		# Tall granulator chamber with feed funnel, inspection window and motor.
+		_box("GranulatorMainChamber", Vector3(7.5, 1.72, z), Vector3(2.25, 1.78, 1.95), Color(0.10, 0.25, 0.30), true)
+		_box("GranulatorHopperTop", Vector3(7.5, 2.82, z - 0.05), Vector3(2.55, 0.20, 2.2), accent, false)
+		_box("GranulatorHopperNeck", Vector3(7.5, 2.55, z - 0.05), Vector3(1.25, 0.45, 1.10), Color(0.28, 0.36, 0.37), false)
+		_box("GranulatorWindow", Vector3(7.5, 1.82, z - 1.02), Vector3(1.25, 0.72, 0.06), Color(0.035, 0.12, 0.15), false)
+		_box("GranulatorWindowGlow", Vector3(7.5, 1.82, z - 1.06), Vector3(0.92, 0.42, 0.025), Color(0.12, 0.75, 0.78), false)
+		_cylinder("GranulatorMotor", Vector3(9.05, 1.30, z + 0.25), 0.48, 1.05, Color(0.12, 0.19, 0.22), false)
+		_cylinder("GranulatorMotorFan", Vector3(9.05, 1.30, z + 0.82), 0.32, 0.10, Color(0.65, 0.72, 0.72), false)
+		_box("GranulatorOutlet", Vector3(7.5, 0.91, z + 1.42), Vector3(1.45, 0.48, 0.48), accent, false)
+		_label_3d("RECYCLED PLASTIC", Vector3(7.5, 0.83, z - 1.43), 0.13)
 	elif stage == 4:
-		_label_3d("TEDDY BEAR FACTORY", Vector3(7.5, 3.0, z), 0.22)
-		_box("ProductChute", Vector3(7.5, 0.95, z + 1.48), Vector3(1.8, 0.42, 0.72), Color(0.28, 0.34, 0.34), false)
-		for x in [6.25, 8.75]:
-			_box("TeddyShippingBox", Vector3(x, 0.48, z + 1.65), Vector3(0.72, 0.82, 0.72), Color(0.72, 0.52, 0.27), false)
-		_label_3d("RECYCLED TEDDY BEARS", Vector3(7.5, 2.85, z + 1.75), 0.16)
+		# Enclosed toy assembly cell, with a lit inspection bay and side supply rolls.
+		_box("AssemblyGlassBay", Vector3(7.5, 1.72, z - 0.10), Vector3(2.25, 1.18, 0.12), Color(0.12, 0.43, 0.48), false)
+		_box("AssemblyGlassFrameTop", Vector3(7.5, 2.34, z - 0.17), Vector3(2.45, 0.12, 0.16), accent, false)
+		_box("AssemblyGlassFrameBottom", Vector3(7.5, 1.10, z - 0.17), Vector3(2.45, 0.12, 0.16), accent, false)
+		for x in [6.42, 8.58]:
+			_box("AssemblyGlassDivider", Vector3(x, 1.72, z - 0.19), Vector3(0.10, 1.18, 0.10), Color(0.70, 0.83, 0.82), false)
+		for x in [6.15, 8.85]:
+			var fabric := _cylinder("AssemblyFabricRoll", Vector3(x, 1.28, z + 0.92), 0.34, 1.05, Color(0.82, 0.48, 0.32), false)
+			fabric.rotation_degrees.z = 90.0
+			_cylinder("AssemblyRollHub", Vector3(x, 1.28, z + 1.48), 0.13, 0.10, Color(0.80, 0.82, 0.78), false)
+		_box("AssemblyRobotArmBase", Vector3(7.5, 0.95, z + 0.72), Vector3(0.65, 0.35, 0.65), Color(0.08, 0.13, 0.15), false)
+		_cylinder("AssemblyRobotArm", Vector3(7.5, 1.55, z + 0.72), 0.13, 1.05, accent, false)
+		_box("AssemblyProductChute", Vector3(7.5, 0.92, z + 1.48), Vector3(1.9, 0.35, 0.60), Color(0.28, 0.35, 0.35), false)
+		for x in [6.55, 8.45]:
+			_box("AssemblyShippingCrate", Vector3(x, 0.90, z + 1.52), Vector3(0.58, 0.82, 0.65), Color(0.72, 0.50, 0.25), false)
+		_label_3d("TOY ASSEMBLY LINE", Vector3(7.5, 0.83, z - 1.43), 0.13)
 	else:
-		_label_3d("AUTO PACKAGING & SHIPPING", Vector3(7.5, 3.0, z), 0.20)
-		_box("PackagingFeed", Vector3(7.5, 1.0, z - 1.7), Vector3(1.5, 0.45, 0.8), Color(0.24, 0.31, 0.34), false)
-		_box("PackagingArchTop", Vector3(7.5, 2.15, z), Vector3(2.4, 0.18, 0.22), accent.lightened(0.25), false)
-		for x in [6.4, 8.6]:
-			_box("PackagingArchLeg", Vector3(x, 1.45, z), Vector3(0.18, 1.45, 0.22), accent, false)
+		# Packaging tunnel, carton magazine, sealing head and output roller table.
+		_box("PackagingFeed", Vector3(7.5, 1.02, z - 1.72), Vector3(1.55, 0.46, 0.78), Color(0.22, 0.32, 0.34), false)
+		_box("PackagingTunnelLeft", Vector3(6.48, 1.55, z), Vector3(0.18, 1.55, 2.05), accent.darkened(0.18), false)
+		_box("PackagingTunnelRight", Vector3(8.52, 1.55, z), Vector3(0.18, 1.55, 2.05), accent.darkened(0.18), false)
+		_box("PackagingTunnelRoof", Vector3(7.5, 2.32, z), Vector3(2.20, 0.18, 2.10), accent, false)
+		_box("PackagingTunnelLight", Vector3(7.5, 2.20, z - 0.88), Vector3(1.15, 0.08, 0.08), Color(0.45, 0.95, 0.78), false)
+		_box("PackagingSealingHead", Vector3(7.5, 1.18, z + 0.25), Vector3(1.18, 0.48, 0.72), Color(0.20, 0.27, 0.29), false)
 		_box("PackagingOutput", Vector3(9.45, 0.95, z + 0.1), Vector3(1.2, 0.18, 1.1), Color(0.10, 0.13, 0.14), false)
-		_label_3d("PACKED TEDDY BEARS", Vector3(9.3, 2.2, z + 0.7), 0.15)
-		# The initial delivery truck is joined by additional hired trucks from the skill tree.
+		for x in [8.95, 9.35, 9.75]:
+			var output_roller := _cylinder("PackagingOutputRoller", Vector3(x, 0.98, z + 0.1), 0.12, 1.05, Color(0.68, 0.73, 0.72), false)
+			output_roller.rotation_degrees.z = 90.0
+		_box("PackagingCartonStack", Vector3(5.95, 1.10, z + 0.80), Vector3(0.85, 1.10, 0.82), Color(0.67, 0.46, 0.23), false)
+		_label_3d("PACKED TOYS", Vector3(9.25, 2.15, z + 0.82), 0.15)
 		_create_delivery_truck(0)
 		_build_delivery_conveyor(Vector3(9.95, 0.82, z + 0.25), Vector3(15.75, 0.82, 26.25))
-	_box("FactoryModule%dStatus" % stage, Vector3(9.25, 2.0, z - 0.75), Vector3(0.42, 0.42, 0.10), Color(0.10, 0.95, 0.56), false)
-	_add_machine_detail(stage, z, accent)
-
-
-func _build_delivery_conveyor(start_point: Vector3, end_point: Vector3) -> void:
-	# Physical angled belt joins the packaging output to the truck cargo bay.
-	var midpoint := (start_point + end_point) * 0.5
-	var direction := end_point - start_point
-	var length := direction.length()
-	var yaw := atan2(direction.x, direction.z)
-	var frame := _box("DeliveryConveyorFrame", midpoint, Vector3(1.55, 0.28, length), Color(0.08, 0.12, 0.13), true)
-	frame.rotation.y = yaw
-	var belt := _box("DeliveryConveyorBelt", midpoint + Vector3(0.0, 0.17, 0.0), Vector3(1.28, 0.07, maxf(0.2, length - 0.12)), Color(0.025, 0.04, 0.045), false)
-	belt.rotation.y = yaw
-	for side in [-1.0, 1.0]:
-		var rail_offset := Vector3(cos(yaw) * side * 0.70, 0.38, -sin(yaw) * side * 0.70)
-		var rail := _box("DeliveryConveyorRail", midpoint + rail_offset, Vector3(0.10, 0.34, length), Color(0.48, 0.54, 0.52), false)
-		rail.rotation.y = yaw
-	for i in range(maxi(3, int(length / 0.7))):
-		var t := float(i) / float(maxi(1, int(length / 0.7) - 1))
-		var roller_pos := start_point.lerp(end_point, t)
-		var roller := _cylinder("DeliveryConveyorRoller", roller_pos, 0.09, 1.30, Color(0.55, 0.60, 0.58), false)
-		roller.rotation.z = 90.0
-		roller.rotation.y = yaw
-
-
-func _add_machine_detail(stage: int, z: float, accent: Color) -> void:
-	# Realistic machine detailing: ribs, access panel, control console, pipes and vents.
-	for x in [5.85, 9.15]:
-		for y in [0.85, 2.18]:
-			_cylinder("MachineBoltDetail", Vector3(x, y, z - 1.39), 0.07, 0.045, Color(0.72, 0.76, 0.75), false)
-	for x in [6.15, 8.85]:
-		_box("MachineSideRib", Vector3(x, 1.52, z - 1.32), Vector3(0.12, 1.32, 0.09), accent.lightened(0.16), false)
-	_box("MachineServiceDoor", Vector3(8.65, 1.35, z - 1.43), Vector3(0.48, 0.58, 0.06), Color(0.12, 0.16, 0.18), false)
-	_box("MachineWarningStripe", Vector3(7.5, 0.88, z - 1.46), Vector3(2.5, 0.12, 0.04), Color(0.95, 0.72, 0.13), false)
-	_box("MachineControlHousing", Vector3(9.48, 1.85, z - 0.82), Vector3(0.62, 0.82, 0.42), Color(0.045, 0.075, 0.09), false)
-	_box("MachineControlScreen", Vector3(9.48, 2.04, z - 0.59), Vector3(0.40, 0.25, 0.04), Color(0.18, 0.78, 0.65), false)
-	for i in range(3):
-		_cylinder("MachineControlKnob", Vector3(9.30 + i * 0.18, 1.60, z - 0.57), 0.055, 0.04, [Color(0.9, 0.2, 0.12), Color(0.92, 0.7, 0.12), Color(0.18, 0.8, 0.38)][i], false)
-	_cylinder("MachinePipe", Vector3(6.05, 2.45, z + 0.85), 0.10, 1.45, Color(0.55, 0.62, 0.63), false)
-	_cylinder("MachinePipeElbow", Vector3(6.05, 2.95, z + 0.15), 0.12, 0.42, Color(0.55, 0.62, 0.63), false)
-	# Rounded pressure drums, pipe unions and heavy feet add industrial mass.
-	for x in [6.55, 8.45]:
-		_cylinder("MachinePressureDrum", Vector3(x, 1.18, z + 1.48), 0.34, 0.82, Color(0.34, 0.40, 0.41), false)
-		_cylinder("MachineDrumCap", Vector3(x, 1.18, z + 1.91), 0.29, 0.045, Color(0.62, 0.67, 0.66), false)
-	for x in [6.15, 8.85]:
-		_box("MachineReinforcedFoot", Vector3(x, 0.28, z), Vector3(0.52, 0.22, 0.82), Color(0.12, 0.16, 0.17), false)
-	_cylinder("MachinePipeUnion", Vector3(6.05, 2.45, z + 1.18), 0.16, 0.16, Color(0.72, 0.76, 0.74), false)
-	_box("MachineVentGrille", Vector3(8.75, 1.75, z + 1.35), Vector3(0.72, 0.55, 0.06), Color(0.10, 0.15, 0.17), false)
-	for i in range(4):
-		_box("MachineVentSlat", Vector3(8.75, 1.55 + i * 0.13, z + 1.39), Vector3(0.56, 0.045, 0.035), Color(0.55, 0.61, 0.62), false)
-	if stage == 2:
-		for i in range(6):
-			_box("ShredderTooth", Vector3(7.0 + i * 0.20, 1.95, z - 0.68), Vector3(0.12, 0.16, 0.18), Color(0.85, 0.62, 0.20), false)
-		_box("ShredderSafetyGuard", Vector3(7.5, 2.35, z - 0.65), Vector3(1.45, 0.12, 0.88), Color(0.16, 0.22, 0.23), false)
-	elif stage == 3:
-		_box("GranulatorMotor", Vector3(9.15, 1.15, z + 0.45), Vector3(0.82, 0.75, 0.95), Color(0.13, 0.25, 0.28), false)
-		_cylinder("GranulatorMotorFan", Vector3(9.15, 1.55, z + 0.96), 0.30, 0.08, Color(0.58, 0.65, 0.65), false)
-	elif stage == 4:
-		for x in [6.65, 8.35]:
-			_cylinder("TeddyFabricRoll", Vector3(x, 1.22, z - 0.9), 0.22, 0.72, Color(0.82, 0.58, 0.38), false)
-		_box("TeddyFactoryWindow", Vector3(7.5, 1.85, z - 1.44), Vector3(1.0, 0.55, 0.04), Color(0.14, 0.44, 0.48), false)
-	else:
-		for x in [6.45, 8.55]:
-			_cylinder("PackagingRoller", Vector3(x, 1.08, z + 0.75), 0.16, 1.2, Color(0.65, 0.69, 0.68), false)
-		_box("PackagingSafetyPanel", Vector3(7.5, 1.6, z - 1.45), Vector3(1.35, 0.55, 0.05), Color(0.13, 0.21, 0.22), false)
+	# A compact status beacon makes each station readable from a distance.
+	_box("FactoryModule%dStatusHousing" % stage, Vector3(9.45, 2.05, z - 0.82), Vector3(0.34, 0.48, 0.30), Color(0.035, 0.06, 0.07), false)
+	_cylinder("FactoryModule%dStatusLamp" % stage, Vector3(9.45, 2.30, z - 0.82), 0.12, 0.10, Color(0.10, 0.95, 0.56), false)
 
 func _build_factory_link(start_z: float, end_z: float) -> void:
 	var middle := (start_z + end_z) * 0.5
