@@ -123,6 +123,8 @@ var packaging_upgrade_level := 0
 var delivery_trucks: Array[Node3D] = []
 var city_truck: Node3D
 var city_trucks: Array[Node3D] = []
+var district_collection_truck: Node3D
+var district_collection_route: Array[Vector3] = [Vector3(24.0, 0.0, -15.0), Vector3(40.0, 0.0, 15.0), Vector3(58.0, 0.0, -15.0), Vector3(76.0, 0.0, 15.0), Vector3(96.0, 0.0, -15.0), Vector3(104.0, 0.0, 15.0)]
 var city_fleet_upgrade_level := 0
 var city_trash_reserved := 0
 var city_truck_phase := 3
@@ -185,6 +187,7 @@ func _process(delta: float) -> void:
 	_process_ground_collector(delta)
 	_process_trash_respawn(delta)
 	_process_city_truck(delta)
+	_process_district_collection_truck(delta)
 	_animate_city_pedestrians(delta)
 
 func _build_world() -> void:
@@ -3204,6 +3207,7 @@ func _build_city_dump_area() -> void:
 	city_trash_reserved = 0
 	_refresh_city_truck_fleet()
 	_reset_city_truck_fleet()
+	_create_district_collection_truck()
 
 func _create_city_truck(index: int) -> Node3D:
 	var truck := Node3D.new()
@@ -3349,6 +3353,140 @@ func _reset_city_truck_fleet() -> void:
 		truck.set_meta("load", _city_truck_load())
 	city_truck_phase = 0
 	city_truck_timer = 0.0
+
+
+func _create_district_collection_truck() -> void:
+	if is_instance_valid(district_collection_truck):
+		district_collection_truck.queue_free()
+	district_collection_truck = _create_city_truck(99)
+	district_collection_truck.name = "DistrictCollectionTruck"
+	district_collection_truck.visible = true
+	district_collection_truck.position = district_collection_route[0]
+	district_collection_truck.set_meta("collection_phase", 0)
+	district_collection_truck.set_meta("route_index", 0)
+	district_collection_truck.set_meta("collection_target", null)
+	district_collection_truck.set_meta("collection_cargo", [])
+	district_collection_truck.set_meta("collection_timer", 0.0)
+	district_collection_truck.set_meta("collection_capacity", 12)
+	# Distinguish this patrol truck from the municipal delivery fleet.
+	district_collection_truck.set_meta("wheels", district_collection_truck.get_meta("wheels", []))
+
+
+func _process_district_collection_truck(delta: float) -> void:
+	if not is_instance_valid(district_collection_truck):
+		return
+	var truck := district_collection_truck
+	var phase := int(truck.get_meta("collection_phase", 0))
+	var cargo: Array = truck.get_meta("collection_cargo", [])
+	var target := truck.get_meta("collection_target") as Node3D
+	var speed := 5.2
+	match phase:
+		0:
+			# Patrol only the outer city districts, well away from the recycling machine.
+			if cargo.size() >= int(truck.get_meta("collection_capacity", 12)) or _city_dump_capacity() - _city_dump_trash_count() - city_trash_reserved <= 0:
+				truck.set_meta("collection_phase", 3)
+				return
+			if not is_instance_valid(target):
+				var route_index := int(truck.get_meta("route_index", 0)) % district_collection_route.size()
+				var waypoint: Vector3 = district_collection_route[route_index]
+				var nearest_item: Node3D
+				var nearest_distance := 8.0
+				for item in trash_nodes:
+					if not is_instance_valid(item) or _is_city_dump_trash(item):
+						continue
+					if item.get_meta("drone_reserved", -1) != -1:
+						continue
+					var p := item.global_position
+					# Never take the player's starting yard, the factory intake, or the final landfill.
+					if p.x < 15.0 or p.x > 110.0 or absf(p.z) > 28.0:
+						continue
+					var distance := Vector2(p.x - waypoint.x, p.z - waypoint.z).length()
+					if distance < nearest_distance:
+						nearest_distance = distance
+						nearest_item = item
+				if is_instance_valid(nearest_item):
+					nearest_item.set_meta("drone_reserved", -3)
+					truck.set_meta("collection_target", nearest_item)
+					truck.set_meta("collection_phase", 1)
+				else:
+					if _move_city_truck(truck, waypoint, delta):
+						truck.set_meta("route_index", (route_index + 1) % district_collection_route.size())
+			else:
+				truck.set_meta("collection_phase", 1)
+		1:
+			if not is_instance_valid(target) or not trash_nodes.has(target):
+				truck.set_meta("collection_target", null)
+				truck.set_meta("collection_phase", 0)
+				return
+			if _move_city_truck(truck, target.global_position, delta):
+				truck.set_meta("collection_phase", 2)
+		2:
+			if not is_instance_valid(target) or not trash_nodes.has(target):
+				truck.set_meta("collection_target", null)
+				truck.set_meta("collection_phase", 0)
+				return
+			if _city_dump_capacity() - _city_dump_trash_count() - city_trash_reserved <= 0:
+				target.set_meta("drone_reserved", -1)
+				truck.set_meta("collection_target", null)
+				truck.set_meta("collection_phase", 3)
+				return
+			var keep_transform := target.global_transform
+			target.reparent(truck)
+			target.global_transform = keep_transform
+			target.position = Vector3(0.0, 2.15 + float(cargo.size()) * 0.16, 0.65 + float(cargo.size() % 3) * 0.22)
+			cargo.append(target)
+			truck.set_meta("collection_cargo", cargo)
+			trash_nodes.erase(target)
+			city_trash_reserved += 1
+			truck.set_meta("collection_target", null)
+			truck.set_meta("collection_phase", 0 if cargo.size() < int(truck.get_meta("collection_capacity", 12)) else 3)
+		3:
+			if not cargo.is_empty():
+				if _move_city_truck(truck, city_truck_dump, delta):
+					truck.set_meta("collection_phase", 4)
+					truck.set_meta("collection_timer", 0.0)
+			else:
+				truck.set_meta("collection_phase", 0)
+		4:
+			var timer := float(truck.get_meta("collection_timer", 0.0)) + delta
+			truck.set_meta("collection_timer", timer)
+			if timer < 0.32:
+				return
+			truck.set_meta("collection_timer", 0.0)
+			if cargo.is_empty():
+				truck.set_meta("collection_phase", 0)
+				return
+			if _city_dump_trash_count() >= _city_dump_capacity():
+				# Keep the collected load aboard until the bunker has room.
+				return
+			var item = cargo.pop_front()
+			if is_instance_valid(item):
+				if item.get_parent() == truck:
+					truck.remove_child(item)
+				add_child(item)
+				var rng := RandomNumberGenerator.new()
+				rng.randomize()
+				var pile_layer := float(_city_dump_trash_count() / 36) * 0.22
+				item.global_position = Vector3(rng.randf_range(-7.55, -2.05), 0.10 + minf(pile_layer, 1.35), rng.randf_range(-25.25, -19.85))
+				trash_nodes.append(item)
+			city_trash_reserved = maxi(0, city_trash_reserved - 1)
+			truck.set_meta("collection_cargo", cargo)
+			if cargo.is_empty():
+				truck.set_meta("collection_phase", 0)
+				var next_route := (int(truck.get_meta("route_index", 0)) + 1) % district_collection_route.size()
+				truck.set_meta("route_index", next_route)
+				truck.position = Vector3(-7.2, 0.0, -15.0)
+				truck.rotation.y = PI
+			_update_ui()
+			_save_game()
+	# Spin the truck wheels while it patrols or drives to/from the dump.
+	var moving_phase := int(truck.get_meta("collection_phase", 0))
+	if moving_phase in [0, 1, 3] and truck.visible:
+		var wheels: Array = truck.get_meta("wheels", [])
+		for wheel in wheels:
+			if is_instance_valid(wheel):
+				wheel.rotation.x = wrapf(wheel.rotation.x + delta * 7.5, -PI, PI)
+
 
 func _process_city_truck(delta: float) -> void:
 	if city_trucks.is_empty():
