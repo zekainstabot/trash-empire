@@ -1714,6 +1714,7 @@ func _start_new_world() -> void:
 	drone_level = 0
 	sorting_robot_levels = [0, 0, 0, 0]
 	sorting_bin_counts = [0, 0, 0, 0]
+	_refresh_sorting_district()
 	dispatch_upgrade_level = 0
 	city_truck_upgrade_level = 0
 	city_fleet_upgrade_level = 0
