@@ -124,6 +124,12 @@ var factory_shipping_timer := 0.0
 var factory_shipping_busy := false
 var factory_shipping_row := 0
 var factory_shipping_trucks: Array[Node3D] = []
+var waste_tank_built := false
+var waste_tank_root: Node3D
+var waste_tank_build_label: Label3D
+var waste_feed_timer := 0.0
+var waste_feed_busy := false
+var waste_feed_line_index := 0
 var factory_upgrade_button: Node3D
 var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
@@ -161,7 +167,7 @@ var city_truck_phase := 3
 var city_truck_timer := 0.0
 var city_truck_upgrade_level := 0
 var city_truck_start := Vector3(-7.2, 0.0, 33.0)
-var city_truck_dump := Vector3(-4.8, 0.0, -22.5)
+var city_truck_dump := Vector3(124.8, 0.0, -22.5)
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -205,6 +211,7 @@ func _process(delta: float) -> void:
 	_process_expansion_zone(delta)
 	_process_mega_factory_build(delta)
 	_process_factory_row_shipping(delta)
+	_process_waste_feed_conveyor(delta)
 	if is_instance_valid(player) and player.global_position.y < -3.0:
 		_recover_player()
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
@@ -1738,6 +1745,12 @@ func _start_new_world() -> void:
 	city_truck_phase = 0
 	city_truck_timer = 0.0
 	city_trash_reserved = 0
+	waste_tank_built = false
+	if is_instance_valid(waste_tank_root):
+		waste_tank_root.queue_free()
+	waste_tank_root = null
+	if is_instance_valid(waste_tank_build_label):
+		waste_tank_build_label.visible = true
 	_reset_city_truck_fleet()
 	fleet_upgrade_level = 0
 	truck_capacity_upgrade_level = 0
@@ -2373,7 +2386,7 @@ func _is_city_dump_trash(item: Node3D) -> bool:
 	if not is_instance_valid(item):
 		return false
 	var p := item.global_position
-	return p.x >= -8.2 and p.x <= -1.4 and p.z >= -25.8 and p.z <= -19.2
+	return p.x >= 121.4 and p.x <= 128.2 and p.z >= -25.8 and p.z <= -19.2
 
 
 func _player_at_city_dump_front() -> bool:
@@ -2381,7 +2394,7 @@ func _player_at_city_dump_front() -> bool:
 		return false
 	var p := player.global_position
 	# The only access route is the open front (positive Z) of the bunker.
-	return p.x >= -8.0 and p.x <= -1.6 and p.z >= -19.0 and p.z <= -16.0
+	return p.x >= 121.6 and p.x <= 128.0 and p.z >= -19.0 and p.z <= -16.0
 
 
 func _can_collect_city_dump_trash(item: Node3D) -> bool:
@@ -3492,6 +3505,7 @@ func _save_game() -> void:
 	save.set_value("progress", "factory_build_paid", factory_build_paid)
 	save.set_value("progress", "mega_factory_built_count", mega_factory_built_count)
 	save.set_value("progress", "mega_factory_build_paid", mega_factory_build_paid)
+	save.set_value("progress", "waste_tank_built", waste_tank_built)
 	save.set_value("progress", "teddy_stock_values", teddy_stock_values)
 	save.save("user://trash_empire.save")
 
@@ -3544,6 +3558,7 @@ func _load_game() -> void:
 	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0, 160.0][factory_stage])
 	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 0)), 0, 15)
 	mega_factory_build_paid = clampf(float(save.get_value("progress", "mega_factory_build_paid", 0.0)), 0.0, _mega_factory_machine_cost(mega_factory_built_count))
+	waste_tank_built = bool(save.get_value("progress", "waste_tank_built", false))
 	teddy_stock_values.clear()
 	for stored_value in save.get_value("progress", "teddy_stock_values", []):
 		teddy_stock_values.append(float(stored_value))
@@ -3681,6 +3696,20 @@ func _build_recycling_mega_factory() -> void:
 		_box("FactoryRoofRib", Vector3(float(x), 10.48, 0.0), Vector3(0.16, 0.12, 66.0), steel, false)
 		_box("FactoryFrontColumn", Vector3(float(x), 4.8, 32.4), Vector3(0.65, 9.6, 0.65), dark_steel, false)
 		_box("FactoryFrontSafetyStripe", Vector3(float(x), 0.18, 31.2), Vector3(1.2, 0.035, 0.16), safety, false)
+	# Main waste intake conveyor and five-way distributor to the first machine in each line.
+	_box("WasteFeedMainFrame", Vector3(137.0, 0.72, -22.5), Vector3(20.0, 0.32, 1.9), dark_steel, false)
+	_box("WasteFeedMainBelt", Vector3(137.0, 0.94, -22.5), Vector3(19.7, 0.08, 1.55), Color(0.025, 0.045, 0.05), false)
+	for side_z in [-23.45, -21.55]:
+		_box("WasteFeedMainRail", Vector3(137.0, 1.16, side_z), Vector3(19.8, 0.35, 0.12), steel, false)
+	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.74, 0.0), Vector3(1.8, 0.32, 54.0), dark_steel, false)
+	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.96, 0.0), Vector3(1.45, 0.08, 53.5), Color(0.025, 0.045, 0.05), false)
+	for side_x in [146.05, 147.95]:
+		_box("WasteFeedDistributorRail", Vector3(side_x, 1.17, 0.0), Vector3(0.12, 0.35, 53.5), steel, false)
+	for row in range(5):
+		var feed_z := _factory_row_z(row)
+		_box("WasteFeedBranchFrame", Vector3(149.0, 0.73, feed_z), Vector3(4.2, 0.30, 1.25), dark_steel, false)
+		_box("WasteFeedBranchBelt", Vector3(149.0, 0.95, feed_z), Vector3(4.0, 0.08, 1.0), Color(0.025, 0.045, 0.05), false)
+		_box("WasteFeedBranchRail", Vector3(149.0, 1.15, feed_z - 0.62), Vector3(4.0, 0.28, 0.08), steel, false)
 	mega_factory_machine_labels.clear()
 	for row in range(5):
 		var z := _factory_row_z(row)
@@ -3902,62 +3931,111 @@ func _process_mega_factory_build(delta: float) -> void:
 
 
 func _build_city_dump_area() -> void:
-	# Relocated industrial waste transfer bay at the rear of the expanded yard.
+	# Waste storage is purchased and built beside the factory intake.
+	_box("FactoryWasteTankBuildPad", Vector3(124.8, 0.035, -30.0), Vector3(6.0, 0.07, 3.6), Color(0.12, 0.18, 0.18), false)
+	_box("FactoryWasteTankBuildBorder", Vector3(124.8, 0.08, -30.0), Vector3(5.6, 0.025, 3.2), Color(0.92, 0.64, 0.13), false)
+	waste_tank_build_label = Label3D.new()
+	waste_tank_build_label.name = "WasteTankBuildLabel"
+	waste_tank_build_label.text = "BUILD WASTE STORAGE\n120 ZC"
+	waste_tank_build_label.position = Vector3(124.8, 1.45, -30.0)
+	waste_tank_build_label.font_size = 25
+	waste_tank_build_label.pixel_size = 0.009
+	waste_tank_build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	waste_tank_build_label.modulate = Color(1.0, 0.83, 0.34)
+	add_child(waste_tank_build_label)
+	var trigger := Area3D.new()
+	trigger.name = "BuildFactoryWasteTank"
+	trigger.position = Vector3(124.8, 0.9, -30.0)
+	var trigger_shape := CollisionShape3D.new()
+	var trigger_box := BoxShape3D.new()
+	trigger_box.size = Vector3(5.8, 2.0, 3.4)
+	trigger_shape.shape = trigger_box
+	trigger.add_child(trigger_shape)
+	trigger.body_entered.connect(_on_waste_tank_build_entered)
+	add_child(trigger)
+	if waste_tank_built:
+		_build_waste_tank_structure()
+		waste_tank_build_label.visible = false
+
+func _on_waste_tank_build_entered(body: Node3D) -> void:
+	if body != player or waste_tank_built:
+		return
+	const BUILD_COST := 120.0
+	if money < BUILD_COST:
+		_set_message("Build the factory waste tank: 120 ZC required.")
+		return
+	money -= BUILD_COST
+	waste_tank_built = true
+	_build_waste_tank_structure()
+	if is_instance_valid(waste_tank_build_label):
+		waste_tank_build_label.visible = false
+	_update_ui()
+	_save_game()
+	_reset_city_truck_fleet()
+	_set_message("Waste storage built! City trucks and factory feed conveyor are now active.")
+
+func _build_waste_tank_structure() -> void:
+	if is_instance_valid(waste_tank_root):
+		return
+	waste_tank_root = Node3D.new()
+	waste_tank_root.name = "FactoryWasteStorageTank"
+	waste_tank_root.position = Vector3(129.6, 0.0, 0.0)
+	add_child(waste_tank_root)
+	# Reinforced steel bunker relocated intact to the factory entrance.
 	_box("CityDumpApproachApron", Vector3(-7.0, 0.025, -18.0), Vector3(5.0, 0.05, 8.0), Color(0.22, 0.25, 0.25), false)
 	_box("CityDumpConcrete", Vector3(-4.8, 0.035, -22.5), Vector3(7.2, 0.07, 7.0), Color(0.25, 0.28, 0.27), false)
 	_box("CityDumpMarking", Vector3(-4.8, 0.078, -22.5), Vector3(6.7, 0.025, 6.5), Color(0.31, 0.34, 0.32), false)
-	# Heavy industrial roll-off waste bunker: dark steel cladding, reinforced ribs and loading rim.
-	# Vertical welded reinforcement ribs along the container sides.
 	for z in [-24.8, -23.4, -22.0, -20.6]:
 		_box("DumpBunkerSideRibL", Vector3(-8.16, 1.0, z), Vector3(0.10, 1.9, 0.16), Color(0.32, 0.37, 0.37), false)
 		_box("DumpBunkerSideRibR", Vector3(-1.44, 1.0, z), Vector3(0.10, 1.9, 0.16), Color(0.32, 0.37, 0.37), false)
-	# Thick steel rim around the open loading bay.
 	_box("DumpBunkerTopRailBack", Vector3(-4.8, 2.18, -25.72), Vector3(7.45, 0.18, 0.28), Color(0.34, 0.39, 0.39), false)
 	_box("DumpBunkerTopRailLeft", Vector3(-8.18, 2.18, -22.5), Vector3(0.28, 0.18, 6.5), Color(0.34, 0.39, 0.39), false)
 	_box("DumpBunkerTopRailRight", Vector3(-1.42, 2.18, -22.5), Vector3(0.28, 0.18, 6.5), Color(0.34, 0.39, 0.39), false)
-	# Industrial hydraulic compactor housing mounted behind the bunker.
 	_box("DumpCompactorHousing", Vector3(-4.8, 2.55, -26.05), Vector3(3.0, 0.62, 0.55), Color(0.20, 0.25, 0.25), false)
 	_box("DumpCompactorServicePanel", Vector3(-4.8, 2.58, -25.76), Vector3(1.15, 0.34, 0.035), Color(0.48, 0.39, 0.22), false)
-	# Weathered retaining walls and reinforced steel corner posts.
 	_box("CityDumpBackWall", Vector3(-4.8, 1.15, -25.85), Vector3(7.2, 2.3, 0.22), Color(0.27, 0.31, 0.31), true)
 	_box("CityDumpLeftWall", Vector3(-8.25, 1.0, -22.5), Vector3(0.22, 2.0, 6.5), Color(0.27, 0.31, 0.31), true)
 	_box("CityDumpRightWall", Vector3(-1.35, 1.0, -22.5), Vector3(0.22, 2.0, 6.5), Color(0.27, 0.31, 0.31), true)
-	# Corner joints are integrated into the bunker walls; no tall loose pipes.
-	# Concrete expansion joints, drainage channel and restrained safety markings.
 	for z in [-25.0, -22.5, -20.0]:
 		_box("DepotConcreteJoint", Vector3(-4.8, 0.082, z), Vector3(6.8, 0.012, 0.035), Color(0.16, 0.19, 0.19), false)
 	_box("DepotDrainChannel", Vector3(-4.8, 0.10, -19.18), Vector3(6.3, 0.08, 0.22), Color(0.10, 0.13, 0.13), false)
 	for i in range(12):
 		_box("DepotDrainSlot", Vector3(-7.65 + float(i) * 0.52, 0.145, -19.18), Vector3(0.30, 0.018, 0.055), Color(0.48, 0.51, 0.49), false)
 	_box("CityDumpHazardStripe", Vector3(-4.8, 0.10, -19.0), Vector3(6.9, 0.08, 0.14), Color(0.78, 0.59, 0.16), false)
-	# Industrial sign, mounted on a steel frame.
 	_box("CityDumpSignPostL", Vector3(-6.65, 2.0, -25.66), Vector3(0.09, 2.0, 0.09), Color(0.13, 0.17, 0.18), false)
 	_box("CityDumpSignPostR", Vector3(-2.95, 2.0, -25.66), Vector3(0.09, 2.0, 0.09), Color(0.13, 0.17, 0.18), false)
 	_box("CityDumpSign", Vector3(-4.8, 2.55, -25.66), Vector3(3.8, 0.72, 0.12), Color(0.10, 0.17, 0.17), false)
-	_label_3d("MUNICIPAL WASTE TRANSFER", Vector3(-4.8, 2.55, -25.56), 0.19)
-	# Heavy-duty bollards protect the bay edges without blocking the truck lane.
+	var tank_sign := Label3D.new()
+	tank_sign.text = "FACTORY WASTE STORAGE"
+	tank_sign.position = Vector3(-4.8, 2.55, -25.56)
+	tank_sign.font_size = 20
+	tank_sign.pixel_size = 0.009
+	tank_sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	waste_tank_root.add_child(tank_sign)
 	for x in [-8.8, -0.8]:
 		for z in [-19.0, -24.5]:
 			_cylinder("DepotSafetyBollard", Vector3(x, 0.48, z), 0.13, 0.96, Color(0.62, 0.48, 0.20), true)
-	# Compact wall-mounted work lights replace the oversized protruding poles.
 	for x in [-7.85, -1.75]:
 		_box("DepotFloodlightHousing", Vector3(x, 2.05, -25.48), Vector3(0.72, 0.28, 0.22), Color(0.16, 0.21, 0.22), false)
 		_box("DepotFloodlightLens", Vector3(x, 1.98, -25.34), Vector3(0.48, 0.08, 0.035), Color(0.92, 0.82, 0.55), false)
 		var lamp := OmniLight3D.new()
+		lamp.name = "DepotFloodlight"
 		lamp.position = Vector3(x, 1.85, -25.15)
 		lamp.light_color = Color(0.82, 0.86, 0.82)
 		lamp.light_energy = 0.22
 		lamp.omni_range = 5.0
-		add_child(lamp)
+		waste_tank_root.add_child(lamp)
 	_box("DepotElectricalCabinet", Vector3(-1.75, 0.95, -24.6), Vector3(0.48, 1.6, 0.34), Color(0.34, 0.39, 0.38), true)
 	_box("DepotCabinetDoor", Vector3(-1.75, 0.95, -24.41), Vector3(0.38, 1.42, 0.035), Color(0.24, 0.29, 0.29), false)
-	# Truck fleet waits beyond the playable view until its staggered route starts.
-	city_trucks.clear()
-	city_truck = null
-	city_trash_reserved = 0
-	_refresh_city_truck_fleet()
-	_reset_city_truck_fleet()
-	_create_district_collection_truck()
+	# Move all geometry helpers, which create at scene root, under the tank transform.
+	var tank_names := ["CityDumpApproachApron", "CityDumpConcrete", "CityDumpMarking", "DumpBunkerSideRibL", "DumpBunkerSideRibR", "DumpBunkerTopRailBack", "DumpBunkerTopRailLeft", "DumpBunkerTopRailRight", "DumpCompactorHousing", "DumpCompactorServicePanel", "CityDumpBackWall", "CityDumpLeftWall", "CityDumpRightWall", "DepotConcreteJoint", "DepotDrainChannel", "DepotDrainSlot", "CityDumpHazardStripe", "CityDumpSignPostL", "CityDumpSignPostR", "CityDumpSign", "DepotSafetyBollard", "DepotFloodlightHousing", "DepotFloodlightLens", "DepotElectricalCabinet", "DepotCabinetDoor"]
+	for child in get_children():
+		if child is Node3D and tank_names.has(child.name):
+			remove_child(child)
+			waste_tank_root.add_child(child)
+	for child in waste_tank_root.get_children():
+		if child is Node3D and child != tank_sign:
+			child.position.x += 129.6
 
 func _create_city_truck(index: int) -> Node3D:
 	var truck := Node3D.new()
@@ -4169,7 +4247,7 @@ func _create_district_collection_truck() -> void:
 
 
 func _process_district_collection_truck(delta: float) -> void:
-	if district_truck_level <= 0 or not is_instance_valid(district_collection_truck):
+	if not waste_tank_built or district_truck_level <= 0 or not is_instance_valid(district_collection_truck):
 		return
 	var truck := district_collection_truck
 	var phase := int(truck.get_meta("collection_phase", 0))
@@ -4268,7 +4346,7 @@ func _process_district_collection_truck(delta: float) -> void:
 				var rng := RandomNumberGenerator.new()
 				rng.randomize()
 				var pile_layer := float(_city_dump_trash_count() / 36) * 0.22
-				item.global_position = Vector3(rng.randf_range(-7.55, -2.05), 0.10 + minf(pile_layer, 1.35), rng.randf_range(-25.25, -19.85))
+				item.global_position = Vector3(rng.randf_range(122.05, 127.55), 0.10 + minf(pile_layer, 1.35), rng.randf_range(-25.25, -19.85))
 				trash_nodes.append(item)
 			city_trash_reserved = maxi(0, city_trash_reserved - 1)
 			truck.set_meta("collection_cargo", cargo)
@@ -4290,7 +4368,7 @@ func _process_district_collection_truck(delta: float) -> void:
 
 
 func _process_city_truck(delta: float) -> void:
-	if city_trucks.is_empty():
+	if city_trucks.is_empty() or not waste_tank_built:
 		return
 	for truck_index in range(city_trucks.size()):
 		var truck := city_trucks[truck_index]
@@ -4399,7 +4477,7 @@ func _city_dump_trash_count() -> int:
 	for item in trash_nodes:
 		if is_instance_valid(item):
 			var p := item.global_position
-			if p.x >= -8.1 and p.x <= -1.5 and p.z >= -25.7 and p.z <= -19.3:
+			if p.x >= 121.9 and p.x <= 127.5 and p.z >= -25.7 and p.z <= -19.3:
 				count += 1
 	return count
 
@@ -4419,7 +4497,7 @@ func _spawn_city_trash(amount: int) -> int:
 	for i in range(allowed):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.position = Vector3(rng.randf_range(-7.55, -2.05), 0.05, rng.randf_range(-25.25, -19.85))
+		item.position = Vector3(rng.randf_range(122.05, 127.55), 0.05, rng.randf_range(-25.25, -19.85))
 		add_child(item)
 		trash_nodes.append(item)
 		spawned += 1
@@ -4815,6 +4893,45 @@ func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, co
 		mesh.rotation_degrees.z = 90
 	add_child(mesh)
 	return mesh
+
+func _process_waste_feed_conveyor(delta: float) -> void:
+	if not waste_tank_built or waste_feed_busy:
+		return
+	waste_feed_timer += delta
+	if waste_feed_timer < 0.55:
+		return
+	waste_feed_timer = 0.0
+	var selected_item: Node3D
+	for item in trash_nodes:
+		if is_instance_valid(item) and _is_city_dump_trash(item):
+			selected_item = item
+			break
+	if not is_instance_valid(selected_item):
+		return
+	var active_rows: Array[int] = []
+	for row in range(5):
+		if mega_factory_built_count >= row * 3 + 1:
+			active_rows.append(row)
+	if active_rows.is_empty():
+		return
+	var selected_row := active_rows[waste_feed_line_index % active_rows.size()]
+	waste_feed_line_index += 1
+	trash_nodes.erase(selected_item)
+	waste_feed_busy = true
+	var target_z := _factory_row_z(selected_row)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(selected_item, "global_position", Vector3(124.8, 1.25, -22.5), 0.35)
+	tween.tween_property(selected_item, "global_position", Vector3(146.0, 1.25, -22.5), 1.35)
+	tween.tween_property(selected_item, "global_position", Vector3(147.0, 1.25, target_z), 0.65)
+	tween.tween_property(selected_item, "global_position", Vector3(150.4, 1.25, target_z), 0.45)
+	tween.tween_callback(_finish_waste_feed_item.bind(selected_item))
+
+func _finish_waste_feed_item(item: Node3D) -> void:
+	if is_instance_valid(item):
+		item.queue_free()
+	waste_feed_busy = false
 
 func _animate_conveyor(delta: float) -> void:
 	var conveyor_speed := _conveyor_speed_multiplier()
