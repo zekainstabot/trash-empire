@@ -3910,6 +3910,18 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		tween.tween_callback(func(): product.reparent(truck))
 	tween.tween_interval(0.5)
 	tween.tween_property(truck, "position:x", 124.0, 2.4)
+	tween.tween_interval(0.45)
+	# Route truck out of the factory, through town, then off the map.
+	tween.tween_property(truck, "position:z", z + 5.0, 1.0)
+	tween.tween_property(truck, "position:x", 108.0, 2.8)
+	tween.tween_property(truck, "position:z", 12.0, 1.5)
+	tween.tween_property(truck, "position:x", 82.0, 3.4)
+	tween.tween_property(truck, "position:z", 22.0, 1.3)
+	tween.tween_property(truck, "position:x", 58.0, 3.0)
+	tween.tween_property(truck, "position:z", 34.0, 1.5)
+	tween.tween_property(truck, "position:x", 30.0, 3.0)
+	tween.tween_property(truck, "position:z", 46.0, 1.5)
+	tween.tween_property(truck, "position:x", -8.0, 3.2)
 	tween.tween_callback(func():
 		truck.queue_free()
 		door_left.queue_free()
@@ -3920,7 +3932,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		money += revenue
 		_update_ui()
 		_save_game()
-		_set_message("%s truck delivered 3 products. Sale +%.0f ZC!" % [_factory_row_product(row), revenue])
+		_set_message("%s truck exited the city and delivered 3 products. Sale +%.0f ZC!" % [_factory_row_product(row), revenue])
 	)
 
 func _mega_factory_machine_cost(index: int) -> float:
