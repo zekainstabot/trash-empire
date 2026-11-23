@@ -1022,7 +1022,7 @@ func _update_factory_build_label() -> void:
 	factory_build_label.text = "%.1f ZC" % remaining
 
 func _build_factory_module(stage: int) -> void:
-	var z_positions := [0.0, 0.0, 0.0, 7.0, 14.0, 21.0]
+	var z_positions := [0.0, 0.0, 0.0, 10.0, 20.0, 30.0]
 	var z: float = z_positions[stage]
 	var colors := [Color.WHITE, Color.WHITE, Color(0.92, 0.48, 0.12), Color(0.10, 0.63, 0.76), Color(0.22, 0.68, 0.42), Color(0.94, 0.66, 0.16)]
 	var accent: Color = colors[stage]
