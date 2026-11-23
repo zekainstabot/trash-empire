@@ -1852,7 +1852,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":12.0,"bulk_pickup":30.0}
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
