@@ -34,6 +34,11 @@ var drone_level := 0
 var ground_robot_level := 0
 var ground_collector: Node3D
 var ground_collector_timer := 0.0
+var sorting_bins: Array[Node3D] = []
+var sorting_robots: Array[Node3D] = []
+var sorting_robot_levels: Array[int] = [0, 0, 0, 0]
+var sorting_bin_counts: Array[int] = [0, 0, 0, 0]
+var sorting_area_root: Node3D
 var drone_timer := 0.0
 var helper_drones: Array[Node3D] = []
 var auto_pickup_timer := 0.0
@@ -192,6 +197,7 @@ func _process(delta: float) -> void:
 	_process_vacuum_suction(delta)
 	_process_helper_drones(delta)
 	_process_ground_collector(delta)
+	_process_sorting_robots(delta)
 	_process_trash_respawn(delta)
 	_process_city_truck(delta)
 	_process_district_collection_truck(delta)
@@ -348,12 +354,221 @@ func _build_world() -> void:
 	_build_city_life_details()
 	_build_city_pedestrians()
 	_build_commercial_district()
+	_build_sorting_district()
 	_build_ad_billboards()
 
 	refill_world_button = _create_gear_refill_button(Vector3(0.0, 2.0, -35.20), Callable(self, "_refill_first_district"))
 	refill_world_button.rotation_degrees.y = 90.0
 	_build_factory_expansion()
 	_refresh_factory_upgrade_button()
+
+
+func _build_sorting_district() -> void:
+	sorting_area_root = Node3D.new()
+	sorting_area_root.name = "ColorSortingDistrict"
+	add_child(sorting_area_root)
+	_box("SortingDistrictGround", Vector3(250, -0.32, 0), Vector3(76, 0.64, 72), Color(0.24, 0.31, 0.29), true)
+	_box("SortingDistrictConcrete", Vector3(250, 0.018, 0), Vector3(70, 0.035, 64), Color(0.34, 0.37, 0.34), false)
+	_box("SortingDistrictAccessRoad", Vector3(214, 0.025, 0), Vector3(20, 0.05, 8), Color(0.14, 0.17, 0.18), false)
+	_box("SortingDistrictRoadStripe", Vector3(214, 0.055, 0), Vector3(18, 0.018, 0.14), Color(0.92, 0.78, 0.35), false)
+	_box("SortingDistrictSign", Vector3(220, 3.0, -10.0), Vector3(0.35, 5.0, 0.35), Color(0.18, 0.23, 0.22), true)
+	_box("SortingDistrictSignBoard", Vector3(220, 4.5, -10.0), Vector3(10.0, 2.0, 0.35), Color(0.06, 0.20, 0.18), false)
+	_label_3d("SMART SORTING CENTER", Vector3(220, 4.65, -9.78), 0.38)
+	var names := ["PLASTIC", "PAPER", "METAL", "GLASS"]
+	var colors := [Color(0.12, 0.42, 0.88), Color(0.88, 0.76, 0.22), Color(0.48, 0.52, 0.55), Color(0.15, 0.68, 0.42)]
+	var categories := ["plastic", "paper", "metal", "glass"]
+	var positions := [Vector3(236, 0, -13), Vector3(248, 0, -13), Vector3(260, 0, -13), Vector3(272, 0, -13)]
+	sorting_bins.clear()
+	sorting_robots.clear()
+	for i in range(4):
+		var bin_root := Node3D.new()
+		bin_root.name = "SortingBin_" + categories[i]
+		bin_root.position = positions[i]
+		sorting_area_root.add_child(bin_root)
+		_make_bin(positions[i], colors[i], names[i])
+		var counter := Label3D.new()
+		counter.name = "SortingCounter"
+		counter.text = "0 ITEMS"
+		counter.position = Vector3(0, 2.0, -0.9)
+		counter.font_size = 26
+		counter.pixel_size = 0.005
+		counter.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		bin_root.add_child(counter)
+		sorting_bins.append(bin_root)
+		var pad_pos: Vector3 = positions[i] + Vector3(0, 0, 4.0)
+		_box("SortingRobotBuildPad", pad_pos + Vector3(0, 0.04, 0), Vector3(3.8, 0.08, 3.2), colors[i].darkened(0.45), false)
+		var build_button := Area3D.new()
+		build_button.name = "BuildSortingRobot_" + categories[i]
+		build_button.position = pad_pos + Vector3(0, 1.1, 0)
+		var button_mesh := MeshInstance3D.new()
+		var button_box := BoxMesh.new()
+		button_box.size = Vector3(2.9, 1.4, 0.45)
+		button_mesh.mesh = button_box
+		button_mesh.material_override = _mat(Color(0.055, 0.12, 0.13))
+		build_button.add_child(button_mesh)
+		var button_label := Label3D.new()
+		button_label.name = "SortingBuildLabel"
+		button_label.text = "BUILD ROBOT\n%s\n120 ZC" % names[i]
+		button_label.position = Vector3(0, 0, -0.25)
+		button_label.font_size = 24
+		button_label.pixel_size = 0.006
+		button_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		button_label.modulate = colors[i].lightened(0.35)
+		build_button.add_child(button_label)
+		var hit := CollisionShape3D.new()
+		var hit_shape := BoxShape3D.new()
+		hit_shape.size = Vector3(3.1, 1.6, 0.8)
+		hit.shape = hit_shape
+		build_button.add_child(hit)
+		sorting_area_root.add_child(build_button)
+		build_button.input_event.connect(_on_sorting_build_input.bind(i))
+		var robot := _make_sorting_robot(i, colors[i])
+		sorting_area_root.add_child(robot)
+		robot.global_position = pad_pos + Vector3(0, 0, 2.0)
+		robot.visible = false
+		sorting_robots.append(robot)
+	_refresh_sorting_district()
+
+
+func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
+	var robot := Node3D.new()
+	robot.name = "SortingRobot_%d" % category_index
+	_add_robot_box(robot, "SortingRobotBody", Vector3(0, 0.68, 0), Vector3(0.95, 0.72, 0.82), robot_color)
+	_add_robot_box(robot, "SortingRobotTop", Vector3(0, 1.13, 0.02), Vector3(0.62, 0.20, 0.58), Color(0.16, 0.22, 0.24))
+	_add_robot_sphere(robot, "SortingRobotHead", Vector3(0, 1.48, -0.08), 0.31, Color(0.68, 0.76, 0.76))
+	_add_robot_box(robot, "SortingRobotVisor", Vector3(0, 1.48, -0.36), Vector3(0.40, 0.16, 0.035), Color(0.10, 0.92, 0.78))
+	_add_robot_box(robot, "SortingRobotFrontCollector", Vector3(0, 0.40, -0.62), Vector3(0.82, 0.16, 0.38), Color(0.75, 0.80, 0.77))
+	for side in [-1.0, 1.0]:
+		for z in [-0.28, 0.28]:
+			var wheel := MeshInstance3D.new()
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.22
+			wheel_mesh.bottom_radius = 0.22
+			wheel_mesh.height = 0.14
+			wheel.mesh = wheel_mesh
+			wheel.position = Vector3(side * 0.52, 0.25, z)
+			wheel.rotation_degrees.z = 90
+			wheel.material_override = _mat(Color(0.045, 0.055, 0.06))
+			robot.add_child(wheel)
+	robot.set_meta("category_index", category_index)
+	robot.set_meta("target", null)
+	robot.set_meta("cargo", null)
+	robot.set_meta("mode", "idle")
+	robot.set_meta("scan_timer", 0.0)
+	return robot
+
+
+func _on_sorting_build_input(_camera: Node3D, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_idx: int, category_index: int) -> void:
+	if not event is InputEventMouseButton or not event.pressed or event.button_index != MOUSE_BUTTON_LEFT:
+		return
+	_build_sorting_robot(category_index)
+
+
+func _build_sorting_robot(category_index: int) -> void:
+	if category_index < 0 or category_index >= 4 or sorting_robot_levels[category_index] > 0:
+		return
+	if money < 120.0:
+		_set_message("You need 120 ZC to build this sorting robot.")
+		return
+	money -= 120.0
+	sorting_robot_levels[category_index] = 1
+	if is_instance_valid(sorting_robots[category_index]):
+		sorting_robots[category_index].visible = true
+	_refresh_sorting_district()
+	_update_ui()
+	_save_game()
+	_set_message("Sorting robot built! It collects matching waste and sorts it into its own bin.")
+
+
+func _refresh_sorting_district() -> void:
+	for i in range(mini(4, sorting_robots.size())):
+		if is_instance_valid(sorting_robots[i]):
+			sorting_robots[i].visible = sorting_robot_levels[i] > 0
+	for i in range(mini(4, sorting_bins.size())):
+		if is_instance_valid(sorting_bins[i]):
+			var counter := sorting_bins[i].get_node_or_null("SortingCounter") as Label3D
+			if is_instance_valid(counter):
+				counter.text = "%d ITEMS" % sorting_bin_counts[i]
+
+
+func _process_sorting_robots(delta: float) -> void:
+	if sorting_robots.is_empty():
+		return
+	var category_names := ["plastic", "paper", "metal", "glass"]
+	var bin_positions := [Vector3(236, 0, -13), Vector3(248, 0, -13), Vector3(260, 0, -13), Vector3(272, 0, -13)]
+	for i in range(mini(4, sorting_robots.size())):
+		if sorting_robot_levels[i] <= 0:
+			continue
+		var robot := sorting_robots[i]
+		if not is_instance_valid(robot) or not robot.visible:
+			continue
+		var mode := String(robot.get_meta("mode", "idle"))
+		var target := robot.get_meta("target") as Node3D
+		if mode == "return":
+			var drop_point: Vector3 = bin_positions[i] + Vector3(0, 0.9, 1.25)
+			robot.global_position = robot.global_position.move_toward(drop_point, 4.2 * delta)
+			if robot.global_position.distance_to(drop_point) < 0.55:
+				var cargo := robot.get_meta("cargo") as Node3D
+				if is_instance_valid(cargo):
+					cargo.queue_free()
+					robot.set_meta("cargo", null)
+					sorting_bin_counts[i] += 1
+					money += 1.5
+					_refresh_sorting_district()
+					_update_ui()
+					_save_game()
+				robot.set_meta("mode", "idle")
+			continue
+		if not is_instance_valid(target) or not trash_nodes.has(target):
+			robot.set_meta("target", null)
+			target = null
+			var cooldown := float(robot.get_meta("scan_timer", 0.0)) - delta
+			if cooldown <= 0.0:
+				robot.set_meta("scan_timer", 0.65)
+				var best_distance := 24.0
+				for item in trash_nodes:
+					if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
+						continue
+					if String(item.get_meta("recycle_category", "")) != category_names[i]:
+						continue
+					var p := item.global_position
+					if p.x < 222.0 or p.x > 278.0 or absf(p.z) > 27.0:
+						continue
+					var distance := robot.global_position.distance_to(p)
+					if distance < best_distance:
+						best_distance = distance
+						target = item
+				if is_instance_valid(target):
+					target.set_meta("drone_reserved", -30 - i)
+					robot.set_meta("target", target)
+			else:
+				robot.set_meta("scan_timer", cooldown)
+		if not is_instance_valid(target):
+			var idle_point: Vector3 = bin_positions[i] + Vector3(0, 0, 2.0)
+			robot.global_position = robot.global_position.move_toward(idle_point, 1.8 * delta)
+			continue
+		var destination := target.global_position + Vector3(0, 0.55, 0)
+		robot.global_position = robot.global_position.move_toward(destination, 4.2 * delta)
+		if robot.global_position.distance_to(destination) <= 0.65:
+			var keep_transform := target.global_transform
+			target.reparent(robot)
+			target.global_transform = keep_transform
+			target.position = Vector3(0, 1.85, -0.55)
+			robot.set_meta("cargo", target)
+			robot.set_meta("target", null)
+			trash_nodes.erase(target)
+			robot.set_meta("mode", "return")
+
+
+func _spawn_sorting_district_trash(amount: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(amount):
+		var item := Node3D.new()
+		item.set_script(TRASH_SCRIPT)
+		item.position = Vector3(rng.randf_range(224.0, 276.0), 0.05, rng.randf_range(-25.0, 25.0))
+		add_child(item)
+		trash_nodes.append(item)
 
 
 func _build_connected_city_streets() -> void:
@@ -1223,6 +1438,7 @@ func _build_trash() -> void:
 		trash_nodes.append(item)
 	if yard_stage >= 2:
 		_spawn_district_two_trash(48)
+	_spawn_sorting_district_trash(48)
 	_spawn_final_cleanup_trash()
 
 func _build_ui() -> void:
@@ -1488,6 +1704,8 @@ func _start_new_world() -> void:
 	magnet_power_level = 1
 	suction_level = 0
 	drone_level = 0
+	sorting_robot_levels = [0, 0, 0, 0]
+	sorting_bin_counts = [0, 0, 0, 0]
 	dispatch_upgrade_level = 0
 	city_truck_upgrade_level = 0
 	city_fleet_upgrade_level = 0
@@ -2870,6 +3088,7 @@ func _upgrade_ground_robot() -> void:
 	if not is_instance_valid(ground_collector):
 		_build_ground_collector()
 	_refresh_ground_collector()
+	_refresh_sorting_district()
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
@@ -3157,6 +3376,8 @@ func _save_game() -> void:
 	save.set_value("progress", "suction_level", suction_level)
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "ground_robot_level", ground_robot_level)
+	save.set_value("progress", "sorting_robot_levels", sorting_robot_levels)
+	save.set_value("progress", "sorting_bin_counts", sorting_bin_counts)
 	save.set_value("progress", "district_truck_level", district_truck_level)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
 	save.set_value("progress", "city_truck_upgrade_level", city_truck_upgrade_level)
@@ -3196,6 +3417,10 @@ func _load_game() -> void:
 	suction_level = clampi(int(save.get_value("progress", "suction_level", 0)), 0, 3)
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	ground_robot_level = clampi(int(save.get_value("progress", "ground_robot_level", 0)), 0, 3)
+	sorting_robot_levels = save.get_value("progress", "sorting_robot_levels", [0, 0, 0, 0])
+	sorting_bin_counts = save.get_value("progress", "sorting_bin_counts", [0, 0, 0, 0])
+	while sorting_robot_levels.size() < 4: sorting_robot_levels.append(0)
+	while sorting_bin_counts.size() < 4: sorting_bin_counts.append(0)
 	district_truck_level = clampi(int(save.get_value("progress", "district_truck_level", 0)), 0, 1)
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
 	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
