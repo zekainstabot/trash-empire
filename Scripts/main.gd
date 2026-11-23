@@ -1554,8 +1554,8 @@ func _build_ui() -> void:
 	var mission_card := Panel.new()
 	mission_card.name = "MissionCard"
 	var wide_layout := screen.x > screen.y
-	mission_card.position = Vector2(220 if wide_layout else 18, 134)
-	mission_card.size = Vector2(clampf(screen.x - (238.0 if wide_layout else 36.0), 284.0, 480.0), 132.0)
+	mission_card.position = Vector2(220 if wide_layout else 18, 152 if wide_layout else 134)
+	mission_card.size = Vector2(clampf(screen.x - (350.0 if wide_layout else 36.0), 284.0, 360.0), 132.0)
 	mission_card.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.075, 0.068, 0.96)))
 	layer.add_child(mission_card)
 	var mission_title := _label("NEXT STEP", Vector2(14, 9), 14, mission_card)
