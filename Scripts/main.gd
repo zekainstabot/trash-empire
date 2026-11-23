@@ -1536,7 +1536,8 @@ func _build_ui() -> void:
 	skill_scroll_container.offset_top = 84
 	skill_scroll_container.offset_right = -12
 	skill_scroll_container.offset_bottom = -12
-	skill_scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	# Keep scrolling fully functional while hiding the visible scrollbar.
+	skill_scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	skill_scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	skill_scroll_container.scroll_deadzone = 6
 	skill_scroll_container.scroll_vertical_custom_step = 28.0
