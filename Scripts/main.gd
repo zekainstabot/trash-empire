@@ -395,9 +395,9 @@ func _on_sorting_station_entered(body: Node3D, station_index: int) -> void:
 func _build_sorting_station(station_index: int) -> void:
 	if station_index < 0 or station_index >= 4 or sorting_robot_levels[station_index] > 0:
 		return
-	const BUILD_COST := 120.0
+	const BUILD_COST := 45.0
 	if money < BUILD_COST:
-		_set_message("You need 120 ZC to build this recycling station.")
+		_set_message("You need 45 ZC to build this recycling station.")
 		return
 	money -= BUILD_COST
 	sorting_robot_levels[station_index] = 1
@@ -492,7 +492,7 @@ func _process_sorting_robots(delta: float) -> void:
 					cargo.queue_free()
 					robot.set_meta("cargo", null)
 					sorting_bin_counts[i] += 1
-					money += 1.5
+					money += _sorting_robot_item_reward()
 					_refresh_sorting_district()
 					_update_ui()
 					_save_game()
@@ -918,7 +918,7 @@ func _upgrade_factory() -> void:
 	if factory_stage >= 5:
 		_set_message("Factory production line is fully upgraded!")
 		return
-	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
+	var costs := [0.0, 20.0, 55.0, 110.0, 190.0]
 	var cost: float = costs[factory_stage]
 	if money < cost:
 		_set_message("You need %.0f ZC to add the next factory machine." % cost)
@@ -942,7 +942,7 @@ func _refresh_factory_upgrade_button() -> void:
 	if factory_stage >= 5:
 		label.text = "FACTORY MAX\nDELIVERY LINE"
 	else:
-		var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
+		var costs := [0.0, 20.0, 55.0, 110.0, 190.0]
 		var names := ["", "", "ADD SHREDDER", "ADD GRANULATOR", "ADD TEDDY BEAR FACTORY", "ADD PACKAGING + TRUCK"]
 		label.text = "%s\n%.0f ZC" % [names[factory_stage + 1], costs[factory_stage]]
 
@@ -1016,7 +1016,7 @@ func _process_factory_build(delta: float) -> void:
 	var player_flat := Vector2(player.global_position.x, player.global_position.z)
 	if player_flat.distance_to(Vector2(target.x, target.z)) > 2.15:
 		return
-	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
+	var costs := [0.0, 20.0, 55.0, 110.0, 190.0]
 	var cost: float = costs[factory_stage]
 	var payment := minf(money, minf(delta * _spending_speed_multiplier(), cost - factory_build_paid))
 	if payment > 0.0:
@@ -1046,7 +1046,7 @@ func _process_factory_build(delta: float) -> void:
 func _update_factory_build_label() -> void:
 	if not is_instance_valid(factory_build_label) or factory_stage >= 5:
 		return
-	var costs := [0.0, 12.0, 35.0, 80.0, 160.0]
+	var costs := [0.0, 20.0, 55.0, 110.0, 190.0]
 	var names := ["", "", "SHREDDER", "GRANULATOR", "TEDDY BEAR FACTORY", "PACKAGING + TRUCK"]
 	var cost: float = costs[factory_stage]
 	var remaining := maxf(0.0, cost - factory_build_paid)
@@ -2172,7 +2172,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"suction":35.0,"drones":25.0,"ground_robot":45.0,"district_truck":90.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"sorting_robot":32.0,"conveyor_speed":48.0,"repair_robot":70.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
+	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"ground_robot":65.0,"district_truck":110.0,"city_truck":60.0,"city_fleet":85.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"sorting_robot":50.0,"conveyor_speed":65.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -2398,7 +2398,7 @@ func _pickup_trash_item(item: Node3D) -> bool:
 		return false
 	if item.has_meta("rare_type"):
 		var rare_type := String(item.get_meta("rare_type"))
-		var bonus := 8.0 if rare_type == "gold" else 2.0
+		var bonus := 4.0 if rare_type == "gold" else 1.25
 		money += bonus
 		_set_message("%s rare scrap found! Bonus +%.2f ZC" % [rare_type.to_upper(), bonus])
 	if weight == 2:
@@ -2747,7 +2747,7 @@ func _process_helper_drones(delta: float) -> void:
 				_register_final_cleanup_pickup(target)
 				if target.has_meta("rare_type"):
 					var rare_type := String(target.get_meta("rare_type"))
-					money += 8.0 if rare_type == "gold" else 2.0
+					money += 4.0 if rare_type == "gold" else 1.25
 				if weight == 2:
 					drone.set_meta("cargo_bulky", int(drone.get_meta("cargo_bulky", 0)) + 1)
 				drone.set_meta("cargo_slots", slots + weight)
@@ -2821,7 +2821,7 @@ func _process_ground_collector(delta: float) -> void:
 		_register_final_cleanup_pickup(target)
 		if target.has_meta("rare_type"):
 			var rare_type := String(target.get_meta("rare_type"))
-			money += 8.0 if rare_type == "gold" else 2.0
+			money += 4.0 if rare_type == "gold" else 1.25
 		if weight == 2:
 			rover.set_meta("cargo_bulky", int(rover.get_meta("cargo_bulky", 0)) + 1)
 		rover.set_meta("cargo_slots", cargo_slots + weight)
@@ -2869,7 +2869,7 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 		rover.set_meta("cargo_slots", slots - 1)
 	var multipliers := [1.0, 2.0, 4.0, 8.0]
 	var factory_multiplier: float = multipliers[clampi(factory_stage - 1, 0, 3)]
-	var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25) * (2.0 if bulky else 1.0)
+	var item_value := _recycling_item_value(bulky)
 	money += item_value
 	_spawn_conveyor_item(item_value)
 	_update_ui()
@@ -2908,7 +2908,7 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		drone.set_meta("cargo_slots", slots - 1)
 	var factory_multipliers := [1.0, 2.0, 4.0, 8.0]
 	var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
-	var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25) * (2.0 if bulky else 1.0)
+	var item_value := _recycling_item_value(bulky)
 	money += item_value
 	_spawn_conveyor_item(item_value)
 	_update_ui()
@@ -2944,13 +2944,13 @@ func _process_auto_sell(delta: float) -> void:
 			carried -= 1
 		var factory_multipliers := [1.0, 2.0, 4.0, 8.0]
 		var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 3)]
-		var item_value := 0.1 * recycling_bonus * factory_multiplier * (1.0 + float(trash_value_upgrade_level - 1) * 0.25) * (2.0 if sold_bulky else 1.0)
+		var item_value := _recycling_item_value(sold_bulky)
 		if randf() < float(luck_upgrade_level - 1) * 0.10:
 			item_value *= 2.0
 		money += item_value
 		if factory_stage >= 4:
 			# The teddy bear sale is a separate bonus; recycling income is still paid now.
-			var teddy_sale_bonus := item_value * 4.0
+			var teddy_sale_bonus := item_value * 2.0
 			_spawn_conveyor_item(teddy_sale_bonus)
 			_set_message("Recycling +%.2f ZC | Teddy bear queued for extra sale +%.2f ZC" % [item_value, teddy_sale_bonus])
 		else:
@@ -3604,6 +3604,24 @@ func _build_final_landfill_details() -> void:
 
 
 
+func _recycling_item_value(bulky: bool) -> float:
+	var factory_multipliers := [1.0, 1.6, 2.5, 3.6, 4.8]
+	var factory_multiplier: float = factory_multipliers[clampi(factory_stage - 1, 0, 4)]
+	var upgrade_multiplier := 1.0 + float(trash_value_upgrade_level - 1) * 0.25
+	return 0.5 * recycling_bonus * factory_multiplier * upgrade_multiplier * (2.0 if bulky else 1.0)
+
+func _sorting_robot_item_reward() -> float:
+	var factory_multipliers := [1.0, 1.6, 2.5, 3.6, 4.8]
+	return 0.35 * factory_multipliers[clampi(factory_stage - 1, 0, 4)]
+
+func _factory_row_unit_price(row: int) -> float:
+	var prices := [18.0, 24.0, 15.0, 32.0, 14.0]
+	return prices[clampi(row, 0, prices.size() - 1)]
+
+func _factory_row_truck_revenue(row: int) -> float:
+	# Three finished goods per truck; higher-complexity products sell for more.
+	return _factory_row_unit_price(row) * 3.0
+
 func _factory_row_z(row: int) -> float:
 	return -26.0 + float(row) * 13.0
 
@@ -3767,7 +3785,7 @@ func _process_factory_row_shipping(delta: float) -> void:
 	if mega_factory_built_count < 3 or factory_shipping_busy:
 		return
 	factory_shipping_timer += delta
-	if factory_shipping_timer < 8.0:
+	if factory_shipping_timer < 12.0:
 		return
 	factory_shipping_timer = 0.0
 	var available_rows: Array[int] = []
@@ -3820,11 +3838,15 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		door_left.queue_free()
 		door_right.queue_free()
 		factory_shipping_busy = false
-		_set_message("%s loaded. Truck dispatched!" % _factory_row_product(row))
+		var revenue := _factory_row_truck_revenue(row)
+		money += revenue
+		_update_ui()
+		_save_game()
+		_set_message("%s truck delivered 3 products. Sale +%.0f ZC!" % [_factory_row_product(row), revenue])
 	)
 
 func _mega_factory_machine_cost(index: int) -> float:
-	var costs := [35.0, 55.0, 80.0, 110.0, 145.0, 185.0, 230.0, 285.0, 350.0, 390.0, 430.0, 470.0, 520.0, 570.0, 630.0]
+	var costs := [45.0, 65.0, 90.0, 120.0, 160.0, 210.0, 260.0, 320.0, 390.0, 460.0, 540.0, 630.0, 730.0, 840.0, 960.0]
 	return costs[clampi(index, 0, costs.size() - 1)]
 
 func _build_mega_factory_machine(index: int) -> void:
