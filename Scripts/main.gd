@@ -2059,19 +2059,27 @@ func _process_auto_pickup(delta: float) -> void:
 		auto_pickup_target = null
 		return
 
+	# Revalidate targets frequently: manual pickup, drones, or a full backpack
+	# may invalidate a target while the magnet is pulling it.
 	auto_pickup_scan_timer -= delta
-	if not is_instance_valid(auto_pickup_target) or auto_pickup_target.get_meta("drone_reserved", -1) != -1 or auto_pickup_scan_timer <= 0.0:
+	var target_is_registered := is_instance_valid(auto_pickup_target) and trash_nodes.has(auto_pickup_target)
+	if not target_is_registered or auto_pickup_target.get_meta("drone_reserved", -1) != -1 or auto_pickup_scan_timer <= 0.0:
 		auto_pickup_target = null
-		auto_pickup_scan_timer = 0.22
+		auto_pickup_scan_timer = 0.12
 		var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85 + float(magnet_power_level - 1) * 0.7
 		var best_distance := magnet_range
+		var player_xz := Vector2(player.global_position.x, player.global_position.z)
 		for item in trash_nodes:
 			if not is_instance_valid(item) or not _can_collect_city_dump_trash(item):
 				continue
 			var weight := 2 if item.has_meta("bulky") else 1
 			if carried + weight > capacity or item.get_meta("drone_reserved", -1) != -1:
 				continue
-			var distance := player.global_position.distance_to(item.global_position)
+			# Pickup range is measured on the ground plane, not in 3D.
+			# Trash meshes have different heights, so 3D distance made some
+			# nearby pieces appear out of range forever.
+			var item_xz := Vector2(item.global_position.x, item.global_position.z)
+			var distance := player_xz.distance_to(item_xz)
 			if distance < best_distance:
 				best_distance = distance
 				auto_pickup_target = item
@@ -2079,30 +2087,41 @@ func _process_auto_pickup(delta: float) -> void:
 	if not is_instance_valid(auto_pickup_target):
 		auto_pickup_timer = 0.0
 		return
-	# Never let a previously selected bunker item be magnet-pulled through a side wall.
+	if not trash_nodes.has(auto_pickup_target):
+		auto_pickup_target = null
+		auto_pickup_timer = 0.0
+		return
+	# Never let a bunker item pass through a side wall.
 	if _is_city_dump_trash(auto_pickup_target) and not _player_at_city_dump_front():
 		auto_pickup_target = null
 		auto_pickup_timer = 0.0
 		return
 
 	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65 + float(magnet_power_level - 1) * 1.1
-	var pickup_point := player.global_position + Vector3(0.0, 0.25, 0.0)
-	var distance_to_target := player.global_position.distance_to(auto_pickup_target.global_position)
-	if distance_to_target > 0.85:
+	var pickup_point := Vector3(player.global_position.x, auto_pickup_target.global_position.y, player.global_position.z)
+	var item_xz := Vector2(auto_pickup_target.global_position.x, auto_pickup_target.global_position.z)
+	var pickup_xz := Vector2(pickup_point.x, pickup_point.z)
+	var distance_to_target := item_xz.distance_to(pickup_xz)
+	if distance_to_target > 0.72:
 		auto_pickup_target.global_position = auto_pickup_target.global_position.move_toward(pickup_point, pull_speed * delta)
+		auto_pickup_timer = 0.0
 		return
 
 	auto_pickup_timer += delta
-	var interval := maxf(0.18, 0.72 - float(auto_pickup_level - 1) * 0.12)
+	var interval := maxf(0.16, 0.58 - float(auto_pickup_level - 1) * 0.10)
 	if auto_pickup_timer < interval:
 		return
 	auto_pickup_timer = 0.0
 	var picked := auto_pickup_target
 	auto_pickup_target = null
-	if _pickup_trash_item(picked):
+	if is_instance_valid(picked) and trash_nodes.has(picked) and _pickup_trash_item(picked):
 		_update_ui()
 		_save_game()
 		_set_message("AUTO MAGNET  +1")
+	elif carried < capacity:
+		# If another system claimed the piece during the final pickup frame,
+		# the next scan immediately chooses a fresh available item.
+		auto_pickup_scan_timer = 0.0
 	if carried >= capacity:
 		_set_message("Bag full! Return to the recycling station.")
 
