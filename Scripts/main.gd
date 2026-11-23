@@ -2186,7 +2186,7 @@ func _refresh_upgrade_prices() -> void:
 		var maxed := current >= 3
 		var price := _upgrade_cost(float(base_costs.get(branch, 4.0)), current + 1)
 		if branch == "capacity":
-			price = _upgrade_cost(5.0, upgrade_level)
+			price = _upgrade_cost(8.0, upgrade_level)
 		level_label.text = "LEVEL %d / 3" % mini(current, 3)
 		if maxed:
 			title_label.text = "%s  %s" % [icon, node.title]
@@ -2964,7 +2964,7 @@ func _toggle_upgrade_panel() -> void:
 		upgrade_panel.visible = not upgrade_panel.visible
 
 func _upgrade_bag() -> void:
-	var cost := _upgrade_cost(5.0, upgrade_level)
+	var cost := _upgrade_cost(8.0, upgrade_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -2978,7 +2978,7 @@ func _upgrade_bag() -> void:
 	_set_message("Upgrade purchased! New bag capacity: %d." % capacity)
 
 func _upgrade_speed() -> void:
-	var cost := _upgrade_cost(7.0, speed_upgrade_level)
+	var cost := _upgrade_cost(10.0, speed_upgrade_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -2994,7 +2994,7 @@ func _upgrade_speed() -> void:
 	_set_message("Movement speed upgraded!")
 
 func _upgrade_unload() -> void:
-	var cost := _upgrade_cost(6.0, unload_upgrade_level)
+	var cost := _upgrade_cost(9.0, unload_upgrade_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3009,7 +3009,7 @@ func _upgrade_unload() -> void:
 	_set_message("Unloading speed upgraded!")
 
 func _upgrade_equipment() -> void:
-	var cost := _upgrade_cost(8.0, equipment_upgrade_level)
+	var cost := _upgrade_cost(12.0, equipment_upgrade_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3025,7 +3025,7 @@ func _upgrade_equipment() -> void:
 	_set_message("Magnet range increased!")
 
 func _upgrade_technology() -> void:
-	var cost := _upgrade_cost(8.0, technology_upgrade_level)
+	var cost := _upgrade_cost(14.0, technology_upgrade_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3042,7 +3042,7 @@ func _upgrade_rare_drops() -> void:
 	if rare_drop_upgrade_level >= 3:
 		_set_message("Silver & Gold Finds is already at maximum.")
 		return
-	var cost := _upgrade_cost(18.0, rare_drop_upgrade_level + 1)
+	var cost := _upgrade_cost(25.0, rare_drop_upgrade_level + 1)
 	if not await _pay_gradually(cost):
 		return
 	rare_drop_upgrade_level = mini(rare_drop_upgrade_level + 1, 3)
@@ -3056,7 +3056,7 @@ func _rare_drop_chances() -> Vector2:
 	return Vector2(0.0, 0.0) if rare_drop_upgrade_level <= 0 else Vector2(0.025 * rare_drop_upgrade_level, 0.005 * rare_drop_upgrade_level)
 
 func _upgrade_luck() -> void:
-	var cost := _upgrade_cost(6.0, luck_upgrade_level)
+	var cost := _upgrade_cost(12.0, luck_upgrade_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3069,7 +3069,7 @@ func _upgrade_luck() -> void:
 	_set_message("Lucky finds chance increased by 10%!")
 
 func _upgrade_drones() -> void:
-	var cost := _upgrade_cost(25.0, drone_level + 1)
+	var cost := _upgrade_cost(55.0, drone_level + 1)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3088,7 +3088,7 @@ func _upgrade_district_truck() -> void:
 		_set_message("District collection truck is fully upgraded.")
 		return
 	var next_level := district_truck_level + 1
-	var cost := _upgrade_cost(90.0, next_level)
+	var cost := _upgrade_cost(110.0, next_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this truck upgrade." % cost)
 		return
@@ -3119,7 +3119,7 @@ func _upgrade_sorting_robot() -> void:
 	if sorting_robot_upgrade_level >= 3:
 		return
 	var next_level := sorting_robot_upgrade_level + 1
-	var cost := _upgrade_cost(32.0, next_level)
+	var cost := _upgrade_cost(50.0, next_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to upgrade the sorting robots." % cost)
 		return
@@ -3136,7 +3136,7 @@ func _upgrade_repair_robot() -> void:
 		_set_message("Maintenance robot is fully upgraded.")
 		return
 	var next_level := repair_robot_level + 1
-	var cost := _upgrade_cost(70.0, next_level)
+	var cost := _upgrade_cost(75.0, next_level)
 	if not await _pay_gradually(cost):
 		return
 	repair_robot_level = next_level
@@ -3169,7 +3169,7 @@ func _upgrade_conveyor_speed() -> void:
 	if conveyor_speed_upgrade_level >= 3:
 		return
 	var next_level := conveyor_speed_upgrade_level + 1
-	var cost := _upgrade_cost(48.0, next_level)
+	var cost := _upgrade_cost(65.0, next_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to upgrade the factory conveyor." % cost)
 		return
@@ -3185,7 +3185,7 @@ func _upgrade_ground_robot() -> void:
 	if ground_robot_level >= 3:
 		_set_message("Ground collector robot is fully upgraded.")
 		return
-	var cost := _upgrade_cost(45.0, ground_robot_level + 1)
+	var cost := _upgrade_cost(65.0, ground_robot_level + 1)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3202,7 +3202,7 @@ func _upgrade_ground_robot() -> void:
 	_set_message("Ground collector robot level %d: speed and cargo capacity increased." % ground_robot_level)
 
 func _upgrade_magnet_power() -> void:
-	var cost := _upgrade_cost(15.0, magnet_power_level)
+	var cost := _upgrade_cost(20.0, magnet_power_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3220,7 +3220,7 @@ func _upgrade_suction() -> void:
 	if suction_level >= 3:
 		_set_message("Vacuum suction is already at maximum.")
 		return
-	var cost := _upgrade_cost(35.0, suction_level + 1)
+	var cost := _upgrade_cost(45.0, suction_level + 1)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3239,7 +3239,7 @@ func _upgrade_suction() -> void:
 	_set_message("Vacuum equipped! It replaces the hand magnet and has stronger suction.")
 
 func _upgrade_trash_value() -> void:
-	var cost := _upgrade_cost(12.0, trash_value_upgrade_level)
+	var cost := _upgrade_cost(18.0, trash_value_upgrade_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3256,7 +3256,7 @@ func _upgrade_cost(base_cost: float, level: int) -> float:
 	return ceil(base_cost * pow(1.55, float(level - 1)))
 
 func _upgrade_spawn() -> void:
-	var cost := _upgrade_cost(6.0, spawn_upgrade_level)
+	var cost := _upgrade_cost(10.0, spawn_upgrade_level)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3269,7 +3269,7 @@ func _upgrade_spawn() -> void:
 	_set_message("Trash supply upgraded! +6 trash on every manual refill.")
 
 func _upgrade_respawn() -> void:
-	var cost := _upgrade_cost(55.0, respawn_level + 1)
+	var cost := _upgrade_cost(60.0, respawn_level + 1)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3290,7 +3290,7 @@ func _process_trash_respawn(_delta: float) -> void:
 	pass
 
 func _upgrade_bulk_pickup() -> void:
-	var cost := _upgrade_cost(30.0, bulk_pickup_level + 1)
+	var cost := _upgrade_cost(35.0, bulk_pickup_level + 1)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -3304,7 +3304,7 @@ func _upgrade_bulk_pickup() -> void:
 	_set_message("Multi-pickup upgraded! One tap now collects up to %d pieces." % batch_sizes[bulk_pickup_level])
 
 func _upgrade_auto_pickup() -> void:
-	var cost := _upgrade_cost(20.0, auto_pickup_level + 1)
+	var cost := _upgrade_cost(28.0, auto_pickup_level + 1)
 	if money < cost:
 		_set_message("You need %.1f ZC to complete this purchase." % cost)
 		return
@@ -5151,7 +5151,7 @@ func _upgrade_city_truck_frequency() -> void:
 	if city_truck_upgrade_level >= 3:
 		_set_message("City truck frequency is already at maximum.")
 		return
-	var cost := _upgrade_cost(35.0, city_truck_upgrade_level + 1)
+	var cost := _upgrade_cost(60.0, city_truck_upgrade_level + 1)
 	if not await _pay_gradually(cost):
 		return
 	city_truck_upgrade_level = mini(city_truck_upgrade_level + 1, 3)
@@ -5163,7 +5163,7 @@ func _upgrade_city_fleet() -> void:
 	if city_fleet_upgrade_level >= 3:
 		_set_message("City truck fleet is already at maximum.")
 		return
-	var cost := _upgrade_cost(55.0, city_fleet_upgrade_level + 1)
+	var cost := _upgrade_cost(85.0, city_fleet_upgrade_level + 1)
 	if not await _pay_gradually(cost):
 		return
 	city_fleet_upgrade_level = mini(city_fleet_upgrade_level + 1, 3)
@@ -5173,7 +5173,7 @@ func _upgrade_city_fleet() -> void:
 	_set_message("City fleet expanded: %d trucks. Extra trucks will queue at the depot." % city_trucks.size())
 
 func _upgrade_dispatch() -> void:
-	var cost := _upgrade_cost(25.0, dispatch_upgrade_level + 1)
+	var cost := _upgrade_cost(45.0, dispatch_upgrade_level + 1)
 	if not await _pay_gradually(cost):
 		return
 	dispatch_upgrade_level += 1
@@ -5182,7 +5182,7 @@ func _upgrade_dispatch() -> void:
 	_set_message("Truck dispatch interval reduced to %.0f seconds!" % _truck_dispatch_interval())
 
 func _upgrade_fleet() -> void:
-	var cost := _upgrade_cost(45.0, fleet_upgrade_level + 1)
+	var cost := _upgrade_cost(85.0, fleet_upgrade_level + 1)
 	if not await _pay_gradually(cost):
 		return
 	fleet_upgrade_level += 1
@@ -5192,7 +5192,7 @@ func _upgrade_fleet() -> void:
 	_set_message("A new delivery truck hired! Fleet size: %d." % _truck_fleet_size())
 
 func _upgrade_truck_capacity() -> void:
-	var cost := _upgrade_cost(55.0, truck_capacity_upgrade_level + 1)
+	var cost := _upgrade_cost(70.0, truck_capacity_upgrade_level + 1)
 	if not await _pay_gradually(cost):
 		return
 	truck_capacity_upgrade_level += 1
@@ -5201,7 +5201,7 @@ func _upgrade_truck_capacity() -> void:
 	_set_message("Truck capacity increased to %d boxes!" % _truck_box_capacity())
 
 func _upgrade_packaging() -> void:
-	var cost := _upgrade_cost(40.0, packaging_upgrade_level + 1)
+	var cost := _upgrade_cost(60.0, packaging_upgrade_level + 1)
 	if not await _pay_gradually(cost):
 		return
 	packaging_upgrade_level += 1
