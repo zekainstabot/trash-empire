@@ -360,6 +360,7 @@ func _build_world() -> void:
 	_label_3d("TRASH EMPIRE", Vector3(0, 3.2, 34.5), 0.65)
 	_build_first_district_details()
 	_build_yard_environment_details()
+	_build_industrial_set_dressing()
 	_build_random_residential_blocks()
 	_build_connected_city_streets()
 	_build_city_polish()
@@ -777,6 +778,62 @@ func _build_yard_environment_details() -> void:
 		world_env.environment.fog_enabled = true
 		world_env.environment.fog_light_color = Color(0.63, 0.70, 0.75)
 		world_env.environment.fog_density = 0.0018
+
+
+func _build_industrial_set_dressing() -> void:
+	# A compact maintenance and loading corner along the quiet rear-right edge.
+	# Every added prop is decorative/non-colliding and stays clear of the machine line.
+	_box("MaintenanceApron", Vector3(11.5, 0.025, -25.0), Vector3(6.2, 0.05, 7.0), Color(0.27, 0.30, 0.29), false)
+	for x in [8.55, 14.45]:
+		_box("MaintenanceBayYellowEdge", Vector3(x, 0.055, -25.0), Vector3(0.09, 0.02, 6.4), Color(0.83, 0.65, 0.23), false)
+	for z in [-28.15, -21.85]:
+		_box("MaintenanceBayYellowEdge", Vector3(11.5, 0.055, z), Vector3(5.9, 0.02, 0.09), Color(0.83, 0.65, 0.23), false)
+
+	# Steel service cabinet with vents, access door and status lamps.
+	_box("MaintenanceCabinetBase", Vector3(13.0, 0.18, -26.5), Vector3(1.65, 0.28, 1.0), Color(0.12, 0.16, 0.17), false)
+	_box("MaintenanceCabinet", Vector3(13.0, 1.05, -26.5), Vector3(1.5, 1.55, 0.88), Color(0.34, 0.40, 0.39), false)
+	_box("MaintenanceCabinetDoor", Vector3(13.0, 1.05, -26.04), Vector3(1.28, 1.30, 0.035), Color(0.25, 0.31, 0.31), false)
+	_box("MaintenanceCabinetHandle", Vector3(13.48, 1.05, -25.99), Vector3(0.055, 0.34, 0.06), Color(0.72, 0.73, 0.66), false)
+	for vent_y in [0.62, 0.76, 0.90, 1.04]:
+		_box("MaintenanceCabinetVent", Vector3(12.72, vent_y, -25.995), Vector3(0.32, 0.035, 0.025), Color(0.10, 0.14, 0.15), false)
+	for lamp_x in [12.72, 12.94, 13.16]:
+		_cylinder("MaintenanceStatusLamp", Vector3(lamp_x, 1.72, -25.99), 0.055, 0.035, Color(0.20, 0.72, 0.39), false)
+
+	# Palletized spare parts and two rugged shipping crates.
+	_box("SparePartsPallet", Vector3(9.75, 0.15, -26.4), Vector3(1.75, 0.20, 1.35), Color(0.40, 0.28, 0.17), false)
+	for slat_x in [-0.62, -0.20, 0.22, 0.64]:
+		_box("SparePartsPalletSlat", Vector3(9.75 + slat_x, 0.27, -26.4), Vector3(0.12, 0.055, 1.22), Color(0.53, 0.37, 0.22), false)
+	_box("ShippingCrateLower", Vector3(9.45, 0.72, -26.4), Vector3(1.05, 0.82, 0.95), Color(0.48, 0.34, 0.22), false)
+	_box("ShippingCrateUpper", Vector3(10.25, 0.61, -26.4), Vector3(0.62, 0.60, 0.72), Color(0.39, 0.31, 0.23), false)
+	for crate_x in [9.45, 10.25]:
+		_box("CrateReinforcementBand", Vector3(crate_x, 0.74, -25.91), Vector3(0.82, 0.07, 0.035), Color(0.22, 0.25, 0.24), false)
+
+	# Hose reel and a low workbench give the corner a clear maintenance purpose.
+	_box("WorkshopBenchTop", Vector3(11.55, 0.88, -22.8), Vector3(2.5, 0.16, 0.72), Color(0.31, 0.35, 0.34), false)
+	for leg_x in [10.55, 12.55]:
+		_box("WorkshopBenchLeg", Vector3(leg_x, 0.43, -22.8), Vector3(0.12, 0.78, 0.58), Color(0.16, 0.20, 0.21), false)
+	_box("WorkshopToolBox", Vector3(11.1, 1.12, -22.8), Vector3(0.62, 0.32, 0.48), Color(0.72, 0.34, 0.17), false)
+	_box("WorkshopToolBoxLid", Vector3(11.1, 1.30, -22.8), Vector3(0.66, 0.06, 0.52), Color(0.18, 0.23, 0.24), false)
+	_cylinder("HoseReelOuter", Vector3(12.35, 1.15, -22.8), 0.48, 0.16, Color(0.16, 0.22, 0.22), false)
+	_cylinder("HoseReelInner", Vector3(12.35, 1.15, -22.70), 0.29, 0.18, Color(0.72, 0.38, 0.16), false)
+
+	# Wall-mounted exhaust grille and service pipes add depth to the rear wall.
+	_box("RearWallExhaustFrame", Vector3(11.6, 2.45, -35.18), Vector3(2.0, 1.45, 0.12), Color(0.16, 0.21, 0.22), false)
+	_box("RearWallExhaustGrille", Vector3(11.6, 2.45, -35.09), Vector3(1.72, 1.18, 0.055), Color(0.34, 0.40, 0.40), false)
+	for vent_y in [2.02, 2.20, 2.38, 2.56, 2.74, 2.92]:
+		_box("RearWallExhaustSlat", Vector3(11.6, vent_y, -35.045), Vector3(1.58, 0.055, 0.025), Color(0.12, 0.17, 0.18), false)
+	for pipe_y in [1.05, 1.42]:
+		_box("RearWallServicePipe", Vector3(7.2, pipe_y, -35.12), Vector3(5.8, 0.09, 0.09), Color(0.42, 0.48, 0.46), false)
+	for bracket_x in [4.8, 6.8, 8.8, 10.8]:
+		_box("RearWallPipeBracket", Vector3(bracket_x, 1.24, -35.04), Vector3(0.10, 0.62, 0.12), Color(0.19, 0.24, 0.24), false)
+
+	# Small grated drain and a subtle service access cover in the apron.
+	_box("MaintenanceDrainFrame", Vector3(11.5, 0.061, -24.4), Vector3(1.25, 0.025, 0.72), Color(0.13, 0.17, 0.17), false)
+	for grate_x in range(0, 6):
+		_box("MaintenanceDrainSlot", Vector3(11.02 + float(grate_x) * 0.19, 0.079, -24.4), Vector3(0.055, 0.012, 0.60), Color(0.52, 0.55, 0.51), false)
+	_box("ServiceAccessCover", Vector3(13.45, 0.061, -23.65), Vector3(0.82, 0.025, 0.82), Color(0.22, 0.26, 0.25), false)
+	for edge in [-0.28, 0.0, 0.28]:
+		_box("ServiceAccessCoverRib", Vector3(13.45 + edge, 0.079, -23.65), Vector3(0.035, 0.012, 0.68), Color(0.48, 0.51, 0.48), false)
 
 
 func _build_apartment_block() -> void:
