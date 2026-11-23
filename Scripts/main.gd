@@ -65,7 +65,6 @@ const FINAL_LANDFILL_CLUSTERS := [
 var money_label: Label
 var bag_label: Label
 var message_label: Label
-var mission_panel: Panel
 var mission_label: Label
 var joystick_pad: Panel
 var joystick_knob: Panel
@@ -1199,16 +1198,12 @@ func _build_ui() -> void:
 	final_zone_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.30))
 	_update_final_zone_label()
 
-	# Replace the rotating status message with a persistent, live mission tracker.
-	mission_panel = Panel.new()
-	mission_panel.position = Vector2(18, 132)
-	mission_panel.size = Vector2(292, 112)
-	mission_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.035, 0.065, 0.075, 0.88)))
-	layer.add_child(mission_panel)
-	var mission_title := _label("MISSIONS", Vector2(30, 140), 14, layer)
+	# Keep the existing HUD panel; replace only the status text beneath it with missions.
+	var mission_title := _label("MISSIONS", Vector2(20, 132), 14, layer)
 	mission_title.add_theme_color_override("font_color", Color(0.42, 0.88, 0.72))
-	mission_label = _label("", Vector2(30, 161), 13, layer)
-	mission_label.size = Vector2(280, 78)
+	mission_label = _label("", Vector2(20, 153), 13, layer)
+	mission_label.size = Vector2(maxf(280.0, screen.x - 40.0), 76)
+	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	mission_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	mission_label.add_theme_constant_override("shadow_offset_x", 1)
 	mission_label.add_theme_constant_override("shadow_offset_y", 1)
