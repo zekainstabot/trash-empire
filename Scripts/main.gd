@@ -260,8 +260,7 @@ func _build_world() -> void:
 	_box("FinalZoneEntryApron", Vector3(135, 0.045, 0), Vector3(8, 0.08, 15), Color(0.34, 0.35, 0.30), false)
 	_box("FinalZoneSignPost", Vector3(119, 2.0, -7.0), Vector3(0.22, 4.0, 0.22), Color(0.22, 0.25, 0.24), false)
 	_box("FinalZoneSignBoard", Vector3(119, 3.35, -7.0), Vector3(9.5, 1.8, 0.28), Color(0.13, 0.22, 0.18), false)
-	_label_3d("60,000 WASTE UNITS", Vector3(119, 3.45, -6.82), 0.42)
-	_build_final_landfill_details()
+	_label_3d("CITY CLEANUP ZONE", Vector3(119, 3.45, -6.82), 0.42)
 	for marker_x in range(118, 207, 8):
 		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, -34.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
 		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.04, 34.0), Vector3(0.7, 0.08, 0.7), Color(0.88, 0.62, 0.12), false)
@@ -1488,18 +1487,9 @@ func _robot_leg(parent: Node3D, part_name: String, pos: Vector3) -> Node3D:
 	return pivot
 
 func _build_trash() -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	for i in range(30):
-		var item := Node3D.new()
-		item.set_script(TRASH_SCRIPT)
-		_apply_rare_drop(item, rng)
-		item.position = _random_trash_position(rng)
-		add_child(item)
-		trash_nodes.append(item)
-	if yard_stage >= 2:
-		_spawn_district_two_trash(48)
-	_spawn_final_cleanup_trash()
+	# Keep a fixed, city-wide pool. The distant landfill is intentionally empty.
+	_spawn_trash(1000)
+	_update_final_zone_label()
 
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
@@ -2379,31 +2369,27 @@ func _reset_joystick() -> void:
 	joystick_knob.position = (joystick_pad.size - joystick_knob.size) * 0.5
 
 func _register_final_cleanup_pickup(item: Node3D) -> void:
-	if not is_instance_valid(item) or get_tree().get_meta("cleanup_game_completed", false):
+	if not is_instance_valid(item):
 		return
-	# Every physical item picked up anywhere in the city counts as one.
-	# Bulky items use two backpack slots, but still count as one trash item.
+	# Every collected city item counts once, regardless of backpack slot usage.
 	total_trash_collected += 1
-	final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + 1)
 	_update_final_zone_label()
 	_update_missions()
-	if final_zone_cleaned >= FINAL_ZONE_TARGET:
-		get_tree().set_meta("cleanup_game_completed", true)
-		_set_message("GAME COMPLETE! You collected all 60,000 pieces of trash!")
+	_maintain_city_trash_supply()
+
+func _maintain_city_trash_supply() -> void:
+	var alive_count := _count_regular_trash()
+	if alive_count > 500:
 		return
-	if total_trash_collected % replenishment_threshold == 0:
-		_spawn_city_replenishment(replenishment_threshold)
+	var amount := maxi(0, 1000 - alive_count)
+	if amount > 0:
+		_spawn_trash(amount)
+		_update_final_zone_label()
+		_set_message("CITY TRASH REFILLED: %d / 1,000" % _count_regular_trash())
 
 func _spawn_city_replenishment(amount: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	# Add the replacements in spread-out city locations, not all in one pile.
-	for i in range(amount):
-		var item := Node3D.new()
-		item.set_script(TRASH_SCRIPT)
-		item.position = Vector3(rng.randf_range(-13.0, 110.0), 0.05, rng.randf_range(-29.0, 29.0))
-		add_child(item)
-		trash_nodes.append(item)
+	# Compatibility wrapper for older save/progression paths; global cap applies.
+	_spawn_trash(amount)
 
 
 func _is_city_dump_trash(item: Node3D) -> bool:
@@ -3328,20 +3314,9 @@ func _upgrade_respawn() -> void:
 func _trash_respawn_interval_minutes() -> float:
 	return [0.0, 5.0, 4.0, 3.0][clampi(respawn_level, 0, 3)]
 
-func _process_trash_respawn(delta: float) -> void:
-	if respawn_level <= 0:
-		return
-	respawn_timer += delta
-	if respawn_timer < _trash_respawn_interval_minutes() * 60.0:
-		return
-	respawn_timer = 0.0
-	# Automatic refill targets 500 regular city pickups; endgame bundles are excluded.
-	var target_count := 500
-	var alive_count := _count_regular_trash()
-	var amount := maxi(0, target_count - alive_count)
-	if amount > 0:
-		_spawn_trash(amount)
-		_set_message("Trash automatically respawned: %d new pieces." % amount)
+func _process_trash_respawn(_delta: float) -> void:
+	# Supply is replenished immediately when the live city pool reaches 500.
+	pass
 
 func _upgrade_bulk_pickup() -> void:
 	var cost := _upgrade_cost(30.0, bulk_pickup_level + 1)
@@ -4161,7 +4136,8 @@ func _spawn_city_trash(amount: int) -> int:
 	var spawned := 0
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(amount):
+	var allowed := mini(amount, maxi(0, 1000 - _count_regular_trash()))
+	for i in range(allowed):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
 		item.position = Vector3(rng.randf_range(-7.55, -2.05), 0.05, rng.randf_range(-25.25, -19.85))
@@ -4271,7 +4247,7 @@ func _build_final_landfill_debris(remaining_units: int, rng: RandomNumberGenerat
 
 func _update_final_zone_label() -> void:
 	if is_instance_valid(final_zone_label):
-		final_zone_label.text = "FINAL CLEANUP  %d / 60,000" % final_zone_cleaned
+		final_zone_label.text = "CITY TRASH  %d / 1,000" % _count_regular_trash()
 
 
 func _count_regular_trash() -> int:
@@ -4284,17 +4260,21 @@ func _count_regular_trash() -> int:
 func _spawn_trash(amount: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(amount):
+	var allowed := mini(amount, maxi(0, 1000 - _count_regular_trash()))
+	for i in range(allowed):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
+		_apply_rare_drop(item, rng)
 		item.position = _random_trash_position(rng)
 		add_child(item)
 		trash_nodes.append(item)
+	_update_final_zone_label()
 
 func _spawn_district_two_trash(amount: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(amount):
+	var allowed := mini(amount, maxi(0, 1000 - _count_regular_trash()))
+	for i in range(allowed):
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
 		var spawn_point := Vector3.ZERO
@@ -4488,7 +4468,7 @@ func _update_missions() -> void:
 		"Make packages faster.\nOpen UPGRADES → FLEET → PACKAGING SPEED.",
 		"Improve city cleanup trucks.\nOpen UPGRADES → FLEET → CITY TRUCK FREQUENCY.",
 		"Collect 100 pieces of trash.\nProgress: %d / 100" % mini(total_trash_collected, 100),
-		"FINAL CHALLENGE: Clean the landfill.\nCollect all 60,000 pieces: %d / 60,000." % final_zone_cleaned,
+		"Keep the city clean.\nCity supply: %d / 1,000." % _count_regular_trash(),
 		"Build a ground collector.\nUnlock the GROUND COLLECTOR ROBOT in UPGRADES.",
 		"Improve all sorting robots.\nBuy SORTING ROBOT EFFICIENCY level 1.",
 		"Speed up the factory line.\nBuy CONVEYOR & FACTORY SPEED level 1.",
