@@ -36,8 +36,8 @@ var ground_collector: Node3D
 var ground_collector_timer := 0.0
 var sorting_bins: Array[Node3D] = []
 var sorting_robots: Array[Node3D] = []
-var sorting_robot_levels: Array[int] = [0, 0, 0, 0]
-var sorting_bin_counts: Array[int] = [0, 0, 0, 0]
+var sorting_robot_levels: Array = [0, 0, 0, 0]
+var sorting_bin_counts: Array = [0, 0, 0, 0]
 var sorting_area_root: Node3D
 var drone_timer := 0.0
 var helper_drones: Array[Node3D] = []
@@ -399,6 +399,7 @@ func _build_sorting_district() -> void:
 		_box("SortingRobotBuildPad", pad_pos + Vector3(0, 0.04, 0), Vector3(3.8, 0.08, 3.2), colors[i].darkened(0.45), false)
 		var build_button := Area3D.new()
 		build_button.name = "BuildSortingRobot_" + categories[i]
+		build_button.set_meta("category_index", i)
 		build_button.position = pad_pos + Vector3(0, 1.1, 0)
 		var button_mesh := MeshInstance3D.new()
 		var button_box := BoxMesh.new()
@@ -484,6 +485,12 @@ func _refresh_sorting_district() -> void:
 	for i in range(mini(4, sorting_robots.size())):
 		if is_instance_valid(sorting_robots[i]):
 			sorting_robots[i].visible = sorting_robot_levels[i] > 0
+		if is_instance_valid(sorting_area_root):
+			var build_button := sorting_area_root.get_node_or_null("BuildSortingRobot_" + ["plastic", "paper", "metal", "glass"][i]) as Area3D
+			if is_instance_valid(build_button):
+				var build_label := build_button.get_node_or_null("SortingBuildLabel") as Label3D
+				if is_instance_valid(build_label):
+					build_label.text = "ROBOT READY\n%s" % ["PLASTIC", "PAPER", "METAL", "GLASS"][i] if sorting_robot_levels[i] > 0 else "BUILD ROBOT\n%s\n120 ZC" % ["PLASTIC", "PAPER", "METAL", "GLASS"][i]
 	for i in range(mini(4, sorting_bins.size())):
 		if is_instance_valid(sorting_bins[i]):
 			var counter := sorting_bins[i].get_node_or_null("SortingCounter") as Label3D
@@ -550,6 +557,7 @@ func _process_sorting_robots(delta: float) -> void:
 		var destination := target.global_position + Vector3(0, 0.55, 0)
 		robot.global_position = robot.global_position.move_toward(destination, 4.2 * delta)
 		if robot.global_position.distance_to(destination) <= 0.65:
+			_register_final_cleanup_pickup(target)
 			var keep_transform := target.global_transform
 			target.reparent(robot)
 			target.global_transform = keep_transform
