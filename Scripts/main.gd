@@ -973,9 +973,9 @@ func _build_factory_expansion() -> void:
 		# Keep each transfer belt in the open gap between machine housings.
 		# The previous coordinates ran the belts into the center of the next machine,
 		# hiding most of each belt inside the solid machine body.
-		var z_positions := [0.0, 0.0, 0.0, 10.0, 20.0, 30.0]
-		var start_z := -4.9 if stage == 2 else (z_positions[stage - 1] + 1.8)
-		var end_z := -1.7 if stage == 2 else (z_positions[stage] - 1.7)
+		var z_positions: Array[float] = [0.0, 0.0, 0.0, 10.0, 20.0, 30.0]
+		var start_z: float = -4.9 if stage == 2 else (z_positions[stage - 1] + 1.8)
+		var end_z: float = -1.7 if stage == 2 else (z_positions[stage] - 1.7)
 		_build_factory_link(start_z, end_z)
 		var new_nodes: Array[Node] = []
 		for child_index in range(first_new_child, get_child_count()):
@@ -3665,7 +3665,8 @@ func _build_factory_finished_product(row: int) -> void:
 	var z := _factory_row_z(row)
 	var frame := Color(0.10, 0.13, 0.15)
 	var trim := Color(0.48, 0.54, 0.55)
-	var wood := [Color(0.48, 0.27, 0.13), Color(0.62, 0.39, 0.20), Color(0.34, 0.22, 0.15)][row % 3]
+	var wood_colors: Array[Color] = [Color(0.48, 0.27, 0.13), Color(0.62, 0.39, 0.20), Color(0.34, 0.22, 0.15)]
+	var wood: Color = wood_colors[row % wood_colors.size()]
 	_box("FactoryFinishedProductStand%d" % row, Vector3(x, 0.52, z), Vector3(3.2, 0.9, 3.0), Color(0.16, 0.23, 0.22), false)
 	match row:
 		0:
