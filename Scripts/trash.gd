@@ -16,8 +16,10 @@ func _ready() -> void:
 		scale = Vector3(1.45, 1.45, 1.45)
 
 	# Android uses one low-poly mesh per litter item to reduce draw calls.
+	var item_roll := rng.randi_range(0, 31)
+	_set_recycle_category(item_roll)
 	if OS.get_name() == "Android":
-		_make_mobile_trash(rng)
+		_make_mobile_trash(rng, item_roll)
 		rotation.y = rng.randf_range(0.0, TAU)
 		if has_meta("rare_type"):
 			_add_rare_visual(String(get_meta("rare_type")))
@@ -26,7 +28,7 @@ func _ready() -> void:
 			set_process(false)
 		return
 
-	match rng.randi_range(0, 31):
+	match item_roll:
 		0:
 			_make_plastic_bottle(rng)
 		1:
@@ -102,10 +104,22 @@ func _ready() -> void:
 		spin_speed = 0.0
 		set_process(false)
 
-func _make_mobile_trash(rng: RandomNumberGenerator) -> void:
+func _set_recycle_category(item_roll: int) -> void:
+	# The four color-coded recycling stations use material categories.
+	if item_roll in [0, 8, 22, 23]:
+		set_meta("recycle_category", "plastic")
+	elif item_roll in [2, 4, 5, 13, 14, 15, 21, 28]:
+		set_meta("recycle_category", "paper")
+	elif item_roll in [7, 27]:
+		set_meta("recycle_category", "glass")
+	else:
+		set_meta("recycle_category", "metal")
+
+
+func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	# Use the same recognizable, multi-part object models on Android as desktop.
 	# Keep meshes modest, but do not replace real objects with generic primitives.
-	match rng.randi_range(0, 31):
+	match item_roll:
 		0:
 			_make_plastic_bottle(rng)
 		1:
