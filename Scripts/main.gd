@@ -25,6 +25,8 @@ var bulk_pickup_level := 0
 var luck_upgrade_level := 1
 var rare_drop_upgrade_level := 0
 var magnet_power_level := 1
+var suction_level := 0
+var suction_tool: Node3D
 var drone_level := 0
 var drone_timer := 0.0
 var helper_drones: Array[Node3D] = []
@@ -1075,6 +1077,16 @@ func _build_player() -> void:
 	_add_robot_box(magnet_tool, "MagnetRightPole", Vector3(0.12, -0.14, 0), Vector3(0.10, 0.22, 0.16), Color(0.18, 0.42, 0.92))
 	_add_robot_box(magnet_tool, "MagnetGrip", Vector3(0, 0.10, 0), Vector3(0.12, 0.10, 0.18), Color(0.65, 0.72, 0.73))
 	magnet_tool.visible = auto_pickup_level > 0 or magnet_power_level > 1
+
+	# Separate vacuum attachment on the opposite arm, unlocked by suction upgrades.
+	suction_tool = Node3D.new()
+	suction_tool.name = "ArmMountedVacuum"
+	suction_tool.position = Vector3(0.0, -0.53, -0.08)
+	robot_left_arm.add_child(suction_tool)
+	_add_robot_box(suction_tool, "VacuumMotor", Vector3(0, -0.02, 0.02), Vector3(0.24, 0.25, 0.28), Color(0.12, 0.22, 0.25))
+	_add_robot_box(suction_tool, "VacuumTube", Vector3(0, -0.10, -0.20), Vector3(0.13, 0.12, 0.34), Color(0.48, 0.58, 0.59))
+	_add_robot_box(suction_tool, "VacuumMouth", Vector3(0, -0.12, -0.40), Vector3(0.34, 0.16, 0.12), Color(0.10, 0.75, 0.68))
+	suction_tool.visible = suction_level > 0
 	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.20, 0.52, 0))
 	robot_right_leg = _robot_leg(robot_visual, "RightLeg", Vector3(0.20, 0.52, 0))
 	_build_helper_drones()
@@ -1445,6 +1457,7 @@ func _start_new_world() -> void:
 	luck_upgrade_level = 1
 	rare_drop_upgrade_level = 0
 	magnet_power_level = 1
+	suction_level = 0
 	drone_level = 0
 	dispatch_upgrade_level = 0
 	city_truck_upgrade_level = 0
@@ -1530,14 +1543,14 @@ func _close_main_menu() -> void:
 
 func _build_skill_tree(parent: Control) -> void:
 	var categories := [
-		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power"]},
+		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
 		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
-		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER",
+		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
 		"drones":"HELPER DRONES","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED"
 	}
@@ -1555,6 +1568,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"luck":"Improve your chance of finding valuable items.",
 		"rare_drops":"Increase silver and gold item drop chances.",
 		"magnet_power":"Pull trash toward you from farther away.",
+		"suction":"Unlock an arm-mounted vacuum. Each upgrade increases suction reach and pull speed.",
 		"drones":"Add helper drones that collect trash for you.",
 		"city_truck":"Make city garbage trucks arrive more often.",
 		"city_fleet":"Add more city trucks to deliver larger loads.",
@@ -1696,7 +1710,10 @@ func _purchase_upgrade_branch(branch: String) -> void:
 		_set_message("Another upgrade is already being processed. Please wait.")
 		return
 	if not _skill_branch_unlocked(branch):
-		_set_message("This upgrade is not available yet.")
+		if branch == "suction":
+			_set_message("Upgrade MAGNET POWER once to unlock VACUUM SUCTION.")
+		else:
+			_set_message("This upgrade is not available yet.")
 		return
 	var next_level := _skill_level(branch) + 1
 	if next_level > 3:
@@ -1729,6 +1746,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"luck": return Color(0.92, 0.72, 0.20)
 		"rare_drops": return Color(0.92, 0.78, 0.30)
 		"magnet_power": return Color(0.20, 0.78, 0.88)
+		"suction": return Color(0.12, 0.82, 0.70)
 		"drones": return Color(0.65, 0.78, 0.30)
 		"city_truck": return Color(0.95, 0.72, 0.18)
 		"city_fleet": return Color(0.82, 0.58, 0.24)
@@ -1753,6 +1771,7 @@ func _skill_icon(branch: String) -> String:
 		"luck": return "🍀"
 		"rare_drops": return "🥇"
 		"magnet_power": return "🧲"
+		"suction": return "🌪"
 		"drones": return "🚁"
 		"city_truck": return "🚛"
 		"city_fleet": return "🚚"
@@ -1815,6 +1834,7 @@ func _skill_level(branch: String) -> int:
 		"luck": return luck_upgrade_level - 1
 		"rare_drops": return rare_drop_upgrade_level
 		"magnet_power": return magnet_power_level - 1
+		"suction": return suction_level
 		"drones": return drone_level
 		"city_truck": return city_truck_upgrade_level
 		"city_fleet": return city_fleet_upgrade_level
@@ -1824,8 +1844,10 @@ func _skill_level(branch: String) -> int:
 		"packaging": return packaging_upgrade_level
 	return 0
 
-func _skill_branch_unlocked(_branch: String) -> bool:
-	# Every upgrade category is available from the beginning; progression is by price and level only.
+func _skill_branch_unlocked(branch: String) -> bool:
+	# Vacuum equipment becomes available after the magnet has been upgraded once.
+	if branch == "suction":
+		return magnet_power_level >= 2
 	return true
 
 func _purchase_skill_node(branch: String, level: int) -> void:
@@ -1851,6 +1873,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"luck": await _upgrade_luck()
 		"rare_drops": await _upgrade_rare_drops()
 		"magnet_power": await _upgrade_magnet_power()
+		"suction": await _upgrade_suction()
 		"drones": await _upgrade_drones()
 		"city_truck": await _upgrade_city_truck_frequency()
 		"city_fleet": await _upgrade_city_fleet()
@@ -1862,7 +1885,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"suction":35.0,"drones":25.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -2076,7 +2099,7 @@ func _collect_nearby() -> void:
 		_set_message("Get closer to trash that fits in your backpack.")
 
 func _process_auto_pickup(delta: float) -> void:
-	if auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
+	if (auto_pickup_level <= 0 and suction_level <= 0) or not is_instance_valid(player) or carried >= capacity:
 		auto_pickup_timer = 0.0
 		auto_pickup_scan_timer = 0.0
 		auto_pickup_target = null
@@ -2089,7 +2112,7 @@ func _process_auto_pickup(delta: float) -> void:
 	if not target_is_registered or auto_pickup_target.get_meta("drone_reserved", -1) != -1 or auto_pickup_scan_timer <= 0.0:
 		auto_pickup_target = null
 		auto_pickup_scan_timer = 0.12
-		var magnet_range := collection_range + 1.2 + float(auto_pickup_level - 1) * 0.85 + float(magnet_power_level - 1) * 0.7
+		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.85 + float(magnet_power_level - 1) * 0.7 + float(suction_level) * 0.85
 		var best_distance := magnet_range
 		var player_xz := Vector2(player.global_position.x, player.global_position.z)
 		for item in trash_nodes:
@@ -2120,7 +2143,7 @@ func _process_auto_pickup(delta: float) -> void:
 		auto_pickup_timer = 0.0
 		return
 
-	var pull_speed := 2.8 + float(auto_pickup_level - 1) * 0.65 + float(magnet_power_level - 1) * 1.1
+	var pull_speed := 2.8 + float(maxi(auto_pickup_level - 1, 0)) * 0.65 + float(magnet_power_level - 1) * 1.1 + float(suction_level) * 1.5
 	var pickup_point := Vector3(player.global_position.x, auto_pickup_target.global_position.y, player.global_position.z)
 	var item_xz := Vector2(auto_pickup_target.global_position.x, auto_pickup_target.global_position.z)
 	var pickup_xz := Vector2(pickup_point.x, pickup_point.z)
@@ -2140,7 +2163,7 @@ func _process_auto_pickup(delta: float) -> void:
 	if is_instance_valid(picked) and trash_nodes.has(picked) and _pickup_trash_item(picked):
 		_update_ui()
 		_save_game()
-		_set_message("AUTO MAGNET  +1")
+		_set_message("VACUUM SUCTION  +1" if suction_level > 0 else "AUTO MAGNET  +1")
 	elif carried < capacity:
 		# If another system claimed the piece during the final pickup frame,
 		# the next scan immediately chooses a fresh available item.
@@ -2509,6 +2532,24 @@ func _upgrade_magnet_power() -> void:
 	_save_game()
 	_set_message("Magnet pull power increased!")
 
+func _upgrade_suction() -> void:
+	if suction_level >= 3:
+		_set_message("Vacuum suction is already at maximum.")
+		return
+	var cost := _upgrade_cost(35.0, suction_level + 1)
+	if money < cost:
+		_set_message("You need %.1f ZC to complete this purchase." % cost)
+		return
+	if not await _pay_gradually(cost):
+		return
+	suction_level = mini(suction_level + 1, 3)
+	if is_instance_valid(suction_tool):
+		suction_tool.visible = true
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Vacuum upgraded! Suction range and power increased.")
+
 func _upgrade_trash_value() -> void:
 	var cost := _upgrade_cost(12.0, trash_value_upgrade_level)
 	if money < cost:
@@ -2751,6 +2792,7 @@ func _save_game() -> void:
 	save.set_value("progress", "luck_level", luck_upgrade_level)
 	save.set_value("progress", "rare_drop_level", rare_drop_upgrade_level)
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
+	save.set_value("progress", "suction_level", suction_level)
 	save.set_value("progress", "drone_level", drone_level)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
 	save.set_value("progress", "city_truck_upgrade_level", city_truck_upgrade_level)
@@ -2787,6 +2829,7 @@ func _load_game() -> void:
 	luck_upgrade_level = int(save.get_value("progress", "luck_level", 1))
 	rare_drop_upgrade_level = clampi(int(save.get_value("progress", "rare_drop_level", 0)), 0, 3)
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
+	suction_level = clampi(int(save.get_value("progress", "suction_level", 0)), 0, 3)
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
 	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
