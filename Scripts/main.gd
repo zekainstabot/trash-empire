@@ -3534,7 +3534,7 @@ func _spawn_conveyor_item(item_value: float) -> void:
 	# Stage 1 output: compressed, strapped bale.
 	var bale := Node3D.new()
 	bale.name = "CompressedRecyclingBale"
-	bale.position = Vector3(7.5, 1.25, -5.0)
+	bale.position = Vector3(7.5, 1.25, -6.5)
 	bale.scale = Vector3.ONE * 0.12
 	bale.visible = false
 	add_child(bale)
@@ -3556,7 +3556,7 @@ func _spawn_conveyor_item(item_value: float) -> void:
 	# Stage 2 output: visible shredded flakes.
 	var flakes := Node3D.new()
 	flakes.name = "ShreddedPlasticFlakes"
-	flakes.position = Vector3(7.5, 1.18, -2.0)
+	flakes.position = Vector3(7.5, 1.18, 3.5)
 	flakes.scale = Vector3.ONE * 0.08
 	flakes.visible = false
 	add_child(flakes)
@@ -3573,7 +3573,7 @@ func _spawn_conveyor_item(item_value: float) -> void:
 	# Stage 3 output: recycled plastic pellets.
 	var pellets := Node3D.new()
 	pellets.name = "RecycledPlasticPellets"
-	pellets.position = Vector3(7.5, 1.15, 3.45)
+	pellets.position = Vector3(7.5, 1.15, 13.5)
 	pellets.scale = Vector3.ONE * 0.08
 	pellets.visible = false
 	add_child(pellets)
@@ -3590,7 +3590,7 @@ func _spawn_conveyor_item(item_value: float) -> void:
 	# Stage 4 output: a teddy bear made from the recycled material.
 	var teddy := Node3D.new()
 	teddy.name = "RecycledTeddyBear"
-	teddy.position = Vector3(7.5, 0.62, 8.95)
+	teddy.position = Vector3(7.5, 0.62, 23.5)
 	teddy.scale = Vector3.ONE * 0.05
 	teddy.visible = false
 	add_child(teddy)
@@ -3620,21 +3620,21 @@ func _spawn_conveyor_item(item_value: float) -> void:
 	)
 	travel.tween_property(bale, "scale", Vector3.ONE, 0.22)
 	if factory_stage >= 2:
-		travel.tween_property(bale, "position", Vector3(7.5, 1.25, -2.0), 0.9)
+		travel.tween_property(bale, "position", Vector3(7.5, 1.25, 3.5), 1.35)
 		travel.tween_callback(func():
 			bale.visible = false
 			flakes.visible = true
 		)
 		travel.tween_property(flakes, "scale", Vector3.ONE, 0.22)
 	if factory_stage >= 3:
-		travel.tween_property(flakes, "position", Vector3(7.5, 1.15, 3.45), 1.1)
+		travel.tween_property(flakes, "position", Vector3(7.5, 1.15, 13.5), 1.35)
 		travel.tween_callback(func():
 			flakes.visible = false
 			pellets.visible = true
 		)
 		travel.tween_property(pellets, "scale", Vector3.ONE, 0.22)
 	if factory_stage >= 4:
-		travel.tween_property(pellets, "position", Vector3(7.5, 0.62, 8.95), 1.1)
+		travel.tween_property(pellets, "position", Vector3(7.5, 0.62, 23.5), 1.35)
 		travel.tween_callback(func():
 			pellets.visible = false
 			teddy.visible = true
@@ -3712,7 +3712,7 @@ func _build_delivery_conveyor(start_point: Vector3, end_point: Vector3) -> void:
 func _create_delivery_truck(index: int) -> void:
 	var truck := Node3D.new()
 	truck.name = "TeddyDeliveryTruck%d" % (index + 1)
-	var dock_z := 30.0 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
+	var dock_z := 30.25 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
 	truck.position = Vector3(17.4, 0.0, dock_z)
 	var cargo := MeshInstance3D.new()
 	var cargo_mesh := BoxMesh.new()
@@ -3771,7 +3771,7 @@ func _dispatch_truck_fleet() -> void:
 		if not is_instance_valid(truck):
 			continue
 		dispatch_trucks_remaining += 1
-		var dock_z := 30.0 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
+		var dock_z := 30.25 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
 		var arrive := create_tween()
 		arrive.set_trans(Tween.TRANS_SINE)
 		arrive.set_ease(Tween.EASE_OUT)
@@ -3788,7 +3788,7 @@ func _load_next_teddy_package(truck_index: int, loaded_count: int) -> void:
 		return
 	var package := Node3D.new()
 	package.name = "TeddyShippingPackage"
-	package.position = Vector3(9.45, 1.05, 16.1)
+	package.position = Vector3(9.45, 1.05, 30.25)
 	var carton := MeshInstance3D.new()
 	var carton_mesh := BoxMesh.new()
 	carton_mesh.size = Vector3(0.72, 0.62, 0.62)
