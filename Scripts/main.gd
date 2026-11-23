@@ -2874,6 +2874,9 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 		rover.set_meta("deposit_timer", timer)
 		return
 	rover.set_meta("deposit_timer", 0.0)
+	if waste_tank_built and waste_tank_inventory >= WASTE_TANK_CAPACITY:
+		_set_message("Factory tank is full; ground collector is waiting to unload.")
+		return
 	var bulky := int(rover.get_meta("cargo_bulky", 0)) > 0
 	var cargo_items: Array = rover.get_meta("cargo_items", [])
 	if not cargo_items.is_empty():
@@ -2890,9 +2893,6 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 		rover.set_meta("cargo_slots", slots - 1)
 	var item_value := _recycling_item_value(bulky)
 	if waste_tank_built:
-		if waste_tank_inventory >= WASTE_TANK_CAPACITY:
-			_set_message("Factory tank is full; ground collector is waiting to unload.")
-			return
 		waste_tank_inventory += 1
 	else:
 		money += item_value
