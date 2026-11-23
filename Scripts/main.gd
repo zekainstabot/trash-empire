@@ -199,7 +199,6 @@ func _process(delta: float) -> void:
 		return
 	_process_upgrade_scroll_smoothing(delta)
 	_process_expansion_zone(delta)
-	_process_factory_build(delta)
 	_process_mega_factory_build(delta)
 	if is_instance_valid(player) and player.global_position.y < -3.0:
 		_recover_player()
@@ -312,42 +311,7 @@ func _build_world() -> void:
 	_box("UnloadBorderRight", Vector3(3.13, 0.045, -6.5), Vector3(0.12, 0.045, 3.2), Color(1.0, 0.88, 0.28), false)
 	_label_3d("UNLOAD HERE", Vector3(1.35, 0.12, -7.45), 0.28)
 
-	# Conveyor and recycling machine.
-	# Industrial recycling press: layered steel housing, feed hopper and control panel.
-	_box("MachineBase", Vector3(7.5, 0.65, -6.5), Vector3(4.4, 1.3, 3.2), Color(0.075, 0.12, 0.15), true)
-	_box("MachineLowerTrim", Vector3(7.5, 1.18, -6.5), Vector3(4.25, 0.12, 3.05), Color(0.88, 0.53, 0.12), false)
-	_box("MachineBody", Vector3(7.5, 1.72, -6.5), Vector3(3.3, 1.0, 2.5), Color(0.10, 0.38, 0.43), true)
-	_box("MachineTop", Vector3(7.5, 2.25, -6.5), Vector3(3.65, 0.18, 2.85), Color(0.18, 0.55, 0.57), false)
-	_box("PressFrontDoor", Vector3(7.5, 1.72, -5.22), Vector3(1.8, 0.62, 0.08), Color(0.055, 0.16, 0.19), false)
-	_box("PressWindow", Vector3(7.5, 1.78, -5.16), Vector3(0.92, 0.28, 0.035), Color(0.12, 0.75, 0.72), false)
-	_box("HopperRear", Vector3(7.5, 2.85, -7.35), Vector3(2.35, 0.16, 1.55), Color(0.23, 0.29, 0.30), false)
-	var hopper_left := _box("HopperLeft", Vector3(6.35, 2.62, -6.65), Vector3(0.14, 0.75, 1.55), Color(0.38, 0.44, 0.43), false)
-	hopper_left.rotation_degrees.z = -18
-	var hopper_right := _box("HopperRight", Vector3(8.65, 2.62, -6.65), Vector3(0.14, 0.75, 1.55), Color(0.38, 0.44, 0.43), false)
-	hopper_right.rotation_degrees.z = 18
-	_box("ControlPanel", Vector3(9.18, 1.95, -5.17), Vector3(0.72, 0.78, 0.16), Color(0.045, 0.09, 0.11), false)
-	_box("ControlScreen", Vector3(9.18, 2.06, -5.075), Vector3(0.48, 0.28, 0.035), Color(0.12, 0.82, 0.66), false)
-	for i in range(3):
-		_cylinder("ControlButton", Vector3(8.98 + i * 0.20, 1.72, -5.06), 0.055, 0.035, [Color(0.85, 0.18, 0.12), Color(0.92, 0.68, 0.12), Color(0.18, 0.78, 0.38)][i], false)
-	for x in [6.0, 9.0]:
-		for z in [-7.65, -5.35]:
-			_cylinder("MachineBolt", Vector3(x, 1.75, z), 0.055, 0.035, Color(0.68, 0.73, 0.72), false)
-	_box("ConveyorFrame", Vector3(4.0, 0.85, -6.5), Vector3(3.0, 0.28, 1.5), Color(0.09, 0.12, 0.13), true)
-	_box("ConveyorBelt", Vector3(4.0, 1.03, -6.5), Vector3(2.9, 0.08, 1.35), Color(0.035, 0.05, 0.055), false)
-	for z in [-7.18, -5.82]:
-		_box("ConveyorSideRail", Vector3(4.0, 1.19, z), Vector3(2.78, 0.28, 0.08), Color(0.20, 0.27, 0.28), false)
-	for x in [2.75, 5.25]:
-		for z in [-7.05, -5.95]:
-			var support := _box("ConveyorLeg", Vector3(x, 0.43, z), Vector3(0.12, 0.82, 0.12), Color(0.22, 0.27, 0.28), true)
-			var foot := _box("ConveyorFoot", Vector3(x, 0.06, z), Vector3(0.38, 0.10, 0.30), Color(0.12, 0.16, 0.17), false)
-	for x in [2.8, 3.6, 4.4, 5.2]:
-		var roller := _cylinder("ConveyorRoller", Vector3(x, 0.78, -6.5), 0.075, 1.20, Color(0.16, 0.20, 0.21), false)
-		# Keep the rollers fully underneath the belt; their axles span its width.
-		roller.rotation_degrees.x = 90.0
-		conveyor_rollers.append(roller)
-	for i in range(8):
-		var slat := _box("MovingBeltSlat", Vector3(2.65 + i * 0.38, 1.09, -6.5), Vector3(0.10, 0.025, 1.22), Color(0.30, 0.38, 0.39), false)
-		conveyor_slats.append(slat)
+	# The old central-city processing line was removed; recycling equipment is in the dedicated factory district.
 
 	# Ordinary neighborhood waste bins, distributed around the streets.
 	_make_street_bin(Vector3(-14.2, 0, -17.0), Color(0.20, 0.29, 0.27))
@@ -377,8 +341,7 @@ func _build_world() -> void:
 
 	refill_world_button = _create_gear_refill_button(Vector3(0.0, 2.0, -35.20), Callable(self, "_refill_first_district"))
 	refill_world_button.rotation_degrees.y = 90.0
-	_build_factory_expansion()
-	_refresh_factory_upgrade_button()
+	# Central-city factory machines are intentionally removed.
 
 
 func _build_sorting_district() -> void:
