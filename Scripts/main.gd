@@ -116,6 +116,10 @@ var factory_build_zones_root: Node3D
 var factory_build_label: Label3D
 var factory_build_paid := 0.0
 var factory_build_save_timer := 0.0
+var mega_factory_built_count := 0
+var mega_factory_build_paid := 0.0
+var mega_factory_build_timer := 0.0
+var mega_factory_machine_labels: Array[Label3D] = []
 var factory_upgrade_button: Node3D
 var yard_stage := 1
 var expansion_gates: Array[Node3D] = []
@@ -196,6 +200,7 @@ func _process(delta: float) -> void:
 	_process_upgrade_scroll_smoothing(delta)
 	_process_expansion_zone(delta)
 	_process_factory_build(delta)
+	_process_mega_factory_build(delta)
 	if is_instance_valid(player) and player.global_position.y < -3.0:
 		_recover_player()
 	if is_instance_valid(player) and is_instance_valid(camera_pivot):
@@ -1786,6 +1791,9 @@ func _start_new_world() -> void:
 	shipping_active = false
 	factory_build_paid = 0.0
 	factory_build_save_timer = 0.0
+	mega_factory_built_count = 0
+	mega_factory_build_paid = 0.0
+	mega_factory_build_timer = 0.0
 	if is_instance_valid(factory_visual_root):
 		for factory_child in factory_visual_root.get_children():
 			factory_visual_root.remove_child(factory_child)
@@ -3520,6 +3528,8 @@ func _save_game() -> void:
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.set_value("progress", "factory_stage", factory_stage)
 	save.set_value("progress", "factory_build_paid", factory_build_paid)
+	save.set_value("progress", "mega_factory_built_count", mega_factory_built_count)
+	save.set_value("progress", "mega_factory_build_paid", mega_factory_build_paid)
 	save.set_value("progress", "teddy_stock_values", teddy_stock_values)
 	save.save("user://trash_empire.save")
 
@@ -3570,6 +3580,8 @@ func _load_game() -> void:
 	district_build_paid = 0.0
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
 	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0, 160.0][factory_stage])
+	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 0)), 0, 9)
+	mega_factory_build_paid = clampf(float(save.get_value("progress", "mega_factory_build_paid", 0.0)), 0.0, _mega_factory_machine_cost(mega_factory_built_count))
 	teddy_stock_values.clear()
 	for stored_value in save.get_value("progress", "teddy_stock_values", []):
 		teddy_stock_values.append(float(stored_value))
@@ -3646,14 +3658,21 @@ func _build_recycling_mega_factory() -> void:
 		var z := -12.0 + float(row) * 12.0
 		for machine_index in range(3):
 			var x := 151.0 + float(machine_index) * 13.0
-			var accent: Color = [teal, Color(0.18, 0.58, 0.36), safety][machine_index]
-			_box("MegaProcessBase", Vector3(x, 0.42, z), Vector3(5.4, 0.8, 4.2), dark_steel, false)
-			_box("MegaProcessBody", Vector3(x, 2.15, z), Vector3(4.3, 2.7, 3.4), steel, false)
-			_box("MegaProcessTop", Vector3(x, 3.58, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
-			_box("MegaProcessWindow", Vector3(x, 2.25, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
-			_box("MegaProcessControl", Vector3(x + 1.65, 1.8, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
-			for wheel_x in [x - 1.5, x + 1.5]:
-				_cylinder("MegaProcessDrum", Vector3(wheel_x, 0.98, z + 2.0), 0.38, 0.22, accent, true)
+			var station_index := row * 3 + machine_index
+			_box("MegaProcessBuildPad", Vector3(x, 0.16, z), Vector3(5.4, 0.22, 4.2), dark_steel, false)
+			_box("MegaProcessPadAccent", Vector3(x, 0.29, z - 1.95), Vector3(4.8, 0.08, 0.12), safety, false)
+			var build_label := Label3D.new()
+			build_label.name = "MegaFactoryMachineLabel%d" % station_index
+			build_label.text = "BUILT" if station_index < mega_factory_built_count else "BUILD\n%.0f ZC" % _mega_factory_machine_cost(station_index)
+			build_label.position = Vector3(x, 0.42, z)
+			build_label.font_size = 25
+			build_label.pixel_size = 0.009
+			build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			build_label.modulate = Color(1.0, 0.88, 0.38)
+			add_child(build_label)
+			mega_factory_machine_labels.append(build_label)
+			if station_index < mega_factory_built_count:
+				_build_mega_factory_machine(station_index)
 		for belt_x in [157.5, 170.5]:
 			_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.82, z), Vector3(7.0, 0.28, 1.5), dark_steel, false)
 			_box("MegaFactoryConveyorBelt", Vector3(belt_x, 1.02, z), Vector3(6.8, 0.08, 1.3), Color(0.035, 0.05, 0.055), false)
@@ -3677,6 +3696,65 @@ func _build_recycling_mega_factory() -> void:
 	_box("FactoryEntranceCanopy", Vector3(137.0, 5.0, 0.0), Vector3(12.0, 0.35, 23.0), teal, false)
 	for z in [-9.0, 9.0]:
 		_box("FactoryCanopySupport", Vector3(132.0, 2.5, z), Vector3(0.35, 5.0, 0.35), dark_steel, false)
+
+
+ 
+func _mega_factory_machine_cost(index: int) -> float:
+	var costs := [35.0, 55.0, 80.0, 110.0, 145.0, 185.0, 230.0, 285.0, 350.0]
+	return costs[clampi(index, 0, costs.size() - 1)]
+
+func _build_mega_factory_machine(index: int) -> void:
+	var row := int(index / 3)
+	var column := index % 3
+	var x := 151.0 + float(column) * 13.0
+	var z := -12.0 + float(row) * 12.0
+	var accents := [Color(0.08, 0.48, 0.48), Color(0.18, 0.58, 0.36), Color(0.96, 0.66, 0.12)]
+	var accent: Color = accents[column]
+	var steel := Color(0.12, 0.18, 0.20)
+	var dark_steel := Color(0.055, 0.085, 0.095)
+	_box("MegaProcessMachineBase%d" % index, Vector3(x, 0.62, z), Vector3(5.0, 0.72, 3.8), dark_steel, false)
+	_box("MegaProcessMachineBody%d" % index, Vector3(x, 2.15, z), Vector3(4.3, 2.7, 3.4), steel, false)
+	_box("MegaProcessMachineTop%d" % index, Vector3(x, 3.58, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
+	_box("MegaProcessMachineWindow%d" % index, Vector3(x, 2.25, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
+	_box("MegaProcessMachineControl%d" % index, Vector3(x + 1.65, 1.8, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
+	for wheel_x in [x - 1.5, x + 1.5]:
+		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.98, z + 2.0), 0.38, 0.22, accent, true)
+
+func _process_mega_factory_build(delta: float) -> void:
+	if payment_active or mega_factory_built_count >= 9 or not is_instance_valid(player):
+		return
+	var index := mega_factory_built_count
+	var row := int(index / 3)
+	var column := index % 3
+	var target := Vector3(151.0 + float(column) * 13.0, 0.0, -12.0 + float(row) * 12.0)
+	var player_flat := Vector2(player.global_position.x, player.global_position.z)
+	if player_flat.distance_to(Vector2(target.x, target.z)) > 2.8:
+		return
+	var cost := _mega_factory_machine_cost(index)
+	var payment := minf(money, minf(delta * _spending_speed_multiplier(), cost - mega_factory_build_paid))
+	if payment > 0.0:
+		money -= payment
+		mega_factory_build_paid += payment
+		_update_ui()
+		mega_factory_build_timer += delta
+		if mega_factory_build_timer >= 1.0:
+			mega_factory_build_timer = 0.0
+			_save_game()
+		if index < mega_factory_machine_labels.size() and is_instance_valid(mega_factory_machine_labels[index]):
+			mega_factory_machine_labels[index].text = "BUILDING\n%.0f / %.0f ZC" % [mega_factory_build_paid, cost]
+	if mega_factory_build_paid >= cost - 0.001:
+		_build_mega_factory_machine(index)
+		mega_factory_built_count += 1
+		mega_factory_build_paid = 0.0
+		mega_factory_build_timer = 0.0
+		if index < mega_factory_machine_labels.size() and is_instance_valid(mega_factory_machine_labels[index]):
+			mega_factory_machine_labels[index].text = "BUILT"
+		_update_ui()
+		_save_game()
+		if mega_factory_built_count < 9:
+			_set_message("Machine %d / 9 installed! Move to the next marked pad." % mega_factory_built_count)
+		else:
+			_set_message("RECYCLING FACTORY FULLY EQUIPPED!")
 
 
 func _build_city_dump_area() -> void:
