@@ -51,6 +51,8 @@ var skill_drag_touch := -1
 var skill_touch_points: Dictionary = {}
 var skill_pinch_distance := 0.0
 var skill_scroll_velocity := Vector2.ZERO
+var skill_scroll_target := 0.0
+var skill_scroll_smoothing := false
 var skill_scroll_tween: Tween
 var skill_touch_last_position := Vector2.ZERO
 var skill_touch_moved := false
@@ -175,6 +177,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if main_menu_open:
 		return
+	_process_upgrade_scroll_smoothing(delta)
 	_process_expansion_zone(delta)
 	_process_factory_build(delta)
 	if is_instance_valid(player) and player.global_position.y < -3.0:
@@ -1984,6 +1987,8 @@ func _input(event: InputEvent) -> void:
 				skill_touch_last_position = event.position
 				skill_touch_moved = false
 				skill_scroll_velocity = Vector2.ZERO
+				skill_scroll_target = float(skill_scroll_container.scroll_vertical)
+				skill_scroll_smoothing = true
 				if is_instance_valid(skill_scroll_tween):
 					skill_scroll_tween.kill()
 				return
@@ -1997,7 +2002,9 @@ func _input(event: InputEvent) -> void:
 				if not skill_touch_moved and event.position.distance_to(skill_touch_last_position) < 7.0:
 					return
 				skill_touch_moved = true
-				skill_scroll_container.scroll_vertical = maxi(0, skill_scroll_container.scroll_vertical - int(event.relative.y))
+				var drag_bar := skill_scroll_container.get_v_scroll_bar()
+				var drag_max := maxi(0, int(drag_bar.max_value - drag_bar.page))
+				skill_scroll_target = clampf(skill_scroll_target - event.relative.y, 0.0, float(drag_max))
 				skill_scroll_velocity.y = -event.velocity.y
 				skill_touch_last_position = event.position
 				get_viewport().set_input_as_handled()
@@ -2007,12 +2014,9 @@ func _input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			var direction := -1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1
 			var scroll_max := maxi(0, int(skill_scroll_container.get_v_scroll_bar().max_value - skill_scroll_container.get_v_scroll_bar().page))
-			var target_scroll := clampi(skill_scroll_container.scroll_vertical + direction * 105, 0, scroll_max)
-			if is_instance_valid(skill_scroll_tween):
-				skill_scroll_tween.kill()
-			skill_scroll_tween = create_tween()
-			skill_scroll_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-			skill_scroll_tween.tween_property(skill_scroll_container, "scroll_vertical", target_scroll, 0.32)
+			var base_scroll := skill_scroll_target if skill_scroll_smoothing else float(skill_scroll_container.scroll_vertical)
+			skill_scroll_target = clampf(base_scroll + direction * 82.0, 0.0, float(scroll_max))
+			skill_scroll_smoothing = true
 			get_viewport().set_input_as_handled()
 			return
 	if not is_instance_valid(player):
@@ -2051,18 +2055,27 @@ func _start_upgrade_scroll_glide() -> void:
 		return
 	var scroll_bar := skill_scroll_container.get_v_scroll_bar()
 	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
-	var glide_distance := skill_scroll_velocity.y * 0.16
-	if absf(glide_distance) < 18.0:
-		skill_scroll_velocity = Vector2.ZERO
-		return
-	var target_scroll := clampf(float(skill_scroll_container.scroll_vertical) + glide_distance, 0.0, float(scroll_max))
-	var duration := clampf(absf(glide_distance) / 900.0, 0.16, 0.42)
-	if is_instance_valid(skill_scroll_tween):
-		skill_scroll_tween.kill()
-	skill_scroll_tween = create_tween()
-	skill_scroll_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	skill_scroll_tween.tween_property(skill_scroll_container, "scroll_vertical", int(target_scroll), duration)
+	var glide_distance := clampf(skill_scroll_velocity.y * 0.22, -520.0, 520.0)
+	if absf(glide_distance) >= 12.0:
+		skill_scroll_target = clampf(skill_scroll_target + glide_distance, 0.0, float(scroll_max))
+		skill_scroll_smoothing = true
 	skill_scroll_velocity = Vector2.ZERO
+
+
+func _process_upgrade_scroll_smoothing(delta: float) -> void:
+	if not skill_scroll_smoothing or not is_instance_valid(upgrade_panel) or not upgrade_panel.visible or not is_instance_valid(skill_scroll_container):
+		skill_scroll_smoothing = false
+		return
+	var scroll_bar := skill_scroll_container.get_v_scroll_bar()
+	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
+	skill_scroll_target = clampf(skill_scroll_target, 0.0, float(scroll_max))
+	var current_scroll := float(skill_scroll_container.scroll_vertical)
+	var blend := 1.0 - exp(-delta * 20.0)
+	var next_scroll := lerpf(current_scroll, skill_scroll_target, blend)
+	if absf(skill_scroll_target - next_scroll) < 0.45:
+		next_scroll = skill_scroll_target
+		skill_scroll_smoothing = false
+	skill_scroll_container.scroll_vertical = int(round(next_scroll))
 
 
 func _update_joystick(touch_position: Vector2) -> void:
