@@ -142,6 +142,10 @@ var district_collection_truck: Node3D
 var district_truck_level := 0
 var sorting_robot_upgrade_level := 0
 var conveyor_speed_upgrade_level := 0
+var repair_robot_level := 0
+var machine_broken := false
+var machine_work_timer := 0.0
+var machine_repair_timer := 0.0
 var district_collection_route: Array[Vector3] = [Vector3(24.0, 0.0, -15.0), Vector3(40.0, 0.0, 15.0), Vector3(58.0, 0.0, -15.0), Vector3(76.0, 0.0, 15.0), Vector3(96.0, 0.0, -15.0), Vector3(104.0, 0.0, 15.0)]
 var city_fleet_upgrade_level := 0
 var city_trash_reserved := 0
@@ -198,6 +202,7 @@ func _process(delta: float) -> void:
 		camera_pivot.global_position = player.global_position + Vector3(0, 8.0, 10.5)
 	_animate_robot(delta)
 	_animate_conveyor(delta)
+	_process_machine_maintenance(delta)
 	_process_auto_sell(delta)
 	_process_teddy_shipping(delta)
 	_process_auto_pickup(delta)
@@ -1799,7 +1804,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
 		"drones":"HELPER DRONES","ground_robot":"GROUND COLLECTOR ROBOT","sorting_robot":"SORTING ROBOT EFFICIENCY","district_truck":"DISTRICT COLLECTION TRUCK","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"HIRE CITY TRUCKS","dispatch":"TRUCK FREQUENCY",
-		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED"
+		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","repair_robot":"MAINTENANCE ROBOT"
 	}
 	var descriptions := {
 		"capacity":"Carry more waste before returning to unload.",
@@ -1826,7 +1831,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
 		"packaging":"Package products faster for shipment.",
-		"conveyor_speed":"Move recycling items through the factory line faster."
+		"conveyor_speed":"Move recycling items through the factory line faster.","repair_robot":"Automatically repairs breakdowns and reduces downtime."
 	}
 
 	var folder_grid := GridContainer.new()
@@ -2090,6 +2095,7 @@ func _skill_level(branch: String) -> int:
 		"district_truck": return district_truck_level
 		"sorting_robot": return sorting_robot_upgrade_level
 		"conveyor_speed": return conveyor_speed_upgrade_level
+		"repair_robot": return repair_robot_level
 		"city_truck": return city_truck_upgrade_level
 		"city_fleet": return city_fleet_upgrade_level
 		"dispatch": return dispatch_upgrade_level
@@ -2131,6 +2137,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"district_truck": await _upgrade_district_truck()
 		"sorting_robot": await _upgrade_sorting_robot()
 		"conveyor_speed": await _upgrade_conveyor_speed()
+		"repair_robot": await _upgrade_repair_robot()
 		"city_truck": await _upgrade_city_truck_frequency()
 		"city_fleet": await _upgrade_city_fleet()
 		"dispatch": await _upgrade_dispatch()
@@ -2141,7 +2148,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"suction":35.0,"drones":25.0,"ground_robot":45.0,"district_truck":90.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"sorting_robot":32.0,"conveyor_speed":48.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
+	var base_costs := {"capacity":5.0,"speed":7.0,"unload":6.0,"range":8.0,"technology":8.0,"value":12.0,"supply":6.0,"auto":20.0,"luck":6.0,"magnet_power":15.0,"suction":35.0,"drones":25.0,"ground_robot":45.0,"district_truck":90.0,"city_truck":35.0,"city_fleet":55.0,"dispatch":25.0,"fleet":45.0,"truck_capacity":55.0,"packaging":40.0,"sorting_robot":32.0,"conveyor_speed":48.0,"repair_robot":70.0,"rare_drops":18.0,"respawn":55.0,"bulk_pickup":30.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -2893,6 +2900,8 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		_set_message("Drone unloaded its cargo and is collecting again.")
 
 func _process_auto_sell(delta: float) -> void:
+	if machine_broken:
+		return
 	if not is_instance_valid(player):
 		return
 	# Drone cargo is processed separately; it never triggers a sale of the player's bag.
@@ -3107,6 +3116,40 @@ func _upgrade_sorting_robot() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Sorting robots upgraded: faster movement and wider search range.")
+
+func _upgrade_repair_robot() -> void:
+	if repair_robot_level >= 3:
+		_set_message("Maintenance robot is fully upgraded.")
+		return
+	var next_level := repair_robot_level + 1
+	var cost := _upgrade_cost(70.0, next_level)
+	if not await _pay_gradually(cost):
+		return
+	repair_robot_level = next_level
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Maintenance robot upgraded!")
+
+func _process_machine_maintenance(delta: float) -> void:
+	if machine_broken:
+		if repair_robot_level <= 0:
+			return
+		machine_repair_timer += delta
+		if machine_repair_timer >= maxf(2.0, 14.0 - float(repair_robot_level) * 3.5):
+			machine_broken = false
+			machine_repair_timer = 0.0
+			machine_work_timer = 0.0
+			_set_message("Maintenance robot repaired the factory!")
+			_save_game()
+		return
+	machine_work_timer += delta
+	var failure_interval := maxf(240.0, 720.0 - float(repair_robot_level) * 120.0)
+	if machine_work_timer >= failure_interval:
+		machine_broken = true
+		machine_repair_timer = 0.0
+		_set_message("FACTORY BREAKDOWN! Hire a maintenance robot for automatic repairs.")
+		_update_ui()
 
 func _upgrade_conveyor_speed() -> void:
 	if conveyor_speed_upgrade_level >= 3:
@@ -3431,6 +3474,10 @@ func _save_game() -> void:
 	save.set_value("progress", "district_truck_level", district_truck_level)
 	save.set_value("progress", "sorting_robot_upgrade_level", sorting_robot_upgrade_level)
 	save.set_value("progress", "conveyor_speed_upgrade_level", conveyor_speed_upgrade_level)
+	save.set_value("progress", "repair_robot_level", repair_robot_level)
+	save.set_value("progress", "machine_work_timer", machine_work_timer)
+	save.set_value("progress", "machine_broken", machine_broken)
+	save.set_value("progress", "machine_repair_timer", machine_repair_timer)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
 	save.set_value("progress", "city_truck_upgrade_level", city_truck_upgrade_level)
 	save.set_value("progress", "city_fleet_upgrade_level", city_fleet_upgrade_level)
@@ -3476,6 +3523,10 @@ func _load_game() -> void:
 	district_truck_level = clampi(int(save.get_value("progress", "district_truck_level", 0)), 0, 3)
 	sorting_robot_upgrade_level = clampi(int(save.get_value("progress", "sorting_robot_upgrade_level", 0)), 0, 3)
 	conveyor_speed_upgrade_level = clampi(int(save.get_value("progress", "conveyor_speed_upgrade_level", 0)), 0, 3)
+	repair_robot_level = clampi(int(save.get_value("progress", "repair_robot_level", 0)), 0, 3)
+	machine_work_timer = float(save.get_value("progress", "machine_work_timer", 0.0))
+	machine_broken = bool(save.get_value("progress", "machine_broken", false))
+	machine_repair_timer = float(save.get_value("progress", "machine_repair_timer", 0.0))
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
 	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
 	city_fleet_upgrade_level = clampi(int(save.get_value("progress", "city_fleet_upgrade_level", 0)), 0, 3)
