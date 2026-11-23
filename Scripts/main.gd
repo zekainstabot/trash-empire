@@ -27,6 +27,9 @@ var rare_drop_upgrade_level := 0
 var magnet_power_level := 1
 var suction_level := 0
 var suction_tool: Node3D
+var suction_target: Node3D
+var suction_scan_timer := 0.0
+var suction_pull_timer := 0.0
 var drone_level := 0
 var drone_timer := 0.0
 var helper_drones: Array[Node3D] = []
@@ -174,6 +177,7 @@ func _process(delta: float) -> void:
 	_process_auto_sell(delta)
 	_process_teddy_shipping(delta)
 	_process_auto_pickup(delta)
+	_process_vacuum_suction(delta)
 	_process_helper_drones(delta)
 	_process_trash_respawn(delta)
 	_process_city_truck(delta)
@@ -1710,10 +1714,7 @@ func _purchase_upgrade_branch(branch: String) -> void:
 		_set_message("Another upgrade is already being processed. Please wait.")
 		return
 	if not _skill_branch_unlocked(branch):
-		if branch == "suction":
-			_set_message("Upgrade MAGNET POWER once to unlock VACUUM SUCTION.")
-		else:
-			_set_message("This upgrade is not available yet.")
+		_set_message("This upgrade is not available yet.")
 		return
 	var next_level := _skill_level(branch) + 1
 	if next_level > 3:
@@ -1845,9 +1846,7 @@ func _skill_level(branch: String) -> int:
 	return 0
 
 func _skill_branch_unlocked(branch: String) -> bool:
-	# Vacuum equipment becomes available after the magnet has been upgraded once.
-	if branch == "suction":
-		return magnet_power_level >= 2
+	# Vacuum is a fully independent upgrade branch; it does not require magnet upgrades.
 	return true
 
 func _purchase_skill_node(branch: String, level: int) -> void:
@@ -2112,11 +2111,11 @@ func _process_auto_pickup(delta: float) -> void:
 	if not target_is_registered or auto_pickup_target.get_meta("drone_reserved", -1) != -1 or auto_pickup_scan_timer <= 0.0:
 		auto_pickup_target = null
 		auto_pickup_scan_timer = 0.12
-		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.85 + float(magnet_power_level - 1) * 0.7 + float(suction_level) * 0.85
+		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.85 + float(magnet_power_level - 1) * 0.7
 		var best_distance := magnet_range
 		var player_xz := Vector2(player.global_position.x, player.global_position.z)
 		for item in trash_nodes:
-			if not is_instance_valid(item) or not _can_collect_city_dump_trash(item):
+			if not is_instance_valid(item) or item == suction_target or not _can_collect_city_dump_trash(item):
 				continue
 			var weight := 2 if item.has_meta("bulky") else 1
 			if carried + weight > capacity or item.get_meta("drone_reserved", -1) != -1:
@@ -2143,7 +2142,7 @@ func _process_auto_pickup(delta: float) -> void:
 		auto_pickup_timer = 0.0
 		return
 
-	var pull_speed := 2.8 + float(maxi(auto_pickup_level - 1, 0)) * 0.65 + float(magnet_power_level - 1) * 1.1 + float(suction_level) * 1.5
+	var pull_speed := 2.8 + float(maxi(auto_pickup_level - 1, 0)) * 0.65 + float(magnet_power_level - 1) * 1.1
 	var pickup_point := Vector3(player.global_position.x, auto_pickup_target.global_position.y, player.global_position.z)
 	var item_xz := Vector2(auto_pickup_target.global_position.x, auto_pickup_target.global_position.z)
 	var pickup_xz := Vector2(pickup_point.x, pickup_point.z)
@@ -2163,11 +2162,72 @@ func _process_auto_pickup(delta: float) -> void:
 	if is_instance_valid(picked) and trash_nodes.has(picked) and _pickup_trash_item(picked):
 		_update_ui()
 		_save_game()
-		_set_message("VACUUM SUCTION  +1" if suction_level > 0 else "AUTO MAGNET  +1")
+		_set_message("AUTO MAGNET  +1")
 	elif carried < capacity:
 		# If another system claimed the piece during the final pickup frame,
 		# the next scan immediately chooses a fresh available item.
 		auto_pickup_scan_timer = 0.0
+	if carried >= capacity:
+		_set_message("Bag full! Return to the recycling station.")
+
+
+func _process_vacuum_suction(delta: float) -> void:
+	# Independent vacuum system: separate target, range, speed and timing from the magnet.
+	if suction_level <= 0 or not is_instance_valid(player) or carried >= capacity:
+		suction_target = null
+		suction_scan_timer = 0.0
+		suction_pull_timer = 0.0
+		return
+
+	suction_scan_timer -= delta
+	var target_valid := is_instance_valid(suction_target) and trash_nodes.has(suction_target)
+	if not target_valid or suction_target == auto_pickup_target or suction_scan_timer <= 0.0:
+		suction_target = null
+		suction_scan_timer = 0.10
+		var vacuum_range := collection_range + 1.8 + float(suction_level) * 1.25
+		var nearest := vacuum_range
+		var player_xz := Vector2(player.global_position.x, player.global_position.z)
+		for item in trash_nodes:
+			if not is_instance_valid(item) or item == auto_pickup_target or not _can_collect_city_dump_trash(item):
+				continue
+			if item.get_meta("drone_reserved", -1) != -1:
+				continue
+			var weight := 2 if item.has_meta("bulky") else 1
+			if carried + weight > capacity:
+				continue
+			var item_xz := Vector2(item.global_position.x, item.global_position.z)
+			var distance := player_xz.distance_to(item_xz)
+			if distance < nearest:
+				nearest = distance
+				suction_target = item
+
+	if not is_instance_valid(suction_target):
+		suction_pull_timer = 0.0
+		return
+	if _is_city_dump_trash(suction_target) and not _player_at_city_dump_front():
+		suction_target = null
+		suction_pull_timer = 0.0
+		return
+
+	var pickup_point := Vector3(player.global_position.x, suction_target.global_position.y, player.global_position.z)
+	var item_xz := Vector2(suction_target.global_position.x, suction_target.global_position.z)
+	var distance_to_target := item_xz.distance_to(Vector2(pickup_point.x, pickup_point.z))
+	var vacuum_speed := 3.2 + float(suction_level) * 1.7
+	if distance_to_target > 0.68:
+		suction_target.global_position = suction_target.global_position.move_toward(pickup_point, vacuum_speed * delta)
+		suction_pull_timer = 0.0
+		return
+
+	suction_pull_timer += delta
+	if suction_pull_timer < maxf(0.12, 0.42 - float(suction_level) * 0.07):
+		return
+	suction_pull_timer = 0.0
+	var collected_item := suction_target
+	suction_target = null
+	if is_instance_valid(collected_item) and trash_nodes.has(collected_item) and _pickup_trash_item(collected_item):
+		_update_ui()
+		_save_game()
+		_set_message("VACUUM SUCTION  +1")
 	if carried >= capacity:
 		_set_message("Bag full! Return to the recycling station.")
 
