@@ -400,6 +400,8 @@ func _build_sorting_district() -> void:
 		robot.visible = false
 		sorting_robots.append(robot)
 		sorting_bins.append(null)
+		if sorting_robot_levels[i] > 0:
+			_spawn_sorting_station(i)
 	_refresh_sorting_district()
 
 
@@ -418,6 +420,16 @@ func _build_sorting_station(station_index: int) -> void:
 		return
 	money -= BUILD_COST
 	sorting_robot_levels[station_index] = 1
+	_spawn_sorting_station(station_index)
+	_refresh_sorting_district()
+	_update_ui()
+	_save_game()
+	_set_message("%s bin and its dedicated sorting robot are now built!" % sorting_station_names[station_index])
+
+
+func _spawn_sorting_station(station_index: int) -> void:
+	if station_index < 0 or station_index >= 4:
+		return
 	var bin_pos: Vector3 = sorting_bin_positions[station_index]
 	_make_bin(bin_pos, sorting_station_colors[station_index], sorting_station_names[station_index])
 	var bin_root := Node3D.new()
@@ -426,7 +438,7 @@ func _build_sorting_station(station_index: int) -> void:
 	sorting_area_root.add_child(bin_root)
 	var counter := Label3D.new()
 	counter.name = "SortingCounter"
-	counter.text = "0 ITEMS"
+	counter.text = "%d ITEMS" % sorting_bin_counts[station_index]
 	counter.position = Vector3(0, 2.05, 0)
 	counter.font_size = 24
 	counter.pixel_size = 0.006
@@ -437,61 +449,7 @@ func _build_sorting_station(station_index: int) -> void:
 	if is_instance_valid(robot):
 		robot.visible = true
 		robot.global_position = sorting_pad_positions[station_index] + Vector3(0, 0, 1.7)
-	robot.set_meta("mode", "idle")
-	_refresh_sorting_district()
-	_update_ui()
-	_save_game()
-	_set_message("%s bin and its dedicated sorting robot are now built!" % sorting_station_names[station_index])
-
-
-func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
-	var robot := Node3D.new()
-	robot.name = "SortingRobot_%d" % category_index
-	_add_robot_box(robot, "SortingRobotBody", Vector3(0, 0.68, 0), Vector3(0.95, 0.72, 0.82), robot_color)
-	_add_robot_box(robot, "SortingRobotTop", Vector3(0, 1.13, 0.02), Vector3(0.62, 0.20, 0.58), Color(0.16, 0.22, 0.24))
-	_add_robot_sphere(robot, "SortingRobotHead", Vector3(0, 1.48, -0.08), 0.31, Color(0.68, 0.76, 0.76))
-	_add_robot_box(robot, "SortingRobotVisor", Vector3(0, 1.48, -0.36), Vector3(0.40, 0.16, 0.035), Color(0.10, 0.92, 0.78))
-	_add_robot_box(robot, "SortingRobotFrontCollector", Vector3(0, 0.40, -0.62), Vector3(0.82, 0.16, 0.38), Color(0.75, 0.80, 0.77))
-	for side in [-1.0, 1.0]:
-		for z in [-0.28, 0.28]:
-			var wheel := MeshInstance3D.new()
-			var wheel_mesh := CylinderMesh.new()
-			wheel_mesh.top_radius = 0.22
-			wheel_mesh.bottom_radius = 0.22
-			wheel_mesh.height = 0.14
-			wheel.mesh = wheel_mesh
-			wheel.position = Vector3(side * 0.52, 0.25, z)
-			wheel.rotation_degrees.z = 90
-			wheel.material_override = _mat(Color(0.045, 0.055, 0.06))
-			robot.add_child(wheel)
-	robot.set_meta("category_index", category_index)
-	robot.set_meta("target", null)
-	robot.set_meta("cargo", null)
-	robot.set_meta("mode", "idle")
-	robot.set_meta("scan_timer", 0.0)
-	return robot
-
-
-func _on_sorting_build_input(_camera: Node3D, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_idx: int, category_index: int) -> void:
-	if not event is InputEventMouseButton or not event.pressed or event.button_index != MOUSE_BUTTON_LEFT:
-		return
-	_build_sorting_robot(category_index)
-
-
-func _build_sorting_robot(category_index: int) -> void:
-	if category_index < 0 or category_index >= 4 or sorting_robot_levels[category_index] > 0:
-		return
-	if money < 120.0:
-		_set_message("You need 120 ZC to build this sorting robot.")
-		return
-	money -= 120.0
-	sorting_robot_levels[category_index] = 1
-	if is_instance_valid(sorting_robots[category_index]):
-		sorting_robots[category_index].visible = true
-	_refresh_sorting_district()
-	_update_ui()
-	_save_game()
-	_set_message("Sorting robot built! It collects matching waste and sorts it into its own bin.")
+		robot.set_meta("mode", "idle")
 
 
 func _refresh_sorting_district() -> void:
