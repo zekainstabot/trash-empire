@@ -3008,11 +3008,12 @@ func _upgrade_technology() -> void:
 	_set_message("Recycling value increased!")
 
 func _upgrade_rare_drops() -> void:
-	var cost := _upgrade_cost(18.0, rare_drop_upgrade_level + 1)
-	if money < cost:
-		_set_message("Not enough cash for the Silver & Gold Finds upgrade.")
+	if rare_drop_upgrade_level >= 3:
+		_set_message("Silver & Gold Finds is already at maximum.")
 		return
-	money -= cost
+	var cost := _upgrade_cost(18.0, rare_drop_upgrade_level + 1)
+	if not await _pay_gradually(cost):
+		return
 	rare_drop_upgrade_level = mini(rare_drop_upgrade_level + 1, 3)
 	_refresh_upgrade_prices()
 	_update_ui()
