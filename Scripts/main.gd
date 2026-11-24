@@ -3784,7 +3784,7 @@ func _build_factory_finished_product(row: int) -> void:
 	var x := 190.0
 	var z := _factory_row_z(row)
 	var frame := Color(0.10, 0.13, 0.15)
-	var accent := [Color(0.18, 0.68, 0.48), Color(0.72, 0.57, 0.34), Color(0.55, 0.60, 0.65), Color(0.42, 0.76, 0.82), Color(0.25, 0.42, 0.62)][row]
+	var accent: Color = [Color(0.18, 0.68, 0.48), Color(0.72, 0.57, 0.34), Color(0.55, 0.60, 0.65), Color(0.42, 0.76, 0.82), Color(0.25, 0.42, 0.62)][row]
 	_box("FactoryProductOutputStand%d" % row, Vector3(x, 0.52, z), Vector3(3.8, 0.9, 3.4), Color(0.16, 0.23, 0.22), false)
 	match row:
 		0:
