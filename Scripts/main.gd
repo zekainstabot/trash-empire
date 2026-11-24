@@ -3824,9 +3824,9 @@ func _build_recycling_mega_factory() -> void:
 	var concrete := Color(0.39, 0.43, 0.42)
 
 	# Large, uncluttered factory floor and simple perimeter.
-	_box("MegaFactoryFoundation", Vector3(166.0, 0.08, 0.0), Vector3(72.0, 0.16, 72.0), concrete, true)
-	_box("FactoryServiceLane", Vector3(166.0, 0.18, -31.0), Vector3(65.0, 0.08, 3.0), Color(0.29, 0.33, 0.33), true)
-	_box("FactoryFrontApron", Vector3(137.0, 0.16, 0.0), Vector3(13.0, 0.12, 64.0), Color(0.31, 0.35, 0.34), true)
+	_box("MegaFactoryFoundation", Vector3(166.0, 0.035, 0.0), Vector3(72.0, 0.07, 72.0), concrete, true)
+	_box("FactoryServiceLane", Vector3(166.0, 0.075, -31.0), Vector3(65.0, 0.05, 3.0), Color(0.29, 0.33, 0.33), true)
+	_box("FactoryFrontApron", Vector3(137.0, 0.035, 0.0), Vector3(13.0, 0.07, 64.0), Color(0.31, 0.35, 0.34), true)
 
 	# Open-air factory: no roof, walls, or structural columns.
 
