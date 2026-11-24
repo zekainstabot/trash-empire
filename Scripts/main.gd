@@ -2765,7 +2765,7 @@ func _build_ground_collector() -> void:
 			wheel.material_override = _mat(Color(0.055, 0.07, 0.075))
 			ground_collector.add_child(wheel)
 	ground_collector.visible = ground_robot_level > 0
-	ground_collector.global_position = _factory_waste_drop_point() + Vector3(3.0, 0.0, 2.0)
+	ground_collector.global_position = Vector3(144.0, 0.0, 10.0)
 	ground_collector.set_meta("target", null)
 	ground_collector.set_meta("cargo_slots", 0)
 	ground_collector.set_meta("cargo_items", [])
@@ -3880,9 +3880,7 @@ func _build_recycling_mega_factory() -> void:
 
 	_box("FactoryNameBoard", Vector3(166.0, 7.5, 34.0), Vector3(22.0, 2.0, 0.35), dark_steel, false)
 	_label_3d("ZEKA RECYCLING  |  PRODUCTION HALL", Vector3(166.0, 7.45, 33.78), 0.31)
-	_box("FactoryEntranceCanopy", Vector3(137.0, 5.0, 0.0), Vector3(12.0, 0.35, 31.0), teal, false)
-	for z in [-14.0, 14.0]:
-		_box("FactoryCanopySupport", Vector3(131.5, 2.5, z), Vector3(0.35, 5.0, 0.35), dark_steel, false)
+	# Front loading area is fully open: remove canopy roof and support columns.
 	_build_first_machine_feed_trigger()
 
 func _build_first_machine_feed_trigger() -> void:
@@ -4072,10 +4070,14 @@ func _build_mega_factory_machine_connections(index: int) -> void:
 			_box("WasteFeedBranchRail%d" % row, Vector3(149.0, 1.08, side_z), Vector3(3.35, 0.25, 0.07), steel, false)
 	if column > 0:
 		var belt_x := 151.0 + float(column - 1) * 13.0 + 6.5
-		_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.78, z), Vector3(7.0, 0.24, 1.25), dark_steel, false)
-		_box("MegaFactoryConveyorBelt", Vector3(belt_x, 0.95, z), Vector3(6.85, 0.07, 1.02), belt_color, false)
-		for side_z in [z - 0.61, z + 0.61]:
-			_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.14, side_z), Vector3(6.85, 0.22, 0.07), steel, false)
+		_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.72, z), Vector3(7.0, 0.42, 1.42), dark_steel, false)
+		_box("MegaFactoryConveyorBelt", Vector3(belt_x, 0.96, z), Vector3(6.78, 0.10, 1.12), belt_color, false)
+		for side_z in [z - 0.65, z + 0.65]:
+			_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.15, side_z), Vector3(6.85, 0.32, 0.12), steel, false)
+		for roller_i in range(14):
+			var roller_x := belt_x - 3.25 + float(roller_i) * 0.5
+			_cylinder("MegaFactoryConveyorRoller", Vector3(roller_x, 0.91, z), 0.10, 1.05, Color(0.42, 0.48, 0.49), false)
+			_box("MegaFactoryBeltCleat", Vector3(roller_x, 1.025, z), Vector3(0.10, 0.035, 1.0), Color(0.20, 0.27, 0.28), false)
 
 func _process_mega_factory_build(delta: float) -> void:
 	if payment_active or mega_factory_built_count >= 15 or not is_instance_valid(player):
