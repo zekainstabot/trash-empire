@@ -4712,18 +4712,10 @@ func _update_ui() -> void:
 	_update_missions()
 
 func _set_message(value: String) -> void:
-	if not is_instance_valid(message_label):
-		return
-	message_label.text = value
-	message_label.visible = not value.is_empty()
-	if value.is_empty():
-		return
-	var toast_tween := create_tween()
-	toast_tween.tween_interval(3.2)
-	toast_tween.tween_callback(func():
-		if is_instance_valid(message_label) and message_label.text == value:
-			message_label.visible = false
-	)
+	# Temporary yellow toast messages below the mission panel are disabled.
+	if is_instance_valid(message_label):
+		message_label.text = ""
+		message_label.visible = false
 
 
 func _mission_is_complete(stage: int) -> bool:
