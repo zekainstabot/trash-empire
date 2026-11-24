@@ -4050,7 +4050,8 @@ func _build_mega_factory_machine(index: int) -> void:
 	_label_3d(["PREPARATION", "PROCESSING", "FINISHING"][column], Vector3(x, 4.0, z - 2.0), 0.15)
 
 func _build_mega_factory_machine_connections(index: int) -> void:
-	# A belt is created only after both machines at its ends exist.
+	# Belts span the exact gap between machine housings, with a small overlap
+	# at both ends so the transfer visibly touches each machine.
 	var row := int(index / 3)
 	var column := index % 3
 	var z := _factory_row_z(row)
@@ -4058,19 +4059,26 @@ func _build_mega_factory_machine_connections(index: int) -> void:
 	var steel := Color(0.16, 0.22, 0.24)
 	var belt_color := Color(0.035, 0.055, 0.06)
 	if column == 0:
-		# Feed branch appears only after the first machine in this row is built.
+		# Intake branch meets the first machine's side intake directly.
 		_box("WasteFeedBranchFrame%d" % row, Vector3(149.0, 0.68, z), Vector3(3.5, 0.28, 1.15), dark_steel, false)
 		_box("WasteFeedBranchBelt%d" % row, Vector3(149.0, 0.89, z), Vector3(3.35, 0.08, 0.88), belt_color, false)
 		for side_z in [z - 0.56, z + 0.56]:
 			_box("WasteFeedBranchRail%d" % row, Vector3(149.0, 1.08, side_z), Vector3(3.35, 0.25, 0.07), steel, false)
 	if column > 0:
-		var belt_x := 151.0 + float(column - 1) * 13.0 + 6.5
-		_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.72, z), Vector3(7.0, 0.42, 1.42), dark_steel, false)
-		_box("MegaFactoryConveyorBelt", Vector3(belt_x, 0.96, z), Vector3(6.78, 0.10, 1.12), belt_color, false)
+		var left_machine_x := 151.0 + float(column - 1) * 13.0
+		var right_machine_x := 151.0 + float(column) * 13.0
+		var machine_half_width := 2.15
+		var belt_start_x := left_machine_x + machine_half_width - 0.15
+		var belt_end_x := right_machine_x - machine_half_width + 0.15
+		var belt_length := belt_end_x - belt_start_x
+		var belt_x := (belt_start_x + belt_end_x) * 0.5
+		_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.72, z), Vector3(belt_length, 0.42, 1.42), dark_steel, false)
+		_box("MegaFactoryConveyorBelt", Vector3(belt_x, 0.96, z), Vector3(belt_length - 0.18, 0.10, 1.12), belt_color, false)
 		for side_z in [z - 0.65, z + 0.65]:
-			_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.15, side_z), Vector3(6.85, 0.32, 0.12), steel, false)
-		for roller_i in range(14):
-			var roller_x := belt_x - 3.25 + float(roller_i) * 0.5
+			_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.15, side_z), Vector3(belt_length, 0.32, 0.12), steel, false)
+		var roller_count := maxi(2, int(belt_length / 0.5))
+		for roller_i in range(roller_count):
+			var roller_x := belt_start_x + float(roller_i) * belt_length / float(roller_count - 1)
 			_cylinder("MegaFactoryConveyorRoller", Vector3(roller_x, 0.91, z), 0.10, 1.05, Color(0.42, 0.48, 0.49), false)
 			_box("MegaFactoryBeltCleat", Vector3(roller_x, 1.025, z), Vector3(0.10, 0.035, 1.0), Color(0.20, 0.27, 0.28), false)
 
