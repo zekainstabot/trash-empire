@@ -3950,29 +3950,30 @@ func _create_factory_row_truck(row: int) -> Node3D:
 func _process_factory_row_shipping(delta: float) -> void:
 	if mega_factory_built_count < 1 or factory_shipping_busy:
 		return
-	# Short turnaround: once a truck finishes its route, allow only a brief pause.
 	factory_shipping_timer += delta
-	if factory_shipping_timer < 2.0:
+	if factory_shipping_timer < 1.0:
 		return
 	factory_shipping_timer = 0.0
-	var available_rows: Array[int] = []
-	for row in range(5):
-		if mega_factory_built_count >= row * 3 + 1 and factory_row_product_stock[row] >= 3:
-			available_rows.append(row)
-	if available_rows.is_empty():
-		return
+	# Search every active production row; do not rely on the current row pointer
+	# or an aggregate inventory counter to determine whether a shipment is ready.
 	var selected_row := -1
 	for offset in range(5):
 		var candidate := (factory_shipping_row + offset) % 5
-		if available_rows.has(candidate):
+		if mega_factory_built_count >= candidate * 3 + 1 and factory_row_product_stock[candidate] >= 3:
 			selected_row = candidate
 			break
-	if selected_row < 0:
+	if selected_row == -1:
 		return
 	factory_shipping_row = (selected_row + 1) % 5
 	_dispatch_factory_row_truck(selected_row)
 
 func _dispatch_factory_row_truck(row: int) -> void:
+	if row < 0 or row >= factory_row_product_stock.size() or factory_row_product_stock[row] < 3:
+		factory_shipping_busy = false
+		return
+	# Reserve the three items immediately, so the stock remains consistent while
+	# the truck is on the road and the next shipment can be queued afterward.
+	factory_row_product_stock[row] -= 3
 	factory_shipping_busy = true
 	var truck := _create_factory_row_truck(row)
 	var z := _factory_row_z(row)
@@ -4017,7 +4018,6 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		door_left.queue_free()
 		door_right.queue_free()
 		factory_shipping_busy = false
-		factory_row_product_stock[row] = maxi(0, factory_row_product_stock[row] - 3)
 		var revenue := _factory_row_truck_revenue(row)
 		money += revenue
 		_update_ui()
