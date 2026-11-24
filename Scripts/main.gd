@@ -3847,12 +3847,7 @@ func _build_recycling_mega_factory() -> void:
 				_build_mega_factory_machine(station_index)
 				_build_mega_factory_machine_connections(station_index)
 
-		# Five identical loading portals: two posts and a header, with a clear opening.
-		for side_z in [-3.15, 3.15]:
-			_box("FactoryLoadingDoorPost", Vector3(143.4, 3.0, z + side_z), Vector3(0.48, 6.0, 0.48), dark_steel, false)
-		_box("FactoryLoadingDoorHeader", Vector3(143.4, 6.05, z), Vector3(0.5, 0.42, 6.75), safety, false)
-		_box("FactoryLoadingDoorTrack", Vector3(143.1, 5.72, z), Vector3(0.18, 0.12, 5.6), teal, false)
-		_label_3d("BAY %d" % row_number, Vector3(143.0, 6.65, z - 2.0), 0.15)
+		# Remove the unnecessary loading portal columns and overhead frames; keep the loading area open.
 
 		# Dedicated output pad on the far end of each production line.
 		_box("FactoryProductOutputPad", Vector3(190.0, 0.34, z), Vector3(5.0, 0.22, 4.8), dark_steel, false)
