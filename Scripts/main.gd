@@ -4095,7 +4095,8 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	var dark_steel := Color(0.055, 0.085, 0.095)
 	var steel := Color(0.16, 0.22, 0.24)
 	var belt_color := Color(0.035, 0.055, 0.06)
-	var start_x := 124.0
+	# Start at the first machine; remove the unused conveyor overhang on the left.
+	var start_x := 148.0
 	var end_x := 199.0
 	var belt_length := end_x - start_x
 	var center_x := (start_x + end_x) * 0.5
