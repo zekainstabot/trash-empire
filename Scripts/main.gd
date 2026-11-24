@@ -289,7 +289,7 @@ func _build_city_rework_layout() -> void:
 	var sidewalk := Color(0.61, 0.62, 0.57)
 	var curb := Color(0.78, 0.77, 0.68)
 	var white := Color(0.90, 0.88, 0.79)
-	_box("CityTerrain", Vector3(49.0, -0.34, 0.0), Vector3(132.0, 0.68, 74.0), grass, true)
+	_box("CityTerrain", Vector3(49.0, -0.34, 0.0), Vector3(126.0, 0.68, 74.0), grass, true)
 	_box("FinalCleanupGround", Vector3(160.0, -0.34, 0.0), Vector3(96.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
 	_box("FinalCleanupWorkPad", Vector3(160.0, 0.018, 0.0), Vector3(90.0, 0.035, 62.0), Color(0.34, 0.38, 0.30), false)
 
@@ -399,18 +399,14 @@ func _build_city_rework_layout() -> void:
 		_build_neighborhood_tree(tree_pos)
 
 	# Road connection from the city into the industrial recycling campus.
-	_box("FactoryAccessRoad", Vector3(133.0, 0.03, 0.0), Vector3(36.0, 0.06, 8.2), asphalt, false)
-	_box("FactoryAccessCenterLine", Vector3(133.0, 0.065, 0.0), Vector3(35.0, 0.012, 0.13), white, false)
-	_box("FactoryGateApron", Vector3(115.0, 0.045, 0.0), Vector3(10.0, 0.09, 16.0), Color(0.45, 0.47, 0.43), false)
+	_box("FactoryAccessRoad", Vector3(119.25, 0.03, 0.0), Vector3(22.5, 0.06, 8.2), asphalt, false)
+	_box("FactoryAccessCenterLine", Vector3(119.25, 0.065, 0.0), Vector3(21.8, 0.012, 0.13), white, false)
 	_box("FactoryGatePostLeft", Vector3(111.5, 2.0, -8.0), Vector3(0.8, 4.0, 0.8), Color(0.18, 0.25, 0.25), false)
 	_box("FactoryGatePostRight", Vector3(111.5, 2.0, 8.0), Vector3(0.8, 4.0, 0.8), Color(0.18, 0.25, 0.25), false)
 	_box("FactoryGateHeader", Vector3(111.5, 4.1, 0.0), Vector3(0.45, 0.28, 15.5), Color(0.12, 0.20, 0.21), false)
 	_label_3d("RECYCLING DISTRICT", Vector3(113.0, 4.55, 0.0), 0.30)
 
-	# The final clean-up district has a marked public access road and boundary.
-	_box("FinalZoneAccessRoad", Vector3(122.0, 0.03, 0.0), Vector3(28.0, 0.06, 8.0), asphalt, false)
-	_box("FinalZoneRoadCenterLine", Vector3(122.0, 0.065, 0.0), Vector3(26.0, 0.012, 0.13), white, false)
-	_box("FinalZoneEntryApron", Vector3(135.0, 0.05, 0.0), Vector3(8.0, 0.10, 15.0), Color(0.43, 0.45, 0.40), false)
+	# The shared access road above now serves both the factory and final cleanup district.
 	for marker_x in range(118, 207, 8):
 		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.05, -34.0), Vector3(0.7, 0.1, 0.7), Color(0.88, 0.62, 0.12), false)
 		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.05, 34.0), Vector3(0.7, 0.1, 0.7), Color(0.88, 0.62, 0.12), false)
@@ -3824,7 +3820,7 @@ func _build_recycling_mega_factory() -> void:
 	var concrete := Color(0.39, 0.43, 0.42)
 
 	# Large, uncluttered factory floor and simple perimeter.
-	_box("MegaFactoryFoundation", Vector3(166.0, 0.035, 0.0), Vector3(72.0, 0.07, 72.0), concrete, true)
+	_box("MegaFactoryFoundation", Vector3(172.75, 0.035, 0.0), Vector3(58.5, 0.07, 72.0), concrete, true)
 	_box("FactoryServiceLane", Vector3(166.0, 0.075, -31.0), Vector3(65.0, 0.05, 3.0), Color(0.29, 0.33, 0.33), true)
 	_box("FactoryFrontApron", Vector3(137.0, 0.035, 0.0), Vector3(13.0, 0.07, 64.0), Color(0.31, 0.35, 0.34), true)
 
@@ -3884,9 +3880,9 @@ func _build_recycling_mega_factory() -> void:
 		var z := _factory_row_z(row)
 		var row_number := row + 1
 		# A clean painted lane with a divider only in the middle of each gap.
-		_box("FactoryRowFloor%d" % row, Vector3(174.0, 0.19, z), Vector3(48.0, 0.06, 10.8), Color(0.34, 0.38, 0.37), true)
-		_box("FactoryRowDivider%d" % row, Vector3(174.0, 0.24, z + 6.35), Vector3(48.0, 0.10, 0.14), safety, false)
-		_box("FactoryRowEdge%d" % row, Vector3(174.0, 0.24, z - 6.35), Vector3(48.0, 0.10, 0.14), teal, false)
+		_box("FactoryRowFloor%d" % row, Vector3(174.0, 0.076, z), Vector3(48.0, 0.012, 10.8), Color(0.34, 0.38, 0.37), false)
+		_box("FactoryRowDivider%d" % row, Vector3(174.0, 0.14, z + 6.35), Vector3(48.0, 0.10, 0.14), safety, false)
+		_box("FactoryRowEdge%d" % row, Vector3(174.0, 0.14, z - 6.35), Vector3(48.0, 0.10, 0.14), teal, false)
 
 		var product_label := Label3D.new()
 		product_label.name = "FactoryProductLine%d" % row
@@ -3902,12 +3898,12 @@ func _build_recycling_mega_factory() -> void:
 		for machine_index in range(3):
 			var x := 151.0 + float(machine_index) * 13.0
 			var station_index := row * 3 + machine_index
-			_box("MegaProcessBuildPad", Vector3(x, 0.30, z), Vector3(5.8, 0.16, 4.8), dark_steel, false)
-			_box("MegaProcessPadAccent", Vector3(x, 0.40, z - 2.22), Vector3(4.9, 0.06, 0.10), safety, false)
+			_box("MegaProcessBuildPad", Vector3(x, 0.105, z), Vector3(5.8, 0.05, 4.8), dark_steel, false)
+			_box("MegaProcessPadAccent", Vector3(x, 0.15, z - 2.22), Vector3(4.9, 0.025, 0.10), safety, false)
 			var build_label := Label3D.new()
 			build_label.name = "MegaFactoryMachineLabel%d" % station_index
 			build_label.text = _factory_row_machine_name(row, machine_index) if station_index < mega_factory_built_count else _factory_row_machine_name(row, machine_index) + "\nBUILD %.0f ZC" % _mega_factory_machine_cost(station_index)
-			build_label.position = Vector3(x, 0.52, z + 2.35)
+			build_label.position = Vector3(x, 0.34, z + 2.35)
 			build_label.font_size = 22
 			build_label.pixel_size = 0.009
 			build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -4119,15 +4115,15 @@ func _build_mega_factory_machine(index: int) -> void:
 	var accent: Color = accents[column]
 	var steel := Color(0.12, 0.18, 0.20)
 	var dark_steel := Color(0.055, 0.085, 0.095)
-	_box("MegaProcessMachineBaseLeft%d" % index, Vector3(x, 0.48, z - 1.48), Vector3(5.0, 0.42, 0.72), dark_steel, false)
-	_box("MegaProcessMachineBaseRight%d" % index, Vector3(x, 0.48, z + 1.48), Vector3(5.0, 0.42, 0.72), dark_steel, false)
-	_box("MegaProcessMachineBody%d" % index, Vector3(x, 2.15, z), Vector3(4.3, 2.7, 3.4), steel, false)
-	_box("MegaProcessMachineTop%d" % index, Vector3(x, 3.58, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
-	_box("MegaProcessMachineWindow%d" % index, Vector3(x, 2.25, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
-	_box("MegaProcessMachineControl%d" % index, Vector3(x + 1.65, 1.8, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
+	_box("MegaProcessMachineBaseLeft%d" % index, Vector3(x, 0.34, z - 1.48), Vector3(5.0, 0.42, 0.72), dark_steel, false)
+	_box("MegaProcessMachineBaseRight%d" % index, Vector3(x, 0.34, z + 1.48), Vector3(5.0, 0.42, 0.72), dark_steel, false)
+	_box("MegaProcessMachineBody%d" % index, Vector3(x, 2.01, z), Vector3(4.3, 2.7, 3.4), steel, false)
+	_box("MegaProcessMachineTop%d" % index, Vector3(x, 3.44, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
+	_box("MegaProcessMachineWindow%d" % index, Vector3(x, 2.11, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
+	_box("MegaProcessMachineControl%d" % index, Vector3(x + 1.65, 1.66, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
 	for wheel_x in [x - 1.5, x + 1.5]:
-		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.98, z + 2.0), 0.38, 0.22, accent, true)
-	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 4.0, z - 2.0), 0.13)
+		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.84, z + 2.0), 0.38, 0.22, accent, true)
+	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 3.86, z - 2.0), 0.13)
 
 func _build_factory_row_main_conveyor(row: int) -> void:
 	var z := _factory_row_z(row)
