@@ -3950,11 +3950,9 @@ func _create_factory_row_truck(row: int) -> Node3D:
 func _process_factory_row_shipping(delta: float) -> void:
 	if mega_factory_built_count < 1 or factory_shipping_busy:
 		return
-	# The truck's full loading and delivery route already takes time.
-	# Keep only a short turnaround pause after it returns instead of adding
-	# another 30-second idle period before the next available shipment.
+	# Short turnaround: once a truck finishes its route, allow only a brief pause.
 	factory_shipping_timer += delta
-	if factory_shipping_timer < 5.0:
+	if factory_shipping_timer < 2.0:
 		return
 	factory_shipping_timer = 0.0
 	var available_rows: Array[int] = []
@@ -3986,7 +3984,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(door_left, "position:z", z - 3.0, 0.55)
 	tween.parallel().tween_property(door_right, "position:z", z + 3.0, 0.55)
-	tween.tween_property(truck, "position:x", 139.0, 2.0)
+	tween.tween_property(truck, "position:x", 139.0, 1.0)
 	for package_index in range(3):
 		var product := Node3D.new()
 		product.name = "LoadedFactoryProduct"
@@ -4001,19 +3999,19 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		tween.tween_property(product, "position", truck.position + Vector3(1.0, 2.35, float(package_index - 1) * 0.82), 0.35)
 		tween.tween_callback(func(): product.reparent(truck))
 	tween.tween_interval(0.5)
-	tween.tween_property(truck, "position:x", 124.0, 2.4)
+	tween.tween_property(truck, "position:x", 124.0, 1.2)
 	tween.tween_interval(0.45)
 	# Route truck out of the factory, through town, then off the map.
-	tween.tween_property(truck, "position:z", z + 5.0, 1.0)
-	tween.tween_property(truck, "position:x", 108.0, 2.8)
-	tween.tween_property(truck, "position:z", 12.0, 1.5)
-	tween.tween_property(truck, "position:x", 82.0, 3.4)
-	tween.tween_property(truck, "position:z", 22.0, 1.3)
-	tween.tween_property(truck, "position:x", 58.0, 3.0)
-	tween.tween_property(truck, "position:z", 34.0, 1.5)
-	tween.tween_property(truck, "position:x", 30.0, 3.0)
-	tween.tween_property(truck, "position:z", 46.0, 1.5)
-	tween.tween_property(truck, "position:x", -8.0, 3.2)
+	tween.tween_property(truck, "position:z", z + 5.0, 0.5)
+	tween.tween_property(truck, "position:x", 108.0, 1.4)
+	tween.tween_property(truck, "position:z", 12.0, 0.75)
+	tween.tween_property(truck, "position:x", 82.0, 1.7)
+	tween.tween_property(truck, "position:z", 22.0, 0.65)
+	tween.tween_property(truck, "position:x", 58.0, 1.5)
+	tween.tween_property(truck, "position:z", 34.0, 0.75)
+	tween.tween_property(truck, "position:x", 30.0, 1.5)
+	tween.tween_property(truck, "position:z", 46.0, 0.75)
+	tween.tween_property(truck, "position:x", -8.0, 1.6)
 	tween.tween_callback(func():
 		truck.queue_free()
 		door_left.queue_free()
