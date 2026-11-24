@@ -44,7 +44,7 @@ jobs:
             echo "Android SDK installation attempt $attempt/3"
             # A failed Google SDK download can leave a truncated archive in the local cache.
             rm -rf "$HOME/.android/cache" "$ANDROID_HOME/ndk/28.1.13356709"
-            if yes | sdkmanager --install "${PACKAGES[@]}"; then
+            if sdkmanager --install "${PACKAGES[@]}"; then
               test -d "$ANDROID_HOME/ndk/28.1.13356709"
               echo "Android SDK packages and NDK installed successfully."
               exit 0
