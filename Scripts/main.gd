@@ -4029,8 +4029,8 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	var stage_name: String = stage_names[sell_stage - 1]
 	var stage_colors := [Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)]
 	var cargo_color: Color = stage_colors[sell_stage - 1]
-	var door_left := _box("FactoryDoorMovingLeft", Vector3(143.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
-	var door_right := _box("FactoryDoorMovingRight", Vector3(143.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
+	var door_left := _box("FactoryDoorMovingLeft", Vector3(199.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
+	var door_right := _box("FactoryDoorMovingRight", Vector3(199.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
