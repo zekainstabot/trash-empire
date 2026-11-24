@@ -3748,82 +3748,70 @@ func _factory_row_unit_price(row: int) -> float:
 	return prices[clampi(row, 0, prices.size() - 1)]
 
 func _factory_row_sell_stage(row: int) -> int:
-	# Sell from the last machine currently built on this row:
-	# 1 = preparation output, 2 = processed output, 3 = finished product.
-	return clampi(mega_factory_built_count - row * 3, 1, 3)
+	return 3 if mega_factory_built_count >= row * 3 + 3 else 0
 
 func _factory_row_sellable_stock(row: int) -> int:
-	match _factory_row_sell_stage(row):
-		1:
-			return int(factory_row_stage1_stock[row])
-		2:
-			return int(factory_row_stage2_stock[row])
-		_:
-			return int(factory_row_product_stock[row])
+	if row < 0 or row >= 5 or _factory_row_sell_stage(row) != 3:
+		return 0
+	return int(factory_row_product_stock[row])
 
 func _factory_row_remove_sellable_stock(row: int, amount: int) -> void:
-	match _factory_row_sell_stage(row):
-		1:
-			factory_row_stage1_stock[row] = maxi(0, int(factory_row_stage1_stock[row]) - amount)
-		2:
-			factory_row_stage2_stock[row] = maxi(0, int(factory_row_stage2_stock[row]) - amount)
-		_:
-			factory_row_product_stock[row] = maxi(0, int(factory_row_product_stock[row]) - amount)
+	if row >= 0 and row < 5 and _factory_row_sell_stage(row) == 3:
+		factory_row_product_stock[row] = maxi(0, int(factory_row_product_stock[row]) - amount)
 
-func _factory_row_truck_revenue(row: int, stage: int) -> float:
-	# Early machines can sell their own output before the next machine is built.
-	var stage_multipliers := [0.55, 0.80, 1.0]
-	return _factory_row_unit_price(row) * 3.0 * stage_multipliers[clampi(stage - 1, 0, 2)]
+func _factory_row_truck_revenue(row: int, _stage: int) -> float:
+	return _factory_row_unit_price(row) * 3.0
 
 func _factory_row_z(row: int) -> float:
 	return -26.0 + float(row) * 13.0
 
 func _factory_row_product(row: int) -> String:
-	var products := ["TELEVISIONS", "DINING TABLES", "CHAIRS", "REFRIGERATORS", "FLOOR LAMPS"]
-	return products[clampi(row, 0, products.size() - 1)]
+	var products := ["PLASTIC BOTTLES & CONTAINERS", "CARDBOARD BOXES", "METAL COMPONENTS", "GLASS BOTTLES & JARS", "REFURBISHED ELECTRONICS"]
+	return products[clampi(row, 0, 4)]
+
+func _factory_row_machine_name(row: int, column: int) -> String:
+	var machine_names := [
+		["PLASTIC SHREDDER", "PLASTIC GRANULATOR", "BOTTLE MOLDER"],
+		["PAPER PULPER", "SHEET PRESS", "CARTON FORMER"],
+		["METAL SORTER & SHREDDER", "SMELTING FURNACE", "CASTING & PRESS"],
+		["GLASS CRUSHER", "GLASS MELTING FURNACE", "GLASS MOLDER"],
+		["E-WASTE DISASSEMBLER", "METAL & PARTS RECOVERY", "ELECTRONICS ASSEMBLY"]
+	]
+	return machine_names[clampi(row, 0, 4)][clampi(column, 0, 2)]
 
 func _build_factory_finished_product(row: int) -> void:
-	var x := 181.5
+	var x := 190.0
 	var z := _factory_row_z(row)
 	var frame := Color(0.10, 0.13, 0.15)
-	var trim := Color(0.48, 0.54, 0.55)
-	var wood_colors: Array[Color] = [Color(0.48, 0.27, 0.13), Color(0.62, 0.39, 0.20), Color(0.34, 0.22, 0.15)]
-	var wood: Color = wood_colors[row % wood_colors.size()]
-	_box("FactoryFinishedProductStand%d" % row, Vector3(x, 0.52, z), Vector3(3.2, 0.9, 3.0), Color(0.16, 0.23, 0.22), false)
+	var accent := [Color(0.18, 0.68, 0.48), Color(0.72, 0.57, 0.34), Color(0.55, 0.60, 0.65), Color(0.42, 0.76, 0.82), Color(0.25, 0.42, 0.62)][row]
+	_box("FactoryProductOutputStand%d" % row, Vector3(x, 0.52, z), Vector3(3.8, 0.9, 3.4), Color(0.16, 0.23, 0.22), false)
 	match row:
 		0:
-			# Fully assembled flat-screen television.
-			_box("FinishedTVFrame", Vector3(x, 1.72, z - 0.25), Vector3(2.25, 1.42, 0.16), frame, false)
-			_box("FinishedTVScreen", Vector3(x, 1.75, z - 0.345), Vector3(2.03, 1.19, 0.025), Color(0.08, 0.28, 0.38), false)
-			_box("FinishedTVStandNeck", Vector3(x, 0.98, z - 0.25), Vector3(0.18, 0.42, 0.16), trim, false)
-			_box("FinishedTVFeet", Vector3(x, 0.76, z - 0.25), Vector3(1.15, 0.09, 0.42), frame, false)
-			_box("FinishedTVPowerLight", Vector3(x + 0.92, 1.08, z - 0.35), Vector3(0.08, 0.045, 0.025), Color(0.15, 0.95, 0.48), false)
+			for i in range(3):
+				var bx := x + float(i - 1) * 0.85
+				_cylinder("FinishedPlasticBottle", Vector3(bx, 1.35, z), 0.30, 1.15, accent, false)
+				_cylinder("PlasticBottleCap", Vector3(bx, 1.96, z), 0.12, 0.12, frame, false)
 		1:
-			# A finished wooden dining table with four legs.
-			_box("FinishedTableTop", Vector3(x, 1.48, z), Vector3(2.55, 0.18, 1.65), wood, false)
-			for lx in [-1.05, 1.05]:
-				for lz in [-0.62, 0.62]:
-					_box("FinishedTableLeg", Vector3(x + lx, 0.91, z + lz), Vector3(0.14, 1.05, 0.14), wood.darkened(0.12), false)
+			for i in range(3):
+				var bx := x + float(i - 1) * 0.78
+				_box("FinishedCardboardBox", Vector3(bx, 1.30, z), Vector3(0.72, 0.85, 0.72), accent, false)
+				_box("CardboardBoxTape", Vector3(bx, 1.74, z), Vector3(0.12, 0.025, 0.74), Color(0.90, 0.82, 0.58), false)
 		2:
-			# A complete chair with seat, backrest and four legs.
-			_box("FinishedChairSeat", Vector3(x, 1.12, z + 0.28), Vector3(1.45, 0.18, 1.25), wood, false)
-			_box("FinishedChairBack", Vector3(x, 1.88, z + 0.83), Vector3(1.45, 1.35, 0.16), wood, false)
-			for lx in [-0.58, 0.58]:
-				for lz in [-0.22, 0.78]:
-					_box("FinishedChairLeg", Vector3(x + lx, 0.62, z + lz), Vector3(0.13, 0.95, 0.13), wood.darkened(0.12), false)
+			for i in range(3):
+				var bx := x + float(i - 1) * 0.88
+				_box("FinishedMetalComponent", Vector3(bx, 1.18, z), Vector3(0.72, 0.62, 0.72), accent, false)
+				_cylinder("MetalComponentCore", Vector3(bx, 1.53, z), 0.20, 0.12, frame, false)
 		3:
-			# A full-size refrigerator with a separate freezer door and handle.
-			_box("FinishedFridgeBody", Vector3(x, 1.72, z), Vector3(1.65, 2.55, 1.45), Color(0.68, 0.74, 0.76), false)
-			_box("FinishedFridgeFreezer", Vector3(x, 2.48, z - 0.74), Vector3(1.55, 0.92, 0.045), Color(0.79, 0.83, 0.84), false)
-			_box("FinishedFridgeDoor", Vector3(x, 1.48, z - 0.75), Vector3(1.55, 1.02, 0.045), Color(0.74, 0.79, 0.80), false)
-			_box("FinishedFridgeHandle", Vector3(x + 0.58, 1.53, z - 0.82), Vector3(0.08, 0.72, 0.10), trim, false)
+			for i in range(3):
+				var bx := x + float(i - 1) * 0.85
+				_cylinder("FinishedGlassJar", Vector3(bx, 1.34, z), 0.32, 1.0, accent, false)
+				_cylinder("GlassJarRim", Vector3(bx, 1.88, z), 0.20, 0.10, Color(0.76, 0.84, 0.84), false)
 		4:
-			# A complete floor lamp with base, upright and shade.
-			_cylinder("FinishedLampBase", Vector3(x, 0.72, z), 0.62, 0.18, frame, false)
-			_cylinder("FinishedLampPole", Vector3(x, 1.62, z), 0.075, 1.72, trim, false)
-			_cylinder("FinishedLampShade", Vector3(x, 2.55, z), 0.62, 0.58, Color(0.92, 0.75, 0.38), false)
-			_cylinder("FinishedLampBulb", Vector3(x, 2.28, z), 0.20, 0.22, Color(1.0, 0.94, 0.68), false)
-	_label_3d("READY: " + _factory_row_product(row), Vector3(x, 1.08, z - 1.65), 0.12)
+			for i in range(3):
+				var bx := x + float(i - 1) * 0.85
+				_box("RefurbishedElectronicUnit", Vector3(bx, 1.35, z), Vector3(0.78, 0.82, 0.62), frame, false)
+				_box("ElectronicDisplay", Vector3(bx, 1.38, z - 0.325), Vector3(0.56, 0.48, 0.025), accent, false)
+	_label_3d("READY: " + _factory_row_product(row), Vector3(x, 2.35, z - 2.0), 0.12)
 
 func _build_recycling_mega_factory() -> void:
 	# Clean, open industrial hall: five parallel lines with clear service lanes.
@@ -3878,7 +3866,7 @@ func _build_recycling_mega_factory() -> void:
 			_box("MegaProcessPadAccent", Vector3(x, 0.40, z - 2.22), Vector3(4.9, 0.06, 0.10), safety, false)
 			var build_label := Label3D.new()
 			build_label.name = "MegaFactoryMachineLabel%d" % station_index
-			build_label.text = "BUILT" if station_index < mega_factory_built_count else "BUILD\n%.0f ZC" % _mega_factory_machine_cost(station_index)
+			build_label.text = _factory_row_machine_name(row, machine_index) if station_index < mega_factory_built_count else _factory_row_machine_name(row, machine_index) + "\nBUILD %.0f ZC" % _mega_factory_machine_cost(station_index)
 			build_label.position = Vector3(x, 0.52, z + 2.35)
 			build_label.font_size = 22
 			build_label.pixel_size = 0.009
@@ -4006,7 +3994,7 @@ func _process_factory_row_shipping(delta: float) -> void:
 	var selected_row := -1
 	for offset in range(5):
 		var candidate := (factory_shipping_row + offset) % 5
-		if mega_factory_built_count >= candidate * 3 + 1 and _factory_row_sellable_stock(candidate) >= 3:
+		if mega_factory_built_count >= candidate * 3 + 3 and _factory_row_sellable_stock(candidate) >= 3:
 			selected_row = candidate
 			break
 	if selected_row == -1:
@@ -4028,7 +4016,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	var truck := _create_factory_row_truck(row)
 	var z := _factory_row_z(row)
 	var stage_names := ["PREPARATION", "PROCESSING", "FINISHED"]
-	var stage_name: String = stage_names[sell_stage - 1]
+	var stage_name: String = "FINISHED PRODUCT"
 	var stage_colors := [Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)]
 	var cargo_color: Color = stage_colors[sell_stage - 1]
 	var door_left := _box("FactoryDoorMovingLeft", Vector3(199.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
@@ -4314,7 +4302,7 @@ func _refresh_factory_machine_status() -> void:
 	if is_instance_valid(factory_machine_status_label):
 		var stage := _factory_row_sell_stage(0)
 		var output_stock := _factory_row_sellable_stock(0)
-		var output_name: String = ["M1", "M2", "READY"][stage - 1]
+		var output_name: String = "FINAL PRODUCT" if stage == 3 else "WAITING FOR 3 MACHINES"
 		factory_machine_status_label.text = "RAW %d | M1 %d | M2 %d | %s %d" % [factory_row_input_stock[0], factory_row_stage1_stock[0], factory_row_stage2_stock[0], output_name, output_stock]
 
 func _create_city_truck(index: int) -> Node3D:
