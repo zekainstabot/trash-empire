@@ -3739,9 +3739,33 @@ func _factory_row_unit_price(row: int) -> float:
 	var prices := [12.0, 15.0, 10.0, 24.0, 15.0]
 	return prices[clampi(row, 0, prices.size() - 1)]
 
-func _factory_row_truck_revenue(row: int) -> float:
-	# Three finished goods per truck; higher-complexity products sell for more.
-	return _factory_row_unit_price(row) * 3.0
+func _factory_row_sell_stage(row: int) -> int:
+	# Sell from the last machine currently built on this row:
+	# 1 = preparation output, 2 = processed output, 3 = finished product.
+	return clampi(mega_factory_built_count - row * 3, 1, 3)
+
+func _factory_row_sellable_stock(row: int) -> int:
+	match _factory_row_sell_stage(row):
+		1:
+			return int(factory_row_stage1_stock[row])
+		2:
+			return int(factory_row_stage2_stock[row])
+		_:
+			return int(factory_row_product_stock[row])
+
+func _factory_row_remove_sellable_stock(row: int, amount: int) -> void:
+	match _factory_row_sell_stage(row):
+		1:
+			factory_row_stage1_stock[row] = maxi(0, int(factory_row_stage1_stock[row]) - amount)
+		2:
+			factory_row_stage2_stock[row] = maxi(0, int(factory_row_stage2_stock[row]) - amount)
+		_:
+			factory_row_product_stock[row] = maxi(0, int(factory_row_product_stock[row]) - amount)
+
+func _factory_row_truck_revenue(row: int, stage: int) -> float:
+	# Early machines can sell their own output before the next machine is built.
+	var stage_multipliers := [0.55, 0.80, 1.0]
+	return _factory_row_unit_price(row) * 3.0 * stage_multipliers[clampi(stage - 1, 0, 2)]
 
 func _factory_row_z(row: int) -> float:
 	return -26.0 + float(row) * 13.0
@@ -3964,12 +3988,12 @@ func _process_factory_row_shipping(delta: float) -> void:
 	if factory_shipping_timer < 1.0:
 		return
 	factory_shipping_timer = 0.0
-	# Search every active production row; do not rely on the current row pointer
-	# or an aggregate inventory counter to determine whether a shipment is ready.
+	# Each row sells the output of its newest built machine, even before
+	# the next machine in that row has been purchased.
 	var selected_row := -1
 	for offset in range(5):
 		var candidate := (factory_shipping_row + offset) % 5
-		if mega_factory_built_count >= candidate * 3 + 1 and factory_row_product_stock[candidate] >= 3:
+		if mega_factory_built_count >= candidate * 3 + 1 and _factory_row_sellable_stock(candidate) >= 3:
 			selected_row = candidate
 			break
 	if selected_row == -1:
@@ -3978,16 +4002,22 @@ func _process_factory_row_shipping(delta: float) -> void:
 	_dispatch_factory_row_truck(selected_row)
 
 func _dispatch_factory_row_truck(row: int) -> void:
-	if row < 0 or row >= factory_row_product_stock.size() or factory_row_product_stock[row] < 3:
+	if row < 0 or row >= 5 or mega_factory_built_count < row * 3 + 1:
 		factory_shipping_busy = false
 		return
-	# Reserve the three items immediately, so the stock remains consistent while
-	# the truck is on the road and the next shipment can be queued afterward.
-	factory_row_product_stock[row] -= 3
+	var sell_stage := _factory_row_sell_stage(row)
+	if _factory_row_sellable_stock(row) < 3:
+		factory_shipping_busy = false
+		return
+	# Reserve three units from the latest built machine's output.
+	_factory_row_remove_sellable_stock(row, 3)
 	factory_shipping_busy = true
 	var truck := _create_factory_row_truck(row)
 	var z := _factory_row_z(row)
-	# Open the two large sliding door leaves before the truck enters.
+	var stage_names := ["PREPARATION", "PROCESSING", "FINISHED"]
+	var stage_name: String = stage_names[sell_stage - 1]
+	var stage_colors := [Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)]
+	var cargo_color: Color = stage_colors[sell_stage - 1]
 	var door_left := _box("FactoryDoorMovingLeft", Vector3(143.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
 	var door_right := _box("FactoryDoorMovingRight", Vector3(143.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
 	var tween := create_tween()
@@ -4004,23 +4034,23 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		var body_mesh := BoxMesh.new()
 		body_mesh.size = Vector3(0.82, 0.72, 0.72)
 		body.mesh = body_mesh
-		body.material_override = _mat([Color(0.18, 0.36, 0.56), Color(0.52, 0.34, 0.18), Color(0.72, 0.74, 0.76), Color(0.30, 0.48, 0.38), Color(0.88, 0.72, 0.32)][row])
+		body.material_override = _mat(cargo_color)
 		product.add_child(body)
 		add_child(product)
 		tween.tween_property(product, "position", truck.position + Vector3(1.0, 2.35, float(package_index - 1) * 0.82), 0.35)
 		tween.tween_callback(func(): product.reparent(truck))
-	# Pay immediately after all three products have been loaded.
+	# Payment is made only once all three units from this machine are on the truck.
 	tween.tween_callback(func():
-		var loading_revenue := _factory_row_truck_revenue(row)
+		var loading_revenue := _factory_row_truck_revenue(row, sell_stage)
 		money += loading_revenue
 		_update_ui()
 		_save_game()
-		_set_message("%s truck loaded 3 products. Payment +%.0f ZC!" % [_factory_row_product(row), loading_revenue])
+		_refresh_factory_machine_status()
+		_set_message("%s: %s truck loaded 3 units. Payment +%.0f ZC!" % [_factory_row_product(row), stage_name, loading_revenue])
 	)
 	tween.tween_interval(0.5)
 	tween.tween_property(truck, "position:x", 124.0, 1.2)
 	tween.tween_interval(0.45)
-	# Route truck out of the factory, through town, then off the map.
 	tween.tween_property(truck, "position:z", z + 5.0, 0.5)
 	tween.tween_property(truck, "position:x", 108.0, 1.4)
 	tween.tween_property(truck, "position:z", 12.0, 0.75)
@@ -4036,7 +4066,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		door_left.queue_free()
 		door_right.queue_free()
 		factory_shipping_busy = false
-		_set_message("%s truck delivered its loaded products." % _factory_row_product(row))
+		_set_message("%s truck delivered its %s output." % [_factory_row_product(row), stage_name])
 	)
 
 func _mega_factory_machine_cost(index: int) -> float:
@@ -4276,7 +4306,10 @@ func _refresh_waste_tank_inventory_label() -> void:
 
 func _refresh_factory_machine_status() -> void:
 	if is_instance_valid(factory_machine_status_label):
-		factory_machine_status_label.text = "RAW %d | M1 %d | M2 %d | READY %d" % [factory_row_input_stock[0], factory_row_stage1_stock[0], factory_row_stage2_stock[0], factory_row_product_stock[0]]
+		var stage := _factory_row_sell_stage(0)
+		var output_stock := _factory_row_sellable_stock(0)
+		var output_name := ["M1", "M2", "READY"][stage - 1]
+		factory_machine_status_label.text = "RAW %d | M1 %d | M2 %d | %s %d" % [factory_row_input_stock[0], factory_row_stage1_stock[0], factory_row_stage2_stock[0], output_name, output_stock]
 
 func _create_city_truck(index: int) -> Node3D:
 	var truck := Node3D.new()
