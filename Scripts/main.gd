@@ -3856,20 +3856,28 @@ func _build_recycling_mega_factory() -> void:
 		var feed_roller := _cylinder("FactoryFirstMachineFeedRoller", Vector3(145.2, 0.88, float(roller_z)), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
 		feed_roller.rotation_degrees.x = 90.0
 
-	# Rounded-looking elbow branches join the cross-feed belt to each first machine.
+	# Smooth quarter-circle elbows turn the shared longitudinal belt into each machine branch.
 	for row in range(5):
 		var feed_z := _factory_row_z(row)
-		# Short diagonal belt plates approximate a smooth 90-degree conveyor bend.
-		for bend_i in range(3):
-			var bend_t := float(bend_i + 1) / 4.0
-			var bend_x := 145.2 + bend_t * 2.8
-			var bend_z := feed_z - (1.0 - bend_t) * 0.45
-			var bend := _box("FactoryFirstMachineFeedBend%d_%d" % [row, bend_i], Vector3(bend_x, 0.91, bend_z), Vector3(1.15, 0.12, 1.25), belt_color, false)
-			bend.rotation_degrees.y = -35.0 + bend_t * 35.0
-		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(147.35, 0.68, feed_z), Vector3(4.3, 0.30, 1.45), dark_steel, false)
-		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(147.35, 0.89, feed_z), Vector3(4.15, 0.08, 1.18), belt_color, false)
+		var bend_radius := 1.4
+		var bend_center_x := 146.6
+		var bend_center_z := feed_z - bend_radius
+		for bend_i in range(8):
+			var angle_a := PI - (float(bend_i) / 8.0) * (PI * 0.5)
+			var angle_b := PI - (float(bend_i + 1) / 8.0) * (PI * 0.5)
+			var angle_mid := (angle_a + angle_b) * 0.5
+			var bend_x := bend_center_x + cos(angle_mid) * bend_radius
+			var bend_z := bend_center_z + sin(angle_mid) * bend_radius
+			var tangent_angle := angle_mid - PI * 0.5
+			var bend_length := bend_radius * (angle_a - angle_b) + 0.08
+			var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(1.48, 0.28, bend_length), dark_steel, false)
+			bend_frame.rotation_degrees.y = rad_to_deg(tangent_angle)
+			var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.90, bend_z), Vector3(1.22, 0.08, bend_length), belt_color, false)
+			bend_belt.rotation_degrees.y = rad_to_deg(tangent_angle)
+		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(148.55, 0.68, feed_z), Vector3(3.9, 0.30, 1.45), dark_steel, false)
+		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(148.55, 0.89, feed_z), Vector3(3.75, 0.08, 1.18), belt_color, false)
 		for branch_side in [feed_z - 0.68, feed_z + 0.68]:
-			_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(147.35, 1.08, branch_side), Vector3(4.15, 0.28, 0.08), steel, false)
+			_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(148.55, 1.08, branch_side), Vector3(3.75, 0.28, 0.08), steel, false)
 
 	mega_factory_machine_labels.clear()
 	for row in range(5):
