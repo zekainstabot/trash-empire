@@ -1558,10 +1558,8 @@ func _robot_leg(parent: Node3D, part_name: String, pos: Vector3) -> Node3D:
 	pivot.name = part_name
 	pivot.position = pos
 	parent.add_child(pivot)
-	# Keep the sole clearly above the floor while the robot is idle.
-	# The leg pivot is at y=0.52; boot bottom is now y=0.035 in robot-local space.
-	_add_robot_box(pivot, "Shin", Vector3(0, -0.17, 0), Vector3(0.24, 0.34, 0.25), Color(0.25, 0.36, 0.39))
-	_add_robot_box(pivot, "Boot", Vector3(0, -0.365, -0.09), Vector3(0.34, 0.15, 0.43), Color(0.07, 0.12, 0.15))
+	_add_robot_box(pivot, "Shin", Vector3(0, -0.20, 0), Vector3(0.24, 0.40, 0.25), Color(0.25, 0.36, 0.39))
+	_add_robot_box(pivot, "Boot", Vector3(0, -0.42, -0.09), Vector3(0.34, 0.16, 0.43), Color(0.07, 0.12, 0.15))
 	return pivot
 
 func _build_trash() -> void:
