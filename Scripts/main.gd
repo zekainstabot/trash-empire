@@ -1499,7 +1499,8 @@ func _animate_robot(delta: float) -> void:
 	robot_anim_time += delta
 	var moving := Vector2(player.velocity.x, player.velocity.z).length() > 0.25
 	var stride := sin(robot_anim_time * 10.0) if moving else 0.0
-	var bob := absf(stride) * 0.055 if moving else sin(robot_anim_time * 2.2) * 0.025
+	# Idle breathing must never lower the feet through the floor.
+	var bob := absf(stride) * 0.045 if moving else 0.0
 	robot_visual.position.y = bob
 	robot_visual.rotation.z = sin(robot_anim_time * 5.0) * 0.025 if moving else sin(robot_anim_time * 1.5) * 0.012
 	robot_left_arm.rotation.x = stride * 0.65
@@ -1557,8 +1558,10 @@ func _robot_leg(parent: Node3D, part_name: String, pos: Vector3) -> Node3D:
 	pivot.name = part_name
 	pivot.position = pos
 	parent.add_child(pivot)
-	_add_robot_box(pivot, "Shin", Vector3(0, -0.20, 0), Vector3(0.24, 0.40, 0.25), Color(0.25, 0.36, 0.39))
-	_add_robot_box(pivot, "Boot", Vector3(0, -0.42, -0.09), Vector3(0.34, 0.16, 0.43), Color(0.07, 0.12, 0.15))
+	# Keep the sole clearly above the floor while the robot is idle.
+	# The leg pivot is at y=0.52; boot bottom is now y=0.035 in robot-local space.
+	_add_robot_box(pivot, "Shin", Vector3(0, -0.17, 0), Vector3(0.24, 0.34, 0.25), Color(0.25, 0.36, 0.39))
+	_add_robot_box(pivot, "Boot", Vector3(0, -0.365, -0.09), Vector3(0.34, 0.15, 0.43), Color(0.07, 0.12, 0.15))
 	return pivot
 
 func _build_trash() -> void:
