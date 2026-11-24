@@ -120,6 +120,8 @@ var factory_build_paid := 0.0
 var factory_build_save_timer := 0.0
 var mega_factory_built_count := 1
 var factory_row_input_stock: Array = [0, 0, 0, 0, 0]
+var factory_row_stage1_stock: Array = [0, 0, 0, 0, 0]
+var factory_row_stage2_stock: Array = [0, 0, 0, 0, 0]
 var factory_row_product_stock: Array = [0, 0, 0, 0, 0]
 var factory_total_products_made := 0
 const FACTORY_INPUT_CAPACITY_PER_ROW := 90
@@ -1870,6 +1872,8 @@ func _start_new_world() -> void:
 	factory_build_save_timer = 0.0
 	mega_factory_built_count = 1
 	factory_row_input_stock = [0, 0, 0, 0, 0]
+	factory_row_stage1_stock = [0, 0, 0, 0, 0]
+	factory_row_stage2_stock = [0, 0, 0, 0, 0]
 	factory_row_product_stock = [0, 0, 0, 0, 0]
 	factory_total_products_made = 0
 	factory_production_timer = 0.0
@@ -3593,6 +3597,8 @@ func _save_game() -> void:
 	save.set_value("progress", "factory_build_paid", factory_build_paid)
 	save.set_value("progress", "mega_factory_built_count", mega_factory_built_count)
 	save.set_value("progress", "factory_row_input_stock", factory_row_input_stock)
+	save.set_value("progress", "factory_row_stage1_stock", factory_row_stage1_stock)
+	save.set_value("progress", "factory_row_stage2_stock", factory_row_stage2_stock)
 	save.set_value("progress", "factory_row_product_stock", factory_row_product_stock)
 	save.set_value("progress", "factory_total_products_made", factory_total_products_made)
 	save.set_value("progress", "waste_tank_inventory", waste_tank_inventory)
@@ -3649,9 +3655,13 @@ func _load_game() -> void:
 	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0, 160.0][factory_stage])
 	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 1)), 1, 15)
 	factory_row_input_stock = save.get_value("progress", "factory_row_input_stock", [0, 0, 0, 0, 0])
+	factory_row_stage1_stock = save.get_value("progress", "factory_row_stage1_stock", [0, 0, 0, 0, 0])
+	factory_row_stage2_stock = save.get_value("progress", "factory_row_stage2_stock", [0, 0, 0, 0, 0])
 	factory_row_product_stock = save.get_value("progress", "factory_row_product_stock", [0, 0, 0, 0, 0])
 	factory_total_products_made = maxi(0, int(save.get_value("progress", "factory_total_products_made", 0)))
 	while factory_row_input_stock.size() < 5: factory_row_input_stock.append(0)
+	while factory_row_stage1_stock.size() < 5: factory_row_stage1_stock.append(0)
+	while factory_row_stage2_stock.size() < 5: factory_row_stage2_stock.append(0)
 	while factory_row_product_stock.size() < 5: factory_row_product_stock.append(0)
 	waste_tank_inventory = clampi(int(save.get_value("progress", "waste_tank_inventory", 0)), 0, WASTE_TANK_CAPACITY)
 	mega_factory_build_paid = clampf(float(save.get_value("progress", "mega_factory_build_paid", 0.0)), 0.0, _mega_factory_machine_cost(mega_factory_built_count))
@@ -4266,7 +4276,7 @@ func _refresh_waste_tank_inventory_label() -> void:
 
 func _refresh_factory_machine_status() -> void:
 	if is_instance_valid(factory_machine_status_label):
-		factory_machine_status_label.text = "INPUT %d   |   PRODUCTS %d" % [factory_row_input_stock[0], factory_row_product_stock[0]]
+		factory_machine_status_label.text = "RAW %d | M1 %d | M2 %d | READY %d" % [factory_row_input_stock[0], factory_row_stage1_stock[0], factory_row_stage2_stock[0], factory_row_product_stock[0]]
 
 func _create_city_truck(index: int) -> Node3D:
 	var truck := Node3D.new()
@@ -4951,18 +4961,51 @@ func _process_factory_production(delta: float) -> void:
 		return
 	factory_production_timer = 0.0
 	for row in range(5):
-		if mega_factory_built_count < row * 3 + 1:
+		var first_machine := row * 3 + 1
+		if mega_factory_built_count < first_machine:
 			continue
-		if factory_row_product_stock[row] >= FACTORY_PRODUCT_CAPACITY_PER_ROW:
-			continue
-		if factory_row_input_stock[row] >= 3:
-			factory_row_input_stock[row] -= 3
+
+		# Run the line backwards so an item advances only one machine per cycle.
+		if mega_factory_built_count >= first_machine + 2 and factory_row_stage2_stock[row] > 0 and factory_row_product_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
+			factory_row_stage2_stock[row] -= 1
 			factory_row_product_stock[row] += 1
 			factory_total_products_made += 1
-			_refresh_factory_machine_status()
-			_set_message("%s produced! Stock: %d" % [_factory_row_product(row), factory_row_product_stock[row]])
+			_animate_factory_stage_item(row, 2)
+			_set_message("%s completed final assembly. Ready: %d" % [_factory_row_product(row), factory_row_product_stock[row]])
 			_update_missions()
 			_save_game()
+		elif mega_factory_built_count >= first_machine + 1 and factory_row_stage1_stock[row] > 0 and factory_row_stage2_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
+			factory_row_stage1_stock[row] -= 1
+			factory_row_stage2_stock[row] += 1
+			_animate_factory_stage_item(row, 1)
+			_set_message("Machine 2 processed %s components. In process: %d" % [_factory_row_product(row), factory_row_stage2_stock[row]])
+			_save_game()
+		elif factory_row_input_stock[row] >= 3 and factory_row_stage1_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
+			factory_row_input_stock[row] -= 3
+			factory_row_stage1_stock[row] += 1
+			_animate_factory_stage_item(row, 0)
+			_set_message("Machine 1 prepared %s components. Waiting for machine 2: %d" % [_factory_row_product(row), factory_row_stage1_stock[row]])
+			_save_game()
+	_refresh_factory_machine_status()
+
+func _animate_factory_stage_item(row: int, stage: int) -> void:
+	var item := MeshInstance3D.new()
+	item.name = "FactoryStageProduct"
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.62, 0.48, 0.62)
+	item.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = [Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)][clampi(stage, 0, 2)]
+	item.material_override = material
+	var z := _factory_row_z(row)
+	var start_x := 153.8 + float(stage) * 13.0
+	item.position = Vector3(start_x, 1.42, z)
+	add_child(item)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(item, "position", Vector3(start_x + 7.0, 1.42, z), 0.9)
+	tween.tween_callback(item.queue_free)
 
 func _animate_conveyor(delta: float) -> void:
 	var conveyor_speed := _conveyor_speed_multiplier()
