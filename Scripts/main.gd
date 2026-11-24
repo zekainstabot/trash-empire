@@ -3849,6 +3849,21 @@ func _build_recycling_mega_factory() -> void:
 		var feed_roller := _cylinder("FactoryFirstMachineFeedRoller", Vector3(145.2, 0.88, float(roller_z)), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
 		feed_roller.rotation_degrees.x = 90.0
 
+	# Rounded-looking elbow branches join the cross-feed belt to each first machine.
+	for row in range(5):
+		var feed_z := _factory_row_z(row)
+		# Short diagonal belt plates approximate a smooth 90-degree conveyor bend.
+		for bend_i in range(3):
+			var bend_t := float(bend_i + 1) / 4.0
+			var bend_x := 145.2 + bend_t * 2.8
+			var bend_z := feed_z - (1.0 - bend_t) * 0.45
+			var bend := _box("FactoryFirstMachineFeedBend%d_%d" % [row, bend_i], Vector3(bend_x, 0.91, bend_z), Vector3(1.15, 0.12, 1.25), belt_color, false)
+			bend.rotation_degrees.y = -35.0 + bend_t * 35.0
+		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(147.35, 0.68, feed_z), Vector3(4.3, 0.30, 1.45), dark_steel, false)
+		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(147.35, 0.89, feed_z), Vector3(4.15, 0.08, 1.18), belt_color, false)
+		for branch_side in [feed_z - 0.68, feed_z + 0.68]:
+			_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(147.35, 1.08, branch_side), Vector3(4.15, 0.28, 0.08), steel, false)
+
 	mega_factory_machine_labels.clear()
 	for row in range(5):
 		var z := _factory_row_z(row)
