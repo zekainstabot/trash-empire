@@ -2149,6 +2149,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"fleet": return Color(0.90, 0.48, 0.22)
 		"truck_capacity": return Color(0.75, 0.52, 0.22)
 		"packaging": return Color(0.72, 0.32, 0.62)
+		"factory_truck_interval": return Color(0.18, 0.72, 0.62)
 	return Color(0.25, 0.45, 0.42)
 
 func _skill_icon(branch: String) -> String:
@@ -2175,6 +2176,7 @@ func _skill_icon(branch: String) -> String:
 		"fleet": return "🚚"
 		"truck_capacity": return "📦"
 		"packaging": return "🏭"
+		"factory_truck_interval": return "🚛"
 	return "◆"
 
 func _skill_hex_button_style() -> StyleBoxFlat:
