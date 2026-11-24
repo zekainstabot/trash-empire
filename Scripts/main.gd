@@ -3830,11 +3830,18 @@ func _build_recycling_mega_factory() -> void:
 
 	# Open-air factory: no roof, walls, or structural columns.
 
-	# One straight main feed belt, one straight distribution spine, five short branches.
-	_box("WasteFeedMainFrame", Vector3(137.0, 0.68, 0.0), Vector3(18.0, 0.30, 1.8), dark_steel, false)
-	_box("WasteFeedMainBelt", Vector3(137.0, 0.88, 0.0), Vector3(17.7, 0.08, 1.35), belt_color, false)
+	# Dedicated transfer conveyor links the central cross-feed spine directly to the main waste tank.
+	# Its left end meets the tank outlet and its right end meets the middle of the five-row feed spine.
+	_box("WasteFeedMainFrame", Vector3(136.8, 0.68, 0.0), Vector3(16.8, 0.30, 1.8), dark_steel, false)
+	_box("WasteFeedMainBelt", Vector3(136.8, 0.88, 0.0), Vector3(16.55, 0.08, 1.35), belt_color, false)
 	for side_z in [-0.78, 0.78]:
-		_box("WasteFeedMainRail", Vector3(137.0, 1.08, side_z), Vector3(17.7, 0.28, 0.08), steel, false)
+		_box("WasteFeedMainRail", Vector3(136.8, 1.08, side_z), Vector3(16.55, 0.28, 0.08), steel, false)
+	for transfer_x in range(129, 145, 2):
+		var transfer_roller := _cylinder("WasteFeedMainRoller", Vector3(float(transfer_x), 0.88, 0.0), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
+		transfer_roller.rotation_degrees.x = 90.0
+	# Reinforced intake lip makes the physical connection to the tank outlet visible.
+	_box("WasteTankConveyorIntakeFrame", Vector3(128.55, 0.68, 0.0), Vector3(1.25, 0.34, 1.95), dark_steel, false)
+	_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.89, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
 	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
 	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.89, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
 	for side_x in [146.12, 147.88]:
