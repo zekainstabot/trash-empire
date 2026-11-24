@@ -3895,17 +3895,12 @@ func _build_recycling_mega_factory() -> void:
 	for tank_index in range(3):
 		var tx := 181.0 + float(tank_index) * 4.0
 		_cylinder("WaterTreatmentTank", Vector3(tx, 1.65, 29.0), 1.35, 3.2, Color(0.18, 0.38, 0.42), false)
-	for stack_x in [193.0, 197.0]:
-		_cylinder("FactoryExhaustStack", Vector3(stack_x, 8.2, 8.0), 0.52, 6.8, steel, false)
-		_cylinder("FactoryStackRim", Vector3(stack_x, 11.65, 8.0), 0.68, 0.24, safety, false)
 
 	# Marked truck lane runs parallel to the building face and stays clear of doors.
 	_box("FactoryLoadingDock", Vector3(137.0, 0.22, 0.0), Vector3(12.0, 0.28, 62.0), Color(0.25, 0.29, 0.29), false)
 	for z in [-26.0, -13.0, 0.0, 13.0, 26.0]:
 		_box("FactoryTruckLane", Vector3(137.0, 0.39, z), Vector3(10.0, 0.035, 0.14), safety, false)
 
-	_box("FactoryNameBoard", Vector3(166.0, 7.5, 34.0), Vector3(22.0, 2.0, 0.35), dark_steel, false)
-	_label_3d("ZEKA RECYCLING  |  PRODUCTION HALL", Vector3(166.0, 7.45, 33.78), 0.31)
 	# Front loading area is fully open: remove canopy roof and support columns.
 	_build_first_machine_feed_trigger()
 
