@@ -4111,7 +4111,8 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	var roller_count := 40
 	for roller_i in range(roller_count):
 		var roller_x := start_x + float(roller_i) * belt_length / float(roller_count - 1)
-		_cylinder("FactoryMainConveyorRoller%d" % row, Vector3(roller_x, 0.89, z), 0.10, 1.18, Color(0.42, 0.48, 0.49), false)
+		var roller := _cylinder("FactoryMainConveyorRoller%d" % row, Vector3(roller_x, 0.89, z), 0.045, 1.18, Color(0.12, 0.16, 0.17), false)
+		roller.rotation_degrees.x = 90.0
 		if roller_i % 4 == 0:
 			_box("FactoryMainConveyorCleat%d" % row, Vector3(roller_x, 1.005, z), Vector3(0.10, 0.035, 1.10), Color(0.20, 0.27, 0.28), false)
 
