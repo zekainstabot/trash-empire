@@ -48,7 +48,7 @@ jobs:
             echo "Android SDK installation attempt $attempt/3"
             # Remove truncated SDK archives and partial NDK extraction before retrying.
             rm -rf "$HOME/.android/cache" "$ANDROID_HOME/ndk/28.1.13356709"
-            if yes | sdkmanager --install "${PACKAGES[@]}"; then
+            if sdkmanager --install "${PACKAGES[@]}"; then
               if [ -d "$ANDROID_HOME/ndk/28.1.13356709" ]; then
                 echo "Android SDK packages and NDK installed successfully."
                 break
