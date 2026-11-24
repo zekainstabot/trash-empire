@@ -3881,7 +3881,7 @@ func _build_recycling_mega_factory() -> void:
 
 		# Dedicated output pad on the far end of each production line.
 		_box("FactoryProductOutputPad", Vector3(190.0, 0.34, z), Vector3(5.0, 0.22, 4.8), dark_steel, false)
-		if mega_factory_built_count >= row * 3 + 1:
+		if mega_factory_built_count >= row * 3 + 3:
 			_build_factory_finished_product(row)
 		else:
 			_label_3d("AWAITING LINE START", Vector3(190.0, 1.2, z - 2.2), 0.13)
@@ -4092,7 +4092,7 @@ func _build_mega_factory_machine(index: int) -> void:
 	_box("MegaProcessMachineControl%d" % index, Vector3(x + 1.65, 1.8, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
 	for wheel_x in [x - 1.5, x + 1.5]:
 		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.98, z + 2.0), 0.38, 0.22, accent, true)
-	_label_3d(["PREPARATION", "PROCESSING", "FINISHING"][column], Vector3(x, 4.0, z - 2.0), 0.15)
+	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 4.0, z - 2.0), 0.13)
 
 func _build_factory_row_main_conveyor(row: int) -> void:
 	var z := _factory_row_z(row)
@@ -4148,9 +4148,9 @@ func _process_mega_factory_build(delta: float) -> void:
 		mega_factory_build_timer = 0.0
 		if index < mega_factory_machine_labels.size() and is_instance_valid(mega_factory_machine_labels[index]):
 			mega_factory_machine_labels[index].text = "BUILT"
-		if mega_factory_built_count % 3 == 1:
+		if mega_factory_built_count % 3 == 0:
 			_build_factory_finished_product(int(index / 3))
-			_set_message("New production line activated! %s can now be manufactured." % _factory_row_product(int(index / 3)))
+			_set_message("Complete 3-machine line activated! Now producing %s." % _factory_row_product(int(index / 3)))
 		_update_ui()
 		_save_game()
 		if mega_factory_built_count < 15:
