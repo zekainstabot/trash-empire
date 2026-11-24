@@ -1132,7 +1132,7 @@ func _process_factory_build(delta: float) -> void:
 		factory_build_save_timer = 0.0
 		_build_factory_expansion()
 		# Move the player clear of the newly spawned machine collision immediately.
-		player.global_position = Vector3(3.5, maxf(player.global_position.y, 0.0), minf(z_positions[factory_stage] + 2.8, 37.2))
+		player.global_position = Vector3(143.0, maxf(player.global_position.y, 0.0), minf(z_positions[factory_stage] + 2.8, 37.2))
 		player.velocity = Vector3.ZERO
 		player.reset_physics_interpolation()
 		_refresh_factory_upgrade_button()
@@ -1402,7 +1402,7 @@ func _build_player() -> void:
 	player.name = "Player"
 	player.set_script(PLAYER_SCRIPT)
 	# Start beside the factory entrance, not in the middle of the city.
-	player.position = Vector3(3.5, 0.05, 5.5)
+	player.position = Vector3(143.0, 0.05, 5.5)
 	player.set("move_speed", 4.5 + float(speed_upgrade_level - 1) * 0.75)
 	add_child(player)
 
