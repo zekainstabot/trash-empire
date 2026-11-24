@@ -3781,7 +3781,7 @@ func _factory_row_machine_name(row: int, column: int) -> String:
 	return machine_names[clampi(row, 0, 4)][clampi(column, 0, 2)]
 
 func _build_factory_finished_product(row: int) -> void:
-	var x := 190.0
+	var x := 198.0
 	var z := _factory_row_z(row)
 	var frame := Color(0.10, 0.13, 0.15)
 	var accent: Color = [Color(0.18, 0.68, 0.48), Color(0.72, 0.57, 0.34), Color(0.55, 0.60, 0.65), Color(0.42, 0.76, 0.82), Color(0.25, 0.42, 0.62)][row]
@@ -3881,11 +3881,11 @@ func _build_recycling_mega_factory() -> void:
 		# Remove the unnecessary loading portal columns and overhead frames; keep the loading area open.
 
 		# Dedicated output pad on the far end of each production line.
-		_box("FactoryProductOutputPad", Vector3(190.0, 0.34, z), Vector3(5.0, 0.22, 4.8), dark_steel, false)
+		_box("FactoryProductOutputPad", Vector3(198.0, 0.34, z), Vector3(5.0, 0.22, 4.8), dark_steel, false)
 		if mega_factory_built_count >= row * 3 + 3:
 			_build_factory_finished_product(row)
 		else:
-			_label_3d("AWAITING LINE START", Vector3(190.0, 1.2, z - 2.2), 0.13)
+			_label_3d("AWAITING LINE START", Vector3(198.0, 1.2, z - 2.2), 0.13)
 
 	# Utility equipment is grouped in a dedicated rear service strip.
 	for tank_index in range(3):
@@ -3946,7 +3946,7 @@ func _on_first_machine_feed_entered(body: Node3D) -> void:
 func _create_factory_row_truck(row: int) -> Node3D:
 	var truck := Node3D.new()
 	truck.name = "FactoryProductTruck%d" % (row + 1)
-	truck.position = Vector3(212.0, 0.0, _factory_row_z(row))
+	truck.position = Vector3(220.0, 0.0, _factory_row_z(row))
 	_box_child(truck, "TruckCargoBed", Vector3(1.15, 1.35, 0.0), Vector3(4.0, 1.35, 3.0), Color(0.76, 0.79, 0.76))
 	_box_child(truck, "TruckCab", Vector3(-2.15, 1.3, 0.0), Vector3(1.65, 1.65, 2.65), Color(0.82, 0.22, 0.12))
 	_box_child(truck, "TruckWindshield", Vector3(-3.0, 1.62, 0.0), Vector3(0.06, 0.78, 1.55), Color(0.12, 0.23, 0.29))
@@ -4015,18 +4015,18 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	var stage_name: String = "FINISHED PRODUCT"
 	var stage_colors := [Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)]
 	var cargo_color: Color = stage_colors[sell_stage - 1]
-	var door_left := _box("FactoryDoorMovingLeft", Vector3(199.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
-	var door_right := _box("FactoryDoorMovingRight", Vector3(199.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
+	var door_left := _box("FactoryDoorMovingLeft", Vector3(207.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
+	var door_right := _box("FactoryDoorMovingRight", Vector3(207.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(door_left, "position:z", z - 3.0, 0.55)
 	tween.parallel().tween_property(door_right, "position:z", z + 3.0, 0.55)
-	tween.tween_property(truck, "position:x", 202.0, 1.0)
+	tween.tween_property(truck, "position:x", 210.0, 1.0)
 	for package_index in range(3):
 		var product := Node3D.new()
 		product.name = "LoadedFactoryProduct"
-		product.position = Vector3(197.0, 1.42, z + float(package_index - 1) * 0.82)
+		product.position = Vector3(205.0, 1.42, z + float(package_index - 1) * 0.82)
 		var body := MeshInstance3D.new()
 		var body_mesh := BoxMesh.new()
 		body_mesh.size = Vector3(0.82, 0.72, 0.72)
@@ -4047,18 +4047,18 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		_set_message("%s: %s truck loaded 3 units. Payment +%.0f ZC!" % [_factory_row_product(row), stage_name, loading_revenue])
 	)
 	tween.tween_interval(0.5)
-	tween.tween_property(truck, "position:x", 212.0, 1.2)
+	tween.tween_property(truck, "position:x", 220.0, 1.2)
 	tween.tween_interval(0.45)
 	tween.tween_property(truck, "position:z", z + 5.0, 0.5)
-	tween.tween_property(truck, "position:x", 226.0, 1.4)
+	tween.tween_property(truck, "position:x", 234.0, 1.4)
 	tween.tween_property(truck, "position:z", 12.0, 0.75)
-	tween.tween_property(truck, "position:x", 242.0, 1.7)
+	tween.tween_property(truck, "position:x", 250.0, 1.7)
 	tween.tween_property(truck, "position:z", 22.0, 0.65)
-	tween.tween_property(truck, "position:x", 258.0, 1.5)
+	tween.tween_property(truck, "position:x", 266.0, 1.5)
 	tween.tween_property(truck, "position:z", 34.0, 0.75)
-	tween.tween_property(truck, "position:x", 274.0, 1.5)
+	tween.tween_property(truck, "position:x", 282.0, 1.5)
 	tween.tween_property(truck, "position:z", 46.0, 0.75)
-	tween.tween_property(truck, "position:x", 290.0, 1.6)
+	tween.tween_property(truck, "position:x", 298.0, 1.6)
 	tween.tween_callback(func():
 		truck.queue_free()
 		door_left.queue_free()
