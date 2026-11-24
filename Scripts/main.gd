@@ -4308,7 +4308,7 @@ func _refresh_factory_machine_status() -> void:
 	if is_instance_valid(factory_machine_status_label):
 		var stage := _factory_row_sell_stage(0)
 		var output_stock := _factory_row_sellable_stock(0)
-		var output_name := ["M1", "M2", "READY"][stage - 1]
+		var output_name: String = ["M1", "M2", "READY"][stage - 1]
 		factory_machine_status_label.text = "RAW %d | M1 %d | M2 %d | %s %d" % [factory_row_input_stock[0], factory_row_stage1_stock[0], factory_row_stage2_stock[0], output_name, output_stock]
 
 func _create_city_truck(index: int) -> Node3D:
