@@ -3999,6 +3999,14 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		add_child(product)
 		tween.tween_property(product, "position", truck.position + Vector3(1.0, 2.35, float(package_index - 1) * 0.82), 0.35)
 		tween.tween_callback(func(): product.reparent(truck))
+	# Pay immediately after all three products have been loaded.
+	tween.tween_callback(func():
+		var loading_revenue := _factory_row_truck_revenue(row)
+		money += loading_revenue
+		_update_ui()
+		_save_game()
+		_set_message("%s truck loaded 3 products. Payment +%.0f ZC!" % [_factory_row_product(row), loading_revenue])
+	)
 	tween.tween_interval(0.5)
 	tween.tween_property(truck, "position:x", 124.0, 1.2)
 	tween.tween_interval(0.45)
@@ -4018,11 +4026,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		door_left.queue_free()
 		door_right.queue_free()
 		factory_shipping_busy = false
-		var revenue := _factory_row_truck_revenue(row)
-		money += revenue
-		_update_ui()
-		_save_game()
-		_set_message("%s truck exited the city and delivered 3 products. Sale +%.0f ZC!" % [_factory_row_product(row), revenue])
+		_set_message("%s truck delivered its loaded products." % _factory_row_product(row))
 	)
 
 func _mega_factory_machine_cost(index: int) -> float:
