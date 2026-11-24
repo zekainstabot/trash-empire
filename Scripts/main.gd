@@ -3840,6 +3840,15 @@ func _build_recycling_mega_factory() -> void:
 	for side_x in [146.12, 147.88]:
 		_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, 0.0), Vector3(0.08, 0.28, 53.5), steel, false)
 
+	# New cross-feed conveyor runs behind all five first-stage machines.
+	_box("FactoryFirstMachineFeedFrame", Vector3(145.2, 0.68, 0.0), Vector3(1.55, 0.30, 54.0), dark_steel, false)
+	_box("FactoryFirstMachineFeedBelt", Vector3(145.2, 0.89, 0.0), Vector3(1.18, 0.08, 53.5), belt_color, false)
+	for side_x in [144.36, 146.04]:
+		_box("FactoryFirstMachineFeedRail", Vector3(side_x, 1.08, 0.0), Vector3(0.08, 0.28, 53.5), steel, false)
+	for roller_z in range(-26, 27, 2):
+		var feed_roller := _cylinder("FactoryFirstMachineFeedRoller", Vector3(145.2, 0.88, float(roller_z)), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
+		feed_roller.rotation_degrees.x = 90.0
+
 	mega_factory_machine_labels.clear()
 	for row in range(5):
 		var z := _factory_row_z(row)
@@ -4976,8 +4985,8 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(selected_item, "global_position", Vector3(137.0, 1.25, 0.0), 0.8)
-	tween.tween_property(selected_item, "global_position", Vector3(146.0, 1.25, 0.0), 0.8)
-	tween.tween_property(selected_item, "global_position", Vector3(147.0, 1.25, target_z), 0.65)
+	tween.tween_property(selected_item, "global_position", Vector3(145.2, 1.25, 0.0), 0.8)
+	tween.tween_property(selected_item, "global_position", Vector3(145.2, 1.25, target_z), 0.65)
 	tween.tween_property(selected_item, "global_position", Vector3(150.4, 1.25, target_z), 0.45)
 	tween.tween_callback(_finish_waste_feed_item.bind(selected_item, selected_row))
 
