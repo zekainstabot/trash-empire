@@ -32,10 +32,35 @@ jobs:
         with:
           packages: platform-tools
 
-      - name: Install Android SDK packages
+      - name: Install Android SDK packages (retry corrupted NDK downloads)
         shell: bash
         run: |
-          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.1" "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;28.1.13356709"
+          set -euo pipefail
+          PACKAGES=(
+            "platform-tools"
+            "platforms;android-35"
+            "build-tools;35.0.1"
+            "cmdline-tools;latest"
+            "cmake;3.10.2.4988404"
+            "ndk;28.1.13356709"
+          )
+          for attempt in 1 2 3; do
+            echo "Android SDK installation attempt $attempt/3"
+            # Remove truncated SDK archives and partial NDK extraction before retrying.
+            rm -rf "$HOME/.android/cache" "$ANDROID_HOME/ndk/28.1.13356709"
+            if yes | sdkmanager --install "${PACKAGES[@]}"; then
+              if [ -d "$ANDROID_HOME/ndk/28.1.13356709" ]; then
+                echo "Android SDK packages and NDK installed successfully."
+                break
+              fi
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Android SDK installation failed after 3 clean attempts."
+              exit 1
+            fi
+            echo "SDK installation failed; clearing partial files and retrying in 15 seconds."
+            sleep 15
+          done
           yes | sdkmanager --licenses || true
 
       - name: Download Godot 4.5.1 and matching export templates
