@@ -4119,11 +4119,11 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.94, z), Vector3(belt_length - 0.18, 0.10, 1.28), belt_color, false)
 	for side_z in [z - 0.76, z + 0.76]:
 		_box("FactoryMainConveyorRail%d" % row, Vector3(center_x, 1.14, side_z), Vector3(belt_length, 0.30, 0.12), steel, false)
-	var roller_count := 76
+	var roller_count := 40
 	for roller_i in range(roller_count):
 		var roller_x := start_x + float(roller_i) * belt_length / float(roller_count - 1)
 		_cylinder("FactoryMainConveyorRoller%d" % row, Vector3(roller_x, 0.89, z), 0.10, 1.18, Color(0.42, 0.48, 0.49), false)
-		if roller_i % 3 == 0:
+		if roller_i % 4 == 0:
 			_box("FactoryMainConveyorCleat%d" % row, Vector3(roller_x, 1.005, z), Vector3(0.10, 0.035, 1.10), Color(0.20, 0.27, 0.28), false)
 
 func _build_mega_factory_machine_connections(index: int) -> void:
