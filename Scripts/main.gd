@@ -1506,7 +1506,7 @@ func _animate_robot(delta: float) -> void:
 	var tool_is_working := magnet_is_working or vacuum_is_working
 	var normal_right_arm := -stride * 0.65 - (0.18 if auto_pickup_level > 0 or suction_level > 0 else 0.0)
 	# The equipped attachment reaches forward while it pulls a selected item.
-	var arm_target_angle := -1.12 if tool_is_working else normal_right_arm
+	var arm_target_angle := 1.12 if tool_is_working else normal_right_arm
 	robot_right_arm.rotation.x = lerp_angle(robot_right_arm.rotation.x, arm_target_angle, clampf(delta * (13.0 if tool_is_working else 8.0), 0.0, 1.0))
 	var extension_target := 0.34 if tool_is_working else 0.0
 	collection_tool_extension = lerpf(collection_tool_extension, extension_target, clampf(delta * 10.0, 0.0, 1.0))
