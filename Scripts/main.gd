@@ -134,6 +134,8 @@ var mega_factory_build_timer := 0.0
 var mega_factory_machine_labels: Array[Label3D] = []
 var factory_machine_status_label: Label3D
 var factory_shipping_timer := 0.0
+var factory_shipping_cooldown := 0.0
+var factory_truck_interval_upgrade_level := 0
 var factory_shipping_busy := false
 var factory_shipping_row := 0
 var factory_shipping_trucks: Array[Node3D] = []
@@ -1939,14 +1941,14 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","ground_robot","sorting_robot","dispatch","fleet","truck_capacity","packaging","conveyor_speed"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","ground_robot","sorting_robot","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
 		"drones":"HELPER DRONES","ground_robot":"GROUND COLLECTOR ROBOT","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
-		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","repair_robot":"MAINTENANCE ROBOT"
+		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","factory_truck_interval":"FACTORY TRUCK ARRIVAL","repair_robot":"MAINTENANCE ROBOT"
 	}
 	var descriptions := {
 		"capacity":"Carry more waste before returning to unload.",
@@ -1971,7 +1973,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
 		"packaging":"Package products faster for shipment.",
-		"conveyor_speed":"Move recycling items through the factory line faster.","repair_robot":"Automatically repairs breakdowns and reduces downtime."
+		"conveyor_speed":"Move recycling items through the factory line faster.","factory_truck_interval":"Reduce the wait after each full truck: 45s, then 30s, 15s and 5s.","repair_robot":"Automatically repairs breakdowns and reduces downtime."
 	}
 
 	var folder_grid := GridContainer.new()
@@ -2240,6 +2242,7 @@ func _skill_level(branch: String) -> int:
 		"fleet": return fleet_upgrade_level
 		"truck_capacity": return truck_capacity_upgrade_level
 		"packaging": return packaging_upgrade_level
+		"factory_truck_interval": return factory_truck_interval_upgrade_level
 	return 0
 
 func _skill_branch_unlocked(branch: String) -> bool:
@@ -2281,11 +2284,12 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"fleet": await _upgrade_fleet()
 		"truck_capacity": await _upgrade_truck_capacity()
 		"packaging": await _upgrade_packaging()
+		"factory_truck_interval": await _upgrade_factory_truck_interval()
 	active_upgrade_branch = ""
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"ground_robot":65.0,"city_truck":60.0,"city_fleet":85.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"sorting_robot":50.0,"conveyor_speed":65.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
+	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"ground_robot":65.0,"city_truck":60.0,"city_fleet":85.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -3592,6 +3596,7 @@ func _save_game() -> void:
 	save.set_value("progress", "fleet_upgrade_level", fleet_upgrade_level)
 	save.set_value("progress", "truck_capacity_upgrade_level", truck_capacity_upgrade_level)
 	save.set_value("progress", "packaging_upgrade_level", packaging_upgrade_level)
+	save.set_value("progress", "factory_truck_interval_upgrade_level", factory_truck_interval_upgrade_level)
 	save.set_value("progress", "yard_stage", yard_stage)
 	save.set_value("progress", "factory_stage", factory_stage)
 	save.set_value("progress", "factory_build_paid", factory_build_paid)
@@ -3649,6 +3654,7 @@ func _load_game() -> void:
 	fleet_upgrade_level = clampi(int(save.get_value("progress", "fleet_upgrade_level", 0)), 0, 3)
 	truck_capacity_upgrade_level = clampi(int(save.get_value("progress", "truck_capacity_upgrade_level", 0)), 0, 3)
 	packaging_upgrade_level = clampi(int(save.get_value("progress", "packaging_upgrade_level", 0)), 0, 3)
+	factory_truck_interval_upgrade_level = clampi(int(save.get_value("progress", "factory_truck_interval_upgrade_level", 0)), 0, 3)
 	yard_stage = 4 # All four areas are permanently open in the unified city.
 	district_build_paid = 0.0
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
@@ -3862,6 +3868,7 @@ func _build_recycling_mega_factory() -> void:
 		product_label.modulate = Color(0.72, 1.0, 0.90)
 		add_child(product_label)
 
+		_build_factory_row_main_conveyor(row)
 		for machine_index in range(3):
 			var x := 151.0 + float(machine_index) * 13.0
 			var station_index := row * 3 + machine_index
@@ -3879,7 +3886,6 @@ func _build_recycling_mega_factory() -> void:
 			mega_factory_machine_labels.append(build_label)
 			if station_index < mega_factory_built_count:
 				_build_mega_factory_machine(station_index)
-				_build_mega_factory_machine_connections(station_index)
 
 		# Remove the unnecessary loading portal columns and overhead frames; keep the loading area open.
 
@@ -3954,7 +3960,7 @@ func _on_first_machine_feed_entered(body: Node3D) -> void:
 func _create_factory_row_truck(row: int) -> Node3D:
 	var truck := Node3D.new()
 	truck.name = "FactoryProductTruck%d" % (row + 1)
-	truck.position = Vector3(132.0, 0.0, _factory_row_z(row))
+	truck.position = Vector3(212.0, 0.0, _factory_row_z(row))
 	_box_child(truck, "TruckCargoBed", Vector3(1.15, 1.35, 0.0), Vector3(4.0, 1.35, 3.0), Color(0.76, 0.79, 0.76))
 	_box_child(truck, "TruckCab", Vector3(-2.15, 1.3, 0.0), Vector3(1.65, 1.65, 2.65), Color(0.82, 0.22, 0.12))
 	_box_child(truck, "TruckWindshield", Vector3(-3.0, 1.62, 0.0), Vector3(0.06, 0.78, 1.55), Color(0.12, 0.23, 0.29))
@@ -3981,11 +3987,16 @@ func _create_factory_row_truck(row: int) -> Node3D:
 	add_child(truck)
 	return truck
 
+func _factory_truck_arrival_interval() -> float:
+	var intervals := [45.0, 30.0, 15.0, 5.0]
+	return intervals[clampi(factory_truck_interval_upgrade_level, 0, 3)]
+
 func _process_factory_row_shipping(delta: float) -> void:
-	if mega_factory_built_count < 1 or factory_shipping_busy:
+	factory_shipping_cooldown = maxf(0.0, factory_shipping_cooldown - delta)
+	if mega_factory_built_count < 1 or factory_shipping_busy or factory_shipping_cooldown > 0.0:
 		return
 	factory_shipping_timer += delta
-	if factory_shipping_timer < 1.0:
+	if factory_shipping_timer < 0.25:
 		return
 	factory_shipping_timer = 0.0
 	# Each row sells the output of its newest built machine, even before
@@ -4025,11 +4036,11 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(door_left, "position:z", z - 3.0, 0.55)
 	tween.parallel().tween_property(door_right, "position:z", z + 3.0, 0.55)
-	tween.tween_property(truck, "position:x", 139.0, 1.0)
+	tween.tween_property(truck, "position:x", 202.0, 1.0)
 	for package_index in range(3):
 		var product := Node3D.new()
 		product.name = "LoadedFactoryProduct"
-		product.position = truck.position + Vector3(1.0, 2.2 + float(package_index) * 0.02, float(package_index - 1) * 0.82)
+		product.position = Vector3(197.0, 1.42, z + float(package_index - 1) * 0.82)
 		var body := MeshInstance3D.new()
 		var body_mesh := BoxMesh.new()
 		body_mesh.size = Vector3(0.82, 0.72, 0.72)
@@ -4041,6 +4052,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		tween.tween_callback(func(): product.reparent(truck))
 	# Payment is made only once all three units from this machine are on the truck.
 	tween.tween_callback(func():
+		factory_shipping_cooldown = _factory_truck_arrival_interval()
 		var loading_revenue := _factory_row_truck_revenue(row, sell_stage)
 		money += loading_revenue
 		_update_ui()
@@ -4049,18 +4061,18 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		_set_message("%s: %s truck loaded 3 units. Payment +%.0f ZC!" % [_factory_row_product(row), stage_name, loading_revenue])
 	)
 	tween.tween_interval(0.5)
-	tween.tween_property(truck, "position:x", 124.0, 1.2)
+	tween.tween_property(truck, "position:x", 212.0, 1.2)
 	tween.tween_interval(0.45)
 	tween.tween_property(truck, "position:z", z + 5.0, 0.5)
-	tween.tween_property(truck, "position:x", 108.0, 1.4)
+	tween.tween_property(truck, "position:x", 226.0, 1.4)
 	tween.tween_property(truck, "position:z", 12.0, 0.75)
-	tween.tween_property(truck, "position:x", 82.0, 1.7)
+	tween.tween_property(truck, "position:x", 242.0, 1.7)
 	tween.tween_property(truck, "position:z", 22.0, 0.65)
-	tween.tween_property(truck, "position:x", 58.0, 1.5)
+	tween.tween_property(truck, "position:x", 258.0, 1.5)
 	tween.tween_property(truck, "position:z", 34.0, 0.75)
-	tween.tween_property(truck, "position:x", 30.0, 1.5)
+	tween.tween_property(truck, "position:x", 274.0, 1.5)
 	tween.tween_property(truck, "position:z", 46.0, 0.75)
-	tween.tween_property(truck, "position:x", -8.0, 1.6)
+	tween.tween_property(truck, "position:x", 290.0, 1.6)
 	tween.tween_callback(func():
 		truck.queue_free()
 		door_left.queue_free()
@@ -4082,7 +4094,8 @@ func _build_mega_factory_machine(index: int) -> void:
 	var accent: Color = accents[column]
 	var steel := Color(0.12, 0.18, 0.20)
 	var dark_steel := Color(0.055, 0.085, 0.095)
-	_box("MegaProcessMachineBase%d" % index, Vector3(x, 0.62, z), Vector3(5.0, 0.72, 3.8), dark_steel, false)
+	_box("MegaProcessMachineBaseLeft%d" % index, Vector3(x, 0.48, z - 1.48), Vector3(5.0, 0.42, 0.72), dark_steel, false)
+	_box("MegaProcessMachineBaseRight%d" % index, Vector3(x, 0.48, z + 1.48), Vector3(5.0, 0.42, 0.72), dark_steel, false)
 	_box("MegaProcessMachineBody%d" % index, Vector3(x, 2.15, z), Vector3(4.3, 2.7, 3.4), steel, false)
 	_box("MegaProcessMachineTop%d" % index, Vector3(x, 3.58, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
 	_box("MegaProcessMachineWindow%d" % index, Vector3(x, 2.25, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
@@ -4091,38 +4104,29 @@ func _build_mega_factory_machine(index: int) -> void:
 		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.98, z + 2.0), 0.38, 0.22, accent, true)
 	_label_3d(["PREPARATION", "PROCESSING", "FINISHING"][column], Vector3(x, 4.0, z - 2.0), 0.15)
 
-func _build_mega_factory_machine_connections(index: int) -> void:
-	# Belts span the exact gap between machine housings, with a small overlap
-	# at both ends so the transfer visibly touches each machine.
-	var row := int(index / 3)
-	var column := index % 3
+func _build_factory_row_main_conveyor(row: int) -> void:
 	var z := _factory_row_z(row)
 	var dark_steel := Color(0.055, 0.085, 0.095)
 	var steel := Color(0.16, 0.22, 0.24)
 	var belt_color := Color(0.035, 0.055, 0.06)
-	if column == 0:
-		# Intake branch meets the first machine's side intake directly.
-		_box("WasteFeedBranchFrame%d" % row, Vector3(149.0, 0.68, z), Vector3(3.5, 0.28, 1.15), dark_steel, false)
-		_box("WasteFeedBranchBelt%d" % row, Vector3(149.0, 0.89, z), Vector3(3.35, 0.08, 0.88), belt_color, false)
-		for side_z in [z - 0.56, z + 0.56]:
-			_box("WasteFeedBranchRail%d" % row, Vector3(149.0, 1.08, side_z), Vector3(3.35, 0.25, 0.07), steel, false)
-	if column > 0:
-		var left_machine_x := 151.0 + float(column - 1) * 13.0
-		var right_machine_x := 151.0 + float(column) * 13.0
-		var machine_half_width := 2.15
-		var belt_start_x := left_machine_x + machine_half_width - 0.15
-		var belt_end_x := right_machine_x - machine_half_width + 0.15
-		var belt_length := belt_end_x - belt_start_x
-		var belt_x := (belt_start_x + belt_end_x) * 0.5
-		_box("MegaFactoryConveyorFrame", Vector3(belt_x, 0.72, z), Vector3(belt_length, 0.42, 1.42), dark_steel, false)
-		_box("MegaFactoryConveyorBelt", Vector3(belt_x, 0.96, z), Vector3(belt_length - 0.18, 0.10, 1.12), belt_color, false)
-		for side_z in [z - 0.65, z + 0.65]:
-			_box("MegaFactoryConveyorRail", Vector3(belt_x, 1.15, side_z), Vector3(belt_length, 0.32, 0.12), steel, false)
-		var roller_count := maxi(2, int(belt_length / 0.5))
-		for roller_i in range(roller_count):
-			var roller_x := belt_start_x + float(roller_i) * belt_length / float(roller_count - 1)
-			_cylinder("MegaFactoryConveyorRoller", Vector3(roller_x, 0.91, z), 0.10, 1.05, Color(0.42, 0.48, 0.49), false)
-			_box("MegaFactoryBeltCleat", Vector3(roller_x, 1.025, z), Vector3(0.10, 0.035, 1.0), Color(0.20, 0.27, 0.28), false)
+	var start_x := 124.0
+	var end_x := 199.0
+	var belt_length := end_x - start_x
+	var center_x := (start_x + end_x) * 0.5
+	_box("FactoryMainConveyorFrame%d" % row, Vector3(center_x, 0.70, z), Vector3(belt_length, 0.42, 1.62), dark_steel, false)
+	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.94, z), Vector3(belt_length - 0.18, 0.10, 1.28), belt_color, false)
+	for side_z in [z - 0.76, z + 0.76]:
+		_box("FactoryMainConveyorRail%d" % row, Vector3(center_x, 1.14, side_z), Vector3(belt_length, 0.30, 0.12), steel, false)
+	var roller_count := 76
+	for roller_i in range(roller_count):
+		var roller_x := start_x + float(roller_i) * belt_length / float(roller_count - 1)
+		_cylinder("FactoryMainConveyorRoller%d" % row, Vector3(roller_x, 0.89, z), 0.10, 1.18, Color(0.42, 0.48, 0.49), false)
+		if roller_i % 3 == 0:
+			_box("FactoryMainConveyorCleat%d" % row, Vector3(roller_x, 1.005, z), Vector3(0.10, 0.035, 1.10), Color(0.20, 0.27, 0.28), false)
+
+func _build_mega_factory_machine_connections(index: int) -> void:
+	# Legacy hook: the continuous row conveyor is built once for each production row.
+	return
 
 func _process_mega_factory_build(delta: float) -> void:
 	if payment_active or mega_factory_built_count >= 15 or not is_instance_valid(player):
@@ -4497,6 +4501,18 @@ func _move_city_truck(truck: Node3D, target: Vector3, delta: float, move_speed: 
 		truck.rotation.y = lerp_angle(truck.rotation.y, desired_yaw, minf(1.0, delta * 4.5))
 	truck.position = truck.position.move_toward(target, delta * move_speed)
 	return truck.position.distance_to(target) < 0.07
+
+func _upgrade_factory_truck_interval() -> void:
+	if factory_truck_interval_upgrade_level >= 3:
+		_set_message("Factory truck arrival time is already at maximum.")
+		return
+	var cost := _upgrade_cost(70.0, factory_truck_interval_upgrade_level + 1)
+	if not await _pay_gradually(cost):
+		return
+	factory_truck_interval_upgrade_level = mini(factory_truck_interval_upgrade_level + 1, 3)
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Factory trucks now arrive every %.0f seconds after loading." % _factory_truck_arrival_interval())
 
 func _city_truck_interval() -> float:
 	var intervals := [300.0, 240.0, 180.0, 120.0]
