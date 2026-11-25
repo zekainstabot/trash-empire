@@ -633,7 +633,7 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 			wheel_mesh.bottom_radius = 0.22
 			wheel_mesh.height = 0.14
 			wheel.mesh = wheel_mesh
-			wheel.position = Vector3(side * 0.52, 0.25, z)
+			wheel.position = Vector3(side * 0.52, 0.32, z)
 			wheel.rotation_degrees.z = 90
 			wheel.material_override = _mat(Color(0.045, 0.055, 0.06))
 			robot.add_child(wheel)
@@ -724,7 +724,8 @@ func _process_sorting_robots(delta: float) -> void:
 		var mode := String(robot.get_meta("mode", "idle"))
 		var target := robot.get_meta("target") as Node3D
 		if mode == "return":
-			var drop_point := _factory_waste_drop_point() + Vector3(0, 0.85, 0)
+			var drop_point := _factory_waste_drop_point()
+			drop_point.y = robot.global_position.y
 			robot.global_position = robot.global_position.move_toward(drop_point, _sorting_robot_speed() * delta)
 			if robot.global_position.distance_to(drop_point) < 0.8:
 				var cargo := robot.get_meta("cargo") as Node3D
@@ -766,9 +767,11 @@ func _process_sorting_robots(delta: float) -> void:
 				robot.set_meta("scan_timer", cooldown)
 		if not is_instance_valid(target):
 			var idle_point: Vector3 = sorting_pad_positions[i] + Vector3(0, 0, 1.7)
+			idle_point.y = robot.global_position.y
 			robot.global_position = robot.global_position.move_toward(idle_point, _sorting_robot_speed() * 0.43 * delta)
 			continue
 		var destination := target.global_position + Vector3(0, 0.55, 0)
+		destination.y = robot.global_position.y
 		robot.global_position = robot.global_position.move_toward(destination, _sorting_robot_speed() * delta)
 		if robot.global_position.distance_to(destination) <= 0.65:
 			_register_final_cleanup_pickup(target)
