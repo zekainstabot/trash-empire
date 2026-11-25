@@ -278,8 +278,20 @@ func _build_world() -> void:
 	_build_recycling_mega_factory()
 	_build_sorting_district()
 	_build_city_pedestrians()
+	_build_world_bounds()
 	refill_world_button = _create_gear_refill_button(Vector3(0.0, 2.0, -35.20), Callable(self, "_refill_first_district"))
 	refill_world_button.rotation_degrees.y = 90.0
+
+
+func _build_world_bounds() -> void:
+	# Invisible collision walls keep the player inside the continuous playable map.
+	# The ground spans approximately X=-14..208 and Z=-37..37.
+	var wall_y := 4.0
+	var wall_height := 8.0
+	_add_invisible_barrier("WorldBoundaryWest", Vector3(-12.8, wall_y, 0.0), Vector3(1.2, wall_height, 76.0))
+	_add_invisible_barrier("WorldBoundaryEast", Vector3(206.8, wall_y, 0.0), Vector3(1.2, wall_height, 76.0))
+	_add_invisible_barrier("WorldBoundaryNorth", Vector3(97.0, wall_y, -36.2), Vector3(220.0, wall_height, 1.2))
+	_add_invisible_barrier("WorldBoundarySouth", Vector3(97.0, wall_y, 36.2), Vector3(220.0, wall_height, 1.2))
 
 
 func _build_city_rework_layout() -> void:
