@@ -3809,19 +3809,26 @@ func _factory_row_unit_price(row: int) -> float:
 	return prices[clampi(row, 0, prices.size() - 1)]
 
 func _factory_row_sell_stage(row: int) -> int:
-	return 3 if mega_factory_built_count >= row * 3 + 3 else 0
+	if row < 0 or row >= 5:
+		return 0
+	return mini(3, maxi(0, mega_factory_built_count - row * 3))
 
 func _factory_row_sellable_stock(row: int) -> int:
-	if row < 0 or row >= 5 or _factory_row_sell_stage(row) != 3:
-		return 0
-	return int(factory_row_product_stock[row])
+	match _factory_row_sell_stage(row):
+		1: return int(factory_row_stage1_stock[row])
+		2: return int(factory_row_stage2_stock[row])
+		3: return int(factory_row_product_stock[row])
+	return 0
 
 func _factory_row_remove_sellable_stock(row: int, amount: int) -> void:
-	if row >= 0 and row < 5 and _factory_row_sell_stage(row) == 3:
-		factory_row_product_stock[row] = maxi(0, int(factory_row_product_stock[row]) - amount)
+	match _factory_row_sell_stage(row):
+		1: factory_row_stage1_stock[row] = maxi(0, int(factory_row_stage1_stock[row]) - amount)
+		2: factory_row_stage2_stock[row] = maxi(0, int(factory_row_stage2_stock[row]) - amount)
+		3: factory_row_product_stock[row] = maxi(0, int(factory_row_product_stock[row]) - amount)
 
-func _factory_row_truck_revenue(row: int, _stage: int) -> float:
-	return _factory_row_unit_price(row) * 3.0
+func _factory_row_truck_revenue(row: int, stage: int) -> float:
+	var stage_multiplier := [0.0, 1.0, 1.6, 2.4][clampi(stage, 0, 3)]
+	return _factory_row_unit_price(row) * 3.0 * stage_multiplier
 
 func _factory_row_z(row: int) -> float:
 	return -26.0 + float(row) * 13.0
@@ -4087,12 +4094,12 @@ func _process_factory_row_shipping(delta: float) -> void:
 	if factory_shipping_timer < 0.25:
 		return
 	factory_shipping_timer = 0.0
-	# Each row sells the output of its newest built machine, even before
-	# the next machine in that row has been purchased.
+	# Each row ships the output of its latest installed machine. Later machines
+	# take over the output route only after they are built.
 	var selected_row := -1
 	for offset in range(5):
 		var candidate := (factory_shipping_row + offset) % 5
-		if mega_factory_built_count >= candidate * 3 + 3 and _factory_row_sellable_stock(candidate) >= 3:
+		if _factory_row_sell_stage(candidate) > 0 and _factory_row_sellable_stock(candidate) >= 3:
 			selected_row = candidate
 			break
 	if selected_row == -1:
@@ -4113,10 +4120,10 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	factory_shipping_busy = true
 	var truck := _create_factory_row_truck(row)
 	var z := _factory_row_z(row)
-	var stage_names := ["PREPARATION", "PROCESSING", "FINISHED"]
-	var stage_name: String = "FINISHED PRODUCT"
-	var stage_colors := [Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)]
-	var cargo_color: Color = stage_colors[sell_stage - 1]
+	var stage_names := ["RAW", "PREPARATION", "PROCESSING", "FINISHED"]
+	var stage_name: String = stage_names[clampi(sell_stage, 0, 3)]
+	var stage_colors := [Color(0.30, 0.34, 0.34), Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)]
+	var cargo_color: Color = stage_colors[clampi(sell_stage, 0, 3)]
 	var door_left := _box("FactoryDoorMovingLeft", Vector3(207.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
 	var door_right := _box("FactoryDoorMovingRight", Vector3(207.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
 	var tween := create_tween()
@@ -4253,7 +4260,7 @@ func _process_mega_factory_build(delta: float) -> void:
 			mega_factory_machine_labels[index].text = "BUILT"
 		if mega_factory_built_count % 3 == 0:
 			_build_factory_finished_product(int(index / 3))
-			_set_message("Complete 3-machine line activated! Now producing %s." % _factory_row_product(int(index / 3)))
+		_set_message("Machine %d installed. Production and truck delivery updated for its line." % mega_factory_built_count)
 		_update_ui()
 		_save_game()
 		if mega_factory_built_count < 15:
@@ -4405,7 +4412,8 @@ func _refresh_factory_machine_status() -> void:
 	if is_instance_valid(factory_machine_status_label):
 		var stage := _factory_row_sell_stage(0)
 		var output_stock := _factory_row_sellable_stock(0)
-		var output_name: String = "FINAL PRODUCT" if stage == 3 else "WAITING FOR 3 MACHINES"
+		var output_names := ["NO MACHINE", "M1 OUTPUT", "M2 OUTPUT", "FINAL PRODUCT"]
+		var output_name: String = output_names[clampi(stage, 0, 3)]
 		factory_machine_status_label.text = "RAW %d | M1 %d | M2 %d | %s %d" % [factory_row_input_stock[0], factory_row_stage1_stock[0], factory_row_stage2_stock[0], output_name, output_stock]
 
 func _create_city_truck(index: int) -> Node3D:
@@ -5109,7 +5117,8 @@ func _finish_waste_feed_item(item: Node3D, row: int) -> void:
 	_save_game()
 
 func _process_factory_production(delta: float) -> void:
-	# Breakdown status must not permanently stall the first production stage.
+	# Every installed machine runs independently. A downstream machine is never
+	# required for an upstream machine to process and ship its own output.
 	factory_production_timer += delta
 	if factory_production_timer < 1.2:
 		return
@@ -5119,7 +5128,7 @@ func _process_factory_production(delta: float) -> void:
 		if mega_factory_built_count < first_machine:
 			continue
 
-		# Run the line backwards so an item advances only one machine per cycle.
+		# Machine 3: final assembly.
 		if mega_factory_built_count >= first_machine + 2 and factory_row_stage2_stock[row] > 0 and factory_row_product_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
 			factory_row_stage2_stock[row] -= 1
 			factory_row_product_stock[row] += 1
@@ -5128,17 +5137,21 @@ func _process_factory_production(delta: float) -> void:
 			_set_message("%s completed final assembly. Ready: %d" % [_factory_row_product(row), factory_row_product_stock[row]])
 			_update_missions()
 			_save_game()
-		elif mega_factory_built_count >= first_machine + 1 and factory_row_stage1_stock[row] > 0 and factory_row_stage2_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
+
+		# Machine 2: process machine 1 output, while machine 1 keeps working.
+		if mega_factory_built_count >= first_machine + 1 and factory_row_stage1_stock[row] > 0 and factory_row_stage2_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
 			factory_row_stage1_stock[row] -= 1
 			factory_row_stage2_stock[row] += 1
 			_animate_factory_stage_item(row, 1)
 			_set_message("Machine 2 processed %s components. In process: %d" % [_factory_row_product(row), factory_row_stage2_stock[row]])
 			_save_game()
-		elif factory_row_input_stock[row] >= 3 and factory_row_stage1_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
+
+		# Machine 1: accepts waste and creates its own shippable preparation output.
+		if factory_row_input_stock[row] >= 3 and factory_row_stage1_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
 			factory_row_input_stock[row] -= 3
 			factory_row_stage1_stock[row] += 1
 			_animate_factory_stage_item(row, 0)
-			_set_message("Machine 1 prepared %s components. Waiting for machine 2: %d" % [_factory_row_product(row), factory_row_stage1_stock[row]])
+			_set_message("Machine 1 prepared %s components. Ready for delivery: %d" % [_factory_row_product(row), factory_row_stage1_stock[row]])
 			_save_game()
 	_refresh_factory_machine_status()
 
