@@ -176,6 +176,7 @@ var city_truck: Node3D
 var city_trucks: Array[Node3D] = []
 var sorting_robot_upgrade_level := 0
 var conveyor_speed_upgrade_level := 0
+var waste_tank_unload_upgrade_level := 0
 var repair_robot_level := 0
 var machine_broken := false
 var machine_work_timer := 0.0
@@ -2136,14 +2137,14 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","drone_speed","drone_capacity","sorting_robot","repair_robot","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","drone_speed","drone_capacity","sorting_robot","repair_robot","waste_tank_unload","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
 		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
-		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","factory_truck_interval":"FACTORY TRUCK ARRIVAL"
+		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","waste_tank_unload":"WASTE TANK DISCHARGE","factory_truck_interval":"FACTORY TRUCK ARRIVAL"
 	}
 	var descriptions := {
 		"capacity":"Carry more waste before returning to unload.",
@@ -2170,7 +2171,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
 		"packaging":"Package products faster for shipment.",
-		"conveyor_speed":"Move recycling items through the factory line faster.","factory_truck_interval":"Reduce the wait after each full truck: 45s, then 30s, 15s and 5s."
+		"conveyor_speed":"Move recycling items through the factory line faster.","waste_tank_unload":"Feed stored waste from the main tank onto the factory conveyor faster.","factory_truck_interval":"Reduce the wait after each full truck: 45s, then 30s, 15s and 5s."
 	}
 
 	var folder_grid := GridContainer.new()
@@ -2347,6 +2348,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"truck_capacity": return Color(0.75, 0.52, 0.22)
 		"packaging": return Color(0.72, 0.32, 0.62)
 		"factory_truck_interval": return Color(0.18, 0.72, 0.62)
+		"waste_tank_unload": return Color(0.18, 0.78, 0.68)
 	return Color(0.25, 0.45, 0.42)
 
 func _skill_icon(branch: String) -> String:
@@ -2376,6 +2378,7 @@ func _skill_icon(branch: String) -> String:
 		"truck_capacity": return "📦"
 		"packaging": return "🏭"
 		"factory_truck_interval": return "🚛"
+		"waste_tank_unload": return "🗑️"
 	return "◆"
 
 func _skill_hex_button_style() -> StyleBoxFlat:
@@ -2437,6 +2440,7 @@ func _skill_level(branch: String) -> int:
 		"drone_capacity": return drone_capacity_upgrade_level
 		"sorting_robot": return sorting_robot_upgrade_level
 		"conveyor_speed": return conveyor_speed_upgrade_level
+		"waste_tank_unload": return waste_tank_unload_upgrade_level
 		"repair_robot": return repair_robot_level
 		"city_truck": return city_truck_upgrade_level
 		"city_fleet": return city_fleet_upgrade_level
@@ -2480,6 +2484,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"drone_capacity": await _upgrade_drone_capacity()
 		"sorting_robot": await _upgrade_sorting_robot()
 		"conveyor_speed": await _upgrade_conveyor_speed()
+		"waste_tank_unload": await _upgrade_waste_tank_unload()
 		"repair_robot": await _upgrade_repair_robot()
 		"city_truck": await _upgrade_city_truck_frequency()
 		"city_fleet": await _upgrade_city_fleet()
@@ -2492,7 +2497,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
+	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"waste_tank_unload":58.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -3432,6 +3437,9 @@ func _sorting_robot_speed() -> float:
 func _conveyor_speed_multiplier() -> float:
 	return 1.0 + float(conveyor_speed_upgrade_level) * 0.25
 
+func _waste_tank_discharge_multiplier() -> float:
+	return 1.0 + float(waste_tank_unload_upgrade_level) * 0.25
+
 func _drone_cargo_capacity() -> int:
 	return 5 + drone_capacity_upgrade_level * 2
 
@@ -3479,6 +3487,20 @@ func _upgrade_sorting_robot() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Sorting robots upgraded: faster movement and wider search range.")
+
+func _upgrade_waste_tank_unload() -> void:
+	if waste_tank_unload_upgrade_level >= 3:
+		_set_message("Waste tank discharge is already at maximum.")
+		return
+	var next_level := waste_tank_unload_upgrade_level + 1
+	var cost := _upgrade_cost(58.0, next_level)
+	if not await _pay_gradually(cost):
+		return
+	waste_tank_unload_upgrade_level = next_level
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Main waste tank discharge speed increased to %d%%." % int(_waste_tank_discharge_multiplier() * 100.0))
 
 func _upgrade_repair_robot() -> void:
 	if repair_robot_level >= 3:
@@ -3780,6 +3802,7 @@ func _save_game() -> void:
 	save.set_value("progress", "sorting_bin_counts", sorting_bin_counts)
 	save.set_value("progress", "sorting_robot_upgrade_level", sorting_robot_upgrade_level)
 	save.set_value("progress", "conveyor_speed_upgrade_level", conveyor_speed_upgrade_level)
+	save.set_value("progress", "waste_tank_unload_upgrade_level", waste_tank_unload_upgrade_level)
 	save.set_value("progress", "repair_robot_level", repair_robot_level)
 	save.set_value("progress", "machine_work_timer", machine_work_timer)
 	save.set_value("progress", "machine_broken", machine_broken)
@@ -3840,6 +3863,7 @@ func _load_game() -> void:
 	while sorting_bin_counts.size() < 4: sorting_bin_counts.append(0)
 	sorting_robot_upgrade_level = clampi(int(save.get_value("progress", "sorting_robot_upgrade_level", 0)), 0, 3)
 	conveyor_speed_upgrade_level = clampi(int(save.get_value("progress", "conveyor_speed_upgrade_level", 0)), 0, 3)
+	waste_tank_unload_upgrade_level = clampi(int(save.get_value("progress", "waste_tank_unload_upgrade_level", 0)), 0, 3)
 	repair_robot_level = clampi(int(save.get_value("progress", "repair_robot_level", 0)), 0, 3)
 	machine_work_timer = float(save.get_value("progress", "machine_work_timer", 0.0))
 	machine_broken = bool(save.get_value("progress", "machine_broken", false))
@@ -5282,7 +5306,7 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	if not waste_tank_built or waste_feed_busy or waste_tank_inventory <= 0:
 		return
 	waste_feed_timer += delta
-	if waste_feed_timer < 0.55:
+	if waste_feed_timer < 0.55 / _waste_tank_discharge_multiplier():
 		return
 	waste_feed_timer = 0.0
 	var active_rows: Array[int] = []
@@ -5310,17 +5334,17 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
 	# Follow the physical trunk belt from the tank to the distributor.
-	tween.tween_property(selected_item, "global_position", Vector3(137.0, belt_y, 0.0), 0.8 / _conveyor_speed_multiplier())
-	tween.tween_property(selected_item, "global_position", Vector3(146.4, belt_y, 0.0), 0.9 / _conveyor_speed_multiplier())
+	tween.tween_property(selected_item, "global_position", Vector3(137.0, belt_y, 0.0), 0.8 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
+	tween.tween_property(selected_item, "global_position", Vector3(146.4, belt_y, 0.0), 0.9 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	# Follow the distributor spine to the selected row's visible elbow.
-	tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, bend_start_z), maxf(0.35, absf(bend_start_z) / 12.0) / _conveyor_speed_multiplier())
+	tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, bend_start_z), maxf(0.35, absf(bend_start_z) / 12.0) / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	# Trace the same quarter-circle bend as the physical branch conveyor.
 	for bend_i in range(1, 13):
 		var angle := (float(bend_i) / 12.0) * PI * 0.5
 		var bend_point := Vector3(147.0 + bend_radius * (1.0 - cos(angle)), belt_y, bend_start_z + bend_radius * sin(angle))
-		tween.tween_property(selected_item, "global_position", bend_point, 0.045 / _conveyor_speed_multiplier())
+		tween.tween_property(selected_item, "global_position", bend_point, 0.045 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	# Continue along the straight branch belt into the first machine.
-	tween.tween_property(selected_item, "global_position", Vector3(150.4, belt_y, target_z), 0.35 / _conveyor_speed_multiplier())
+	tween.tween_property(selected_item, "global_position", Vector3(150.4, belt_y, target_z), 0.35 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	tween.tween_callback(_finish_waste_feed_item.bind(selected_item, selected_row))
 
 func _finish_waste_feed_item(item: Node3D, row: int) -> void:
