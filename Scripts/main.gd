@@ -1373,17 +1373,9 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 	_box_child(root, "RespawnPanelHeader", Vector3(-0.275, 0.48, 0.0), Vector3(0.035, 0.28, 1.42), Color(0.11, 0.16, 0.17))
 	_box_child(root, "RespawnPanelWarning", Vector3(-0.30, 0.48, 0.0), Vector3(0.025, 0.045, 1.18), Color(0.88, 0.57, 0.13))
 
-	# Status screen and industrial labels.
+	# Dark inactive display panel; no misleading static status text.
 	_box_child(root, "RespawnPanelScreenFrame", Vector3(-0.29, 0.12, 0.0), Vector3(0.07, 0.48, 0.92), Color(0.035, 0.065, 0.07))
 	_box_child(root, "RespawnPanelScreen", Vector3(-0.33, 0.12, 0.0), Vector3(0.025, 0.34, 0.72), Color(0.08, 0.30, 0.29))
-	var screen_text := Label3D.new()
-	screen_text.text = "WASTE SYSTEM\nREADY"
-	screen_text.position = Vector3(-0.35, 0.13, 0.0)
-	screen_text.rotation_degrees.y = 90.0
-	screen_text.font_size = 24
-	screen_text.pixel_size = 0.0045
-	screen_text.modulate = Color(0.48, 1.0, 0.76)
-	root.add_child(screen_text)
 
 	# Visible manual pull lever instead of a push-button: pivot, steel rod and grip.
 	_box_child(root, "RespawnLeverMount", Vector3(-0.31, -0.40, 0.0), Vector3(0.12, 0.50, 0.72), Color(0.10, 0.13, 0.13))
@@ -1413,7 +1405,7 @@ func _create_gear_refill_button(world_position: Vector3, action: Callable) -> No
 	lever_pivot.add_child(lever_grip)
 
 	var label := Label3D.new()
-	label.text = "TRASH RESPAWN"
+	label.text = "CITY REFILL"
 	label.position = Vector3(-0.34, -0.72, 0.0)
 	label.rotation_degrees.y = 90.0
 	label.font_size = 25
@@ -3507,54 +3499,6 @@ func _apply_unlocked_districts() -> void:
 		if is_instance_valid(gate):
 			gate.queue_free()
 
-func _create_expansion_zone() -> void:
-	var zone := Node3D.new()
-	zone.name = "DistrictUnlockZone"
-	zone.position = Vector3(13.15, 0.0, 0.0)
-	add_child(zone)
-	var base := MeshInstance3D.new()
-	var base_mesh := CylinderMesh.new()
-	base_mesh.top_radius = 1.55
-	base_mesh.bottom_radius = 1.70
-	base_mesh.height = 0.12
-	base_mesh.radial_segments = 48
-	base.mesh = base_mesh
-	base.position.y = 0.07
-	base.material_override = _mat(Color(0.10, 0.28, 0.24))
-	zone.add_child(base)
-	var pad := MeshInstance3D.new()
-	var pad_mesh := CylinderMesh.new()
-	pad_mesh.top_radius = 1.30
-	pad_mesh.bottom_radius = 1.30
-	pad_mesh.height = 0.06
-	pad_mesh.radial_segments = 48
-	pad.mesh = pad_mesh
-	pad.position.y = 0.15
-	pad.material_override = _mat(Color(0.20, 0.78, 0.43))
-	zone.add_child(pad)
-	var ring := MeshInstance3D.new()
-	var ring_mesh := TorusMesh.new()
-	ring_mesh.inner_radius = 1.36
-	ring_mesh.outer_radius = 1.48
-	ring_mesh.rings = 48
-	ring.mesh = ring_mesh
-	ring.position.y = 0.20
-	ring.material_override = _mat(Color(0.95, 0.76, 0.20))
-	zone.add_child(ring)
-	var label := Label3D.new()
-	label.name = "UnlockZoneLabel"
-	label.text = "CITY DISTRICT 02\nALREADY OPEN"
-	# Floor lettering sits just above the pad surface and faces upward.
-	label.position = Vector3(0, 0.205, 0)
-	label.rotation_degrees.x = -90.0
-	label.font_size = 19
-	label.pixel_size = 0.0045
-	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	label.modulate = Color(0.82, 1.0, 0.88)
-	label.outline_size = 8
-	label.outline_modulate = Color(0.015, 0.045, 0.035, 0.98)
-	zone.add_child(label)
-
 func _spending_speed_multiplier() -> float:
 	var seconds_per_item := maxf(0.35, 1.8 - float(unload_upgrade_level - 1) * 0.18)
 	return 1.8 / seconds_per_item
@@ -3882,7 +3826,6 @@ func _build_factory_finished_product(row: int) -> void:
 				var bx := x + float(i - 1) * 0.85
 				_box("RefurbishedElectronicUnit", Vector3(bx, 1.35, z), Vector3(0.78, 0.82, 0.62), frame, false)
 				_box("ElectronicDisplay", Vector3(bx, 1.38, z - 0.325), Vector3(0.56, 0.48, 0.025), accent, false)
-	_label_3d("READY: " + _factory_row_product(row), Vector3(x, 2.35, z - 2.0), 0.12)
 
 func _build_recycling_mega_factory() -> void:
 	# Clean, open industrial hall: five parallel lines with clear service lanes.
@@ -3985,8 +3928,6 @@ func _build_recycling_mega_factory() -> void:
 		_box("FactoryProductOutputPad", Vector3(198.0, 0.34, z), Vector3(5.0, 0.22, 4.8), dark_steel, false)
 		if mega_factory_built_count >= row * 3 + 3:
 			_build_factory_finished_product(row)
-		else:
-			_label_3d("AWAITING LINE START", Vector3(198.0, 1.2, z - 2.2), 0.13)
 
 	# Utility equipment is grouped in a dedicated rear service strip.
 	for tank_index in range(3):
