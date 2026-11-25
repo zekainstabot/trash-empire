@@ -3893,8 +3893,9 @@ func _build_recycling_mega_factory() -> void:
 	# Its left end meets the tank outlet and its right end meets the middle of the five-row feed spine.
 	_box("WasteFeedMainFrame", Vector3(136.8, 0.68, 0.0), Vector3(16.8, 0.30, 1.8), dark_steel, false)
 	_box("WasteFeedMainBelt", Vector3(136.8, 0.88, 0.0), Vector3(16.55, 0.08, 1.35), belt_color, false)
+	# Keep the final section of the trunk open where it meets the distributor.
 	for side_z in [-0.78, 0.78]:
-		_box("WasteFeedMainRail", Vector3(136.8, 1.08, side_z), Vector3(16.55, 0.28, 0.08), steel, false)
+		_box("WasteFeedMainRail", Vector3(135.55, 1.08, side_z), Vector3(14.05, 0.28, 0.08), steel, false)
 	for transfer_x in range(129, 145, 2):
 		var transfer_roller := _cylinder("WasteFeedMainRoller", Vector3(float(transfer_x), 0.88, 0.0), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
 		transfer_roller.rotation_degrees.x = 90.0
@@ -3903,8 +3904,23 @@ func _build_recycling_mega_factory() -> void:
 	_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.89, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
 	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
 	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.89, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
-	for side_x in [146.12, 147.88]:
-		_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, 0.0), Vector3(0.08, 0.28, 53.5), steel, false)
+	# Split the distributor guard rails around every branch junction so the belts read as one connected path.
+	var distributor_gaps: Array[float] = []
+	for row in range(5):
+		distributor_gaps.append(_factory_row_z(row))
+	var gap_half_width := 1.65
+	var rail_cursor := -26.75
+	for gap_center in distributor_gaps:
+		var gap_start: float = gap_center - gap_half_width
+		var segment_length: float = gap_start - rail_cursor
+		if segment_length > 0.25:
+			for side_x in [146.12, 147.88]:
+				_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + segment_length * 0.5), Vector3(0.08, 0.28, segment_length), steel, false)
+		rail_cursor = gap_center + gap_half_width
+	var final_length := 26.75 - rail_cursor
+	if final_length > 0.25:
+		for side_x in [146.12, 147.88]:
+			_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + final_length * 0.5), Vector3(0.08, 0.28, final_length), steel, false)
 
 	# Use the existing distributor spine; avoid a duplicate parallel conveyor.
 
@@ -3929,8 +3945,7 @@ func _build_recycling_mega_factory() -> void:
 		# Straight outlet overlaps the curved elbow and the main line, leaving no visible seam.
 		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.65, 0.68, feed_z), Vector3(2.25, 0.30, 1.45), dark_steel, false)
 		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.65, 0.89, feed_z), Vector3(2.18, 0.08, 1.22), belt_color, false)
-		for branch_side in [feed_z - 0.68, feed_z + 0.68]:
-			_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(149.65, 1.08, branch_side), Vector3(2.25, 0.28, 0.08), steel, false)
+		# Branch side rails are omitted at the elbow-to-row connection for a clean open merge.
 
 	mega_factory_machine_labels.clear()
 	for row in range(5):
