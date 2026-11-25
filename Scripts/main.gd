@@ -4799,46 +4799,28 @@ func _is_city_truck_lane_position(point: Vector3) -> bool:
 	return on_service_road or depot_entrance
 
 func _is_clear_trash_spawn(point: Vector3) -> bool:
-	# Trash may only appear on open grass: never on roads, sidewalks, crossings,
-	# buildings, parks, plazas, parking bays or street furniture footprints.
+	# Public ground is valid spawn space: streets, alleys, sidewalks, parks and shop fronts.
+	# Only reject actual building/object footprints so trash never appears on roofs or inside meshes.
 	if point.distance_to(SELL_POINT) < 4.0 or _is_city_truck_lane_position(point):
 		return false
-	if point.x >= -10.8 and point.x <= -5.2:
+	if point.x < -13.0 or point.x > 111.0 or point.z < -36.0 or point.z > 36.0:
 		return false
-	# Main boulevard and all perpendicular streets.
-	if absf(point.z) < 4.25 or absf(point.z - 22.0) < 2.85 or absf(point.z + 22.0) < 2.85:
-		return false
-	for road_x in [16.0, 48.0, 80.0, 104.0]:
-		if absf(point.x - road_x) < 3.55:
-			return false
-	# Sidewalk bands along the boulevard and neighborhood streets.
-	if (absf(point.z) >= 4.35 and absf(point.z) <= 7.65):
-		return false
-	if (absf(point.z - 22.0) >= 3.0 and absf(point.z - 22.0) <= 4.25) or (absf(point.z + 22.0) >= 3.0 and absf(point.z + 22.0) <= 4.25):
-		return false
-	# Cross-street walkways run parallel to each north/south road.
-	for road_x in [16.0, 48.0, 80.0, 104.0]:
-		if absf(point.x - road_x) >= 3.8 and absf(point.x - road_x) <= 6.5:
-			return false
-	# Homes, civic buildings and shops; keep a margin around each footprint.
+	# Main residential/civic buildings on the north and south edges of the city.
 	for building_x in [6.0, 38.0, 70.0, 96.0]:
-		if absf(point.x - building_x) < 5.8 and (absf(point.z + 31.0) < 6.2 or absf(point.z - 31.0) < 6.2):
+		if absf(point.x - building_x) < 5.4 and (absf(point.z + 31.0) < 5.5 or absf(point.z - 31.0) < 5.5):
 			return false
+	# New homes in the inner city blocks.
 	for home_x in [28.0, 60.0]:
-		if absf(point.x - home_x) < 4.8 and absf(absf(point.z) - 12.0) < 5.8:
+		if absf(point.x - home_x) < 4.5 and (absf(point.z - 12.0) < 5.2 or absf(point.z + 12.0) < 5.2):
 			return false
-	if point.x >= 81.0 and point.x <= 111.0 and (absf(point.z) >= 19.0 and absf(point.z) <= 28.0):
+	# Park fountain and fixed plaza structures; open lawn and paths remain valid.
+	if absf(point.x - 70.0) < 1.8 and absf(point.z - 11.5) < 1.8:
 		return false
-	# Public park, fountain plaza, welcome plaza and their paths.
-	if absf(point.x - 70.0) < 10.5 and absf(point.z - 11.5) < 7.0:
+	if absf(point.x) < 2.5 and absf(point.z - 7.0) < 2.0:
 		return false
-	if absf(point.x) < 6.5 and point.z > 1.0 and point.z < 13.5:
-		return false
-	if point.x >= 87.0 and point.x <= 105.0 and point.z >= 7.0 and point.z <= 19.5:
-		return false
-	# Parked cars and their parking bays.
+	# Keep a small clearance around parked vehicles and solid street furniture.
 	for car_pos in [Vector3(20.0, 0.0, -15.5), Vector3(44.0, 0.0, 15.5), Vector3(52.0, 0.0, 15.5), Vector3(76.0, 0.0, -15.5), Vector3(22.0, 0.0, -10.0), Vector3(44.0, 0.0, 10.0), Vector3(68.0, 0.0, -10.0), Vector3(92.0, 0.0, 10.0)]:
-		if absf(point.x - car_pos.x) < 2.8 and absf(point.z - car_pos.z) < 1.8:
+		if absf(point.x - car_pos.x) < 2.0 and absf(point.z - car_pos.z) < 1.25:
 			return false
 	return true
 
