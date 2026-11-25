@@ -3987,19 +3987,32 @@ func _build_recycling_mega_factory() -> void:
 		for machine_index in range(3):
 			var x := 151.0 + float(machine_index) * 13.0
 			var station_index := row * 3 + machine_index
-			_box("MegaProcessBuildPad", Vector3(x, 0.105, z), Vector3(5.8, 0.05, 4.8), dark_steel, false)
-			_box("MegaProcessPadAccent", Vector3(x, 0.15, z - 2.22), Vector3(4.9, 0.025, 0.10), safety, false)
+			var machine_built := station_index < mega_factory_built_count
+			# The row floor top is at Y=0.298; keep every build marker above it.
+			_box("MegaProcessBuildPad", Vector3(x, 0.322, z), Vector3(5.8, 0.045, 4.8), dark_steel if machine_built else Color(0.22, 0.25, 0.20), false)
+			var pad_edge: Color = Color(0.34, 0.40, 0.36) if machine_built else safety
+			# Four thick, high-contrast perimeter rails clearly show the machine footprint.
+			_box("MegaProcessPadFront", Vector3(x, 0.365, z + 2.34), Vector3(5.8, 0.055, 0.14), pad_edge, false)
+			_box("MegaProcessPadBack", Vector3(x, 0.365, z - 2.34), Vector3(5.8, 0.055, 0.14), pad_edge, false)
+			_box("MegaProcessPadLeft", Vector3(x - 2.84, 0.365, z), Vector3(0.14, 0.055, 4.55), pad_edge, false)
+			_box("MegaProcessPadRight", Vector3(x + 2.84, 0.365, z), Vector3(0.14, 0.055, 4.55), pad_edge, false)
+			# Corner markers remain visible even when the conveyor crosses the footprint.
+			if not machine_built:
+				for marker_x in [x - 2.52, x + 2.52]:
+					for marker_z in [z - 2.02, z + 2.02]:
+						_box("MegaProcessBuildCorner", Vector3(marker_x, 0.48, marker_z), Vector3(0.34, 0.24, 0.34), safety, false)
+			_box("MegaProcessPadAccent", Vector3(x, 0.385, z - 2.10), Vector3(4.9, 0.025, 0.10), pad_edge, false)
 			var build_label := Label3D.new()
 			build_label.name = "MegaFactoryMachineLabel%d" % station_index
-			build_label.text = _factory_row_machine_name(row, machine_index) if station_index < mega_factory_built_count else _factory_row_machine_name(row, machine_index) + "\nBUILD %.0f ZC" % _mega_factory_machine_cost(station_index)
-			build_label.position = Vector3(x, 0.34, z + 2.35)
-			build_label.font_size = 22
-			build_label.pixel_size = 0.009
+			build_label.text = ("MACHINE %02d  |  %s" % [station_index + 1, _factory_row_machine_name(row, machine_index)]) if machine_built else ("BUILD MACHINE %02d\n%s\n%.0f ZC" % [station_index + 1, _factory_row_machine_name(row, machine_index), _mega_factory_machine_cost(station_index)])
+			build_label.position = Vector3(x, 2.45, z + 3.05)
+			build_label.font_size = 28
+			build_label.pixel_size = 0.012
 			build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-			build_label.modulate = Color(1.0, 0.88, 0.38)
+			build_label.modulate = Color(0.55, 1.0, 0.60) if machine_built else Color(1.0, 0.78, 0.12)
 			add_child(build_label)
 			mega_factory_machine_labels.append(build_label)
-			if station_index < mega_factory_built_count:
+			if machine_built:
 				_build_mega_factory_machine(station_index)
 
 		# Remove the unnecessary loading portal columns and overhead frames; keep the loading area open.
