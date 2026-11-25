@@ -475,10 +475,7 @@ func _build_city_rework_layout() -> void:
 	# Road connection from the city into the industrial recycling campus.
 	_box("FactoryAccessRoad", Vector3(119.25, 0.03, 0.0), Vector3(22.5, 0.06, 8.2), asphalt, false)
 	_box("FactoryAccessCenterLine", Vector3(119.25, 0.065, 0.0), Vector3(21.8, 0.012, 0.13), white, false)
-	_box("FactoryGatePostLeft", Vector3(111.5, 2.0, -8.0), Vector3(0.8, 4.0, 0.8), Color(0.18, 0.25, 0.25), false)
-	_box("FactoryGatePostRight", Vector3(111.5, 2.0, 8.0), Vector3(0.8, 4.0, 0.8), Color(0.18, 0.25, 0.25), false)
-	_box("FactoryGateHeader", Vector3(111.5, 4.1, 0.0), Vector3(0.45, 0.28, 15.5), Color(0.12, 0.20, 0.21), false)
-	_label_3d("RECYCLING DISTRICT", Vector3(113.0, 4.55, 0.0), 0.30)
+	# Removed the decorative factory entrance posts and overhead gate to keep the approach clear.
 
 	# The shared access road above now serves both the factory and final cleanup district.
 	for marker_x in range(118, 207, 8):
