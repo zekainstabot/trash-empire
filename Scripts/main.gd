@@ -781,8 +781,8 @@ func _build_random_residential_blocks() -> void:
 	# beside them, never on the vehicle lanes or the district entrances.
 	for district_x in [32.0, 64.0]:
 		_box("NeighborhoodMainRoad", Vector3(district_x, 0.018, 0.0), Vector3(31.0, 0.035, 5.2), Color(0.13, 0.16, 0.17), false)
-		_box("NeighborhoodSidewalkNorth", Vector3(district_x, 0.045, -3.45), Vector3(31.0, 0.07, 1.45), Color(0.48, 0.49, 0.44), false)
-		_box("NeighborhoodSidewalkSouth", Vector3(district_x, 0.045, 3.45), Vector3(31.0, 0.07, 1.45), Color(0.48, 0.49, 0.44), false)
+		_box("NeighborhoodSidewalkNorth", Vector3(district_x, 0.045, -3.45), Vector3(31.0, 0.07, 1.45), Color(0.66, 0.53, 0.37), false)
+		_box("NeighborhoodSidewalkSouth", Vector3(district_x, 0.045, 3.45), Vector3(31.0, 0.07, 1.45), Color(0.66, 0.53, 0.37), false)
 		for lane_x in ([26.0, 38.0] if district_x < 48.0 else [58.0, 70.0]):
 			_box("NeighborhoodAlley", Vector3(lane_x, 0.019, 0.0), Vector3(3.6, 0.037, 25.0), Color(0.17, 0.20, 0.20), false)
 			for side_z in [-12.8, 12.8]:
@@ -1045,10 +1045,10 @@ func _build_apartment_block() -> void:
 
 func _build_first_district_details() -> void:
 	# Cleaner pedestrian edge and a more lived-in entrance plaza.
-	_box("ResidentialSidewalk", Vector3(-4.0, 0.025, -10.2), Vector3(7.0, 0.05, 2.0), Color(0.53, 0.55, 0.51), false)
-	_box("MainWalkway", Vector3(-2.8, 0.035, -2.2), Vector3(2.1, 0.07, 10.0), Color(0.47, 0.49, 0.45), false)
+	_box("ResidentialSidewalk", Vector3(-4.0, 0.025, -10.2), Vector3(7.0, 0.05, 2.0), Color(0.72, 0.59, 0.42), false)
+	_box("MainWalkway", Vector3(-2.8, 0.035, -2.2), Vector3(2.1, 0.07, 10.0), Color(0.68, 0.54, 0.37), false)
 	for x in [-3.72, -2.85, -1.98]:
-		_box("WalkwayPaverJoint", Vector3(x, 0.075, -2.2), Vector3(0.035, 0.012, 9.8), Color(0.29, 0.33, 0.32), false)
+		_box("WalkwayPaverJoint", Vector3(x, 0.075, -2.2), Vector3(0.035, 0.012, 9.8), Color(0.48, 0.37, 0.25), false)
 	# Raised planters, shrubs and low decorative edging.
 	for pos in [Vector3(-4.15, 0, -6.8), Vector3(2.2, 0, 10.5), Vector3(5.4, 0, 10.5)]:
 		_box("PlanterBase", pos + Vector3(0, 0.22, 0), Vector3(2.1, 0.44, 1.25), Color(0.30, 0.34, 0.31), true)
