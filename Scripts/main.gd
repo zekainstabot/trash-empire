@@ -313,18 +313,18 @@ func _build_city_rework_layout() -> void:
 	var road_worn := Color(0.135, 0.143, 0.148)
 	var road_white := Color(0.91, 0.91, 0.84)
 	var road_yellow := Color(0.96, 0.72, 0.12)
-	_box("CityGrandBoulevard", Vector3(49.0, 0.025, 0.0), Vector3(132.0, 0.05, 8.2), road_asphalt, false)
+	_box("CityGrandBoulevard", Vector3(49.0, 0.025, 0.0), Vector3(126.0, 0.05, 8.2), road_asphalt, false)
 	# Subtle resurfaced asphalt strips add material variation without visual clutter.
 	for patch_x in range(-10, 111, 18):
 		_box("BoulevardAsphaltPatch", Vector3(float(patch_x), 0.052, 0.0), Vector3(8.0, 0.006, 7.65), road_worn, false)
 	for side in [-1.0, 1.0]:
-		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(132.0, 0.18, 0.28), curb, false)
-		_box("BoulevardEdgeLine", Vector3(49.0, 0.061, side * 3.72), Vector3(132.0, 0.025, 0.12), road_white, false)
-		_box("BoulevardSidewalk", Vector3(49.0, 0.075, side * 6.0), Vector3(132.0, 0.15, 3.2), sidewalk, false)
+		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(126.0, 0.18, 0.28), curb, false)
+		_box("BoulevardEdgeLine", Vector3(49.0, 0.061, side * 3.72), Vector3(126.0, 0.025, 0.12), road_white, false)
+		_box("BoulevardSidewalk", Vector3(49.0, 0.075, side * 6.0), Vector3(126.0, 0.15, 3.2), sidewalk, false)
 		for joint_x in range(-15, 116, 6):
 			_box("BoulevardSidewalkJoint", Vector3(float(joint_x), 0.153, side * 6.0), Vector3(0.045, 0.008, 3.05), Color(0.63, 0.54, 0.41), false)
-		_box("BoulevardSidewalkEdge", Vector3(49.0, 0.157, side * 7.48), Vector3(132.0, 0.012, 0.07), Color(0.91, 0.84, 0.69), false)
-		_box("BoulevardGrassVerge", Vector3(49.0, 0.025, side * 8.0), Vector3(132.0, 0.05, 1.0), grass.lightened(0.08), false)
+		_box("BoulevardSidewalkEdge", Vector3(49.0, 0.157, side * 7.48), Vector3(126.0, 0.012, 0.07), Color(0.91, 0.84, 0.69), false)
+		_box("BoulevardGrassVerge", Vector3(49.0, 0.025, side * 8.0), Vector3(126.0, 0.05, 1.0), grass.lightened(0.08), false)
 	# Double yellow no-passing divider and broken white lane separators.
 	for offset in [-0.13, 0.13]:
 		_box("BoulevardDoubleYellow", Vector3(49.0, 0.064, offset), Vector3(132.0, 0.025, 0.075), road_yellow, false)
@@ -335,13 +335,13 @@ func _build_city_rework_layout() -> void:
 	# Four perpendicular streets with their own asphalt, center lines, edge lines,
 	# stop bars and zebra crossings at the boulevard junctions.
 	for street_x in [16.0, 48.0, 80.0, 104.0]:
-		_box("CityCrossStreet", Vector3(street_x, 0.028, 0.0), Vector3(6.8, 0.056, 66.0), road_asphalt, false)
+		_box("CityCrossStreet", Vector3(street_x, 0.028, 0.0), Vector3(6.8, 0.056, 74.0), road_asphalt, false)
 		for side in [-1.0, 1.0]:
-			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 66.0), curb, false)
-			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 66.0), sidewalk, false)
+			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 74.0), curb, false)
+			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 74.0), sidewalk, false)
 			for joint_z in range(-31, 33, 5):
 				_box("CrossStreetWalkwayJoint", Vector3(street_x + side * 5.0, 0.153, float(joint_z)), Vector3(2.55, 0.008, 0.045), Color(0.63, 0.54, 0.41), false)
-			_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, 0.0), Vector3(0.09, 0.022, 66.0), road_white, false)
+			_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, 0.0), Vector3(0.09, 0.022, 74.0), road_white, false)
 		for offset in [-0.13, 0.13]:
 			_box("CrossStreetDoubleYellow", Vector3(street_x + offset, 0.064, 0.0), Vector3(0.075, 0.025, 66.0), road_yellow, false)
 		for lane_z in [-1.35, 1.35]:
@@ -355,9 +355,9 @@ func _build_city_rework_layout() -> void:
 	# Narrow neighborhood streets get realistic edge paint, broken center markings,
 	# parking-bay separators and curbside pavements.
 	for street_z in [-22.0, 22.0]:
-		_box("NeighborhoodStreet", Vector3(49.0, 0.024, street_z), Vector3(132.0, 0.048, 5.4), road_asphalt, false)
+		_box("NeighborhoodStreet", Vector3(49.0, 0.024, street_z), Vector3(126.0, 0.048, 5.4), road_asphalt, false)
 		for side in [-1.0, 1.0]:
-			_box("NeighborhoodSidewalk", Vector3(49.0, 0.07, street_z + side * 3.45), Vector3(132.0, 0.14, 1.5), sidewalk, false)
+			_box("NeighborhoodSidewalk", Vector3(49.0, 0.07, street_z + side * 3.45), Vector3(126.0, 0.14, 1.5), sidewalk, false)
 			for joint_x in range(-15, 116, 6):
 				_box("NeighborhoodSidewalkJoint", Vector3(float(joint_x), 0.143, street_z + side * 3.45), Vector3(0.04, 0.008, 1.42), Color(0.63, 0.54, 0.41), false)
 			_box("NeighborhoodEdgeLine", Vector3(49.0, 0.057, street_z + side * 2.45), Vector3(132.0, 0.02, 0.075), road_white, false)
@@ -691,16 +691,16 @@ func _build_connected_city_streets() -> void:
 	var sidewalk := Color(0.78, 0.70, 0.55)
 	# Two continuous cross-town streets run through the former front/back wall lines.
 	for street_z in [-29.0, 29.0]:
-		_box("CrossTownStreet", Vector3(48.0, 0.022, street_z), Vector3(119.0, 0.045, 5.8), asphalt, false)
-		_box("CrossTownSidewalk", Vector3(48.0, 0.055, street_z - 3.55), Vector3(119.0, 0.11, 1.25), sidewalk, false)
-		_box("CrossTownSidewalk", Vector3(48.0, 0.055, street_z + 3.55), Vector3(119.0, 0.11, 1.25), sidewalk, false)
+		_box("CrossTownStreet", Vector3(49.0, 0.022, street_z), Vector3(126.0, 0.045, 5.8), asphalt, false)
+		_box("CrossTownSidewalk", Vector3(49.0, 0.055, street_z - 3.55), Vector3(126.0, 0.11, 1.25), sidewalk, false)
+		_box("CrossTownSidewalk", Vector3(49.0, 0.055, street_z + 3.55), Vector3(126.0, 0.11, 1.25), sidewalk, false)
 		for dash_x in range(-8, 109, 8):
 			_box("CrossTownRoadMarking", Vector3(float(dash_x), 0.052, street_z), Vector3(3.0, 0.012, 0.12), Color(0.88, 0.81, 0.62), false)
 	# Side streets join the central avenue to both cross-town roads, creating real alleys.
 	for street_x in [16.0, 48.0, 80.0, 104.0]:
-		_box("NeighborhoodConnectorRoad", Vector3(street_x, 0.025, 0.0), Vector3(5.2, 0.05, 62.0), asphalt, false)
+		_box("NeighborhoodConnectorRoad", Vector3(street_x, 0.025, 0.0), Vector3(5.2, 0.05, 74.0), asphalt, false)
 		for edge_x in [street_x - 3.0, street_x + 3.0]:
-			_box("ConnectorCurb", Vector3(edge_x, 0.075, 0.0), Vector3(0.18, 0.15, 62.0), curb, false)
+			_box("ConnectorCurb", Vector3(edge_x, 0.075, 0.0), Vector3(0.18, 0.15, 74.0), curb, false)
 		for dash_z in range(-25, 26, 8):
 			_box("ConnectorRoadMarking", Vector3(street_x, 0.055, float(dash_z)), Vector3(0.12, 0.012, 3.0), Color(0.88, 0.81, 0.62), false)
 	# Small paved junction aprons blend the intersections into the existing avenues.
