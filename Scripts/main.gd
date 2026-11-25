@@ -4341,16 +4341,23 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	# Deep side frame with a clearly separate moving rubber belt.
 	_box("FactoryMainConveyorFrame%d" % row, Vector3(center_x, 0.68, z), Vector3(belt_length, 0.42, 1.66), frame_color, false)
 	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.925, z), Vector3(belt_length - 0.28, 0.075, 1.30), rubber, false)
-	# Keep the side guards only along the exposed run. The first section is open
-	# so the perpendicular feed conveyor can merge into this belt without colliding
-	# with or visually passing through the side rails.
-	var open_merge_length := 3.4
-	var guarded_start_x := start_x + open_merge_length
-	var guarded_length := end_x - guarded_start_x
-	var guarded_center_x := (guarded_start_x + end_x) * 0.5
+	# Side guards run along the full conveyor, with only a short opening exactly
+	# where the incoming branch joins the main belt.
+	var merge_open_start := start_x
+	var merge_open_end := start_x + 2.8
+	var guard_segments := [
+		[ start_x, merge_open_start ],
+		[ merge_open_end, end_x ]
+	]
 	for side_z in [z - 0.79, z + 0.79]:
-		_box("FactoryMainConveyorRail%d" % row, Vector3(guarded_center_x, 1.105, side_z), Vector3(guarded_length, 0.27, 0.10), steel, false)
-		_box("FactoryMainConveyorSafetyEdge%d" % row, Vector3(guarded_center_x, 1.245, side_z), Vector3(guarded_length, 0.025, 0.055), safety_yellow, false)
+		for segment in guard_segments:
+			var segment_start: float = segment[0]
+			var segment_end: float = segment[1]
+			var segment_length := segment_end - segment_start
+			if segment_length > 0.05:
+				var segment_center := (segment_start + segment_end) * 0.5
+				_box("FactoryMainConveyorRail%d" % row, Vector3(segment_center, 1.105, side_z), Vector3(segment_length, 0.27, 0.10), steel, false)
+				_box("FactoryMainConveyorSafetyEdge%d" % row, Vector3(segment_center, 1.245, side_z), Vector3(segment_length, 0.025, 0.055), safety_yellow, false)
 	# Exposed support stringers and cross-braced legs at regular intervals.
 	for side_z in [z - 0.70, z + 0.70]:
 		_box("FactoryMainConveyorStringer%d" % row, Vector3(center_x, 0.73, side_z), Vector3(belt_length, 0.20, 0.10), steel, false)
