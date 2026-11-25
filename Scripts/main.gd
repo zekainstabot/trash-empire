@@ -5029,8 +5029,7 @@ func _finish_waste_feed_item(item: Node3D, row: int) -> void:
 	_save_game()
 
 func _process_factory_production(delta: float) -> void:
-	if machine_broken:
-		return
+	# Breakdown status must not permanently stall the first production stage.
 	factory_production_timer += delta
 	if factory_production_timer < 1.2:
 		return
