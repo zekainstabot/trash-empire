@@ -4209,28 +4209,45 @@ func _build_mega_factory_machine(index: int) -> void:
 
 func _build_factory_row_main_conveyor(row: int) -> void:
 	var z := _factory_row_z(row)
-	var dark_steel := Color(0.055, 0.085, 0.095)
-	var steel := Color(0.16, 0.22, 0.24)
-	var belt_color := Color(0.035, 0.055, 0.06)
-	# Start at the first machine; remove the unused conveyor overhang on the left.
+	# Industrial conveyor palette: graphite rubber, galvanized steel and restrained safety-yellow details.
+	var frame_color := Color(0.12, 0.15, 0.16)
+	var steel := Color(0.38, 0.43, 0.44)
+	var rubber := Color(0.025, 0.032, 0.034)
+	var safety_yellow := Color(0.92, 0.61, 0.12)
 	var start_x := 148.0
 	var end_x := 199.0
 	var belt_length := end_x - start_x
 	var center_x := (start_x + end_x) * 0.5
-	_box("FactoryMainConveyorFrame%d" % row, Vector3(center_x, 0.70, z), Vector3(belt_length, 0.42, 1.62), dark_steel, false)
-	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.94, z), Vector3(belt_length - 0.18, 0.10, 1.28), belt_color, false)
-	for side_z in [z - 0.76, z + 0.76]:
-		_box("FactoryMainConveyorRail%d" % row, Vector3(center_x, 1.14, side_z), Vector3(belt_length, 0.30, 0.12), steel, false)
-	# Visible side stringers, dense steel rollers and raised rubber cleats give the belt a mechanical profile.
-	for side_x in [center_x - belt_length * 0.5 + 0.12, center_x + belt_length * 0.5 - 0.12]:
-		_box("FactoryMainConveyorStringer%d" % row, Vector3(side_x, 0.76, z), Vector3(0.12, 0.34, 1.52), steel, false)
-	var roller_count := 82
+	# Deep side frame with a clearly separate moving rubber belt.
+	_box("FactoryMainConveyorFrame%d" % row, Vector3(center_x, 0.68, z), Vector3(belt_length, 0.42, 1.66), frame_color, false)
+	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.925, z), Vector3(belt_length - 0.28, 0.075, 1.30), rubber, false)
+	# Raised steel side cheeks and narrow safety edge strips make the belt read as a machine, not a floor strip.
+	for side_z in [z - 0.79, z + 0.79]:
+		_box("FactoryMainConveyorRail%d" % row, Vector3(center_x, 1.105, side_z), Vector3(belt_length, 0.27, 0.10), steel, false)
+		_box("FactoryMainConveyorSafetyEdge%d" % row, Vector3(center_x, 1.245, side_z), Vector3(belt_length, 0.025, 0.055), safety_yellow, false)
+	# Exposed support stringers and cross-braced legs at regular intervals.
+	for side_z in [z - 0.70, z + 0.70]:
+		_box("FactoryMainConveyorStringer%d" % row, Vector3(center_x, 0.73, side_z), Vector3(belt_length, 0.20, 0.10), steel, false)
+	for support_i in range(9):
+		var support_x := start_x + 2.0 + float(support_i) * ((belt_length - 4.0) / 8.0)
+		for leg_z in [z - 0.58, z + 0.58]:
+			_box("FactoryMainConveyorLeg%d_%d" % [row, support_i], Vector3(support_x, 0.28, leg_z), Vector3(0.16, 0.56, 0.16), frame_color, false)
+		_box("FactoryMainConveyorCrossbar%d_%d" % [row, support_i], Vector3(support_x, 0.12, z), Vector3(0.16, 0.12, 1.25), steel, false)
+	# Real roller bed: fewer, individually visible steel rollers beneath the belt.
+	var roller_count := 36
 	for roller_i in range(roller_count):
-		var roller_x := start_x + float(roller_i) * belt_length / float(roller_count - 1)
-		var roller := _cylinder("FactoryMainConveyorRoller%d" % row, Vector3(roller_x, 0.89, z), 0.055, 1.18, Color(0.30, 0.36, 0.38), false)
+		var roller_x := start_x + 0.45 + float(roller_i) * ((belt_length - 0.90) / float(roller_count - 1))
+		var roller := _cylinder("FactoryMainConveyorRoller%d_%d" % [row, roller_i], Vector3(roller_x, 0.875, z), 0.075, 1.20, steel, false)
 		roller.rotation_degrees.x = 90.0
-		if roller_i % 9 == 0:
-			_box("FactoryMainConveyorCleat%d_%d" % [row, roller_i], Vector3(roller_x, 1.005, z), Vector3(0.14, 0.055, 1.10), Color(0.20, 0.27, 0.28), false)
+	# Raised transverse rubber cleats visibly travel with the belt and keep loose material from sliding.
+	var cleat_count := 30
+	for cleat_i in range(cleat_count):
+		var cleat_x := start_x + 0.65 + float(cleat_i) * ((belt_length - 1.30) / float(cleat_count - 1))
+		_box("FactoryMainConveyorCleat%d_%d" % [row, cleat_i], Vector3(cleat_x, 0.985, z), Vector3(0.11, 0.055, 1.12), Color(0.10, 0.13, 0.14), false)
+	# Large end drums expose the belt's return mechanism at both ends.
+	for drum_x in [start_x + 0.12, end_x - 0.12]:
+		var drum := _cylinder("FactoryMainConveyorEndDrum%d" % row, Vector3(drum_x, 0.88, z), 0.17, 1.30, steel, false)
+		drum.rotation_degrees.x = 90.0
 
 func _build_mega_factory_machine_connections(index: int) -> void:
 	# Legacy hook: the continuous row conveyor is built once for each production row.
