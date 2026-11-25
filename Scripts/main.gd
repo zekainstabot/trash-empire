@@ -2143,7 +2143,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
 		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
-		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED" ,"factory_truck_interval":"FACTORY TRUCK ARRIVAL"
+		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","factory_truck_interval":"FACTORY TRUCK ARRIVAL"
 	}
 	var descriptions := {
 		"capacity":"Carry more waste before returning to unload.",
@@ -5310,17 +5310,17 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
 	# Follow the physical trunk belt from the tank to the distributor.
-	tween.tween_property(selected_item, "global_position", Vector3(137.0, belt_y, 0.0), 0.8)
-	tween.tween_property(selected_item, "global_position", Vector3(146.4, belt_y, 0.0), 0.9)
+	tween.tween_property(selected_item, "global_position", Vector3(137.0, belt_y, 0.0), 0.8 / _conveyor_speed_multiplier())
+	tween.tween_property(selected_item, "global_position", Vector3(146.4, belt_y, 0.0), 0.9 / _conveyor_speed_multiplier())
 	# Follow the distributor spine to the selected row's visible elbow.
-	tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, bend_start_z), maxf(0.35, absf(bend_start_z) / 12.0))
+	tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, bend_start_z), maxf(0.35, absf(bend_start_z) / 12.0) / _conveyor_speed_multiplier())
 	# Trace the same quarter-circle bend as the physical branch conveyor.
 	for bend_i in range(1, 13):
 		var angle := (float(bend_i) / 12.0) * PI * 0.5
 		var bend_point := Vector3(147.0 + bend_radius * (1.0 - cos(angle)), belt_y, bend_start_z + bend_radius * sin(angle))
-		tween.tween_property(selected_item, "global_position", bend_point, 0.045)
+		tween.tween_property(selected_item, "global_position", bend_point, 0.045 / _conveyor_speed_multiplier())
 	# Continue along the straight branch belt into the first machine.
-	tween.tween_property(selected_item, "global_position", Vector3(150.4, belt_y, target_z), 0.35)
+	tween.tween_property(selected_item, "global_position", Vector3(150.4, belt_y, target_z), 0.35 / _conveyor_speed_multiplier())
 	tween.tween_callback(_finish_waste_feed_item.bind(selected_item, selected_row))
 
 func _finish_waste_feed_item(item: Node3D, row: int) -> void:
