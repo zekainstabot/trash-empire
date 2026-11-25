@@ -2922,6 +2922,9 @@ func _process_helper_drones(delta: float) -> void:
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
 			if drone.global_position.distance_to(return_pos) <= 2.5:
 				drone.set_meta("deposited", true)
+				# Unload from the drone's own update loop so delivery never depends
+				# on the player's auto-sell area or proximity to the tank.
+				_drone_deposit_cycle(drone)
 			continue
 		var lifting_item := drone.get_meta("lifting_item") as Node3D
 		if is_instance_valid(lifting_item):
@@ -3156,10 +3159,7 @@ func _process_auto_sell(delta: float) -> void:
 		return
 	if not is_instance_valid(player):
 		return
-	# Drone cargo is processed separately; it never triggers a sale of the player's bag.
-	for drone in helper_drones:
-		if is_instance_valid(drone) and drone.visible and drone.get_meta("returning", false) and drone.global_position.distance_to(_factory_waste_drop_point() + Vector3(0, 1.5, 0)) <= 3.0:
-			_drone_deposit_cycle(drone)
+	# Helper drones unload themselves in _process_helper_drones; player unloading stays independent.
 	var unloading_point := _factory_waste_drop_point() if waste_tank_built else SELL_POINT
 	# Wide, forgiving loading apron: simply walking onto it starts automatic unloading.
 	var inside_zone := player.global_position.distance_to(unloading_point) <= 3.6
