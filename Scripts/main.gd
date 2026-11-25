@@ -902,6 +902,15 @@ func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -
 
 
 func _build_neighborhood_tree(pos: Vector3) -> void:
+	# Hard safety check: vegetation cannot be placed on roadway or sidewalk footprints.
+	# Main boulevard and town streets run along Z; connectors run along X.
+	if absf(pos.z) < 4.2 or absf(absf(pos.z) - 22.0) < 4.4 or absf(absf(pos.z) - 29.0) < 4.5:
+		return
+	for road_x in [16.0, 48.0, 80.0, 104.0]:
+		if absf(pos.x - road_x) < 4.6:
+			return
+	if absf(pos.x - 49.0) < 7.0:
+		return
 	# Trunk collision is limited to a narrow cylinder-sized footprint.
 	_cylinder("NeighborhoodTreeTrunk", pos + Vector3(0, 1.0, 0), 0.20, 2.0, Color(0.32, 0.21, 0.13), false)
 	_add_invisible_barrier("NeighborhoodTreeTrunkCollision", pos + Vector3(0, 1.0, 0), Vector3(0.38, 2.0, 0.38))
