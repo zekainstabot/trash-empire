@@ -3193,14 +3193,15 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		_set_message("Drone unloaded its cargo and is collecting again.")
 
 func _process_auto_sell(delta: float) -> void:
-	if machine_broken:
-		return
 	if not is_instance_valid(player):
 		return
-	# Helper drones unload themselves in _process_helper_drones; player unloading stays independent.
+	# Backpack unloading is fully automatic and must remain available even while
+	# factory machinery is under repair. Only horizontal distance matters so
+	# small differences in player/collider height cannot block the interaction.
 	var unloading_point := _factory_waste_drop_point() if waste_tank_built else SELL_POINT
-	# Wide, forgiving loading apron: simply walking onto it starts automatic unloading.
-	var inside_zone := player.global_position.distance_to(unloading_point) <= 3.6
+	var player_xz := Vector2(player.global_position.x, player.global_position.z)
+	var unload_xz := Vector2(unloading_point.x, unloading_point.z)
+	var inside_zone := player_xz.distance_to(unload_xz) <= 5.5
 	if not inside_zone or carried <= 0:
 		unload_timer = 0.0
 		return
