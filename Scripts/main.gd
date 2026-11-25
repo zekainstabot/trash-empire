@@ -641,7 +641,7 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 
 
 func _factory_waste_drop_point() -> Vector3:
-	# Shared unloading bay directly in front of the relocated factory waste tank.
+	# Center of the open loading apron in front of the factory waste tank.
 	return Vector3(124.8, 0.0, 8.5)
 
 
@@ -3161,12 +3161,14 @@ func _process_auto_sell(delta: float) -> void:
 		if is_instance_valid(drone) and drone.visible and drone.get_meta("returning", false) and drone.global_position.distance_to(_factory_waste_drop_point() + Vector3(0, 1.5, 0)) <= 3.0:
 			_drone_deposit_cycle(drone)
 	var unloading_point := _factory_waste_drop_point() if waste_tank_built else SELL_POINT
-	var inside_zone := player.global_position.distance_to(unloading_point) <= 2.35
+	# Wide, forgiving loading apron: simply walking onto it starts automatic unloading.
+	var inside_zone := player.global_position.distance_to(unloading_point) <= 3.6
 	if not inside_zone or carried <= 0:
 		unload_timer = 0.0
 		return
 	unload_timer += delta
-	var seconds_per_item := maxf(0.35, 1.8 - float(unload_upgrade_level - 1) * 0.18)
+	# Feed the tank steadily without making the player wait several seconds per piece.
+	var seconds_per_item := maxf(0.12, 0.45 - float(unload_upgrade_level - 1) * 0.05)
 	if unload_timer >= seconds_per_item:
 		unload_timer = 0.0
 		if waste_tank_built:
@@ -4327,22 +4329,9 @@ func _on_waste_tank_build_entered(body: Node3D) -> void:
 		return
 	if waste_tank_built:
 		if carried <= 0:
-			_set_message("Collect waste first, then return here to load the factory tank.")
-			return
-		var item_count := maxi(0, carried - carried_bulky)
-		var accepted := mini(item_count, WASTE_TANK_CAPACITY - waste_tank_inventory)
-		if accepted <= 0:
-			_set_message("Factory tank is full (%d / %d)." % [waste_tank_inventory, WASTE_TANK_CAPACITY])
-			return
-		waste_tank_inventory += accepted
-		var regular_items := maxi(0, carried - carried_bulky * 2)
-		var accepted_regular := mini(regular_items, accepted)
-		var accepted_bulky := mini(carried_bulky, accepted - accepted_regular)
-		carried -= accepted_regular + accepted_bulky * 2
-		carried_bulky -= accepted_bulky
-		_update_ui()
-		_save_game()
-		_set_message("Loaded %d pieces into factory storage. Tank: %d / %d" % [accepted, waste_tank_inventory, WASTE_TANK_CAPACITY])
+			_set_message("Collect waste first, then return here. The tank loads automatically.")
+		else:
+			_set_message("Automatic loading started. Stay on the marked tank platform.")
 		return
 	const BUILD_COST := 120.0
 	if money < BUILD_COST:
