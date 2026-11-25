@@ -349,12 +349,12 @@ func _build_city_rework_layout() -> void:
 			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 74.0), sidewalk, false)
 			for joint_z in range(-36, 37, 5):
 				_box("CrossStreetWalkwayJoint", Vector3(street_x + side * 5.0, 0.153, float(joint_z)), Vector3(2.55, 0.008, 0.045), Color(0.63, 0.54, 0.41), false)
-			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]
+			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
 				var edge_start: float = segment[0]
 				var edge_end: float = segment[1]
 				_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, (edge_start + edge_end) * 0.5), Vector3(0.09, 0.022, edge_end - edge_start), road_white, false)
 		for offset in [-0.13, 0.13]:
-			for segment in [[-37.0, -32.5], [-25.5, -5.0], [5.0, 25.5], [32.5, 37.0]]:
+			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
 				var line_start: float = segment[0]
 				var line_end: float = segment[1]
 				_box("CrossStreetDoubleYellow", Vector3(street_x + offset, 0.064, (line_start + line_end) * 0.5), Vector3(0.075, 0.025, line_end - line_start), road_yellow, false)
@@ -384,10 +384,21 @@ func _build_city_rework_layout() -> void:
 			_box("NeighborhoodSidewalk", Vector3(49.0, 0.07, street_z + side * 3.45), Vector3(126.0, 0.14, 1.5), sidewalk, false)
 			for joint_x in range(-15, 116, 6):
 				_box("NeighborhoodSidewalkJoint", Vector3(float(joint_x), 0.143, street_z + side * 3.45), Vector3(0.04, 0.008, 1.42), Color(0.63, 0.54, 0.41), false)
-			_box("NeighborhoodEdgeLine", Vector3(49.0, 0.057, street_z + side * 2.45), Vector3(132.0, 0.02, 0.075), road_white, false)
-		_box("NeighborhoodCenterLine", Vector3(49.0, 0.058, street_z), Vector3(132.0, 0.02, 0.09), road_yellow, false)
+			for segment in [[-14.0, 12.0], [20.0, 44.0], [52.0, 76.0], [84.0, 100.0], [108.0, 112.0]]:
+				var edge_start: float = segment[0]
+				var edge_end: float = segment[1]
+				_box("NeighborhoodEdgeLine", Vector3((edge_start + edge_end) * 0.5, 0.057, street_z + side * 2.45), Vector3(edge_end - edge_start, 0.02, 0.075), road_white, false)
+		for segment in [[-14.0, 12.0], [20.0, 44.0], [52.0, 76.0], [84.0, 100.0], [108.0, 112.0]]:
+			var line_start: float = segment[0]
+			var line_end: float = segment[1]
+			_box("NeighborhoodCenterLine", Vector3((line_start + line_end) * 0.5, 0.058, street_z), Vector3(line_end - line_start, 0.02, 0.09), road_yellow, false)
 		for dash_x in range(-10, 115, 10):
-			_box("NeighborhoodParkingDivider", Vector3(float(dash_x), 0.059, street_z + 2.0), Vector3(0.08, 0.02, 0.85), road_white, false)
+			var clear_of_junctions := true
+			for junction_x in [16.0, 48.0, 80.0, 104.0]:
+				if absf(float(dash_x) - junction_x) < 5.0:
+					clear_of_junctions = false
+			if clear_of_junctions:
+				_box("NeighborhoodParkingDivider", Vector3(float(dash_x), 0.059, street_z + 2.0), Vector3(0.08, 0.02, 0.85), road_white, false)
 		# Zebra crossings at every neighborhood-street / cross-street junction.
 		for crossing_x in [16.0, 48.0, 80.0, 104.0]:
 			for stripe in range(7):
