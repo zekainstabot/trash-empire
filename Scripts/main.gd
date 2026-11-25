@@ -3820,9 +3820,9 @@ func _build_recycling_mega_factory() -> void:
 	var concrete := Color(0.39, 0.43, 0.42)
 
 	# Large, uncluttered factory floor and simple perimeter.
-	_box("MegaFactoryFoundation", Vector3(172.75, 0.035, 0.0), Vector3(58.5, 0.07, 72.0), concrete, true)
+	_box("MegaFactoryFoundation", Vector3(172.75, 0.14, 0.0), Vector3(58.5, 0.28, 72.0), concrete, true)
 	_box("FactoryServiceLane", Vector3(166.0, 0.075, -31.0), Vector3(65.0, 0.05, 3.0), Color(0.29, 0.33, 0.33), true)
-	_box("FactoryFrontApron", Vector3(137.0, 0.035, 0.0), Vector3(13.0, 0.07, 64.0), Color(0.31, 0.35, 0.34), true)
+	_box("FactoryFrontApron", Vector3(137.0, 0.14, 0.0), Vector3(13.0, 0.28, 64.0), Color(0.31, 0.35, 0.34), true)
 
 	# Open-air factory: no roof, walls, or structural columns.
 
@@ -3880,7 +3880,7 @@ func _build_recycling_mega_factory() -> void:
 		var z := _factory_row_z(row)
 		var row_number := row + 1
 		# A clean painted lane with a divider only in the middle of each gap.
-		_box("FactoryRowFloor%d" % row, Vector3(174.0, 0.076, z), Vector3(48.0, 0.012, 10.8), Color(0.34, 0.38, 0.37), false)
+		_box("FactoryRowFloor%d" % row, Vector3(174.0, 0.292, z), Vector3(48.0, 0.012, 10.8), Color(0.34, 0.38, 0.37), false)
 		_box("FactoryRowDivider%d" % row, Vector3(174.0, 0.14, z + 6.35), Vector3(48.0, 0.10, 0.14), safety, false)
 		_box("FactoryRowEdge%d" % row, Vector3(174.0, 0.14, z - 6.35), Vector3(48.0, 0.10, 0.14), teal, false)
 
