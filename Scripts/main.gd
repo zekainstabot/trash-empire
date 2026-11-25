@@ -3025,7 +3025,7 @@ func _process_helper_drones(delta: float) -> void:
 			if scan_cooldown <= 0.0:
 				drone.set_meta("scan_cooldown", 0.45)
 				# Drones dispatch from their depot and search the whole reachable city, not just around the player.
-				var best_distance := 150.0
+				var best_distance := 190.0
 				for item in trash_nodes:
 					if not is_instance_valid(item) or _is_city_dump_trash(item) or item.get_meta("drone_reserved", -1) != -1:
 						continue
