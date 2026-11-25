@@ -376,7 +376,7 @@ func _build_city_rework_layout() -> void:
 					_box("CrossStreetLaneDash", Vector3(street_x + lane_z, 0.064, float(dash_z)), Vector3(0.09, 0.022, 4.2), road_white, false)
 		for cross_z in [-5.1, 5.1]:
 			for stripe in range(7):
-				_box("CityZebraCrossing", Vector3(street_x - 2.55 + float(stripe) * 0.85, 0.068, cross_z), Vector3(0.52, 0.025, 7.6), road_white, false)
+				_box("CityZebraCrossing", Vector3(street_x - 2.4 + float(stripe) * 0.8, 0.068, cross_z), Vector3(0.34, 0.025, 5.8), road_white, false)
 
 	# Narrow neighborhood streets get realistic edge paint, broken center markings,
 	# parking-bay separators and curbside pavements.
