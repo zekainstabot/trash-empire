@@ -39,8 +39,10 @@ var sorting_robots: Array[Node3D] = []
 var sorting_robot_levels: Array = [0, 0, 0, 0]
 var sorting_bin_counts: Array = [0, 0, 0, 0]
 var sorting_area_root: Node3D
-var sorting_bin_positions: Array[Vector3] = [Vector3(26, 0, -20), Vector3(58, 0, 20), Vector3(90, 0, -20), Vector3(151, 0, 20)]
-var sorting_pad_positions: Array[Vector3] = [Vector3(26, 0, -16), Vector3(58, 0, 16), Vector3(90, 0, -16), Vector3(151, 0, 16)]
+var sorting_build_labels: Array[Label3D] = []
+# Four stations share one service strip beside the factory, facing the future waste-tank intake.
+var sorting_bin_positions: Array[Vector3] = [Vector3(124.8, 0, -26), Vector3(124.8, 0, -12), Vector3(124.8, 0, 20), Vector3(124.8, 0, 30)]
+var sorting_pad_positions: Array[Vector3] = [Vector3(119.5, 0, -26), Vector3(119.5, 0, -12), Vector3(119.5, 0, 20), Vector3(119.5, 0, 30)]
 var sorting_station_colors: Array[Color] = [Color(0.12, 0.42, 0.88), Color(0.88, 0.76, 0.22), Color(0.48, 0.52, 0.55), Color(0.15, 0.68, 0.42)]
 var sorting_station_names: Array[String] = ["PLASTIC", "PAPER", "METAL", "GLASS"]
 var sorting_station_categories: Array[String] = ["plastic", "paper", "metal", "glass"]
@@ -460,20 +462,30 @@ func _build_city_block_building(center: Vector3, sign_text: String, facade: Colo
 
 
 func _build_sorting_district() -> void:
-	# Distribute four recycling stations through the existing playable city.
+	# All four recycling stations are grouped beside the factory on one service strip.
+	# Their robots use the same direct return route to the future factory waste tank.
 	sorting_area_root = Node3D.new()
-	sorting_area_root.name = "CitySortingStations"
+	sorting_area_root.name = "FactorySortingStations"
 	add_child(sorting_area_root)
 	sorting_bins.clear()
 	sorting_robots.clear()
+	sorting_build_labels.clear()
 	for i in range(4):
 		var pad_pos: Vector3 = sorting_pad_positions[i]
 		var color: Color = sorting_station_colors[i]
-		# Empty marked compartment: the player walks onto it to build the bin + robot.
 		_box("SortingStationPad", pad_pos + Vector3(0, 0.035, 0), Vector3(4.2, 0.07, 3.8), Color(0.10, 0.14, 0.15), false)
 		_box("SortingStationPadBorder", pad_pos + Vector3(0, 0.08, 0), Vector3(3.85, 0.025, 3.45), color, false)
 		_box("SortingStationFootprint", pad_pos + Vector3(0, 0.095, 0), Vector3(3.55, 0.025, 3.15), color.darkened(0.68), false)
-		_label_3d("STEP HERE\\nBUILD %s" % sorting_station_names[i], pad_pos + Vector3(0, 1.9, -0.3), 0.24)
+		var cost_label := Label3D.new()
+		cost_label.name = "SortingStationBuildCost_%s" % sorting_station_categories[i]
+		cost_label.text = "45 ZC"
+		cost_label.position = pad_pos + Vector3(0, 0.48, -0.3)
+		cost_label.font_size = 28
+		cost_label.pixel_size = 0.009
+		cost_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		cost_label.modulate = Color(1.0, 0.84, 0.35)
+		sorting_area_root.add_child(cost_label)
+		sorting_build_labels.append(cost_label)
 		var trigger := Area3D.new()
 		trigger.name = "BuildSortingStation_%s" % sorting_station_categories[i]
 		trigger.position = pad_pos + Vector3(0, 0.9, 0)
@@ -580,6 +592,9 @@ func _refresh_sorting_district() -> void:
 	for i in range(mini(4, sorting_robots.size())):
 		if is_instance_valid(sorting_robots[i]):
 			sorting_robots[i].visible = sorting_robot_levels[i] > 0
+	for i in range(mini(4, sorting_build_labels.size())):
+		if is_instance_valid(sorting_build_labels[i]):
+			sorting_build_labels[i].visible = sorting_robot_levels[i] <= 0
 	for i in range(mini(4, sorting_bins.size())):
 		if is_instance_valid(sorting_bins[i]):
 			var counter := sorting_bins[i].get_node_or_null("SortingCounter") as Label3D
