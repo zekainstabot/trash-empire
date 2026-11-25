@@ -1840,6 +1840,11 @@ func _build_ui() -> void:
 
 	upgrade_panel = Panel.new()
 	upgrade_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Keep the whole upgrade window comfortably inside the phone screen edges.
+	upgrade_panel.offset_left = 18
+	upgrade_panel.offset_top = 18
+	upgrade_panel.offset_right = -18
+	upgrade_panel.offset_bottom = -18
 	upgrade_panel.z_index = 10
 	upgrade_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.055, 0.065, 0.995)))
 	upgrade_panel.visible = false
