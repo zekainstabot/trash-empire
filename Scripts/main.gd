@@ -5282,8 +5282,8 @@ func _build_factory_specific_product(root: Node3D, row: int, stage: int) -> void
 		[Color(0.30, 0.70, 0.82), Color(0.16, 0.62, 0.78), Color(0.42, 0.82, 0.90)],
 		[Color(0.16, 0.42, 0.30), Color(0.22, 0.52, 0.38), Color(0.12, 0.30, 0.24)]
 	]
-	var accent := body_color[clampi(row, 0, 4)][clampi(stage, 0, 2)]
-	var dark := accent.darkened(0.48)
+	var accent: Color = body_color[clampi(row, 0, 4)][clampi(stage, 0, 2)]
+	var dark: Color = accent.darkened(0.48)
 	match row:
 		0:
 			if stage == 0:
@@ -5361,7 +5361,7 @@ func _build_factory_specific_product(root: Node3D, row: int, stage: int) -> void
 				for i in range(4):
 					var chip := BoxMesh.new()
 					chip.size = Vector3(0.16, 0.12, 0.14)
-				_factory_product_part(root, chip, Vector3(float(i % 2) * 0.32 - 0.16, 0.08, float(i / 2) * 0.22 - 0.11), dark)
+					_factory_product_part(root, chip, Vector3(float(i % 2) * 0.32 - 0.16, 0.08, float(i / 2) * 0.22 - 0.11), dark)
 			elif stage == 1:
 				var module := BoxMesh.new()
 				module.size = Vector3(0.68, 0.28, 0.52)
