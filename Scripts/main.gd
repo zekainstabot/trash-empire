@@ -349,16 +349,32 @@ func _build_city_rework_layout() -> void:
 			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 74.0), sidewalk, false)
 			for joint_z in range(-31, 33, 5):
 				_box("CrossStreetWalkwayJoint", Vector3(street_x + side * 5.0, 0.153, float(joint_z)), Vector3(2.55, 0.008, 0.045), Color(0.63, 0.54, 0.41), false)
-			_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, 0.0), Vector3(0.09, 0.022, 74.0), road_white, false)
+			for segment in [[-37.0, -32.5], [-25.5, -5.0], [5.0, 25.5], [32.5, 37.0]]:
+				var edge_start: float = segment[0]
+				var edge_end: float = segment[1]
+				_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, (edge_start + edge_end) * 0.5), Vector3(0.09, 0.022, edge_end - edge_start), road_white, false)
 		for offset in [-0.13, 0.13]:
-			_box("CrossStreetDoubleYellow", Vector3(street_x + offset, 0.064, 0.0), Vector3(0.075, 0.025, 66.0), road_yellow, false)
+			for segment in [[-37.0, -32.5], [-25.5, -5.0], [5.0, 25.5], [32.5, 37.0]]:
+				var line_start: float = segment[0]
+				var line_end: float = segment[1]
+				_box("CrossStreetDoubleYellow", Vector3(street_x + offset, 0.064, (line_start + line_end) * 0.5), Vector3(0.075, 0.025, line_end - line_start), road_yellow, false)
 		for lane_z in [-1.35, 1.35]:
-			for dash_z in range(-29, 30, 9):
+			for dash_z in range(-35, 36, 9):
+				var clear_of_junctions := true
+				for junction_z in [-29.0, 0.0, 29.0]:
+					if absf(float(dash_z) - junction_z) < 5.0:
+						clear_of_junctions = false
+			if clear_of_junctions:
 				_box("CrossStreetLaneDash", Vector3(street_x + lane_z, 0.064, float(dash_z)), Vector3(0.09, 0.022, 4.2), road_white, false)
 		for cross_z in [-5.1, 5.1]:
 			for stripe in range(7):
 				_box("CityZebraCrossing", Vector3(street_x - 2.55 + float(stripe) * 0.85, 0.068, cross_z), Vector3(0.52, 0.025, 7.6), road_white, false)
 			_box("CrossStreetStopBar", Vector3(street_x, 0.069, cross_z + (1.05 if cross_z > 0.0 else -1.05)), Vector3(5.8, 0.025, 0.13), road_white, false)
+		for cross_z in [-29.0, 29.0]:
+			for stripe in range(7):
+				_box("CrossTownZebraCrossing", Vector3(street_x, 0.068, cross_z - 2.4 + float(stripe) * 0.8), Vector3(6.8, 0.025, 0.42), road_white, false)
+			for stop_z in [cross_z - 3.6, cross_z + 3.6]:
+				_box("CrossTownStopBar", Vector3(street_x, 0.069, stop_z), Vector3(5.8, 0.025, 0.12), road_white, false)
 
 	# Narrow neighborhood streets get realistic edge paint, broken center markings,
 	# parking-bay separators and curbside pavements.
