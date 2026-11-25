@@ -649,30 +649,71 @@ func _factory_waste_drop_point() -> Vector3:
 
 
 func _drone_station_point() -> Vector3:
-	# Dedicated drone dock beside the main tank; its transfer belt feeds the same tank inventory.
-	return Vector3(119.0, 0.0, 8.5)
+	# Center of a three-bay service hangar beside the waste tank.
+	return Vector3(116.5, 0.0, 8.5)
+
+
+func _drone_dock_point(drone: Node3D) -> Vector3:
+	var slot := helper_drones.find(drone)
+	if slot < 0:
+		slot = 0
+	return _drone_station_point() + Vector3(0.0, 1.8, (float(slot) - 1.0) * 2.65)
 
 
 func _build_drone_station() -> void:
 	var dock := _drone_station_point()
-	_box("DroneDepotFoundation", dock + Vector3(0, 0.07, 0), Vector3(4.8, 0.14, 4.2), Color(0.13, 0.19, 0.20), false)
-	_box("DroneDepotDeck", dock + Vector3(0, 0.16, 0), Vector3(4.35, 0.08, 3.75), Color(0.28, 0.34, 0.34), false)
-	for side in [-1.0, 1.0]:
-		_box("DroneDockPad", dock + Vector3(side * 1.15, 0.22, 0), Vector3(1.45, 0.045, 2.2), Color(0.12, 0.31, 0.29), false)
-		_box("DroneDockGuide", dock + Vector3(side * 1.15, 0.25, -0.82), Vector3(1.05, 0.025, 0.07), Color(0.22, 0.88, 0.66), false)
-	_box("DroneDepotTransferFrame", Vector3(121.8, 0.34, 8.5), Vector3(5.0, 0.28, 1.35), Color(0.12, 0.17, 0.18), false)
-	_box("DroneDepotTransferBelt", Vector3(121.8, 0.54, 8.5), Vector3(4.8, 0.08, 0.92), Color(0.17, 0.23, 0.23), false)
-	for x in [120.0, 121.0, 122.0, 123.0]:
-		var roller := _cylinder("DroneDepotTransferRoller", Vector3(x, 0.53, 8.5), 0.055, 1.0, Color(0.08, 0.12, 0.13), false)
+	var dark := Color(0.075, 0.11, 0.13)
+	var metal := Color(0.20, 0.27, 0.29)
+	var teal := Color(0.10, 0.42, 0.39)
+	var glow := Color(0.24, 0.95, 0.72)
+
+	# Raised, clearly bounded industrial service platform.
+	_box("DroneDepotFoundation", dock + Vector3(0, 0.08, 0), Vector3(8.4, 0.16, 9.4), dark, false)
+	_box("DroneDepotDeck", dock + Vector3(0, 0.19, 0), Vector3(8.05, 0.08, 9.05), Color(0.31, 0.36, 0.36), false)
+	_box("DroneDepotFrontApron", dock + Vector3(0.0, 0.16, 4.95), Vector3(7.4, 0.06, 0.75), metal, false)
+
+	# Three independent landing/charging bays, one for each helper drone.
+	for slot in range(3):
+		var bay_z := (float(slot) - 1.0) * 2.65
+		var bay := dock + Vector3(-1.65, 0.25, bay_z)
+		_box("DroneBayBase", bay, Vector3(2.65, 0.055, 2.35), Color(0.10, 0.19, 0.20), false)
+		_box("DroneBayInset", bay + Vector3(0, 0.035, 0), Vector3(2.35, 0.025, 2.05), teal, false)
+		for edge in [-1.0, 1.0]:
+			_box("DroneBayGuide", bay + Vector3(edge * 1.08, 0.055, 0), Vector3(0.055, 0.025, 1.85), glow, false)
+		_box("DroneBayNoseMark", bay + Vector3(0, 0.06, -0.82), Vector3(0.85, 0.025, 0.07), Color(0.95, 0.72, 0.20), false)
+		var charge_post := _box("DroneChargePost", bay + Vector3(1.25, 0.48, 0.78), Vector3(0.18, 0.78, 0.18), dark, false)
+		_box("DroneChargeLight", bay + Vector3(1.25, 0.88, 0.78), Vector3(0.12, 0.12, 0.12), glow, false)
+
+	# Covered maintenance canopy with sturdy corner columns and illuminated fascia.
+	for px in [-3.85, 3.85]:
+		for pz in [-4.35, 4.35]:
+			_box("DroneHangarColumn", dock + Vector3(px, 1.55, pz), Vector3(0.24, 3.1, 0.24), metal, false)
+	_box("DroneHangarRoof", dock + Vector3(0, 3.18, 0), Vector3(8.55, 0.22, 9.5), dark, false)
+	_box("DroneHangarFrontFascia", dock + Vector3(0, 2.93, 4.62), Vector3(8.2, 0.34, 0.22), metal, false)
+	_box("DroneHangarSignPanel", dock + Vector3(0, 2.95, -4.62), Vector3(4.4, 0.32, 0.16), teal, false)
+	for px in [-2.7, 0.0, 2.7]:
+		var lamp := _box("DroneHangarLamp", dock + Vector3(px, 3.02, 0), Vector3(0.72, 0.045, 0.18), glow, false)
+
+	# Compact service console and status mast at the rear of the bays.
+	_box("DroneServiceConsole", dock + Vector3(3.05, 0.72, -3.45), Vector3(0.72, 1.25, 1.05), dark, false)
+	_box("DroneServiceScreen", dock + Vector3(2.67, 1.05, -3.45), Vector3(0.035, 0.48, 0.68), glow, false)
+	_cylinder("DroneDepotBeacon", dock + Vector3(3.1, 2.05, -3.45), 0.12, 0.32, Color(1.0, 0.62, 0.16), false)
+
+	# Short, enclosed transfer conveyor connects the depot to the tank intake.
+	_box("DroneDepotTransferFrame", Vector3(121.65, 0.34, 8.5), Vector3(2.4, 0.28, 1.15), dark, false)
+	_box("DroneDepotTransferBelt", Vector3(121.65, 0.54, 8.5), Vector3(2.25, 0.08, 0.82), Color(0.17, 0.23, 0.23), false)
+	for x in [120.8, 121.35, 121.9, 122.45]:
+		var roller := _cylinder("DroneDepotTransferRoller", Vector3(x, 0.53, 8.5), 0.055, 0.88, Color(0.08, 0.12, 0.13), false)
 		roller.rotation_degrees.z = 90.0
+
 	var sign := Label3D.new()
 	sign.name = "DroneDepotSign"
-	sign.text = "DRONE RETURN & TRANSFER"
-	sign.position = dock + Vector3(0, 2.25, -1.65)
-	sign.font_size = 18
+	sign.text = "AUTONOMOUS DRONE HUB"
+	sign.position = dock + Vector3(0, 3.48, -4.35)
+	sign.font_size = 20
 	sign.pixel_size = 0.009
 	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sign.modulate = Color(0.42, 1.0, 0.78)
+	sign.modulate = Color(0.55, 1.0, 0.84)
 	add_child(sign)
 
 
@@ -2899,7 +2940,7 @@ func _build_helper_drones() -> void:
 			_add_robot_box(drone, "LandingSkid", Vector3(skid_x, -0.285, 0.025), Vector3(0.055, 0.035, 0.38), Color(0.12, 0.18, 0.20))
 
 		drone.visible = i < drone_level
-		drone.global_position = _drone_station_point() + Vector3(0, 1.8, 0)
+		drone.global_position = _drone_dock_point(drone)
 		drone.set_meta("target", null)
 		drone.set_meta("cargo_slots", 0)
 		drone.set_meta("cargo_items", [])
@@ -2968,7 +3009,7 @@ func _process_helper_drones(delta: float) -> void:
 		if not is_instance_valid(drone) or not drone.visible:
 			continue
 		if drone.get_meta("returning", false):
-			var return_pos := _drone_station_point() + Vector3(0, 1.8, 0)
+			var return_pos := _drone_dock_point(drone)
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
 			if drone.global_position.distance_to(return_pos) <= 2.5:
 				drone.set_meta("deposited", true)
@@ -3025,7 +3066,7 @@ func _process_helper_drones(delta: float) -> void:
 				drone.set_meta("returning", true)
 				continue
 			# Stay docked at the depot while idle; never orbit or follow the player.
-			var idle_pos := _drone_station_point() + Vector3(0, 1.8, 0)
+			var idle_pos := _drone_dock_point(drone)
 			drone.global_position = drone.global_position.move_toward(idle_pos, drone_speed * delta)
 			continue
 		var destination := target.global_position + Vector3(0, 0.20, 0)
