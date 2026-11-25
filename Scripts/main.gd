@@ -644,6 +644,34 @@ func _factory_waste_drop_point() -> Vector3:
 	return Vector3(124.8, 0.0, 8.5)
 
 
+func _drone_station_point() -> Vector3:
+	# Dedicated drone dock beside the main tank; its transfer belt feeds the same tank inventory.
+	return Vector3(119.0, 0.0, 8.5)
+
+
+func _build_drone_station() -> void:
+	var dock := _drone_station_point()
+	_box("DroneDepotFoundation", dock + Vector3(0, 0.07, 0), Vector3(4.8, 0.14, 4.2), Color(0.13, 0.19, 0.20), false)
+	_box("DroneDepotDeck", dock + Vector3(0, 0.16, 0), Vector3(4.35, 0.08, 3.75), Color(0.28, 0.34, 0.34), false)
+	for side in [-1.0, 1.0]:
+		_box("DroneDockPad", dock + Vector3(side * 1.15, 0.22, 0), Vector3(1.45, 0.045, 2.2), Color(0.12, 0.31, 0.29), false)
+		_box("DroneDockGuide", dock + Vector3(side * 1.15, 0.25, -0.82), Vector3(1.05, 0.025, 0.07), Color(0.22, 0.88, 0.66), false)
+	_box("DroneDepotTransferFrame", Vector3(121.8, 0.34, 8.5), Vector3(5.0, 0.28, 1.35), Color(0.12, 0.17, 0.18), false)
+	_box("DroneDepotTransferBelt", Vector3(121.8, 0.54, 8.5), Vector3(4.8, 0.08, 0.92), Color(0.17, 0.23, 0.23), false)
+	for x in [120.0, 121.0, 122.0, 123.0]:
+		var roller := _cylinder("DroneDepotTransferRoller", Vector3(x, 0.53, 8.5), 0.055, 1.0, Color(0.08, 0.12, 0.13), false)
+		roller.rotation_degrees.z = 90.0
+	var sign := Label3D.new()
+	sign.name = "DroneDepotSign"
+	sign.text = "DRONE RETURN & TRANSFER"
+	sign.position = dock + Vector3(0, 2.25, -1.65)
+	sign.font_size = 18
+	sign.pixel_size = 0.009
+	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sign.modulate = Color(0.42, 1.0, 0.78)
+	add_child(sign)
+
+
 func _refresh_sorting_district() -> void:
 	for i in range(mini(4, sorting_robots.size())):
 		if is_instance_valid(sorting_robots[i]):
@@ -2857,7 +2885,7 @@ func _build_helper_drones() -> void:
 			_add_robot_box(drone, "LandingSkid", Vector3(skid_x, -0.285, 0.025), Vector3(0.055, 0.035, 0.38), Color(0.12, 0.18, 0.20))
 
 		drone.visible = i < drone_level
-		drone.global_position = player.global_position + Vector3(0, 2.3, 0) if is_instance_valid(player) else Vector3.ZERO
+		drone.global_position = _drone_station_point() + Vector3(0, 1.8, 0)
 		drone.set_meta("target", null)
 		drone.set_meta("cargo_slots", 0)
 		drone.set_meta("cargo_items", [])
@@ -2926,7 +2954,7 @@ func _process_helper_drones(delta: float) -> void:
 		if not is_instance_valid(drone) or not drone.visible:
 			continue
 		if drone.get_meta("returning", false):
-			var return_pos := _factory_waste_drop_point() + Vector3(0, 1.5, 0)
+			var return_pos := _drone_station_point() + Vector3(0, 1.8, 0)
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
 			if drone.global_position.distance_to(return_pos) <= 2.5:
 				drone.set_meta("deposited", true)
@@ -2959,7 +2987,8 @@ func _process_helper_drones(delta: float) -> void:
 			var scan_cooldown := float(drone.get_meta("scan_cooldown", 0.0)) - delta
 			if scan_cooldown <= 0.0:
 				drone.set_meta("scan_cooldown", 0.45)
-				var best_distance := 18.0 + float(drone_level - 1) * 6.0
+				# Drones dispatch from their depot and search the whole reachable city, not just around the player.
+				var best_distance := 150.0
 				for item in trash_nodes:
 					if not is_instance_valid(item) or _is_city_dump_trash(item) or item.get_meta("drone_reserved", -1) != -1:
 						continue
@@ -2981,7 +3010,8 @@ func _process_helper_drones(delta: float) -> void:
 			if int(drone.get_meta("cargo_slots", 0)) > 0:
 				drone.set_meta("returning", true)
 				continue
-			var idle_pos := player.global_position + Vector3(cos(robot_anim_time + float(i)) * 3.0, 2.3, sin(robot_anim_time + float(i)) * 3.0)
+			# Stay docked at the depot while idle; never orbit or follow the player.
+			var idle_pos := _drone_station_point() + Vector3(0, 1.8, 0)
 			drone.global_position = drone.global_position.move_toward(idle_pos, drone_speed * delta)
 			continue
 		var destination := target.global_position + Vector3(0, 0.20, 0)
@@ -4377,6 +4407,7 @@ func _build_city_dump_area() -> void:
 	if waste_tank_built:
 		_build_waste_tank_structure()
 		waste_tank_build_label.visible = false
+	_build_drone_station()
 	# No city garbage trucks are spawned; the player supplies the tank.
 
 func _on_waste_tank_build_entered(body: Node3D) -> void:
