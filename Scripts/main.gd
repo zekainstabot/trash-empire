@@ -4146,7 +4146,7 @@ func _ensure_factory_row_belt_visuals(row: int) -> void:
 		return
 	var queue: Array = factory_row_belt_items[row]
 	var expected := _factory_row_sellable_stock(row)
-	var stage := _factory_row_sell_stage(row)
+	var stage := maxi(0, _factory_row_sell_stage(row) - 1)
 	while queue.size() < expected:
 		_spawn_factory_stage_item(row, stage, true)
 		queue = factory_row_belt_items[row]
