@@ -126,6 +126,7 @@ var factory_row_input_stock: Array = [0, 0, 0, 0, 0]
 var factory_row_stage1_stock: Array = [0, 0, 0, 0, 0]
 var factory_row_stage2_stock: Array = [0, 0, 0, 0, 0]
 var factory_row_product_stock: Array = [0, 0, 0, 0, 0]
+var factory_row_belt_items: Array = [[], [], [], [], []]
 var factory_total_products_made := 0
 const FACTORY_INPUT_CAPACITY_PER_ROW := 90
 const FACTORY_PRODUCT_CAPACITY_PER_ROW := 60
@@ -4111,43 +4112,83 @@ func _factory_truck_arrival_interval() -> float:
 	return intervals[clampi(factory_truck_interval_upgrade_level, 0, 3)]
 
 func _process_factory_row_shipping(delta: float) -> void:
-	factory_shipping_cooldown = maxf(0.0, factory_shipping_cooldown - delta)
-	if mega_factory_built_count < 1 or factory_shipping_busy or factory_shipping_cooldown > 0.0:
+	# A full three-piece load dispatches immediately; there is no artificial
+	# cooldown between trucks. Products stay visible at the end of each belt.
+	if mega_factory_built_count < 1 or factory_shipping_busy:
 		return
 	factory_shipping_timer += delta
-	if factory_shipping_timer < 0.25:
+	if factory_shipping_timer < 0.12:
 		return
 	factory_shipping_timer = 0.0
-	# Each row ships the output of its latest installed machine. Later machines
-	# take over the output route only after they are built.
 	var selected_row := -1
 	for offset in range(5):
 		var candidate := (factory_shipping_row + offset) % 5
-		if _factory_row_sell_stage(candidate) > 0 and _factory_row_sellable_stock(candidate) >= 3:
-			selected_row = candidate
-			break
+		if _factory_row_sell_stage(candidate) <= 0:
+			continue
+		_ensure_factory_row_belt_visuals(candidate)
+		if _factory_row_sellable_stock(candidate) >= 3 and _factory_row_belt_items[candidate].size() >= 3:
+			var first_three_ready := true
+			for item_index in range(3):
+				var belt_item: Node3D = _factory_row_belt_items[candidate][item_index]
+				if not is_instance_valid(belt_item) or belt_item.position.x < 196.5:
+					first_three_ready = false
+					break
+			if first_three_ready:
+				selected_row = candidate
+				break
 	if selected_row == -1:
 		return
 	factory_shipping_row = (selected_row + 1) % 5
 	_dispatch_factory_row_truck(selected_row)
 
+func _ensure_factory_row_belt_visuals(row: int) -> void:
+	if row < 0 or row >= 5:
+		return
+	var queue: Array = factory_row_belt_items[row]
+	var expected := _factory_row_sellable_stock(row)
+	var stage := _factory_row_sell_stage(row)
+	while queue.size() < expected:
+		_spawn_factory_stage_item(row, stage, true)
+		queue = factory_row_belt_items[row]
+
+func _reposition_factory_belt_queue(row: int) -> void:
+	if row < 0 or row >= 5:
+		return
+	var queue: Array = factory_row_belt_items[row]
+	for item_index in range(queue.size()):
+		var item: Node3D = queue[item_index]
+		if not is_instance_valid(item):
+			continue
+		var lane := (item_index % 3) - 1
+		var slot := int(item_index / 3)
+		var target := Vector3(198.0 - float(slot) * 1.05, 1.42, _factory_row_z(row) + float(lane) * 0.38)
+		var slide := create_tween()
+		slide.set_trans(Tween.TRANS_SINE)
+		slide.set_ease(Tween.EASE_OUT)
+		slide.tween_property(item, "position", target, 0.35)
+
 func _dispatch_factory_row_truck(row: int) -> void:
 	if row < 0 or row >= 5 or mega_factory_built_count < row * 3 + 1:
-		factory_shipping_busy = false
 		return
 	var sell_stage := _factory_row_sell_stage(row)
-	if _factory_row_sellable_stock(row) < 3:
-		factory_shipping_busy = false
+	var queue: Array = factory_row_belt_items[row]
+	if _factory_row_sellable_stock(row) < 3 or queue.size() < 3:
 		return
-	# Reserve three units from the latest built machine's output.
-	_factory_row_remove_sellable_stock(row, 3)
 	factory_shipping_busy = true
+	# Remove the three real products from the belt queue; these exact objects
+	# are animated into the truck rather than replaced with generic cargo cubes.
+	var loaded_products: Array[Node3D] = []
+	for package_index in range(3):
+		var product: Node3D = queue.pop_front()
+		if is_instance_valid(product):
+			loaded_products.append(product)
+	factory_row_belt_items[row] = queue
+	_factory_row_remove_sellable_stock(row, loaded_products.size())
+	_reposition_factory_belt_queue(row)
 	var truck := _create_factory_row_truck(row)
 	var z := _factory_row_z(row)
 	var stage_names := ["RAW", "PREPARATION", "PROCESSING", "FINISHED"]
 	var stage_name: String = stage_names[clampi(sell_stage, 0, 3)]
-	var stage_colors := [Color(0.30, 0.34, 0.34), Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)]
-	var cargo_color: Color = stage_colors[clampi(sell_stage, 0, 3)]
 	var door_left := _box("FactoryDoorMovingLeft", Vector3(207.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
 	var door_right := _box("FactoryDoorMovingRight", Vector3(207.15, 3.0, z + 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
 	var tween := create_tween()
@@ -4156,48 +4197,40 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	tween.tween_property(door_left, "position:z", z - 3.0, 0.55)
 	tween.parallel().tween_property(door_right, "position:z", z + 3.0, 0.55)
 	tween.tween_property(truck, "position:x", 210.0, 1.0)
-	for package_index in range(3):
-		var product := Node3D.new()
-		product.name = "LoadedFactoryProduct"
-		product.position = Vector3(205.0, 1.42, z + float(package_index - 1) * 0.82)
-		var body := MeshInstance3D.new()
-		var body_mesh := BoxMesh.new()
-		body_mesh.size = Vector3(0.82, 0.72, 0.72)
-		body.mesh = body_mesh
-		body.material_override = _mat(cargo_color)
-		product.add_child(body)
-		add_child(product)
-		tween.tween_property(product, "position", truck.position + Vector3(1.0, 2.35, float(package_index - 1) * 0.82), 0.35)
+	for package_index in range(loaded_products.size()):
+		var product := loaded_products[package_index]
+		var target := truck.global_position + Vector3(1.15, 2.35, float(package_index - 1) * 0.82)
+		tween.tween_property(product, "global_position", target, 0.42)
 		tween.tween_callback(func(): product.reparent(truck))
-	# Payment is made only once all three units from this machine are on the truck.
+	# Pay at the instant the third real product is loaded into the truck.
 	tween.tween_callback(func():
-		factory_shipping_cooldown = _factory_truck_arrival_interval()
 		var loading_revenue := _factory_row_truck_revenue(row, sell_stage)
 		money += loading_revenue
 		_update_ui()
 		_save_game()
 		_refresh_factory_machine_status()
-		_set_message("%s: %s truck loaded 3 units. Payment +%.0f ZC!" % [_factory_row_product(row), stage_name, loading_revenue])
+		_set_message("%s: truck loaded 3 %s products. Payment +%.0f ZC!" % [_factory_row_product(row), stage_name, loading_revenue])
 	)
-	tween.tween_interval(0.5)
-	tween.tween_property(truck, "position:x", 220.0, 1.2)
-	tween.tween_interval(0.45)
-	tween.tween_property(truck, "position:z", z + 5.0, 0.5)
-	tween.tween_property(truck, "position:x", 234.0, 1.4)
-	tween.tween_property(truck, "position:z", 12.0, 0.75)
-	tween.tween_property(truck, "position:x", 250.0, 1.7)
-	tween.tween_property(truck, "position:z", 22.0, 0.65)
-	tween.tween_property(truck, "position:x", 266.0, 1.5)
-	tween.tween_property(truck, "position:z", 34.0, 0.75)
-	tween.tween_property(truck, "position:x", 282.0, 1.5)
-	tween.tween_property(truck, "position:z", 46.0, 0.75)
-	tween.tween_property(truck, "position:x", 298.0, 1.6)
+	tween.tween_interval(0.35)
+	tween.tween_property(truck, "position:x", 220.0, 0.9)
+	tween.tween_interval(0.25)
+	tween.tween_property(truck, "position:z", z + 5.0, 0.45)
+	tween.tween_property(truck, "position:x", 234.0, 1.0)
+	tween.tween_property(truck, "position:z", 12.0, 0.65)
+	tween.tween_property(truck, "position:x", 250.0, 1.2)
+	tween.tween_property(truck, "position:z", 22.0, 0.55)
+	tween.tween_property(truck, "position:x", 266.0, 1.1)
+	tween.tween_property(truck, "position:z", 34.0, 0.65)
+	tween.tween_property(truck, "position:x", 282.0, 1.1)
+	tween.tween_property(truck, "position:z", 46.0, 0.55)
+	tween.tween_property(truck, "position:x", 298.0, 1.2)
 	tween.tween_callback(func():
 		truck.queue_free()
 		door_left.queue_free()
 		door_right.queue_free()
 		factory_shipping_busy = false
-		_set_message("%s truck delivered its %s output." % [_factory_row_product(row), stage_name])
+		factory_shipping_cooldown = 0.0
+		_set_message("%s truck delivered. Next full load will dispatch immediately." % _factory_row_product(row))
 	)
 
 func _mega_factory_machine_cost(index: int) -> float:
@@ -5150,8 +5183,8 @@ func _finish_waste_feed_item(item: Node3D, row: int) -> void:
 	_save_game()
 
 func _process_factory_production(delta: float) -> void:
-	# Every installed machine runs independently. A downstream machine is never
-	# required for an upstream machine to process and ship its own output.
+	# Each machine has its own input/output stage. A machine only transforms
+	# material into the product that belongs to its recycling line.
 	factory_production_timer += delta
 	if factory_production_timer < 1.2:
 		return
@@ -5160,52 +5193,207 @@ func _process_factory_production(delta: float) -> void:
 		var first_machine := row * 3 + 1
 		if mega_factory_built_count < first_machine:
 			continue
-
-		# Machine 3: final assembly.
+		# Machine 3: turn processed material into the finished line product.
 		if mega_factory_built_count >= first_machine + 2 and factory_row_stage2_stock[row] > 0 and factory_row_product_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
+			_consume_factory_row_belt_items(row, 1)
 			factory_row_stage2_stock[row] -= 1
 			factory_row_product_stock[row] += 1
 			factory_total_products_made += 1
 			_animate_factory_stage_item(row, 2)
-			_set_message("%s completed final assembly. Ready: %d" % [_factory_row_product(row), factory_row_product_stock[row]])
+			_set_message("%s: %s finished and sent to the loading belt. Waiting: %d" % [_factory_row_machine_name(row, 2), _factory_row_product(row), factory_row_product_stock[row]])
 			_update_missions()
 			_save_game()
-
-		# Machine 2: process machine 1 output, while machine 1 keeps working.
+		# Machine 2: transform the first machine's output into refined components.
 		if mega_factory_built_count >= first_machine + 1 and factory_row_stage1_stock[row] > 0 and factory_row_stage2_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
+			_consume_factory_row_belt_items(row, 1)
 			factory_row_stage1_stock[row] -= 1
 			factory_row_stage2_stock[row] += 1
 			_animate_factory_stage_item(row, 1)
-			_set_message("Machine 2 processed %s components. In process: %d" % [_factory_row_product(row), factory_row_stage2_stock[row]])
+			_set_message("%s: refined %s into processed components. In process: %d" % [_factory_row_machine_name(row, 1), _factory_row_product(row), factory_row_stage2_stock[row]])
 			_save_game()
-
-		# Machine 1: accepts waste and creates its own shippable preparation output.
+		# Machine 1: convert three pieces of incoming waste into line-specific raw material.
 		if factory_row_input_stock[row] >= 3 and factory_row_stage1_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
 			factory_row_input_stock[row] -= 3
 			factory_row_stage1_stock[row] += 1
 			_animate_factory_stage_item(row, 0)
-			_set_message("Machine 1 prepared %s components. Ready for delivery: %d" % [_factory_row_product(row), factory_row_stage1_stock[row]])
+			_set_message("%s: converted 3 waste pieces into %s raw material. Ready: %d" % [_factory_row_machine_name(row, 0), _factory_row_product(row), factory_row_stage1_stock[row]])
 			_save_game()
 	_refresh_factory_machine_status()
 
+func _consume_factory_row_belt_items(row: int, amount: int) -> void:
+	if row < 0 or row >= 5:
+		return
+	var queue: Array = factory_row_belt_items[row]
+	for item_index in range(mini(amount, queue.size())):
+		var item: Node3D = queue.pop_front()
+		if is_instance_valid(item):
+			item.queue_free()
+	factory_row_belt_items[row] = queue
+	_reposition_factory_belt_queue(row)
+
 func _animate_factory_stage_item(row: int, stage: int) -> void:
-	var item := MeshInstance3D.new()
-	item.name = "FactoryStageProduct"
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.62, 0.48, 0.62)
-	item.mesh = mesh
-	var material := StandardMaterial3D.new()
-	material.albedo_color = [Color(0.22, 0.72, 0.56), Color(0.22, 0.55, 0.88), Color(0.96, 0.68, 0.18)][clampi(stage, 0, 2)]
-	item.material_override = material
-	var z := _factory_row_z(row)
-	var start_x := 153.8 + float(stage) * 13.0
-	item.position = Vector3(start_x, 1.42, z)
+	_spawn_factory_stage_item(row, stage, false)
+
+func _spawn_factory_stage_item(row: int, stage: int, at_loading_end: bool = false) -> void:
+	if row < 0 or row >= 5:
+		return
+	var item := Node3D.new()
+	item.name = "FactorySpecificProduct_%d_%d" % [row, stage]
+	item.position = Vector3(0.0, 1.42, _factory_row_z(row))
+	item.scale = Vector3.ONE * 0.78
+	_build_factory_specific_product(item, row, stage)
 	add_child(item)
-	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_SINE)
-	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(item, "position", Vector3(start_x + 7.0, 1.42, z), 0.9)
-	tween.tween_callback(item.queue_free)
+	var queue: Array = factory_row_belt_items[row]
+	queue.append(item)
+	factory_row_belt_items[row] = queue
+	var item_index := queue.size() - 1
+	var lane := (item_index % 3) - 1
+	var slot := int(item_index / 3)
+	var stage_start_x := 153.8 + float(stage) * 13.0 + 5.0
+	var target_x := maxf(150.0, 198.0 - float(slot) * 1.05)
+	var target := Vector3(target_x, 1.42, _factory_row_z(row) + float(lane) * 0.38)
+	if at_loading_end:
+		item.position = target
+	else:
+		item.position = Vector3(stage_start_x, 1.42, _factory_row_z(row))
+		var travel := create_tween()
+		travel.set_trans(Tween.TRANS_SINE)
+		travel.set_ease(Tween.EASE_IN_OUT)
+		travel.tween_property(item, "position", target, maxf(2.2, (target_x - stage_start_x) / (8.0 * _conveyor_speed_multiplier())))
+		travel.tween_callback(func():
+			if is_instance_valid(item):
+				item.position = target
+		)
+
+func _build_factory_specific_product(root: Node3D, row: int, stage: int) -> void:
+	var body_color := [
+		[Color(0.18, 0.72, 0.62), Color(0.12, 0.58, 0.48), Color(0.10, 0.78, 0.66)],
+		[Color(0.70, 0.48, 0.25), Color(0.78, 0.61, 0.36), Color(0.62, 0.40, 0.20)],
+		[Color(0.42, 0.48, 0.52), Color(0.60, 0.66, 0.68), Color(0.28, 0.36, 0.42)],
+		[Color(0.30, 0.70, 0.82), Color(0.16, 0.62, 0.78), Color(0.42, 0.82, 0.90)],
+		[Color(0.16, 0.42, 0.30), Color(0.22, 0.52, 0.38), Color(0.12, 0.30, 0.24)]
+	]
+	var accent := body_color[clampi(row, 0, 4)][clampi(stage, 0, 2)]
+	var dark := accent.darkened(0.48)
+	match row:
+		0:
+			if stage == 0:
+				for i in range(5):
+					var chip := BoxMesh.new()
+					chip.size = Vector3(0.30, 0.16, 0.24)
+					_factory_product_part(root, chip, Vector3(float(i % 3) * 0.20 - 0.20, 0.05, float(i / 3) * 0.20 - 0.10), accent, Vector3(0.0, float(i) * 0.31, 0.12))
+			elif stage == 1:
+				for i in range(4):
+					var pellet := CylinderMesh.new()
+					pellet.top_radius = 0.13
+					pellet.bottom_radius = 0.13
+					pellet.height = 0.34
+					_factory_product_part(root, pellet, Vector3(float(i % 2) * 0.28 - 0.14, 0.05, float(i / 2) * 0.25 - 0.12), accent, Vector3(PI * 0.5, 0.0, 0.0))
+			else:
+				_factory_add_bottle_product(root, accent, dark)
+		1:
+			if stage == 0:
+				for i in range(3):
+					var sheet := BoxMesh.new()
+					sheet.size = Vector3(0.78, 0.035, 0.54)
+					_factory_product_part(root, sheet, Vector3(0.0, float(i) * 0.06, 0.0), accent, Vector3(0.0, 0.0, float(i - 1) * 0.05))
+			elif stage == 1:
+				for i in range(4):
+					var sheet := BoxMesh.new()
+					sheet.size = Vector3(0.82, 0.045, 0.62)
+					_factory_product_part(root, sheet, Vector3(0.0, float(i) * 0.07, 0.0), accent, Vector3.ZERO)
+			else:
+				var carton := BoxMesh.new()
+				carton.size = Vector3(0.78, 0.62, 0.72)
+				_factory_product_part(root, carton, Vector3.ZERO, accent)
+				var seam := BoxMesh.new()
+				seam.size = Vector3(0.08, 0.64, 0.74)
+				_factory_product_part(root, seam, Vector3(0.0, 0.0, 0.0), dark)
+		2:
+			if stage == 0:
+				for i in range(3):
+					var scrap := BoxMesh.new()
+					scrap.size = Vector3(0.72, 0.16, 0.18)
+					_factory_product_part(root, scrap, Vector3(0.0, float(i) * 0.11, float(i - 1) * 0.16), accent, Vector3(0.0, 0.0, float(i - 1) * 0.18))
+			elif stage == 1:
+				for i in range(3):
+					var ingot := BoxMesh.new()
+					ingot.size = Vector3(0.60, 0.22, 0.34)
+					_factory_product_part(root, ingot, Vector3(float(i - 1) * 0.18, float(i % 2) * 0.12, 0.0), accent, Vector3(0.0, 0.0, 0.0))
+			else:
+				var gear := CylinderMesh.new()
+				gear.top_radius = 0.36
+				gear.bottom_radius = 0.36
+				gear.height = 0.20
+				_factory_product_part(root, gear, Vector3.ZERO, accent, Vector3(PI * 0.5, 0.0, 0.0))
+				var hub := CylinderMesh.new()
+				hub.top_radius = 0.12
+				hub.bottom_radius = 0.12
+				hub.height = 0.24
+				_factory_product_part(root, hub, Vector3(0.0, 0.0, -0.02), dark, Vector3(PI * 0.5, 0.0, 0.0))
+		3:
+			if stage == 0:
+				for i in range(4):
+					var shard := BoxMesh.new()
+					shard.size = Vector3(0.48, 0.10, 0.18)
+					_factory_product_part(root, shard, Vector3(float(i % 2) * 0.24 - 0.12, 0.02, float(i / 2) * 0.22 - 0.11), accent, Vector3(0.0, float(i) * 0.4, float(i - 2) * 0.15))
+			elif stage == 1:
+				var molten := SphereMesh.new()
+				molten.radius = 0.32
+				molten.height = 0.58
+				_factory_product_part(root, molten, Vector3.ZERO, accent)
+			else:
+				_factory_add_bottle_product(root, accent, dark)
+		4:
+			if stage == 0:
+				var board := BoxMesh.new()
+				board.size = Vector3(0.78, 0.08, 0.58)
+				_factory_product_part(root, board, Vector3.ZERO, accent)
+				for i in range(4):
+					var chip := BoxMesh.new()
+					chip.size = Vector3(0.16, 0.12, 0.14)
+				_factory_product_part(root, chip, Vector3(float(i % 2) * 0.32 - 0.16, 0.08, float(i / 2) * 0.22 - 0.11), dark)
+			elif stage == 1:
+				var module := BoxMesh.new()
+				module.size = Vector3(0.68, 0.28, 0.52)
+				_factory_product_part(root, module, Vector3.ZERO, accent)
+				var chip := BoxMesh.new()
+				chip.size = Vector3(0.24, 0.12, 0.22)
+				_factory_product_part(root, chip, Vector3(0.0, 0.18, 0.0), dark)
+			else:
+				var device := BoxMesh.new()
+				device.size = Vector3(0.82, 0.46, 0.62)
+				_factory_product_part(root, device, Vector3.ZERO, dark)
+				var screen := BoxMesh.new()
+				screen.size = Vector3(0.60, 0.035, 0.40)
+				_factory_product_part(root, screen, Vector3(0.0, 0.25, 0.0), accent)
+
+func _factory_product_part(parent: Node3D, mesh: Mesh, local_position: Vector3, color: Color, local_rotation: Vector3 = Vector3.ZERO) -> void:
+	var part := MeshInstance3D.new()
+	part.mesh = mesh
+	part.position = local_position
+	part.rotation = local_rotation
+	part.material_override = _mat(color)
+	parent.add_child(part)
+
+func _factory_add_bottle_product(parent: Node3D, color: Color, cap_color: Color) -> void:
+	for bottle_index in range(2):
+		var offset := Vector3(float(bottle_index) * 0.34 - 0.17, 0.0, 0.0)
+		var body := CylinderMesh.new()
+		body.top_radius = 0.17
+		body.bottom_radius = 0.20
+		body.height = 0.56
+		_factory_product_part(parent, body, offset, color)
+		var neck := CylinderMesh.new()
+		neck.top_radius = 0.075
+		neck.bottom_radius = 0.09
+		neck.height = 0.16
+		_factory_product_part(parent, neck, offset + Vector3(0.0, 0.34, 0.0), color)
+		var cap := CylinderMesh.new()
+		cap.top_radius = 0.085
+		cap.bottom_radius = 0.085
+		cap.height = 0.07
+		_factory_product_part(parent, cap, offset + Vector3(0.0, 0.45, 0.0), cap_color)
 
 func _animate_conveyor(delta: float) -> void:
 	var conveyor_speed := _conveyor_speed_multiplier()
