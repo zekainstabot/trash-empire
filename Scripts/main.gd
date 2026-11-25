@@ -361,7 +361,7 @@ func _build_city_rework_layout() -> void:
 		for lane_z in [-1.35, 1.35]:
 			for dash_z in range(-35, 36, 9):
 				var clear_of_junctions := true
-				for junction_z in [-29.0, 0.0, 29.0]:
+				for junction_z in [-29.0, -22.0, 0.0, 22.0, 29.0]:
 					if absf(float(dash_z) - junction_z) < 5.0:
 						clear_of_junctions = false
 				if clear_of_junctions:
