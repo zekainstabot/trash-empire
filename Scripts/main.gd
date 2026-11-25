@@ -305,7 +305,7 @@ func _build_city_rework_layout() -> void:
 	var white := Color(0.90, 0.88, 0.79)
 	_box("CityTerrain", Vector3(49.0, -0.34, 0.0), Vector3(126.0, 0.68, 74.0), grass, true)
 	_box("FinalCleanupGround", Vector3(160.0, -0.34, 0.0), Vector3(96.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
-	_box("FinalCleanupWorkPad", Vector3(160.0, 0.018, 0.0), Vector3(90.0, 0.035, 62.0), Color(0.34, 0.38, 0.30), false)
+	_box("FinalCleanupWorkPad", Vector3(160.0, -0.0175, 0.0), Vector3(90.0, 0.035, 62.0), Color(0.34, 0.38, 0.30), false)
 
 	# Dark charcoal asphalt, raised curbs and layered markings make this read as a
 	# paved multi-lane boulevard rather than a flat grey platform.
@@ -3865,9 +3865,9 @@ func _build_recycling_mega_factory() -> void:
 	var concrete := Color(0.39, 0.43, 0.42)
 
 	# Large, uncluttered factory floor and simple perimeter.
-	_box("MegaFactoryFoundation", Vector3(172.75, 0.14, 0.0), Vector3(58.5, 0.28, 72.0), concrete, true)
-	_box("FactoryServiceLane", Vector3(166.0, 0.075, -31.0), Vector3(65.0, 0.05, 3.0), Color(0.29, 0.33, 0.33), true)
-	_box("FactoryFrontApron", Vector3(137.0, 0.14, 0.0), Vector3(13.0, 0.28, 64.0), Color(0.31, 0.35, 0.34), true)
+	_box("MegaFactoryFoundation", Vector3(172.75, -0.14, 0.0), Vector3(58.5, 0.28, 72.0), concrete, true)
+	_box("FactoryServiceLane", Vector3(166.0, 0.025, -31.0), Vector3(65.0, 0.05, 3.0), Color(0.29, 0.33, 0.33), true)
+	_box("FactoryFrontApron", Vector3(137.0, -0.14, 0.0), Vector3(13.0, 0.28, 64.0), Color(0.31, 0.35, 0.34), true)
 
 	# Open-air factory: no roof, walls, or structural columns.
 
