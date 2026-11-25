@@ -327,10 +327,18 @@ func _build_city_rework_layout() -> void:
 		_box("BoulevardGrassVerge", Vector3(49.0, 0.025, side * 8.0), Vector3(126.0, 0.05, 1.0), grass.lightened(0.08), false)
 	# Double yellow no-passing divider and broken white lane separators.
 	for offset in [-0.13, 0.13]:
-		_box("BoulevardDoubleYellow", Vector3(49.0, 0.064, offset), Vector3(132.0, 0.025, 0.075), road_yellow, false)
+		for segment in [[-14.0, 12.3], [19.7, 44.3], [51.7, 76.3], [83.7, 100.3], [107.7, 112.0]]:
+			var segment_start: float = segment[0]
+			var segment_end: float = segment[1]
+			_box("BoulevardDoubleYellow", Vector3((segment_start + segment_end) * 0.5, 0.064, offset), Vector3(segment_end - segment_start, 0.025, 0.075), road_yellow, false)
 	for lane_z in [-1.55, 1.55]:
 		for dash_x in range(-12, 115, 8):
-			_box("BoulevardLaneDash", Vector3(float(dash_x), 0.064, lane_z), Vector3(4.0, 0.022, 0.095), road_white, false)
+			var clear_of_junctions := true
+			for junction_x in [16.0, 48.0, 80.0, 104.0]:
+				if absf(float(dash_x) - junction_x) < 5.0:
+					clear_of_junctions = false
+			if clear_of_junctions:
+				_box("BoulevardLaneDash", Vector3(float(dash_x), 0.064, lane_z), Vector3(4.0, 0.022, 0.095), road_white, false)
 
 	# Four perpendicular streets with their own asphalt, center lines, edge lines,
 	# stop bars and zebra crossings at the boulevard junctions.
