@@ -4341,10 +4341,16 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	# Deep side frame with a clearly separate moving rubber belt.
 	_box("FactoryMainConveyorFrame%d" % row, Vector3(center_x, 0.68, z), Vector3(belt_length, 0.42, 1.66), frame_color, false)
 	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.925, z), Vector3(belt_length - 0.28, 0.075, 1.30), rubber, false)
-	# Raised steel side cheeks and narrow safety edge strips make the belt read as a machine, not a floor strip.
+	# Keep the side guards only along the exposed run. The first section is open
+	# so the perpendicular feed conveyor can merge into this belt without colliding
+	# with or visually passing through the side rails.
+	var open_merge_length := 3.4
+	var guarded_start_x := start_x + open_merge_length
+	var guarded_length := end_x - guarded_start_x
+	var guarded_center_x := (guarded_start_x + end_x) * 0.5
 	for side_z in [z - 0.79, z + 0.79]:
-		_box("FactoryMainConveyorRail%d" % row, Vector3(center_x, 1.105, side_z), Vector3(belt_length, 0.27, 0.10), steel, false)
-		_box("FactoryMainConveyorSafetyEdge%d" % row, Vector3(center_x, 1.245, side_z), Vector3(belt_length, 0.025, 0.055), safety_yellow, false)
+		_box("FactoryMainConveyorRail%d" % row, Vector3(guarded_center_x, 1.105, side_z), Vector3(guarded_length, 0.27, 0.10), steel, false)
+		_box("FactoryMainConveyorSafetyEdge%d" % row, Vector3(guarded_center_x, 1.245, side_z), Vector3(guarded_length, 0.025, 0.055), safety_yellow, false)
 	# Exposed support stringers and cross-braced legs at regular intervals.
 	for side_z in [z - 0.70, z + 0.70]:
 		_box("FactoryMainConveyorStringer%d" % row, Vector3(center_x, 0.73, side_z), Vector3(belt_length, 0.20, 0.10), steel, false)
