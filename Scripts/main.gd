@@ -4737,7 +4737,10 @@ func _spawn_trash(amount: int) -> void:
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
 		_apply_rare_drop(item, rng)
-		item.position = _random_trash_position(rng)
+		var spawn_point := _random_trash_position(rng)
+		if spawn_point.y < -100.0:
+			break
+		item.position = spawn_point
 		add_child(item)
 		trash_nodes.append(item)
 	_update_final_zone_label()
@@ -4758,6 +4761,8 @@ func _spawn_district_two_trash(amount: int) -> void:
 			if _is_clear_trash_spawn(spawn_point):
 				break
 			attempts += 1
+		if not _is_clear_trash_spawn(spawn_point):
+			continue
 		item.position = spawn_point
 		add_child(item)
 		trash_nodes.append(item)
@@ -4841,9 +4846,11 @@ func _random_trash_position(rng: RandomNumberGenerator) -> Vector3:
 	# Spread the capped supply across the playable city only, never into the empty landfill.
 	var point := Vector3(rng.randf_range(-11.5, 107.5), 0.05, rng.randf_range(-29.0, 29.0))
 	var attempts := 0
-	while not _is_clear_trash_spawn(point) and attempts < 100:
+	while not _is_clear_trash_spawn(point) and attempts < 250:
 		point = Vector3(rng.randf_range(-11.5, 107.5), 0.05, rng.randf_range(-29.0, 29.0))
 		attempts += 1
+	if not _is_clear_trash_spawn(point):
+		return Vector3(-999.0, -999.0, -999.0)
 	return point
 
 func _update_ui() -> void:
