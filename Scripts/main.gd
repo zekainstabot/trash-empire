@@ -657,63 +657,6 @@ func _drone_dock_point(drone: Node3D) -> Vector3:
 	return _drone_station_point() + Vector3(0.0, 1.8, (float(slot) - 1.0) * 2.65)
 
 
-func _build_drone_station() -> void:
-	var dock := _drone_station_point()
-	var dark := Color(0.075, 0.11, 0.13)
-	var metal := Color(0.20, 0.27, 0.29)
-	var teal := Color(0.10, 0.42, 0.39)
-	var glow := Color(0.24, 0.95, 0.72)
-
-	# Raised, clearly bounded industrial service platform.
-	_box("DroneDepotFoundation", dock + Vector3(0, 0.08, 0), Vector3(8.4, 0.16, 9.4), dark, false)
-	_box("DroneDepotDeck", dock + Vector3(0, 0.19, 0), Vector3(8.05, 0.08, 9.05), Color(0.31, 0.36, 0.36), false)
-	_box("DroneDepotFrontApron", dock + Vector3(0.0, 0.16, 4.95), Vector3(7.4, 0.06, 0.75), metal, false)
-
-	# Three independent landing/charging bays, one for each helper drone.
-	for slot in range(3):
-		var bay_z := (float(slot) - 1.0) * 2.65
-		var bay := dock + Vector3(-1.65, 0.25, bay_z)
-		_box("DroneBayBase", bay, Vector3(2.65, 0.055, 2.35), Color(0.10, 0.19, 0.20), false)
-		_box("DroneBayInset", bay + Vector3(0, 0.035, 0), Vector3(2.35, 0.025, 2.05), teal, false)
-		for edge in [-1.0, 1.0]:
-			_box("DroneBayGuide", bay + Vector3(edge * 1.08, 0.055, 0), Vector3(0.055, 0.025, 1.85), glow, false)
-		_box("DroneBayNoseMark", bay + Vector3(0, 0.06, -0.82), Vector3(0.85, 0.025, 0.07), Color(0.95, 0.72, 0.20), false)
-		var charge_post := _box("DroneChargePost", bay + Vector3(1.25, 0.48, 0.78), Vector3(0.18, 0.78, 0.18), dark, false)
-		_box("DroneChargeLight", bay + Vector3(1.25, 0.88, 0.78), Vector3(0.12, 0.12, 0.12), glow, false)
-
-	# Covered maintenance canopy with sturdy corner columns and illuminated fascia.
-	for px in [-3.85, 3.85]:
-		for pz in [-4.35, 4.35]:
-			_box("DroneHangarColumn", dock + Vector3(px, 1.55, pz), Vector3(0.24, 3.1, 0.24), metal, false)
-	_box("DroneHangarRoof", dock + Vector3(0, 3.18, 0), Vector3(8.55, 0.22, 9.5), dark, false)
-	_box("DroneHangarFrontFascia", dock + Vector3(0, 2.93, 4.62), Vector3(8.2, 0.34, 0.22), metal, false)
-	_box("DroneHangarSignPanel", dock + Vector3(0, 2.95, -4.62), Vector3(4.4, 0.32, 0.16), teal, false)
-	for px in [-2.7, 0.0, 2.7]:
-		var lamp := _box("DroneHangarLamp", dock + Vector3(px, 3.02, 0), Vector3(0.72, 0.045, 0.18), glow, false)
-
-	# Compact service console and status mast at the rear of the bays.
-	_box("DroneServiceConsole", dock + Vector3(3.05, 0.72, -3.45), Vector3(0.72, 1.25, 1.05), dark, false)
-	_box("DroneServiceScreen", dock + Vector3(2.67, 1.05, -3.45), Vector3(0.035, 0.48, 0.68), glow, false)
-	_cylinder("DroneDepotBeacon", dock + Vector3(3.1, 2.05, -3.45), 0.12, 0.32, Color(1.0, 0.62, 0.16), false)
-
-	# Short, enclosed transfer conveyor connects the depot to the tank intake.
-	_box("DroneDepotTransferFrame", Vector3(121.65, 0.34, 8.5), Vector3(2.4, 0.28, 1.15), dark, false)
-	_box("DroneDepotTransferBelt", Vector3(121.65, 0.54, 8.5), Vector3(2.25, 0.08, 0.82), Color(0.17, 0.23, 0.23), false)
-	for x in [120.8, 121.35, 121.9, 122.45]:
-		var roller := _cylinder("DroneDepotTransferRoller", Vector3(x, 0.53, 8.5), 0.055, 0.88, Color(0.08, 0.12, 0.13), false)
-		roller.rotation_degrees.z = 90.0
-
-	var sign := Label3D.new()
-	sign.name = "DroneDepotSign"
-	sign.text = "AUTONOMOUS DRONE HUB"
-	sign.position = dock + Vector3(0, 3.48, -4.35)
-	sign.font_size = 20
-	sign.pixel_size = 0.009
-	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sign.modulate = Color(0.55, 1.0, 0.84)
-	add_child(sign)
-
-
 func _refresh_sorting_district() -> void:
 	for i in range(mini(4, sorting_robots.size())):
 		if is_instance_valid(sorting_robots[i]):
@@ -4460,7 +4403,6 @@ func _build_city_dump_area() -> void:
 	if waste_tank_built:
 		_build_waste_tank_structure()
 		waste_tank_build_label.visible = false
-	_build_drone_station()
 	# No city garbage trucks are spawned; the player supplies the tank.
 
 func _on_waste_tank_build_entered(body: Node3D) -> void:
