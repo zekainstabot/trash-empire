@@ -4139,13 +4139,16 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.94, z), Vector3(belt_length - 0.18, 0.10, 1.28), belt_color, false)
 	for side_z in [z - 0.76, z + 0.76]:
 		_box("FactoryMainConveyorRail%d" % row, Vector3(center_x, 1.14, side_z), Vector3(belt_length, 0.30, 0.12), steel, false)
-	var roller_count := 40
+	# Visible side stringers, dense steel rollers and raised rubber cleats give the belt a mechanical profile.
+	for side_x in [center_x - belt_length * 0.5 + 0.12, center_x + belt_length * 0.5 - 0.12]:
+		_box("FactoryMainConveyorStringer%d" % row, Vector3(side_x, 0.76, z), Vector3(0.12, 0.34, 1.52), steel, false)
+	var roller_count := 82
 	for roller_i in range(roller_count):
 		var roller_x := start_x + float(roller_i) * belt_length / float(roller_count - 1)
-		var roller := _cylinder("FactoryMainConveyorRoller%d" % row, Vector3(roller_x, 0.89, z), 0.045, 1.18, Color(0.12, 0.16, 0.17), false)
+		var roller := _cylinder("FactoryMainConveyorRoller%d" % row, Vector3(roller_x, 0.89, z), 0.055, 1.18, Color(0.30, 0.36, 0.38), false)
 		roller.rotation_degrees.x = 90.0
-		if roller_i % 4 == 0:
-			_box("FactoryMainConveyorCleat%d" % row, Vector3(roller_x, 1.005, z), Vector3(0.10, 0.035, 1.10), Color(0.20, 0.27, 0.28), false)
+		if roller_i % 9 == 0:
+			_box("FactoryMainConveyorCleat%d_%d" % [row, roller_i], Vector3(roller_x, 1.005, z), Vector3(0.14, 0.055, 1.10), Color(0.20, 0.27, 0.28), false)
 
 func _build_mega_factory_machine_connections(index: int) -> void:
 	# Legacy hook: the continuous row conveyor is built once for each production row.
