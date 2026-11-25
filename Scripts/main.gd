@@ -1457,7 +1457,7 @@ func _build_player() -> void:
 	robot_right_arm = _robot_limb(robot_visual, "RightArm", Vector3(0.48, 1.30, 0), Color(0.22, 0.43, 0.48))
 	magnet_tool = Node3D.new()
 	magnet_tool.name = "UnlockedHandMagnet"
-	magnet_tool.position = Vector3(0.0, -0.56, -0.08)
+	magnet_tool.position = Vector3(0.0, -0.43, -0.015)
 	robot_right_arm.add_child(magnet_tool)
 	_add_robot_box(magnet_tool, "MagnetCore", Vector3(0, -0.02, 0), Vector3(0.30, 0.12, 0.16), Color(0.16, 0.22, 0.27))
 	_add_robot_box(magnet_tool, "MagnetLeftPole", Vector3(-0.12, -0.14, 0), Vector3(0.10, 0.22, 0.16), Color(0.88, 0.20, 0.18))
@@ -1468,7 +1468,7 @@ func _build_player() -> void:
 	# Separate vacuum attachment on the opposite arm, unlocked by suction upgrades.
 	suction_tool = Node3D.new()
 	suction_tool.name = "ArmMountedVacuum"
-	suction_tool.position = Vector3(0.0, -0.53, -0.08)
+	suction_tool.position = Vector3(0.0, -0.43, -0.015)
 	robot_right_arm.add_child(suction_tool)
 	_add_robot_box(suction_tool, "VacuumMotor", Vector3(0, -0.02, 0.02), Vector3(0.24, 0.25, 0.28), Color(0.12, 0.22, 0.25))
 	_add_robot_box(suction_tool, "VacuumTube", Vector3(0, -0.10, -0.20), Vector3(0.13, 0.12, 0.34), Color(0.48, 0.58, 0.59))
@@ -1533,9 +1533,9 @@ func _animate_robot(delta: float) -> void:
 	var extension_target := 0.34 if tool_is_working else 0.0
 	collection_tool_extension = lerpf(collection_tool_extension, extension_target, clampf(delta * 10.0, 0.0, 1.0))
 	if is_instance_valid(magnet_tool):
-		magnet_tool.position.z = -0.08 - collection_tool_extension
+		magnet_tool.position.z = -0.015 - collection_tool_extension
 	if is_instance_valid(suction_tool):
-		suction_tool.position.z = -0.08 - collection_tool_extension
+		suction_tool.position.z = -0.015 - collection_tool_extension
 	robot_left_leg.rotation.x = -stride * 0.48
 	robot_right_leg.rotation.x = stride * 0.48
 	robot_head.rotation.y = sin(robot_anim_time * 1.3) * 0.045
