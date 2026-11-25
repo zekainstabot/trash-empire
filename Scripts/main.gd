@@ -5214,17 +5214,29 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	var selected_item := Node3D.new()
 	selected_item.name = "FactoryWasteConveyorItem"
 	selected_item.set_script(TRASH_SCRIPT)
-	selected_item.position = Vector3(124.8, 1.25, 0.0)
+	# Place litter just above the physical belt surface (top y=0.965).
+	selected_item.position = Vector3(124.8, 0.99, 0.0)
 	add_child(selected_item)
 	waste_feed_busy = true
 	var target_z := _factory_row_z(selected_row)
+	var belt_y := 0.99
+	var bend_radius := 1.15
+	var bend_start_z := target_z - bend_radius
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(selected_item, "global_position", Vector3(137.0, 1.25, 0.0), 0.8)
-	tween.tween_property(selected_item, "global_position", Vector3(145.2, 1.25, 0.0), 0.8)
-	tween.tween_property(selected_item, "global_position", Vector3(145.2, 1.25, target_z), 0.65)
-	tween.tween_property(selected_item, "global_position", Vector3(150.4, 1.25, target_z), 0.45)
+	# Follow the physical trunk belt from the tank to the distributor.
+	tween.tween_property(selected_item, "global_position", Vector3(137.0, belt_y, 0.0), 0.8)
+	tween.tween_property(selected_item, "global_position", Vector3(146.4, belt_y, 0.0), 0.9)
+	# Follow the distributor spine to the selected row's visible elbow.
+	tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, bend_start_z), maxf(0.35, absf(bend_start_z) / 12.0))
+	# Trace the same quarter-circle bend as the physical branch conveyor.
+	for bend_i in range(1, 13):
+		var angle := (float(bend_i) / 12.0) * PI * 0.5
+		var bend_point := Vector3(147.0 + bend_radius * (1.0 - cos(angle)), belt_y, bend_start_z + bend_radius * sin(angle))
+		tween.tween_property(selected_item, "global_position", bend_point, 0.045)
+	# Continue along the straight branch belt into the first machine.
+	tween.tween_property(selected_item, "global_position", Vector3(150.4, belt_y, target_z), 0.35)
 	tween.tween_callback(_finish_waste_feed_item.bind(selected_item, selected_row))
 
 func _finish_waste_feed_item(item: Node3D, row: int) -> void:
@@ -5288,7 +5300,7 @@ func _spawn_factory_stage_item(row: int, stage: int, at_loading_end: bool = fals
 		return
 	var item := Node3D.new()
 	item.name = "FactorySpecificProduct_%d_%d" % [row, stage]
-	item.position = Vector3(0.0, 1.42, _factory_row_z(row))
+	item.position = Vector3(0.0, 0.99, _factory_row_z(row))
 	item.scale = Vector3.ONE * 0.78
 	_build_factory_specific_product(item, row, stage)
 	add_child(item)
@@ -5309,11 +5321,11 @@ func _spawn_factory_stage_item(row: int, stage: int, at_loading_end: bool = fals
 		var slot := int(item_index / 3)
 		target_x = maxf(150.0, 198.0 - float(slot) * 1.05)
 		target_z += float(lane) * 0.38
-	var target := Vector3(target_x, 1.42, target_z)
+	var target := Vector3(target_x, 0.99, target_z)
 	if at_loading_end:
 		item.position = target
 	else:
-		item.position = Vector3(stage_start_x, 1.42, _factory_row_z(row))
+		item.position = Vector3(stage_start_x, 0.99, _factory_row_z(row))
 		var travel := create_tween()
 		travel.set_trans(Tween.TRANS_SINE)
 		travel.set_ease(Tween.EASE_IN_OUT)
