@@ -304,8 +304,11 @@ func _build_city_rework_layout() -> void:
 	var curb := Color(0.88, 0.81, 0.66)
 	var white := Color(0.90, 0.88, 0.79)
 	_box("CityTerrain", Vector3(49.0, -0.34, 0.0), Vector3(126.0, 0.68, 74.0), grass, true)
-	_box("FinalCleanupGround", Vector3(160.0, -0.34, 0.0), Vector3(96.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
-	_box("FinalCleanupWorkPad", Vector3(160.0, -0.0175, 0.0), Vector3(90.0, 0.035, 62.0), Color(0.34, 0.38, 0.30), false)
+	# Keep the cleanup ground out of the factory footprint. These slabs previously
+	# occupied the exact same Y=0 plane as the factory apron/foundation and each
+	# other, causing severe z-fighting across the entire industrial area.
+	_box("FinalCleanupGroundWest", Vector3(121.25, -0.34, 0.0), Vector3(18.5, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
+	_box("FinalCleanupGroundEast", Vector3(205.0, -0.34, 0.0), Vector3(6.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
 
 	# Dark charcoal asphalt, raised curbs and layered markings make this read as a
 	# paved multi-lane boulevard rather than a flat grey platform.
