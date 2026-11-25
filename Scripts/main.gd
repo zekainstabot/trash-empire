@@ -5215,7 +5215,7 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	selected_item.name = "FactoryWasteConveyorItem"
 	selected_item.set_script(TRASH_SCRIPT)
 	# Place litter just above the physical belt surface (top y=0.965).
-	selected_item.position = Vector3(124.8, 0.99, 0.0)
+	selected_item.position = Vector3(128.55, 0.99, 0.0)
 	add_child(selected_item)
 	waste_feed_busy = true
 	var target_z := _factory_row_z(selected_row)
