@@ -3910,8 +3910,8 @@ func _build_recycling_mega_factory() -> void:
 
 	# Dedicated transfer conveyor links the central cross-feed spine directly to the main waste tank.
 	# Its left end meets the tank outlet and its right end meets the middle of the five-row feed spine.
-	_box("WasteFeedMainFrame", Vector3(136.8, 0.68, 0.0), Vector3(16.8, 0.30, 1.8), dark_steel, false)
-	_box("WasteFeedMainBelt", Vector3(136.8, 0.925, 0.0), Vector3(16.55, 0.08, 1.35), belt_color, false)
+	_box("WasteFeedMainFrame", Vector3(137.7, 0.68, 0.0), Vector3(18.6, 0.30, 1.8), dark_steel, false)
+	_box("WasteFeedMainBelt", Vector3(137.7, 0.925, 0.0), Vector3(18.35, 0.08, 1.35), belt_color, false)
 	# Keep the final section of the trunk open where it meets the distributor.
 	for side_z in [-0.78, 0.78]:
 		_box("WasteFeedMainRail", Vector3(135.55, 1.08, side_z), Vector3(14.05, 0.28, 0.08), steel, false)
