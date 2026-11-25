@@ -3977,11 +3977,8 @@ func _build_recycling_mega_factory() -> void:
 		if mega_factory_built_count >= row * 3 + 3:
 			_build_factory_finished_product(row)
 
-	# Utility equipment is grouped in a dedicated rear service strip.
-	for tank_index in range(3):
-		var tx := 181.0 + float(tank_index) * 4.0
-		_cylinder("RecyclingStorageSilo", Vector3(tx, 3.0, -29.0), 1.15, 5.8, Color(0.55, 0.62, 0.61), false)
-		_cylinder("RecyclingSiloCap", Vector3(tx, 6.0, -29.0), 1.22, 0.35, teal, false)
+	# Utility equipment remains grouped in the rear service strip.
+	# Decorative recycling storage silos and caps were removed to clear the view beside line one.
 	for tank_index in range(3):
 		var tx := 181.0 + float(tank_index) * 4.0
 		_cylinder("WaterTreatmentTank", Vector3(tx, 1.65, 29.0), 1.35, 3.2, Color(0.18, 0.38, 0.42), false)
