@@ -320,10 +320,7 @@ func _build_city_rework_layout() -> void:
 	for side in [-1.0, 1.0]:
 		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(126.0, 0.18, 0.28), curb, false)
 		_box("BoulevardEdgeLine", Vector3(49.0, 0.061, side * 3.72), Vector3(126.0, 0.025, 0.12), road_white, false)
-		_box("BoulevardSidewalk", Vector3(49.0, 0.075, side * 6.0), Vector3(126.0, 0.15, 3.2), sidewalk, false)
-		for joint_x in range(-15, 116, 6):
-			_box("BoulevardSidewalkJoint", Vector3(float(joint_x), 0.153, side * 6.0), Vector3(0.045, 0.008, 3.05), Color(0.63, 0.54, 0.41), false)
-		_box("BoulevardSidewalkEdge", Vector3(49.0, 0.157, side * 7.48), Vector3(126.0, 0.012, 0.07), Color(0.91, 0.84, 0.69), false)
+		_add_sidewalk_x_segments("BoulevardSidewalk", -14.0, 112.0, 0.075, 0.15, side * 6.0, 3.2, sidewalk, [16.0, 48.0, 80.0, 104.0], 7.8)
 		_box("BoulevardGrassVerge", Vector3(49.0, 0.025, side * 8.0), Vector3(126.0, 0.05, 1.0), grass.lightened(0.08), false)
 	# Double yellow no-passing divider and broken white lane separators.
 	for offset in [-0.13, 0.13]:
@@ -346,9 +343,7 @@ func _build_city_rework_layout() -> void:
 		_box("CityCrossStreet", Vector3(street_x, 0.028, 0.0), Vector3(6.8, 0.056, 74.0), road_asphalt, false)
 		for side in [-1.0, 1.0]:
 			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 74.0), curb, false)
-			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 74.0), sidewalk, false)
-			for joint_z in range(-36, 37, 5):
-				_box("CrossStreetWalkwayJoint", Vector3(street_x + side * 5.0, 0.153, float(joint_z)), Vector3(2.55, 0.008, 0.045), Color(0.63, 0.54, 0.41), false)
+			_add_sidewalk_z_segments("CrossStreetWalkway", -37.0, 37.0, 0.075, 0.15, street_x + side * 5.0, 2.7, sidewalk, [-29.0, -22.0, 0.0, 22.0, 29.0], 8.0)
 			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
 				var edge_start: float = segment[0]
 				var edge_end: float = segment[1]
@@ -381,9 +376,7 @@ func _build_city_rework_layout() -> void:
 	for street_z in [-22.0, 22.0]:
 		_box("NeighborhoodStreet", Vector3(49.0, 0.024, street_z), Vector3(126.0, 0.048, 5.4), road_asphalt, false)
 		for side in [-1.0, 1.0]:
-			_box("NeighborhoodSidewalk", Vector3(49.0, 0.07, street_z + side * 3.45), Vector3(126.0, 0.14, 1.5), sidewalk, false)
-			for joint_x in range(-15, 116, 6):
-				_box("NeighborhoodSidewalkJoint", Vector3(float(joint_x), 0.143, street_z + side * 3.45), Vector3(0.04, 0.008, 1.42), Color(0.63, 0.54, 0.41), false)
+			_add_sidewalk_x_segments("NeighborhoodSidewalk", -14.0, 112.0, 0.07, 0.14, street_z + side * 3.45, 1.5, sidewalk, [16.0, 48.0, 80.0, 104.0], 7.8)
 			for segment in [[-14.0, 12.0], [20.0, 44.0], [52.0, 76.0], [84.0, 100.0], [108.0, 112.0]]:
 				var edge_start: float = segment[0]
 				var edge_end: float = segment[1]
@@ -745,6 +738,34 @@ func _spawn_sorting_district_trash(amount: int) -> void:
 		item.position = Vector3(rng.randf_range(224.0, 276.0), 0.05, rng.randf_range(-25.0, 25.0))
 		add_child(item)
 		trash_nodes.append(item)
+
+
+func _add_sidewalk_x_segments(node_name: String, start_x: float, end_x: float, center_y: float, thickness: float, fixed_z: float, width_z: float, color: Color, gap_centers: Array, gap_width: float) -> void:
+	var cursor := start_x
+	for gap_center in gap_centers:
+		var gap_start: float = maxf(start_x, float(gap_center) - gap_width * 0.5)
+		var gap_end: float = minf(end_x, float(gap_center) + gap_width * 0.5)
+		if gap_start > cursor:
+			var segment_length := gap_start - cursor
+			_box(node_name, Vector3((cursor + gap_start) * 0.5, center_y, fixed_z), Vector3(segment_length, thickness, width_z), color, false)
+		cursor = maxf(cursor, gap_end)
+	if end_x > cursor:
+		var segment_length := end_x - cursor
+		_box(node_name, Vector3((cursor + end_x) * 0.5, center_y, fixed_z), Vector3(segment_length, thickness, width_z), color, false)
+
+
+func _add_sidewalk_z_segments(node_name: String, start_z: float, end_z: float, center_y: float, thickness: float, fixed_x: float, width_x: float, color: Color, gap_centers: Array, gap_width: float) -> void:
+	var cursor := start_z
+	for gap_center in gap_centers:
+		var gap_start: float = maxf(start_z, float(gap_center) - gap_width * 0.5)
+		var gap_end: float = minf(end_z, float(gap_center) + gap_width * 0.5)
+		if gap_start > cursor:
+			var segment_length := gap_start - cursor
+			_box(node_name, Vector3(fixed_x, center_y, (cursor + gap_start) * 0.5), Vector3(width_x, thickness, segment_length), color, false)
+		cursor = maxf(cursor, gap_end)
+	if end_z > cursor:
+		var segment_length := end_z - cursor
+		_box(node_name, Vector3(fixed_x, center_y, (cursor + end_z) * 0.5), Vector3(width_x, thickness, segment_length), color, false)
 
 
 func _build_connected_city_streets() -> void:
