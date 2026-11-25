@@ -1867,8 +1867,8 @@ func _build_ui() -> void:
 	# Keep scrolling fully functional while hiding the visible scrollbar.
 	skill_scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	skill_scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	skill_scroll_container.scroll_deadzone = 6
-	skill_scroll_container.scroll_vertical_custom_step = 28.0
+	skill_scroll_container.scroll_deadzone = 4
+	skill_scroll_container.scroll_vertical_custom_step = 22.0
 	skill_scroll_container.mouse_filter = Control.MOUSE_FILTER_STOP
 	upgrade_panel.add_child(skill_scroll_container)
 	skill_map = VBoxContainer.new()
@@ -2621,7 +2621,7 @@ func _start_upgrade_scroll_glide() -> void:
 		return
 	var scroll_bar := skill_scroll_container.get_v_scroll_bar()
 	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
-	var glide_distance := clampf(skill_scroll_velocity.y * 0.30, -620.0, 620.0)
+	var glide_distance := clampf(skill_scroll_velocity.y * 0.36, -540.0, 540.0)
 	if absf(glide_distance) >= 12.0:
 		skill_scroll_target = clampf(skill_scroll_target + glide_distance, 0.0, float(scroll_max))
 		skill_scroll_smoothing = true
@@ -2636,7 +2636,7 @@ func _process_upgrade_scroll_smoothing(delta: float) -> void:
 	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
 	skill_scroll_target = clampf(skill_scroll_target, 0.0, float(scroll_max))
 	var current_scroll := float(skill_scroll_container.scroll_vertical)
-	var blend := 1.0 - exp(-delta * 11.0)
+	var blend := 1.0 - exp(-delta * 8.5)
 	var next_scroll := lerpf(current_scroll, skill_scroll_target, blend)
 	if absf(skill_scroll_target - next_scroll) < 0.45:
 		next_scroll = skill_scroll_target
