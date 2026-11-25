@@ -242,7 +242,6 @@ func _process(delta: float) -> void:
 	_process_auto_pickup(delta)
 	_process_vacuum_suction(delta)
 	_process_helper_drones(delta)
-	_process_ground_collector(delta)
 	_process_sorting_robots(delta)
 	_process_trash_respawn(delta)
 	_animate_city_pedestrians(delta)
@@ -1643,7 +1642,6 @@ func _build_player() -> void:
 	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.20, 0.52, 0))
 	robot_right_leg = _robot_leg(robot_visual, "RightLeg", Vector3(0.20, 0.52, 0))
 	_build_helper_drones()
-	_build_ground_collector()
 
 	var backpack := _add_robot_box(robot_visual, "BatteryPack", Vector3(0, 1.03, 0.34), Vector3(0.55, 0.62, 0.28), Color(0.12, 0.22, 0.26))
 	_add_robot_box(robot_visual, "BatteryStripe", Vector3(0, 1.04, 0.495), Vector3(0.34, 0.08, 0.025), Color(0.28, 0.95, 0.67))
@@ -2131,13 +2129,13 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","ground_robot","sorting_robot","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","sorting_robot","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","ground_robot":"GROUND COLLECTOR ROBOT","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","factory_truck_interval":"FACTORY TRUCK ARRIVAL","repair_robot":"MAINTENANCE ROBOT"
 	}
 	var descriptions := {
@@ -2466,7 +2464,6 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"magnet_power": await _upgrade_magnet_power()
 		"suction": await _upgrade_suction()
 		"drones": await _upgrade_drones()
-		"ground_robot": await _upgrade_ground_robot()
 		"sorting_robot": await _upgrade_sorting_robot()
 		"conveyor_speed": await _upgrade_conveyor_speed()
 		"repair_robot": await _upgrade_repair_robot()
