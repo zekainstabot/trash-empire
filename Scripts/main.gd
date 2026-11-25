@@ -3908,27 +3908,29 @@ func _build_recycling_mega_factory() -> void:
 
 	# Use the existing distributor spine; avoid a duplicate parallel conveyor.
 
-	# Clearly visible, continuous-looking curved transfer elbows from the distributor to each row.
+	# Smooth quarter-turn elbows blend the central distributor into each production row.
 	for row in range(5):
 		var feed_z := _factory_row_z(row)
-		var bend_start_x := 147.45
-		var bend_end_x := 149.65
-		var bend_start_z := feed_z - 1.15
-		var bend_end_z := feed_z
-		for bend_i in range(12):
-			var t := (float(bend_i) + 0.5) / 12.0
-			var bend_x := lerpf(bend_start_x, bend_end_x, t)
-			var bend_z := lerpf(bend_start_z, bend_end_z, t * t)
-			var segment_len := 0.28
-			var angle := atan2((bend_end_z - bend_start_z) * t * 2.0, bend_end_x - bend_start_x)
-			var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(1.38, 0.28, segment_len), dark_steel, false)
-			bend_frame.rotation_degrees.y = rad_to_deg(angle)
-			var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.90, bend_z), Vector3(1.15, 0.08, segment_len), belt_color, false)
-			bend_belt.rotation_degrees.y = rad_to_deg(angle)
-		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(150.1, 0.68, feed_z), Vector3(2.1, 0.30, 1.45), dark_steel, false)
-		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(150.1, 0.89, feed_z), Vector3(2.0, 0.08, 1.18), belt_color, false)
+		var bend_radius := 1.15
+		var bend_start_x := 147.0
+		var bend_start_z := feed_z - bend_radius
+		var bend_segments := 24
+		for bend_i in range(bend_segments):
+			var t := (float(bend_i) + 0.5) / float(bend_segments)
+			var angle := t * PI * 0.5
+			var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
+			var bend_z := bend_start_z + bend_radius * sin(angle)
+			var tangent_angle := atan2(-cos(angle), sin(angle))
+			var segment_len := 0.22
+			var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.38), dark_steel, false)
+			bend_frame.rotation_degrees.y = rad_to_deg(tangent_angle)
+			var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.90, bend_z), Vector3(segment_len, 0.08, 1.15), belt_color, false)
+			bend_belt.rotation_degrees.y = rad_to_deg(tangent_angle)
+		# Straight outlet overlaps the curved elbow and the main line, leaving no visible seam.
+		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.65, 0.68, feed_z), Vector3(2.25, 0.30, 1.45), dark_steel, false)
+		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.65, 0.89, feed_z), Vector3(2.18, 0.08, 1.22), belt_color, false)
 		for branch_side in [feed_z - 0.68, feed_z + 0.68]:
-			_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(150.1, 1.08, branch_side), Vector3(2.0, 0.28, 0.08), steel, false)
+			_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(149.65, 1.08, branch_side), Vector3(2.25, 0.28, 0.08), steel, false)
 
 	mega_factory_machine_labels.clear()
 	for row in range(5):
