@@ -347,9 +347,9 @@ func _build_city_rework_layout() -> void:
 		for side in [-1.0, 1.0]:
 			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 74.0), curb, false)
 			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 74.0), sidewalk, false)
-			for joint_z in range(-31, 33, 5):
+			for joint_z in range(-36, 37, 5):
 				_box("CrossStreetWalkwayJoint", Vector3(street_x + side * 5.0, 0.153, float(joint_z)), Vector3(2.55, 0.008, 0.045), Color(0.63, 0.54, 0.41), false)
-			for segment in [[-37.0, -32.5], [-25.5, -5.0], [5.0, 25.5], [32.5, 37.0]]:
+			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]
 				var edge_start: float = segment[0]
 				var edge_end: float = segment[1]
 				_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, (edge_start + edge_end) * 0.5), Vector3(0.09, 0.022, edge_end - edge_start), road_white, false)
@@ -364,8 +364,8 @@ func _build_city_rework_layout() -> void:
 				for junction_z in [-29.0, 0.0, 29.0]:
 					if absf(float(dash_z) - junction_z) < 5.0:
 						clear_of_junctions = false
-			if clear_of_junctions:
-				_box("CrossStreetLaneDash", Vector3(street_x + lane_z, 0.064, float(dash_z)), Vector3(0.09, 0.022, 4.2), road_white, false)
+				if clear_of_junctions:
+					_box("CrossStreetLaneDash", Vector3(street_x + lane_z, 0.064, float(dash_z)), Vector3(0.09, 0.022, 4.2), road_white, false)
 		for cross_z in [-5.1, 5.1]:
 			for stripe in range(7):
 				_box("CityZebraCrossing", Vector3(street_x - 2.55 + float(stripe) * 0.85, 0.068, cross_z), Vector3(0.52, 0.025, 7.6), road_white, false)
@@ -392,6 +392,7 @@ func _build_city_rework_layout() -> void:
 		for crossing_x in [16.0, 48.0, 80.0, 104.0]:
 			for stripe in range(7):
 				_box("NeighborhoodZebraCrossing", Vector3(crossing_x - 2.7 + float(stripe) * 0.9, 0.068, street_z), Vector3(0.55, 0.025, 5.0), road_white, false)
+			_box("NeighborhoodStopBar", Vector3(crossing_x, 0.069, street_z + (3.0 if street_z > 0.0 else -3.0)), Vector3(5.8, 0.025, 0.12), road_white, false)
 
 	# Residential and civic buildings are arranged as real blocks, leaving clear
 	# pedestrian routes and keeping the four sorting-station plots unobstructed.
