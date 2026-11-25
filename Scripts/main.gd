@@ -2142,8 +2142,8 @@ func _build_skill_tree(parent: Control) -> void:
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","sorting_robot":"SORTING ROBOT EFFICIENCY","repair_robot":"FACTORY MAINTENANCE ROBOT","dispatch":"TRUCK FREQUENCY",
-		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","factory_truck_interval":"FACTORY TRUCK ARRIVAL","repair_robot":"MAINTENANCE ROBOT"
+		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
+		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED" ,"factory_truck_interval":"FACTORY TRUCK ARRIVAL"
 	}
 	var descriptions := {
 		"capacity":"Carry more waste before returning to unload.",
@@ -2163,7 +2163,6 @@ func _build_skill_tree(parent: Control) -> void:
 		"drones":"Add helper drones that collect trash for you.",
 		"drone_speed":"Make every helper drone fly faster on collection and return trips.",
 		"drone_capacity":"Increase how much waste each helper drone carries before returning to its own station.",
-		"ground_robot":"Unlock a ground rover that drives to trash, loads it, then returns to the recycling point. Upgrades improve speed and cargo capacity.",
 		"sorting_robot":"Increase all built sorting robots’ travel speed and search radius.",
 		
 		"repair_robot":"Automatically repairs factory breakdowns and reduces downtime.",
@@ -2171,7 +2170,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
 		"packaging":"Package products faster for shipment.",
-		"conveyor_speed":"Move recycling items through the factory line faster.","factory_truck_interval":"Reduce the wait after each full truck: 45s, then 30s, 15s and 5s.","repair_robot":"Automatically repairs breakdowns and reduces downtime."
+		"conveyor_speed":"Move recycling items through the factory line faster.","factory_truck_interval":"Reduce the wait after each full truck: 45s, then 30s, 15s and 5s."
 	}
 
 	var folder_grid := GridContainer.new()
@@ -2370,7 +2369,6 @@ func _skill_icon(branch: String) -> String:
 		"drone_speed": return "💨"
 		"drone_capacity": return "📦"
 		"repair_robot": return "🛠"
-		"ground_robot": return "🤖"
 		"city_truck": return "🚛"
 		"city_fleet": return "🚚"
 		"dispatch": return "⏱️"
@@ -2437,7 +2435,6 @@ func _skill_level(branch: String) -> int:
 		"drones": return drone_level
 		"drone_speed": return drone_speed_upgrade_level
 		"drone_capacity": return drone_capacity_upgrade_level
-		"ground_robot": return ground_robot_level
 		"sorting_robot": return sorting_robot_upgrade_level
 		"conveyor_speed": return conveyor_speed_upgrade_level
 		"repair_robot": return repair_robot_level
@@ -2495,7 +2492,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"city_truck":60.0,"city_fleet":85.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
+	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
