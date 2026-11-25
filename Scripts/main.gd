@@ -80,6 +80,7 @@ var total_trash_collected := 0
 var replenishment_threshold := 500
 var final_zone_label: Label
 const FINAL_ZONE_TARGET := 60000
+const COLLECTION_TARGET := 600000
 const FINAL_ZONE_MISSION_TARGET := 1000
 const MISSION_ORDER := [0, 1, 2, 4, 5, 6, 7, 3, 8, 9, 10, 12, 16, 31, 22, 23, 13, 14, 15, 19, 20, 21, 24, 25, 26, 27, 28, 29, 17, 18, 30]
 const FINAL_LANDFILL_CLUSTERS := [
@@ -1695,7 +1696,7 @@ func _build_ui() -> void:
 	layer.add_child(panel)
 	money_label = _label("CASH  0 ZC", Vector2(32, 27), 22, layer)
 	bag_label = _label("BAG  0 / 5", Vector2(32, 64), 18, layer)
-	final_zone_label = _label("LANDFILL  0 / 60,000", Vector2(32, 94), 14, layer)
+	final_zone_label = _label("COLLECTED  0 / 600,000", Vector2(32, 94), 14, layer)
 	final_zone_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.30))
 	_update_final_zone_label()
 
@@ -4786,7 +4787,12 @@ func _build_final_landfill_debris(remaining_units: int, rng: RandomNumberGenerat
 
 func _update_final_zone_label() -> void:
 	if is_instance_valid(final_zone_label):
-		final_zone_label.text = "CITY TRASH  %d / 1,000" % _count_regular_trash()
+		var displayed_total := mini(total_trash_collected, COLLECTION_TARGET)
+		final_zone_label.text = "COLLECTED  %s / 600,000" % _format_counter(displayed_total)
+
+
+func _format_counter(value: int) -> String:
+	return String.num_int64(value).insert(String.num_int64(value).length() - 3, ",") if value >= 1000 else String.num_int64(value)
 
 
 func _count_regular_trash() -> int:
