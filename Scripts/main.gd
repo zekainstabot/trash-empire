@@ -31,6 +31,8 @@ var suction_target: Node3D
 var suction_scan_timer := 0.0
 var suction_pull_timer := 0.0
 var drone_level := 0
+var drone_speed_upgrade_level := 0
+var drone_capacity_upgrade_level := 0
 var ground_robot_level := 0
 var ground_collector: Node3D
 var ground_collector_timer := 0.0
@@ -2134,13 +2136,13 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","sorting_robot","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","drone_speed","drone_capacity","sorting_robot","repair_robot","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","sorting_robot":"SORTING ROBOT EFFICIENCY","repair_robot":"FACTORY MAINTENANCE ROBOT","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","factory_truck_interval":"FACTORY TRUCK ARRIVAL","repair_robot":"MAINTENANCE ROBOT"
 	}
 	var descriptions := {
@@ -2159,9 +2161,12 @@ func _build_skill_tree(parent: Control) -> void:
 		"magnet_power":"Pull trash toward you from farther away.",
 		"suction":"Unlock an arm-mounted vacuum. Each upgrade increases suction reach and pull speed.",
 		"drones":"Add helper drones that collect trash for you.",
+		"drone_speed":"Make every helper drone fly faster on collection and return trips.",
+		"drone_capacity":"Increase how much waste each helper drone carries before returning to its own station.",
 		"ground_robot":"Unlock a ground rover that drives to trash, loads it, then returns to the recycling point. Upgrades improve speed and cargo capacity.",
 		"sorting_robot":"Increase all built sorting robots’ travel speed and search radius.",
 		
+		"repair_robot":"Automatically repairs factory breakdowns and reduces downtime.",
 		"dispatch":"Send product delivery trucks more frequently.",
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
@@ -2362,6 +2367,9 @@ func _skill_icon(branch: String) -> String:
 		"magnet_power": return "🧲"
 		"suction": return "🌪"
 		"drones": return "🚁"
+		"drone_speed": return "💨"
+		"drone_capacity": return "📦"
+		"repair_robot": return "🛠"
 		"ground_robot": return "🤖"
 		"city_truck": return "🚛"
 		"city_fleet": return "🚚"
@@ -2427,6 +2435,8 @@ func _skill_level(branch: String) -> int:
 		"magnet_power": return magnet_power_level - 1
 		"suction": return suction_level
 		"drones": return drone_level
+		"drone_speed": return drone_speed_upgrade_level
+		"drone_capacity": return drone_capacity_upgrade_level
 		"ground_robot": return ground_robot_level
 		"sorting_robot": return sorting_robot_upgrade_level
 		"conveyor_speed": return conveyor_speed_upgrade_level
@@ -2469,6 +2479,8 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"magnet_power": await _upgrade_magnet_power()
 		"suction": await _upgrade_suction()
 		"drones": await _upgrade_drones()
+		"drone_speed": await _upgrade_drone_speed()
+		"drone_capacity": await _upgrade_drone_capacity()
 		"sorting_robot": await _upgrade_sorting_robot()
 		"conveyor_speed": await _upgrade_conveyor_speed()
 		"repair_robot": await _upgrade_repair_robot()
@@ -2483,7 +2495,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"ground_robot":65.0,"city_truck":60.0,"city_fleet":85.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
+	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"city_truck":60.0,"city_fleet":85.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -2987,7 +2999,7 @@ func _process_helper_drones(delta: float) -> void:
 		return
 	drone_timer += delta
 	var interval := maxf(0.75, 3.2 - float(drone_level - 1) * 0.65)
-	var drone_speed := 5.0 + float(drone_level - 1) * 1.5
+	var drone_speed := (5.0 + float(drone_level - 1) * 1.5) * (1.0 + float(drone_speed_upgrade_level) * 0.20)
 	for i in range(mini(drone_level, helper_drones.size())):
 		var drone := helper_drones[i]
 		if not is_instance_valid(drone) or not drone.visible:
@@ -3014,10 +3026,10 @@ func _process_helper_drones(delta: float) -> void:
 				cargo_items.append(lifting_item)
 				drone.set_meta("cargo_items", cargo_items)
 				drone.set_meta("lifting_item", null)
-				if int(drone.get_meta("cargo_slots", 0)) >= int(drone.get_meta("cargo_capacity", 5)):
+				if int(drone.get_meta("cargo_slots", 0)) >= _drone_cargo_capacity():
 					drone.set_meta("returning", true)
 			continue
-		if int(drone.get_meta("cargo_slots", 0)) >= int(drone.get_meta("cargo_capacity", 5)):
+		if int(drone.get_meta("cargo_slots", 0)) >= _drone_cargo_capacity():
 			drone.set_meta("returning", true)
 			continue
 		var target := drone.get_meta("target") as Node3D
@@ -3033,7 +3045,7 @@ func _process_helper_drones(delta: float) -> void:
 						continue
 					var weight := 2 if item.has_meta("bulky") else 1
 					var drone_slots := int(drone.get_meta("cargo_slots", 0))
-					var drone_capacity := int(drone.get_meta("cargo_capacity", 5))
+					var drone_capacity := _drone_cargo_capacity()
 					if drone_slots + weight > drone_capacity:
 						continue
 					var distance := drone.global_position.distance_to(item.global_position)
@@ -3060,7 +3072,7 @@ func _process_helper_drones(delta: float) -> void:
 			drone_timer = 0.0
 			var weight := 2 if target.has_meta("bulky") else 1
 			var slots := int(drone.get_meta("cargo_slots", 0))
-			var drone_capacity := int(drone.get_meta("cargo_capacity", 5))
+			var drone_capacity := _drone_cargo_capacity()
 			if slots + weight <= drone_capacity:
 				_register_final_cleanup_pickup(target)
 				if weight == 2:
@@ -3423,6 +3435,38 @@ func _sorting_robot_speed() -> float:
 func _conveyor_speed_multiplier() -> float:
 	return 1.0 + float(conveyor_speed_upgrade_level) * 0.25
 
+func _drone_cargo_capacity() -> int:
+	return 5 + drone_capacity_upgrade_level * 2
+
+
+func _upgrade_drone_speed() -> void:
+	if drone_speed_upgrade_level >= 3:
+		return
+	var next_level := drone_speed_upgrade_level + 1
+	var cost := _upgrade_cost(42.0, next_level)
+	if not await _pay_gradually(cost):
+		return
+	drone_speed_upgrade_level = next_level
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Helper drones fly %d%% faster." % int((1.0 + float(drone_speed_upgrade_level) * 0.20) * 100.0))
+
+
+func _upgrade_drone_capacity() -> void:
+	if drone_capacity_upgrade_level >= 3:
+		return
+	var next_level := drone_capacity_upgrade_level + 1
+	var cost := _upgrade_cost(48.0, next_level)
+	if not await _pay_gradually(cost):
+		return
+	drone_capacity_upgrade_level = next_level
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Each helper drone can now carry %d waste slots." % _drone_cargo_capacity())
+
+
 func _upgrade_sorting_robot() -> void:
 	if sorting_robot_upgrade_level >= 3:
 		return
@@ -3732,6 +3776,8 @@ func _save_game() -> void:
 	save.set_value("progress", "magnet_power_level", magnet_power_level)
 	save.set_value("progress", "suction_level", suction_level)
 	save.set_value("progress", "drone_level", drone_level)
+	save.set_value("progress", "drone_speed_upgrade_level", drone_speed_upgrade_level)
+	save.set_value("progress", "drone_capacity_upgrade_level", drone_capacity_upgrade_level)
 	save.set_value("progress", "ground_robot_level", ground_robot_level)
 	save.set_value("progress", "sorting_robot_levels", sorting_robot_levels)
 	save.set_value("progress", "sorting_bin_counts", sorting_bin_counts)
@@ -3788,6 +3834,8 @@ func _load_game() -> void:
 	magnet_power_level = int(save.get_value("progress", "magnet_power_level", 1))
 	suction_level = clampi(int(save.get_value("progress", "suction_level", 0)), 0, 3)
 	drone_level = clampi(int(save.get_value("progress", "drone_level", 0)), 0, 3)
+	drone_speed_upgrade_level = clampi(int(save.get_value("progress", "drone_speed_upgrade_level", 0)), 0, 3)
+	drone_capacity_upgrade_level = clampi(int(save.get_value("progress", "drone_capacity_upgrade_level", 0)), 0, 3)
 	ground_robot_level = clampi(int(save.get_value("progress", "ground_robot_level", 0)), 0, 3)
 	sorting_robot_levels = save.get_value("progress", "sorting_robot_levels", [0, 0, 0, 0])
 	sorting_bin_counts = save.get_value("progress", "sorting_bin_counts", [0, 0, 0, 0])
