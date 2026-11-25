@@ -298,8 +298,8 @@ func _build_city_rework_layout() -> void:
 	# One continuous, walkable city surface replaces the old fenced concrete yard.
 	var grass := Color(0.27, 0.43, 0.29)
 	var asphalt := Color(0.105, 0.125, 0.14)
-	var sidewalk := Color(0.61, 0.62, 0.57)
-	var curb := Color(0.78, 0.77, 0.68)
+	var sidewalk := Color(0.78, 0.70, 0.55)
+	var curb := Color(0.88, 0.81, 0.66)
 	var white := Color(0.90, 0.88, 0.79)
 	_box("CityTerrain", Vector3(49.0, -0.34, 0.0), Vector3(126.0, 0.68, 74.0), grass, true)
 	_box("FinalCleanupGround", Vector3(160.0, -0.34, 0.0), Vector3(96.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
@@ -319,6 +319,9 @@ func _build_city_rework_layout() -> void:
 		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(132.0, 0.18, 0.28), curb, false)
 		_box("BoulevardEdgeLine", Vector3(49.0, 0.061, side * 3.72), Vector3(132.0, 0.025, 0.12), road_white, false)
 		_box("BoulevardSidewalk", Vector3(49.0, 0.075, side * 6.0), Vector3(132.0, 0.15, 3.2), sidewalk, false)
+		for joint_x in range(-15, 116, 6):
+			_box("BoulevardSidewalkJoint", Vector3(float(joint_x), 0.153, side * 6.0), Vector3(0.045, 0.008, 3.05), Color(0.63, 0.54, 0.41), false)
+		_box("BoulevardSidewalkEdge", Vector3(49.0, 0.157, side * 7.48), Vector3(132.0, 0.012, 0.07), Color(0.91, 0.84, 0.69), false)
 		_box("BoulevardGrassVerge", Vector3(49.0, 0.025, side * 8.0), Vector3(132.0, 0.05, 1.0), grass.lightened(0.08), false)
 	# Double yellow no-passing divider and broken white lane separators.
 	for offset in [-0.13, 0.13]:
@@ -334,6 +337,8 @@ func _build_city_rework_layout() -> void:
 		for side in [-1.0, 1.0]:
 			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 66.0), curb, false)
 			_box("CrossStreetWalkway", Vector3(street_x + side * 5.0, 0.075, 0.0), Vector3(2.7, 0.15, 66.0), sidewalk, false)
+			for joint_z in range(-31, 33, 5):
+				_box("CrossStreetWalkwayJoint", Vector3(street_x + side * 5.0, 0.153, float(joint_z)), Vector3(2.55, 0.008, 0.045), Color(0.63, 0.54, 0.41), false)
 			_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, 0.0), Vector3(0.09, 0.022, 66.0), road_white, false)
 		for offset in [-0.13, 0.13]:
 			_box("CrossStreetDoubleYellow", Vector3(street_x + offset, 0.064, 0.0), Vector3(0.075, 0.025, 66.0), road_yellow, false)
@@ -351,6 +356,8 @@ func _build_city_rework_layout() -> void:
 		_box("NeighborhoodStreet", Vector3(49.0, 0.024, street_z), Vector3(132.0, 0.048, 5.4), road_asphalt, false)
 		for side in [-1.0, 1.0]:
 			_box("NeighborhoodSidewalk", Vector3(49.0, 0.07, street_z + side * 3.45), Vector3(132.0, 0.14, 1.5), sidewalk, false)
+			for joint_x in range(-15, 116, 6):
+				_box("NeighborhoodSidewalkJoint", Vector3(float(joint_x), 0.143, street_z + side * 3.45), Vector3(0.04, 0.008, 1.42), Color(0.63, 0.54, 0.41), false)
 			_box("NeighborhoodEdgeLine", Vector3(49.0, 0.057, street_z + side * 2.45), Vector3(132.0, 0.02, 0.075), road_white, false)
 		_box("NeighborhoodCenterLine", Vector3(49.0, 0.058, street_z), Vector3(132.0, 0.02, 0.09), road_yellow, false)
 		for dash_x in range(-10, 115, 10):
@@ -661,8 +668,8 @@ func _build_connected_city_streets() -> void:
 	# Replace the removed district boundary walls with a continuous street grid.
 	# All road surfaces are decorative and non-colliding; the city stays walkable.
 	var asphalt := Color(0.14, 0.17, 0.18)
-	var curb := Color(0.53, 0.54, 0.50)
-	var sidewalk := Color(0.47, 0.48, 0.44)
+	var curb := Color(0.88, 0.81, 0.66)
+	var sidewalk := Color(0.78, 0.70, 0.55)
 	# Two continuous cross-town streets run through the former front/back wall lines.
 	for street_z in [-29.0, 29.0]:
 		_box("CrossTownStreet", Vector3(48.0, 0.022, street_z), Vector3(119.0, 0.045, 5.8), asphalt, false)
