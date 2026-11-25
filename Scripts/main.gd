@@ -3911,7 +3911,7 @@ func _build_recycling_mega_factory() -> void:
 	# Dedicated transfer conveyor links the central cross-feed spine directly to the main waste tank.
 	# Its left end meets the tank outlet and its right end meets the middle of the five-row feed spine.
 	_box("WasteFeedMainFrame", Vector3(136.8, 0.68, 0.0), Vector3(16.8, 0.30, 1.8), dark_steel, false)
-	_box("WasteFeedMainBelt", Vector3(136.8, 0.88, 0.0), Vector3(16.55, 0.08, 1.35), belt_color, false)
+	_box("WasteFeedMainBelt", Vector3(136.8, 0.925, 0.0), Vector3(16.55, 0.08, 1.35), belt_color, false)
 	# Keep the final section of the trunk open where it meets the distributor.
 	for side_z in [-0.78, 0.78]:
 		_box("WasteFeedMainRail", Vector3(135.55, 1.08, side_z), Vector3(14.05, 0.28, 0.08), steel, false)
@@ -3920,9 +3920,9 @@ func _build_recycling_mega_factory() -> void:
 		transfer_roller.rotation_degrees.x = 90.0
 	# Reinforced intake lip makes the physical connection to the tank outlet visible.
 	_box("WasteTankConveyorIntakeFrame", Vector3(128.55, 0.68, 0.0), Vector3(1.25, 0.34, 1.95), dark_steel, false)
-	_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.89, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
+	_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.925, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
 	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
-	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.89, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
+	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.925, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
 	# Split the distributor guard rails around every branch junction so the belts read as one connected path.
 	var distributor_gaps: Array[float] = []
 	for row in range(5):
@@ -3958,12 +3958,12 @@ func _build_recycling_mega_factory() -> void:
 			var tangent_angle := atan2(-cos(angle), sin(angle))
 			var segment_len := 0.22
 			var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.38), dark_steel, false)
-			bend_frame.rotation_degrees.y = rad_to_deg(tangent_angle)
-			var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.90, bend_z), Vector3(segment_len, 0.08, 1.15), belt_color, false)
-			bend_belt.rotation_degrees.y = rad_to_deg(tangent_angle)
+			bend_frame.rotation_degrees.y = rad_to_deg(angle)
+			var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len, 0.08, 1.15), belt_color, false)
+			bend_belt.rotation_degrees.y = rad_to_deg(angle)
 		# Straight outlet overlaps the curved elbow and the main line, leaving no visible seam.
-		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.65, 0.68, feed_z), Vector3(2.25, 0.30, 1.45), dark_steel, false)
-		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.65, 0.89, feed_z), Vector3(2.18, 0.08, 1.22), belt_color, false)
+		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.35, 0.68, feed_z), Vector3(2.85, 0.30, 1.45), dark_steel, false)
+		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(2.78, 0.08, 1.22), belt_color, false)
 		# Branch side rails are omitted at the elbow-to-row connection for a clean open merge.
 
 	mega_factory_machine_labels.clear()
@@ -4248,13 +4248,13 @@ func _build_mega_factory_machine(index: int) -> void:
 	var dark_steel := Color(0.055, 0.085, 0.095)
 	_box("MegaProcessMachineBaseLeft%d" % index, Vector3(x, 0.34, z - 1.48), Vector3(5.0, 0.42, 0.72), dark_steel, false)
 	_box("MegaProcessMachineBaseRight%d" % index, Vector3(x, 0.34, z + 1.48), Vector3(5.0, 0.42, 0.72), dark_steel, false)
-	_box("MegaProcessMachineBody%d" % index, Vector3(x, 2.01, z), Vector3(4.3, 2.7, 3.4), steel, false)
-	_box("MegaProcessMachineTop%d" % index, Vector3(x, 3.44, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
-	_box("MegaProcessMachineWindow%d" % index, Vector3(x, 2.11, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
-	_box("MegaProcessMachineControl%d" % index, Vector3(x + 1.65, 1.66, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
+	_box("MegaProcessMachineBody%d" % index, Vector3(x, 2.46, z), Vector3(4.3, 2.7, 3.4), steel, false)
+	_box("MegaProcessMachineTop%d" % index, Vector3(x, 3.89, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
+	_box("MegaProcessMachineWindow%d" % index, Vector3(x, 2.56, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
+	_box("MegaProcessMachineControl%d" % index, Vector3(x + 1.65, 2.11, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
 	for wheel_x in [x - 1.5, x + 1.5]:
 		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.84, z + 2.0), 0.38, 0.22, accent, true)
-	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 3.86, z - 2.0), 0.13)
+	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 4.31, z - 2.0), 0.13)
 
 func _build_factory_row_main_conveyor(row: int) -> void:
 	var z := _factory_row_z(row)
