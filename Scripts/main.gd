@@ -369,12 +369,10 @@ func _build_city_rework_layout() -> void:
 		for cross_z in [-5.1, 5.1]:
 			for stripe in range(7):
 				_box("CityZebraCrossing", Vector3(street_x - 2.55 + float(stripe) * 0.85, 0.068, cross_z), Vector3(0.52, 0.025, 7.6), road_white, false)
-			_box("CrossStreetStopBar", Vector3(street_x, 0.069, cross_z + (1.05 if cross_z > 0.0 else -1.05)), Vector3(5.8, 0.025, 0.13), road_white, false)
 		for cross_z in [-29.0, 29.0]:
 			for stripe in range(7):
 				_box("CrossTownZebraCrossing", Vector3(street_x, 0.068, cross_z - 2.4 + float(stripe) * 0.8), Vector3(6.8, 0.025, 0.42), road_white, false)
 			for stop_z in [cross_z - 3.6, cross_z + 3.6]:
-				_box("CrossTownStopBar", Vector3(street_x, 0.069, stop_z), Vector3(5.8, 0.025, 0.12), road_white, false)
 
 	# Narrow neighborhood streets get realistic edge paint, broken center markings,
 	# parking-bay separators and curbside pavements.
@@ -401,7 +399,6 @@ func _build_city_rework_layout() -> void:
 		for crossing_x in [16.0, 48.0, 80.0, 104.0]:
 			for stripe in range(7):
 				_box("NeighborhoodZebraCrossing", Vector3(crossing_x - 2.7 + float(stripe) * 0.9, 0.068, street_z), Vector3(0.55, 0.025, 5.0), road_white, false)
-			_box("NeighborhoodStopBar", Vector3(crossing_x, 0.069, street_z + (3.0 if street_z > 0.0 else -3.0)), Vector3(5.8, 0.025, 0.12), road_white, false)
 
 	# Residential and civic buildings are arranged as real blocks, leaving clear
 	# pedestrian routes and keeping the four sorting-station plots unobstructed.
