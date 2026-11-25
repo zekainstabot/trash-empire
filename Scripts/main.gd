@@ -4199,7 +4199,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	tween.tween_property(truck, "position:x", 210.0, 1.0)
 	for package_index in range(loaded_products.size()):
 		var product := loaded_products[package_index]
-		var target := truck.global_position + Vector3(1.15, 2.35, float(package_index - 1) * 0.82)
+		var target := Vector3(211.15, 2.35, z + float(package_index - 1) * 0.82)
 		tween.tween_property(product, "global_position", target, 0.42)
 		tween.tween_callback(func(): product.reparent(truck))
 	# Pay at the instant the third real product is loaded into the truck.
@@ -4327,6 +4327,8 @@ func _process_mega_factory_build(delta: float) -> void:
 	if mega_factory_build_paid >= cost - 0.001:
 		_build_mega_factory_machine(index)
 		_build_mega_factory_machine_connections(index)
+		if column > 0:
+			_clear_factory_row_belt_visuals(row)
 		mega_factory_built_count += 1
 		mega_factory_build_paid = 0.0
 		mega_factory_build_timer = 0.0
@@ -5195,7 +5197,6 @@ func _process_factory_production(delta: float) -> void:
 			continue
 		# Machine 3: turn processed material into the finished line product.
 		if mega_factory_built_count >= first_machine + 2 and factory_row_stage2_stock[row] > 0 and factory_row_product_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
-			_consume_factory_row_belt_items(row, 1)
 			factory_row_stage2_stock[row] -= 1
 			factory_row_product_stock[row] += 1
 			factory_total_products_made += 1
@@ -5205,7 +5206,6 @@ func _process_factory_production(delta: float) -> void:
 			_save_game()
 		# Machine 2: transform the first machine's output into refined components.
 		if mega_factory_built_count >= first_machine + 1 and factory_row_stage1_stock[row] > 0 and factory_row_stage2_stock[row] < FACTORY_PRODUCT_CAPACITY_PER_ROW:
-			_consume_factory_row_belt_items(row, 1)
 			factory_row_stage1_stock[row] -= 1
 			factory_row_stage2_stock[row] += 1
 			_animate_factory_stage_item(row, 1)
@@ -5220,16 +5220,13 @@ func _process_factory_production(delta: float) -> void:
 			_save_game()
 	_refresh_factory_machine_status()
 
-func _consume_factory_row_belt_items(row: int, amount: int) -> void:
+func _clear_factory_row_belt_visuals(row: int) -> void:
 	if row < 0 or row >= 5:
 		return
-	var queue: Array = factory_row_belt_items[row]
-	for item_index in range(mini(amount, queue.size())):
-		var item: Node3D = queue.pop_front()
+	for item in factory_row_belt_items[row]:
 		if is_instance_valid(item):
 			item.queue_free()
-	factory_row_belt_items[row] = queue
-	_reposition_factory_belt_queue(row)
+	factory_row_belt_items[row].clear()
 
 func _animate_factory_stage_item(row: int, stage: int) -> void:
 	_spawn_factory_stage_item(row, stage, false)
@@ -5243,15 +5240,24 @@ func _spawn_factory_stage_item(row: int, stage: int, at_loading_end: bool = fals
 	item.scale = Vector3.ONE * 0.78
 	_build_factory_specific_product(item, row, stage)
 	add_child(item)
-	var queue: Array = factory_row_belt_items[row]
-	queue.append(item)
-	factory_row_belt_items[row] = queue
-	var item_index := queue.size() - 1
-	var lane := (item_index % 3) - 1
-	var slot := int(item_index / 3)
+	var first_machine := row * 3 + 1
+	var next_machine_exists := not at_loading_end and stage < 2 and mega_factory_built_count >= first_machine + stage + 1
 	var stage_start_x := 153.8 + float(stage) * 13.0 + 5.0
-	var target_x := maxf(150.0, 198.0 - float(slot) * 1.05)
-	var target := Vector3(target_x, 1.42, _factory_row_z(row) + float(lane) * 0.38)
+	var target_x := 198.0
+	var target_z := _factory_row_z(row)
+	if next_machine_exists:
+		# Intermediate material travels to the next machine's input, not to the truck.
+		target_x = 151.0 + float(stage + 1) * 13.0 - 2.2
+	else:
+		var queue: Array = factory_row_belt_items[row]
+		var item_index := queue.size()
+		queue.append(item)
+		factory_row_belt_items[row] = queue
+		var lane := (item_index % 3) - 1
+		var slot := int(item_index / 3)
+		target_x = maxf(150.0, 198.0 - float(slot) * 1.05)
+		target_z += float(lane) * 0.38
+	var target := Vector3(target_x, 1.42, target_z)
 	if at_loading_end:
 		item.position = target
 	else:
@@ -5259,11 +5265,14 @@ func _spawn_factory_stage_item(row: int, stage: int, at_loading_end: bool = fals
 		var travel := create_tween()
 		travel.set_trans(Tween.TRANS_SINE)
 		travel.set_ease(Tween.EASE_IN_OUT)
-		travel.tween_property(item, "position", target, maxf(2.2, (target_x - stage_start_x) / (8.0 * _conveyor_speed_multiplier())))
-		travel.tween_callback(func():
-			if is_instance_valid(item):
-				item.position = target
-		)
+		travel.tween_property(item, "position", target, maxf(1.0, absf(target_x - stage_start_x) / (8.0 * _conveyor_speed_multiplier())))
+		if next_machine_exists:
+			travel.tween_callback(item.queue_free)
+		else:
+			travel.tween_callback(func():
+				if is_instance_valid(item):
+					item.position = target
+			)
 
 func _build_factory_specific_product(root: Node3D, row: int, stage: int) -> void:
 	var body_color := [
