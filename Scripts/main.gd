@@ -436,6 +436,26 @@ func _build_city_rework_layout() -> void:
 	_box("UnloadPad", Vector3(1.35, 0.12, -6.5), Vector3(3.5, 0.035, 3.2), Color(0.94, 0.66, 0.13), false)
 	_label_3d("WASTE DROP-OFF", Vector3(1.35, 0.45, -7.45), 0.24)
 
+	# Additional homes fill unused grass blocks between the existing civic buildings.
+	_build_city_block_building(Vector3(28.0, 0.0, -12.0), "HOMES", Color(0.72, 0.58, 0.43), 2, 6.5)
+	_build_city_block_building(Vector3(60.0, 0.0, -12.0), "TOWNHOUSES", Color(0.62, 0.68, 0.62), 2, 6.5)
+	_build_city_block_building(Vector3(28.0, 0.0, 12.0), "HOMES", Color(0.66, 0.61, 0.72), 2, 6.5)
+	_build_city_block_building(Vector3(60.0, 0.0, 12.0), "RESIDENCES", Color(0.70, 0.65, 0.52), 2, 6.5)
+
+	# Evenly spaced street furniture follows the pedestrian strips, not the road surface.
+	for furniture_x in [-8.0, 4.0, 28.0, 40.0, 60.0, 72.0, 92.0, 112.0]:
+		for side_z in [-6.0, 6.0]:
+			_make_lamp(Vector3(furniture_x, 0.0, side_z))
+	for bench_pos in [Vector3(10.0, 0.0, -6.0), Vector3(34.0, 0.0, 6.0), Vector3(58.0, 0.0, -6.0), Vector3(74.0, 0.0, 6.0), Vector3(98.0, 0.0, -6.0)]:
+		_make_bench(bench_pos)
+
+	# Signal heads at every neighborhood-street junction face approaching traffic; red is lit.
+	for signal_x in [16.0, 48.0, 80.0, 104.0]:
+		for signal_z in [-22.0, 22.0]:
+			for corner_x in [-1.0, 1.0]:
+				var signal_base := Vector3(signal_x + corner_x * 4.4, 0.0, signal_z - signf(signal_z) * 3.8)
+				_build_red_traffic_signal(signal_base)
+
 	# Public waste bins are placed beside sidewalks, never in the traffic lanes.
 	for bin_pos in [Vector3(-11.0, 0.0, -7.0), Vector3(12.0, 0.0, 9.0), Vector3(29.0, 0.0, -12.0), Vector3(61.0, 0.0, -8.0), Vector3(91.0, 0.0, 9.0), Vector3(108.0, 0.0, -10.0)]:
 		_make_street_bin(bin_pos, Color(0.18, 0.34, 0.31))
@@ -472,6 +492,14 @@ func _build_city_rework_layout() -> void:
 		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.05, -34.0), Vector3(0.7, 0.1, 0.7), Color(0.88, 0.62, 0.12), false)
 		_box("FinalZoneBoundaryMarker", Vector3(float(marker_x), 0.05, 34.0), Vector3(0.7, 0.1, 0.7), Color(0.88, 0.62, 0.12), false)
 
+
+
+func _build_red_traffic_signal(base: Vector3) -> void:
+	_box("NeighborhoodTrafficSignalPole", base + Vector3(0, 1.55, 0), Vector3(0.10, 3.1, 0.10), Color(0.15, 0.19, 0.20), false)
+	_box("NeighborhoodTrafficSignalHousing", base + Vector3(0, 2.85, 0), Vector3(0.34, 0.82, 0.28), Color(0.045, 0.06, 0.065), false)
+	_cylinder("TrafficSignalRedLight", base + Vector3(0, 3.12, 0.16), 0.075, 0.05, Color(1.0, 0.035, 0.025), false)
+	_cylinder("TrafficSignalAmberLight", base + Vector3(0, 2.87, 0.16), 0.065, 0.045, Color(0.32, 0.20, 0.035), false)
+	_cylinder("TrafficSignalGreenLight", base + Vector3(0, 2.62, 0.16), 0.065, 0.045, Color(0.035, 0.22, 0.09), false)
 
 func _build_city_block_building(center: Vector3, sign_text: String, facade: Color, floors: int, width: float) -> void:
 	# Modular low-poly architecture with a real base, layered facade, roofline,
@@ -4766,22 +4794,46 @@ func _is_city_truck_lane_position(point: Vector3) -> bool:
 	return on_service_road or depot_entrance
 
 func _is_clear_trash_spawn(point: Vector3) -> bool:
-	# Protect road lanes, gates, curb/crosswalk details, pocket parks and parked cars.
+	# Trash may only appear on open grass: never on roads, sidewalks, crossings,
+	# buildings, parks, plazas, parking bays or street furniture footprints.
 	if point.distance_to(SELL_POINT) < 4.0 or _is_city_truck_lane_position(point):
 		return false
 	if point.x >= -10.8 and point.x <= -5.2:
 		return false
-	if (point.x > 14.0 and point.x < 20.0) or (point.x > 46.0 and point.x < 52.0):
+	# Main boulevard and all perpendicular streets.
+	if absf(point.z) < 4.25 or absf(point.z - 22.0) < 2.85 or absf(point.z + 22.0) < 2.85:
 		return false
-	for district_x in [32.0, 64.0]:
-		var park_z := 14.0 if district_x < 48.0 else -14.0
-		if absf(point.x - district_x) < 5.0 and absf(point.z - park_z) < 4.5:
+	for road_x in [16.0, 48.0, 80.0, 104.0]:
+		if absf(point.x - road_x) < 3.55:
 			return false
-		if absf(point.z - 4.1) < 0.8 or absf(point.z + 4.1) < 0.8:
-			if absf(point.x - district_x) < 14.5:
-				return false
-	for car_pos in [Vector3(20.0, 0.0, -15.5), Vector3(44.0, 0.0, 15.5), Vector3(52.0, 0.0, 15.5), Vector3(76.0, 0.0, -15.5)]:
-		if absf(point.x - car_pos.x) < 2.4 and absf(point.z - car_pos.z) < 1.6:
+	# Sidewalk bands along the boulevard and neighborhood streets.
+	if (absf(point.z) >= 4.35 and absf(point.z) <= 7.65):
+		return false
+	if (absf(point.z - 22.0) >= 3.0 and absf(point.z - 22.0) <= 4.25) or (absf(point.z + 22.0) >= 3.0 and absf(point.z + 22.0) <= 4.25):
+		return false
+	# Cross-street walkways run parallel to each north/south road.
+	for road_x in [16.0, 48.0, 80.0, 104.0]:
+		if absf(point.x - road_x) >= 3.8 and absf(point.x - road_x) <= 6.5:
+			return false
+	# Homes, civic buildings and shops; keep a margin around each footprint.
+	for building_x in [6.0, 38.0, 70.0, 96.0]:
+		if absf(point.x - building_x) < 5.8 and (absf(point.z + 31.0) < 6.2 or absf(point.z - 31.0) < 6.2):
+			return false
+	for home_x in [28.0, 60.0]:
+		if absf(point.x - home_x) < 4.8 and absf(absf(point.z) - 12.0) < 5.8:
+			return false
+	if point.x >= 81.0 and point.x <= 111.0 and (absf(point.z) >= 19.0 and absf(point.z) <= 28.0):
+		return false
+	# Public park, fountain plaza, welcome plaza and their paths.
+	if absf(point.x - 70.0) < 10.5 and absf(point.z - 11.5) < 7.0:
+		return false
+	if absf(point.x) < 6.5 and point.z > 1.0 and point.z < 13.5:
+		return false
+	if point.x >= 87.0 and point.x <= 105.0 and point.z >= 7.0 and point.z <= 19.5:
+		return false
+	# Parked cars and their parking bays.
+	for car_pos in [Vector3(20.0, 0.0, -15.5), Vector3(44.0, 0.0, 15.5), Vector3(52.0, 0.0, 15.5), Vector3(76.0, 0.0, -15.5), Vector3(22.0, 0.0, -10.0), Vector3(44.0, 0.0, 10.0), Vector3(68.0, 0.0, -10.0), Vector3(92.0, 0.0, 10.0)]:
+		if absf(point.x - car_pos.x) < 2.8 and absf(point.z - car_pos.z) < 1.8:
 			return false
 	return true
 
