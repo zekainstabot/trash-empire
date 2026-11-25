@@ -3827,7 +3827,7 @@ func _factory_row_remove_sellable_stock(row: int, amount: int) -> void:
 		3: factory_row_product_stock[row] = maxi(0, int(factory_row_product_stock[row]) - amount)
 
 func _factory_row_truck_revenue(row: int, stage: int) -> float:
-	var stage_multiplier := [0.0, 1.0, 1.6, 2.4][clampi(stage, 0, 3)]
+	var stage_multiplier: float = [0.0, 1.0, 1.6, 2.4][clampi(stage, 0, 3)]
 	return _factory_row_unit_price(row) * 3.0 * stage_multiplier
 
 func _factory_row_z(row: int) -> float:
