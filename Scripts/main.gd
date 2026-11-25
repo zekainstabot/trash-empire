@@ -4126,10 +4126,10 @@ func _process_factory_row_shipping(delta: float) -> void:
 		if _factory_row_sell_stage(candidate) <= 0:
 			continue
 		_ensure_factory_row_belt_visuals(candidate)
-		if _factory_row_sellable_stock(candidate) >= 3 and _factory_row_belt_items[candidate].size() >= 3:
+		if _factory_row_sellable_stock(candidate) >= 3 and factory_row_belt_items[candidate].size() >= 3:
 			var first_three_ready := true
 			for item_index in range(3):
-				var belt_item: Node3D = _factory_row_belt_items[candidate][item_index]
+				var belt_item: Node3D = factory_row_belt_items[candidate][item_index]
 				if not is_instance_valid(belt_item) or belt_item.position.x < 196.5:
 					first_three_ready = false
 					break
