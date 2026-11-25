@@ -399,10 +399,6 @@ func _build_city_rework_layout() -> void:
 					clear_of_junctions = false
 			if clear_of_junctions:
 				_box("NeighborhoodParkingDivider", Vector3(float(dash_x), 0.059, street_z + 2.0), Vector3(0.08, 0.02, 0.85), road_white, false)
-		# Zebra crossings at every neighborhood-street / cross-street junction.
-		for crossing_x in [16.0, 48.0, 80.0, 104.0]:
-			for stripe in range(7):
-				_box("NeighborhoodZebraCrossing", Vector3(crossing_x - 2.7 + float(stripe) * 0.9, 0.068, street_z), Vector3(0.55, 0.025, 5.0), road_white, false)
 
 	# Residential and civic buildings are arranged as real blocks, leaving clear
 	# pedestrian routes and keeping the four sorting-station plots unobstructed.
@@ -6214,10 +6210,8 @@ func _build_city_polish() -> void:
 
 
 func _build_city_life_details() -> void:
-	# Add crosswalks and traffic signals at the main connected-road junctions.
+	# Traffic signals at the main connected-road junctions; crosswalk paint is generated once elsewhere.
 	for crossing_x in [16.0, 48.0, 80.0, 104.0]:
-		for stripe in range(7):
-			_box("BoulevardCrosswalkStripe", Vector3(crossing_x - 2.4 + float(stripe) * 0.8, 0.058, 0.0), Vector3(0.46, 0.018, 4.8), Color(0.88, 0.87, 0.78), false)
 		for side in [-1.0, 1.0]:
 			var signal_pos := Vector3(crossing_x + side * 4.2, 0.0, -4.8)
 			_box("TrafficSignalPole", signal_pos + Vector3(0, 1.65, 0), Vector3(0.10, 3.3, 0.10), Color(0.17, 0.21, 0.22), false)
