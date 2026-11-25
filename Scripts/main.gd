@@ -4343,8 +4343,9 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.925, z), Vector3(belt_length - 0.28, 0.075, 1.30), rubber, false)
 	# Side guards run along the full conveyor, with only a short opening exactly
 	# where the incoming branch joins the main belt.
+	# Match the opening to the full width of the incoming branch mouth.
 	var merge_open_start := start_x
-	var merge_open_end := start_x + 2.8
+	var merge_open_end := start_x + 1.45
 	var guard_segments := [
 		[ start_x, merge_open_start ],
 		[ merge_open_end, end_x ]
