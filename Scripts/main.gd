@@ -1624,10 +1624,15 @@ func _animate_robot(delta: float) -> void:
 	robot_right_arm.rotation.x = lerp_angle(robot_right_arm.rotation.x, arm_target_angle, clampf(delta * (13.0 if tool_is_working else 8.0), 0.0, 1.0))
 	var extension_target := 0.34 if tool_is_working else 0.0
 	collection_tool_extension = lerpf(collection_tool_extension, extension_target, clampf(delta * 10.0, 0.0, 1.0))
+	# Extend the collector along the forearm/hand axis (local -Y), not sideways
+	# along local Z. Both attachments remain rigidly aligned with the wrist as the
+	# arm swings forward during collection.
 	if is_instance_valid(magnet_tool):
-		magnet_tool.position.z = -0.015 - collection_tool_extension
+		magnet_tool.position.y = -0.43 - collection_tool_extension
+		magnet_tool.position.z = -0.015
 	if is_instance_valid(suction_tool):
-		suction_tool.position.z = -0.015 - collection_tool_extension
+		suction_tool.position.y = -0.43 - collection_tool_extension
+		suction_tool.position.z = -0.015
 	robot_left_leg.rotation.x = -stride * 0.48
 	robot_right_leg.rotation.x = stride * 0.48
 	robot_head.rotation.y = sin(robot_anim_time * 1.3) * 0.045
