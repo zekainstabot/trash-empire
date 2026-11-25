@@ -294,7 +294,9 @@ func _build_world_bounds() -> void:
 	var wall_height := 8.0
 	_add_invisible_barrier("WorldBoundaryWest", Vector3(-12.8, wall_y, 0.0), Vector3(1.2, wall_height, 76.0))
 	_add_invisible_barrier("WorldBoundaryEast", Vector3(206.8, wall_y, 0.0), Vector3(1.2, wall_height, 76.0))
-	_add_invisible_barrier("WorldBoundaryNorth", Vector3(97.0, wall_y, -36.2), Vector3(220.0, wall_height, 1.2))
+	# Leave a dedicated access opening for the drone annex on the north edge.
+	_add_invisible_barrier("WorldBoundaryNorthWest", Vector3(54.5, wall_y, -36.2), Vector3(135.0, wall_height, 1.2))
+	_add_invisible_barrier("WorldBoundaryNorthEast", Vector3(173.5, wall_y, -36.2), Vector3(67.0, wall_height, 1.2))
 	_add_invisible_barrier("WorldBoundarySouth", Vector3(97.0, wall_y, 36.2), Vector3(220.0, wall_height, 1.2))
 
 
@@ -311,6 +313,10 @@ func _build_city_rework_layout() -> void:
 	# other, causing severe z-fighting across the entire industrial area.
 	_box("FinalCleanupGroundWest", Vector3(121.25, -0.34, 0.0), Vector3(18.5, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
 	_box("FinalCleanupGroundEast", Vector3(205.0, -0.34, 0.0), Vector3(6.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
+	# Separate northern annex gives the autonomous drones a clear home away from roads,
+	# factory conveyors, loading trucks and sorting equipment.
+	_box("DroneHubAnnexGround", Vector3(130.0, -0.34, -43.5), Vector3(18.0, 0.68, 15.0), grass, true)
+	_box("DroneHubAccessPath", Vector3(130.0, 0.035, -38.5), Vector3(5.5, 0.07, 5.5), Color(0.43, 0.46, 0.42), false)
 
 	# Dark charcoal asphalt, raised curbs and layered markings make this read as a
 	# paved multi-lane boulevard rather than a flat grey platform.
@@ -646,8 +652,8 @@ func _factory_waste_drop_point() -> Vector3:
 
 
 func _drone_station_point() -> Vector3:
-	# Center of a three-bay service hangar beside the waste tank.
-	return Vector3(116.5, 0.0, 8.5)
+	# A dedicated northern annex, clear of all city streets and factory equipment.
+	return Vector3(130.0, 0.0, -43.5)
 
 
 func _drone_dock_point(drone: Node3D) -> Vector3:
@@ -655,6 +661,42 @@ func _drone_dock_point(drone: Node3D) -> Vector3:
 	if slot < 0:
 		slot = 0
 	return _drone_station_point() + Vector3(0.0, 1.8, (float(slot) - 1.0) * 2.65)
+
+
+func _build_drone_station() -> void:
+	var dock := _drone_station_point()
+	var dark := Color(0.075, 0.11, 0.13)
+	var metal := Color(0.20, 0.27, 0.29)
+	var teal := Color(0.10, 0.42, 0.39)
+	var glow := Color(0.24, 0.95, 0.72)
+
+	# Three separated landing bays on a compact, self-contained service pad.
+	_box("DroneDepotFoundation", dock + Vector3(0, 0.08, 0), Vector3(8.4, 0.16, 9.4), dark, false)
+	_box("DroneDepotDeck", dock + Vector3(0, 0.19, 0), Vector3(8.05, 0.08, 9.05), Color(0.31, 0.36, 0.36), false)
+	for slot in range(3):
+		var bay_z := (float(slot) - 1.0) * 2.65
+		var bay := dock + Vector3(-1.65, 0.25, bay_z)
+		_box("DroneBayBase", bay, Vector3(2.65, 0.055, 2.35), Color(0.10, 0.19, 0.20), false)
+		_box("DroneBayInset", bay + Vector3(0, 0.035, 0), Vector3(2.35, 0.025, 2.05), teal, false)
+		for edge in [-1.0, 1.0]:
+			_box("DroneBayGuide", bay + Vector3(edge * 1.08, 0.055, 0), Vector3(0.055, 0.025, 1.85), glow, false)
+		_box("DroneBayNoseMark", bay + Vector3(0, 0.06, -0.82), Vector3(0.85, 0.025, 0.07), Color(0.95, 0.72, 0.20), false)
+		_box("DroneChargePost", bay + Vector3(1.25, 0.48, 0.78), Vector3(0.18, 0.78, 0.18), dark, false)
+		_box("DroneChargeLight", bay + Vector3(1.25, 0.88, 0.78), Vector3(0.12, 0.12, 0.12), glow, false)
+
+	# Low-profile canopy stays within the station footprint.
+	for px in [-3.85, 3.85]:
+		for pz in [-4.35, 4.35]:
+			_box("DroneHangarColumn", dock + Vector3(px, 1.55, pz), Vector3(0.24, 3.1, 0.24), metal, false)
+	_box("DroneHangarRoof", dock + Vector3(0, 3.18, 0), Vector3(8.55, 0.22, 9.5), dark, false)
+	_box("DroneHangarFrontFascia", dock + Vector3(0, 2.93, 4.62), Vector3(8.2, 0.34, 0.22), metal, false)
+	_box("DroneHangarSignPanel", dock + Vector3(0, 2.95, -4.62), Vector3(4.4, 0.32, 0.16), teal, false)
+	for px in [-2.7, 0.0, 2.7]:
+		_box("DroneHangarLamp", dock + Vector3(px, 3.02, 0), Vector3(0.72, 0.045, 0.18), glow, false)
+	_box("DroneServiceConsole", dock + Vector3(3.05, 0.72, -3.45), Vector3(0.72, 1.25, 1.05), dark, false)
+	_box("DroneServiceScreen", dock + Vector3(2.67, 1.05, -3.45), Vector3(0.035, 0.48, 0.68), glow, false)
+	_cylinder("DroneDepotBeacon", dock + Vector3(3.1, 2.05, -3.45), 0.12, 0.32, Color(1.0, 0.62, 0.16), false)
+	_label_3d("AUTONOMOUS DRONE HUB", dock + Vector3(0, 3.48, -4.35), 0.20)
 
 
 func _refresh_sorting_district() -> void:
@@ -4403,6 +4445,7 @@ func _build_city_dump_area() -> void:
 	if waste_tank_built:
 		_build_waste_tank_structure()
 		waste_tank_build_label.visible = false
+	_build_drone_station()
 	# No city garbage trucks are spawned; the player supplies the tank.
 
 func _on_waste_tank_build_entered(body: Node3D) -> void:
