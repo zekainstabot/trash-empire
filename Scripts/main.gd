@@ -788,6 +788,8 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 		_add_robot_box(robot, "LoaderTruckCargoRail", Vector3(side * 0.49, 1.05, 0.55), Vector3(0.07, 0.50, 0.78), robot_color.darkened(0.16))
 		_add_robot_box(robot, "LoaderTruckCabSideWindow", Vector3(side * 0.447, 1.25, -0.48), Vector3(0.035, 0.34, 0.48), glass)
 		_add_robot_box(robot, "LoaderTruckSideStep", Vector3(side * 0.52, 0.49, -0.38), Vector3(0.16, 0.10, 0.50), metal)
+		_add_robot_box(robot, "LoaderTruckHazardStripe", Vector3(side * 0.49, 0.80, 0.55), Vector3(0.035, 0.10, 0.55), Color(0.96, 0.64, 0.14))
+		_add_robot_box(robot, "LoaderHydraulicPiston", Vector3(side * 0.34, 0.58, -0.99), Vector3(0.075, 0.28, 0.075), Color(0.46, 0.53, 0.54))
 	# Loader arms and a broad, slightly raised scoop at the front.
 	_add_robot_box(robot, "LoaderArmLeft", Vector3(-0.43, 0.48, -0.82), Vector3(0.12, 0.16, 0.74), metal)
 	_add_robot_box(robot, "LoaderArmRight", Vector3(0.43, 0.48, -0.82), Vector3(0.12, 0.16, 0.74), metal)
@@ -796,7 +798,10 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 	_add_robot_box(robot, "LoaderBucketLeftSide", Vector3(-0.48, 0.32, -1.38), Vector3(0.10, 0.32, 0.48), metal)
 	_add_robot_box(robot, "LoaderBucketRightSide", Vector3(0.48, 0.32, -1.38), Vector3(0.10, 0.32, 0.48), metal)
 	_add_robot_box(robot, "LoaderBucketCuttingEdge", Vector3(0, 0.12, -1.66), Vector3(1.08, 0.07, 0.10), Color(0.78, 0.82, 0.78))
-	# Four large rubber tires with visible hubs.
+	for tooth_x in [-0.42, -0.21, 0.0, 0.21, 0.42]:
+		_add_robot_box(robot, "LoaderBucketTooth", Vector3(tooth_x, 0.08, -1.72), Vector3(0.085, 0.07, 0.13), Color(0.94, 0.66, 0.16))
+	# Four large rubber tires with hubs that rotate with the wheel.
+	var robot_wheels: Array[Node3D] = []
 	for side in [-1.0, 1.0]:
 		for z in [-0.62, 0.72]:
 			var wheel := MeshInstance3D.new()
@@ -811,18 +816,19 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 			wheel.rotation_degrees.z = 90.0
 			wheel.material_override = _mat(Color(0.035, 0.045, 0.05))
 			robot.add_child(wheel)
+			robot_wheels.append(wheel)
 			var hub := MeshInstance3D.new()
 			hub.name = "SortingRobotWheelHub"
 			var hub_mesh := CylinderMesh.new()
 			hub_mesh.top_radius = 0.15
 			hub_mesh.bottom_radius = 0.15
-			hub_mesh.height = 0.21
+			hub_mesh.height = 0.06
 			hub_mesh.radial_segments = 20
 			hub.mesh = hub_mesh
-			hub.position = Vector3(side * 0.55, 0.34, z)
-			hub.rotation_degrees.z = 90.0
+			hub.position = Vector3.ZERO
 			hub.material_override = _mat(Color(0.40, 0.48, 0.47))
-			robot.add_child(hub)
+			wheel.add_child(hub)
+	robot.set_meta("wheels", robot_wheels)
 	robot.set_meta("category_index", category_index)
 	robot.set_meta("target", null)
 	robot.set_meta("cargo", null)
