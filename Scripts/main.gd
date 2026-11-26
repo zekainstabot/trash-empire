@@ -6186,8 +6186,8 @@ func _build_city_polish() -> void:
 			_box("ParkPlanter", planter_pos, Vector3(1.25, 0.22, 1.05), Color(0.43, 0.29, 0.18), false)
 			_cylinder("ParkShrub", planter_pos + Vector3(0, 0.42, 0), 0.43, 0.62, Color(0.19, 0.39, 0.20), false)
 			_make_bench(Vector3(district_x + side * 2.55, 0.0, park_z + 1.75))
-		_build_neighborhood_tree(Vector3(district_x - 3.0, 0.0, park_z + 2.3))
-		_build_neighborhood_tree(Vector3(district_x + 3.0, 0.0, park_z + 2.3))
+		_build_neighborhood_tree(Vector3(district_x - 2.5, 0.0, park_z + 1.8))
+		_build_neighborhood_tree(Vector3(district_x + 2.5, 0.0, park_z + 1.8))
 		_make_lamp(Vector3(district_x - 4.5, 0.0, park_z))
 		_make_lamp(Vector3(district_x + 4.5, 0.0, park_z))
 
@@ -6277,7 +6277,7 @@ func _build_commercial_district() -> void:
 	_cylinder("FountainColumn", Vector3(96, 0.92, 13), 0.34, 0.72, Color(0.68, 0.67, 0.60), false)
 	_cylinder("FountainTopBowl", Vector3(96, 1.34, 13), 0.82, 0.18, Color(0.55, 0.61, 0.59), false)
 	_cylinder("FountainJet", Vector3(96, 1.70, 13), 0.10, 0.62, Color(0.26, 0.66, 0.78), false)
-	for corner in [Vector3(92, 0, 9), Vector3(100, 0, 9), Vector3(92, 0, 17), Vector3(100, 0, 17)]:
+	for corner in [Vector3(92.5, 0, 9), Vector3(99.5, 0, 9), Vector3(92.5, 0, 17), Vector3(99.5, 0, 17)]:
 		_box("MarketPlanterStone", corner + Vector3(0, 0.35, 0), Vector3(1.8, 0.7, 1.5), Color(0.36, 0.38, 0.34), false)
 		_cylinder("MarketPlanterShrub", corner + Vector3(0, 0.95, 0), 0.62, 0.9, Color(0.17, 0.37, 0.20), false)
 	for bench in [Vector3(92, 0, 13), Vector3(100, 0, 13)]:
