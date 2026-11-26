@@ -644,44 +644,58 @@ func _spawn_sorting_station(station_index: int) -> void:
 func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 	var robot := Node3D.new()
 	robot.name = "SortingRobot_%d" % category_index
-	# Give each sorting unit a recognizable compact service-robot silhouette.
-	_add_robot_box(robot, "SortingRobotBody", Vector3(0, 0.68, 0), Vector3(0.92, 0.68, 0.78), robot_color)
-	_add_robot_box(robot, "SortingRobotFrontArmor", Vector3(0, 0.73, -0.405), Vector3(0.72, 0.43, 0.055), robot_color.lightened(0.20))
-	_add_robot_box(robot, "SortingRobotTop", Vector3(0, 1.12, 0.02), Vector3(0.62, 0.18, 0.58), Color(0.10, 0.17, 0.19))
-	_add_robot_sphere(robot, "SortingRobotHead", Vector3(0, 1.43, -0.08), 0.30, Color(0.67, 0.77, 0.75))
-	_add_robot_box(robot, "SortingRobotVisor", Vector3(0, 1.45, -0.35), Vector3(0.43, 0.15, 0.035), Color(0.015, 0.06, 0.07))
-	_add_robot_sphere(robot, "SortingRobotEyeL", Vector3(-0.12, 1.46, -0.377), 0.045, Color(0.16, 1.0, 0.78))
-	_add_robot_sphere(robot, "SortingRobotEyeR", Vector3(0.12, 1.46, -0.377), 0.045, Color(0.16, 1.0, 0.78))
-	_add_robot_box(robot, "SortingRobotFrontCollector", Vector3(0, 0.36, -0.58), Vector3(0.78, 0.15, 0.32), Color(0.72, 0.79, 0.76))
-	_add_robot_box(robot, "SortingRobotStatusLamp", Vector3(0, 0.98, -0.32), Vector3(0.16, 0.045, 0.025), Color(0.12, 0.95, 0.70))
-	_add_robot_box(robot, "SortingRobotLowerBumper", Vector3(0, 0.27, -0.48), Vector3(0.88, 0.13, 0.18), Color(0.10, 0.15, 0.17))
-	_add_robot_box(robot, "SortingRobotRearModule", Vector3(0, 0.78, 0.43), Vector3(0.62, 0.42, 0.18), Color(0.12, 0.19, 0.21))
-	_add_robot_box(robot, "SortingRobotRearStatus", Vector3(0, 0.82, 0.535), Vector3(0.34, 0.07, 0.025), Color(0.95, 0.42, 0.16))
+	# Compact autonomous loader-truck: enclosed cab, rear cargo body and a front bucket.
+	var dark := Color(0.055, 0.075, 0.08)
+	var metal := Color(0.58, 0.66, 0.65)
+	var glass := Color(0.035, 0.13, 0.16)
+	_add_robot_box(robot, "LoaderTruckChassis", Vector3(0, 0.57, 0.08), Vector3(1.02, 0.42, 1.62), dark)
+	_add_robot_box(robot, "LoaderTruckRearBody", Vector3(0, 0.93, 0.55), Vector3(0.94, 0.68, 0.82), robot_color)
+	_add_robot_box(robot, "LoaderTruckRearTop", Vector3(0, 1.30, 0.55), Vector3(0.82, 0.08, 0.72), robot_color.lightened(0.16))
+	_add_robot_box(robot, "LoaderTruckCab", Vector3(0, 1.08, -0.48), Vector3(0.88, 0.92, 0.78), robot_color.lightened(0.10))
+	_add_robot_box(robot, "LoaderTruckWindshield", Vector3(0, 1.20, -0.885), Vector3(0.68, 0.40, 0.035), glass)
+	_add_robot_box(robot, "LoaderTruckRoof", Vector3(0, 1.57, -0.47), Vector3(0.94, 0.12, 0.82), dark)
+	_add_robot_box(robot, "LoaderTruckRoofBeacon", Vector3(0, 1.68, -0.47), Vector3(0.22, 0.08, 0.18), Color(0.98, 0.62, 0.16))
+	_add_robot_box(robot, "LoaderTruckFrontGrille", Vector3(0, 0.72, -0.91), Vector3(0.62, 0.25, 0.045), dark)
+	_add_robot_box(robot, "LoaderTruckBumper", Vector3(0, 0.42, -0.94), Vector3(1.08, 0.14, 0.18), metal)
 	for side in [-1.0, 1.0]:
-		_add_robot_box(robot, "SortingRobotSideArmor", Vector3(side * 0.48, 0.70, 0.02), Vector3(0.12, 0.48, 0.58), robot_color.darkened(0.18))
-		_add_robot_box(robot, "SortingRobotSideAccent", Vector3(side * 0.55, 0.72, -0.12), Vector3(0.025, 0.10, 0.30), Color(0.18, 0.88, 0.72))
+		_add_robot_box(robot, "LoaderTruckHeadlight", Vector3(side * 0.37, 0.77, -0.945), Vector3(0.16, 0.12, 0.045), Color(1.0, 0.86, 0.48))
+		_add_robot_box(robot, "LoaderTruckCargoRail", Vector3(side * 0.49, 1.05, 0.55), Vector3(0.07, 0.50, 0.78), robot_color.darkened(0.16))
+		_add_robot_box(robot, "LoaderTruckCabSideWindow", Vector3(side * 0.447, 1.25, -0.48), Vector3(0.035, 0.34, 0.48), glass)
+		_add_robot_box(robot, "LoaderTruckSideStep", Vector3(side * 0.52, 0.49, -0.38), Vector3(0.16, 0.10, 0.50), metal)
+	# Loader arms and a broad, slightly raised scoop at the front.
+	_add_robot_box(robot, "LoaderArmLeft", Vector3(-0.43, 0.48, -0.82), Vector3(0.12, 0.16, 0.74), metal)
+	_add_robot_box(robot, "LoaderArmRight", Vector3(0.43, 0.48, -0.82), Vector3(0.12, 0.16, 0.74), metal)
+	_add_robot_box(robot, "LoaderBucketBack", Vector3(0, 0.30, -1.22), Vector3(0.92, 0.30, 0.16), metal)
+	_add_robot_box(robot, "LoaderBucketFloor", Vector3(0, 0.17, -1.40), Vector3(1.02, 0.10, 0.50), metal)
+	_add_robot_box(robot, "LoaderBucketLeftSide", Vector3(-0.48, 0.32, -1.38), Vector3(0.10, 0.32, 0.48), metal)
+	_add_robot_box(robot, "LoaderBucketRightSide", Vector3(0.48, 0.32, -1.38), Vector3(0.10, 0.32, 0.48), metal)
+	_add_robot_box(robot, "LoaderBucketCuttingEdge", Vector3(0, 0.12, -1.66), Vector3(1.08, 0.07, 0.10), Color(0.78, 0.82, 0.78))
+	# Four large rubber tires with visible hubs.
 	for side in [-1.0, 1.0]:
-		for z in [-0.28, 0.28]:
+		for z in [-0.62, 0.72]:
 			var wheel := MeshInstance3D.new()
+			wheel.name = "SortingRobotWheel"
 			var wheel_mesh := CylinderMesh.new()
-			wheel_mesh.top_radius = 0.22
-			wheel_mesh.bottom_radius = 0.22
-			wheel_mesh.height = 0.14
+			wheel_mesh.top_radius = 0.30
+			wheel_mesh.bottom_radius = 0.30
+			wheel_mesh.height = 0.20
+			wheel_mesh.radial_segments = 20
 			wheel.mesh = wheel_mesh
-			wheel.position = Vector3(side * 0.52, 0.32, z)
-			wheel.rotation_degrees.z = 90
-			wheel.material_override = _mat(Color(0.045, 0.055, 0.06))
+			wheel.position = Vector3(side * 0.55, 0.34, z)
+			wheel.rotation_degrees.z = 90.0
+			wheel.material_override = _mat(Color(0.035, 0.045, 0.05))
 			robot.add_child(wheel)
 			var hub := MeshInstance3D.new()
 			hub.name = "SortingRobotWheelHub"
 			var hub_mesh := CylinderMesh.new()
-			hub_mesh.top_radius = 0.105
-			hub_mesh.bottom_radius = 0.105
-			hub_mesh.height = 0.155
+			hub_mesh.top_radius = 0.15
+			hub_mesh.bottom_radius = 0.15
+			hub_mesh.height = 0.21
+			hub_mesh.radial_segments = 20
 			hub.mesh = hub_mesh
-			hub.position = Vector3(side * 0.52, 0.32, z)
+			hub.position = Vector3(side * 0.55, 0.34, z)
 			hub.rotation_degrees.z = 90.0
-			hub.material_override = _mat(Color(0.34, 0.43, 0.44))
+			hub.material_override = _mat(Color(0.40, 0.48, 0.47))
 			robot.add_child(hub)
 	robot.set_meta("category_index", category_index)
 	robot.set_meta("target", null)
@@ -689,7 +703,6 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 	robot.set_meta("mode", "idle")
 	robot.set_meta("scan_timer", 0.0)
 	return robot
-
 
 func _factory_waste_drop_point() -> Vector3:
 	# Center of the open loading apron in front of the factory waste tank.
