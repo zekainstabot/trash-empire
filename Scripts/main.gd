@@ -4745,7 +4745,7 @@ func _load_game() -> void:
 	yard_stage = 4 # All four areas are permanently open in the unified city.
 	district_build_paid = 0.0
 	factory_stage = clampi(int(save.get_value("progress", "factory_stage", 1)), 1, 5)
-	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 12.0, 35.0, 80.0, 160.0][factory_stage])
+	factory_build_paid = clampf(float(save.get_value("progress", "factory_build_paid", 0.0)), 0.0, [0.0, 0.0, 20.0, 55.0, 110.0, 190.0][factory_stage])
 	mega_factory_built_count = clampi(int(save.get_value("progress", "mega_factory_built_count", 1)), 1, 15)
 	factory_row_input_stock = save.get_value("progress", "factory_row_input_stock", [0, 0, 0, 0, 0])
 	factory_row_stage1_stock = save.get_value("progress", "factory_row_stage1_stock", [0, 0, 0, 0, 0])
