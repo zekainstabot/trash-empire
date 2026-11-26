@@ -1947,8 +1947,8 @@ func _build_ui() -> void:
 	# Keep scrolling fully functional while hiding the visible scrollbar.
 	skill_scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	skill_scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	skill_scroll_container.scroll_deadzone = 4
-	skill_scroll_container.scroll_vertical_custom_step = 22.0
+	skill_scroll_container.scroll_deadzone = 1
+	skill_scroll_container.scroll_vertical_custom_step = 48.0
 	skill_scroll_container.mouse_filter = Control.MOUSE_FILTER_STOP
 	upgrade_panel.add_child(skill_scroll_container)
 	skill_map = VBoxContainer.new()
@@ -1956,9 +1956,15 @@ func _build_ui() -> void:
 	skill_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	skill_map.add_theme_constant_override("separation", 10)
 	skill_scroll_container.add_child(skill_map)
-	var hint := _label("DRAG PAD TO MOVE", Vector2(18, -28), 12, layer)
+	var hint := _label("SWIPE UP / DOWN TO BROWSE", Vector2(0, -30), 12, upgrade_panel)
+	hint.anchor_left = 0.0
+	hint.anchor_right = 1.0
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
+	hint.offset_left = 12
+	hint.offset_right = -12
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_color_override("font_color", Color(0.48, 0.78, 0.69))
 	_build_main_menu(layer, screen)
 
 
@@ -2317,7 +2323,7 @@ func _build_skill_tree(parent: Control) -> void:
 			# One large touch target per upgrade: the title, description and price
 			# all belong to the same button, so players can tap anywhere on the card.
 			var upgrade_row := Button.new()
-			upgrade_row.custom_minimum_size = Vector2(0, 154)
+			upgrade_row.custom_minimum_size = Vector2(0, 126)
 			upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			upgrade_row.add_theme_stylebox_override("normal", _button_style(Color(0.075, 0.15, 0.15)))
 			upgrade_row.add_theme_stylebox_override("hover", _button_style(Color(0.11, 0.25, 0.21)))
@@ -2385,7 +2391,7 @@ func _build_skill_tree(parent: Control) -> void:
 			upgrade_info.add_child(description)
 
 			var price_panel := PanelContainer.new()
-			price_panel.custom_minimum_size = Vector2(104, 94)
+			price_panel.custom_minimum_size = Vector2(92, 76)
 			price_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 			price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			var price_style := StyleBoxFlat.new()
@@ -2766,7 +2772,7 @@ func _start_upgrade_scroll_glide() -> void:
 		return
 	var scroll_bar := skill_scroll_container.get_v_scroll_bar()
 	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
-	var glide_distance := clampf(skill_scroll_velocity.y * 0.42, -620.0, 620.0)
+	var glide_distance := clampf(skill_scroll_velocity.y * 0.55, -850.0, 850.0)
 	if absf(glide_distance) >= 12.0:
 		skill_scroll_target = clampf(skill_scroll_target + glide_distance, 0.0, float(scroll_max))
 		skill_scroll_smoothing = true
@@ -2781,7 +2787,7 @@ func _process_upgrade_scroll_smoothing(delta: float) -> void:
 	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
 	skill_scroll_target = clampf(skill_scroll_target, 0.0, float(scroll_max))
 	var current_scroll := float(skill_scroll_container.scroll_vertical)
-	var blend := 1.0 - exp(-delta * 2.6)
+	var blend := 1.0 - exp(-delta * 7.0)
 	var next_scroll := lerpf(current_scroll, skill_scroll_target, blend)
 	if absf(skill_scroll_target - next_scroll) < 0.45:
 		next_scroll = skill_scroll_target
