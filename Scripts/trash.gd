@@ -151,7 +151,13 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.065
 			visual_rotation.y = rng.randf_range(-0.45, 0.45)
-		4, 13, 21, 22, 28:
+		22:
+			shape = _mobile_plastic_bag_mesh()
+			base_color = Color.WHITE
+			transparent = true
+			visual_position.y = 0.025
+			visual_rotation.y = rng.randf_range(0.0, TAU)
+		4, 13, 21, 28:
 			var sheet := BoxMesh.new()
 			sheet.size = Vector3(0.46, 0.045, 0.30)
 			shape = sheet
@@ -293,7 +299,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 8]:
+	if item_roll in [0, 1, 2, 3, 8, 22]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -409,6 +415,52 @@ func _mobile_food_wrapper_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
 			surface.add_vertex(p01)
 			surface.add_vertex(p11)
 			surface.add_vertex(p10)
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_plastic_bag_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# One translucent, wrinkled sheet mesh with integrated loop handles.
+	const GRID := 6
+	for z_index in range(GRID):
+		for x_index in range(GRID):
+			var x0 := -0.245 + float(x_index) * 0.49 / float(GRID)
+			var x1 := x0 + 0.49 / float(GRID)
+			var z0 := -0.19 + float(z_index) * 0.38 / float(GRID)
+			var z1 := z0 + 0.38 / float(GRID)
+			var p00 := Vector3(x0, 0.055 + 0.025 * sin(x0 * 31.0 + z0 * 17.0), z0)
+			var p01 := Vector3(x1, 0.055 + 0.025 * sin(x1 * 31.0 + z0 * 17.0), z0)
+			var p10 := Vector3(x0, 0.055 + 0.025 * sin(x0 * 31.0 + z1 * 17.0), z1)
+			var p11 := Vector3(x1, 0.055 + 0.025 * sin(x1 * 31.0 + z1 * 17.0), z1)
+			var shade := Color(0.70, 0.84, 0.80, 0.72) if (x_index + z_index) % 3 else Color(0.88, 0.94, 0.89, 0.80)
+			surface.set_color(shade)
+			surface.add_vertex(p00)
+			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.add_vertex(p11)
+	# Two raised, loop-shaped handles are part of the same mesh/surface.
+	for side in [-1.0, 1.0]:
+		var previous := Vector3(side * 0.12, 0.075, -0.11)
+		for step in range(1, 13):
+			var angle := PI * float(step) / 12.0
+			var current := Vector3(side * (0.12 + 0.075 * sin(angle)), 0.075 + 0.16 * sin(angle), -0.11)
+			var width := 0.018
+			var a := previous + Vector3(-width, 0.0, 0.0)
+			var b := previous + Vector3(width, 0.0, 0.0)
+			var c := current + Vector3(-width, 0.0, 0.0)
+			var d := current + Vector3(width, 0.0, 0.0)
+			surface.set_color(Color(0.78, 0.90, 0.85, 0.82))
+			surface.add_vertex(a)
+			surface.add_vertex(c)
+			surface.add_vertex(b)
+			surface.add_vertex(b)
+			surface.add_vertex(c)
+			surface.add_vertex(d)
+			previous = current
 	surface.generate_normals()
 	return surface.commit()
 
@@ -719,13 +771,18 @@ func _make_banana_peel(rng: RandomNumberGenerator) -> void:
 	rotation.y = rng.randf_range(0.0, TAU)
 
 func _make_plastic_bag(rng: RandomNumberGenerator) -> void:
-	var body := _flat_box(Vector3(0.46, 0.055, 0.38), Vector3(0, 0.12, 0), Color(0.74, 0.82, 0.78, 0.78))
-	body.rotation.y = rng.randf_range(-0.35, 0.35)
-	add_child(body)
-	for side in [-1.0, 1.0]:
-		var handle := _flat_box(Vector3(0.10, 0.22, 0.055), Vector3(side * 0.14, 0.23, 0), Color(0.82, 0.88, 0.82, 0.82))
-		handle.rotation.z = side * 0.25
-		add_child(handle)
+	var bag := MeshInstance3D.new()
+	bag.name = "WrinkledPlasticShoppingBag"
+	bag.mesh = _mobile_plastic_bag_mesh()
+	bag.position.y = 0.025
+	bag.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE, true)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.30
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	bag.material_override = material
+	add_child(bag)
+
 
 func _make_milk_carton(rng: RandomNumberGenerator) -> void:
 	var body := _flat_box(Vector3(0.34, 0.42, 0.28), Vector3(0, 0.23, 0), Color(0.82, 0.84, 0.77))
