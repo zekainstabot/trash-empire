@@ -364,7 +364,7 @@ func _build_industrial_road_fixtures() -> void:
 			for side in [-1.0, 1.0]:
 				_box("IndustrialCrossStreetReflector", Vector3(street_x + side * 2.86, 0.078, float(road_z)), Vector3(0.10, 0.025, 0.30), reflector, false)
 		for side in [-1.0, 1.0]:
-			var drain_x := street_x + side * 3.08
+			var drain_x: float = float(street_x) + float(side) * 3.08
 			for drain_z in [-27.0, -9.0, 9.0, 27.0]:
 				_box("IndustrialStreetDrainFrame", Vector3(drain_x, 0.074, drain_z), Vector3(0.34, 0.035, 0.92), drain_steel, false)
 				for slot in range(5):
