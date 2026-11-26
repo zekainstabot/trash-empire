@@ -38,18 +38,18 @@ jobs:
           set -euo pipefail
           PACKAGES=(
             "platform-tools"
-            "platforms;android-35"
-            "build-tools;35.0.1"
+            "platforms;android-36"
+            "build-tools;36.1.0"
             "cmdline-tools;latest"
             "cmake;3.10.2.4988404"
-            "ndk;28.1.13356709"
+            "ndk;29.0.14206865"
           )
           for attempt in 1 2 3; do
             echo "Android SDK installation attempt $attempt/3"
             # Remove truncated SDK archives and partial NDK extraction before retrying.
-            rm -rf "$HOME/.android/cache" "$ANDROID_HOME/ndk/28.1.13356709"
+            rm -rf "$HOME/.android/cache" "$ANDROID_HOME/ndk/29.0.14206865"
             if sdkmanager --install "${PACKAGES[@]}"; then
-              if [ -d "$ANDROID_HOME/ndk/28.1.13356709" ]; then
+              if [ -d "$ANDROID_HOME/ndk/29.0.14206865" ]; then
                 echo "Android SDK packages and NDK installed successfully."
                 break
               fi
@@ -63,18 +63,18 @@ jobs:
           done
           yes | sdkmanager --licenses || true
 
-      - name: Download Godot 4.5.1 and matching export templates
+      - name: Download Godot 4.7.2 and matching export templates
         shell: bash
         run: |
-          wget -q https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
-          unzip -q Godot_v4.5.1-stable_linux.x86_64.zip
-          chmod +x Godot_v4.5.1-stable_linux.x86_64
-          echo "GODOT_BIN=$PWD/Godot_v4.5.1-stable_linux.x86_64" >> "$GITHUB_ENV"
-          wget -q https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_export_templates.tpz
-          mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
-          unzip -q Godot_v4.5.1-stable_export_templates.tpz -d /tmp/godot-templates
-          cp -R /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.5.1.stable/"
-          test -s "$HOME/.local/share/godot/export_templates/4.5.1.stable/android_source.zip"
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q Godot_v4.7.2-stable_linux.x86_64.zip
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+          echo "GODOT_BIN=$PWD/Godot_v4.7.2-stable_linux.x86_64" >> "$GITHUB_ENV"
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          unzip -q Godot_v4.7.2-stable_export_templates.tpz -d /tmp/godot-templates
+          cp -R /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
+          test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
 
       - name: Configure permanent release signing key
         shell: bash
@@ -105,8 +105,16 @@ jobs:
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
           EOF
-          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/platforms/android-36"
           test -d "$JAVA_HOME"
+
+      - name: Set Android package version from this workflow run
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i "s/^version\\/code=.*/version\\/code=${GITHUB_RUN_NUMBER}/" export_presets.cfg
+          sed -i "s/^version\\/name=.*/version\\/name=\\\"1.0.${GITHUB_RUN_NUMBER}\\\"/" export_presets.cfg
+          grep -nE 'version/code|version/name|target_sdk' export_presets.cfg
 
       - name: Import resources
         shell: bash
@@ -155,6 +163,7 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: 'Zeka City: Cleanup Empire v1.0.${{ github.run_number }}'
+          make_latest: true
           generate_release_notes: true
           files: |
             build/TrashEmpire-release.apk
