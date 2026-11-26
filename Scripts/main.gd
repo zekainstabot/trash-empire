@@ -3755,7 +3755,7 @@ func _process_ground_collector(delta: float) -> void:
 	if travel_distance > 0.0001:
 		for wheel in rover.get_meta("wheels", []):
 			if is_instance_valid(wheel):
-				wheel.rotate_object_local(Vector3.RIGHT, travel_distance * 3.6)
+				wheel.rotate_object_local(Vector3.UP, travel_distance * 3.6)
 	rover.set_meta("previous_position", rover.global_position)
 	if bool(rover.get_meta("returning", false)):
 		var home := _factory_waste_drop_point()
@@ -6490,6 +6490,16 @@ func _spawn_conveyor_item(item_value: float) -> void:
 func _process_teddy_shipping(delta: float) -> void:
 	if factory_stage < 5 or delivery_trucks.is_empty():
 		return
+	for truck in delivery_trucks:
+		if not is_instance_valid(truck):
+			continue
+		var previous_position: Vector3 = truck.get_meta("previous_position", truck.global_position)
+		var travel_distance := truck.global_position.distance_to(previous_position)
+		if travel_distance > 0.0001:
+			for wheel in truck.get_meta("wheels", []):
+				if is_instance_valid(wheel):
+					wheel.rotate_object_local(Vector3.UP, travel_distance * 2.1)
+		truck.set_meta("previous_position", truck.global_position)
 	if shipping_active:
 		return
 	var interval := _truck_dispatch_interval()
@@ -6542,6 +6552,34 @@ func _build_delivery_conveyor(start_point: Vector3, end_point: Vector3) -> void:
 		var z_offset := -length * 0.5 + length * float(i + 1) / 10.0
 		_box_child(base, "Support_%d" % i, Vector3(0, -0.62, z_offset), Vector3(1.25, 0.78, 0.16), Color(0.24, 0.27, 0.30))
 
+func _delivery_truck_box(parent: Node3D, part_name: String, local_position: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var part_mesh := BoxMesh.new()
+	part_mesh.size = size
+	part.mesh = part_mesh
+	part.position = local_position
+	part.material_override = _mat(color)
+	parent.add_child(part)
+	return part
+
+
+func _delivery_truck_cylinder(parent: Node3D, part_name: String, local_position: Vector3, radius: float, height: float, color: Color, rotation: Vector3 = Vector3.ZERO) -> MeshInstance3D:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var part_mesh := CylinderMesh.new()
+	part_mesh.top_radius = radius
+	part_mesh.bottom_radius = radius
+	part_mesh.height = height
+	part_mesh.radial_segments = 10
+	part.mesh = part_mesh
+	part.position = local_position
+	part.rotation_degrees = rotation
+	part.material_override = _mat(color)
+	parent.add_child(part)
+	return part
+
+
 func _create_delivery_truck(index: int) -> void:
 	var truck := Node3D.new()
 	truck.name = "TeddyDeliveryTruck%d" % (index + 1)
@@ -6552,14 +6590,14 @@ func _create_delivery_truck(index: int) -> void:
 	cargo_mesh.size = Vector3(3.5, 1.8, 3.0)
 	cargo.mesh = cargo_mesh
 	cargo.position = Vector3(0.0, 1.45, 0.0)
-	cargo.material_override = _mat(Color(0.88, 0.88, 0.78))
+	cargo.material_override = _mat(Color(0.61, 0.68, 0.68))
 	truck.add_child(cargo)
 	var cab := MeshInstance3D.new()
 	var cab_mesh := BoxMesh.new()
 	cab_mesh.size = Vector3(1.65, 1.65, 2.8)
 	cab.mesh = cab_mesh
 	cab.position = Vector3(-2.1, 1.35, 0.0)
-	cab.material_override = _mat(Color(0.82, 0.22, 0.12))
+	cab.material_override = _mat(Color(0.91, 0.55, 0.13))
 	truck.add_child(cab)
 	var windshield := MeshInstance3D.new()
 	var windshield_mesh := BoxMesh.new()
@@ -6568,6 +6606,7 @@ func _create_delivery_truck(index: int) -> void:
 	windshield.position = Vector3(-3.0, 1.65, 0.0)
 	windshield.material_override = _mat(Color(0.12, 0.23, 0.29))
 	truck.add_child(windshield)
+	var truck_wheels: Array[Node3D] = []
 	for wheel_x in [-2.5, 0.0, 2.4]:
 		for wheel_z in [-1.45, 1.45]:
 			var wheel := MeshInstance3D.new()
@@ -6580,14 +6619,39 @@ func _create_delivery_truck(index: int) -> void:
 			wheel.rotation_degrees.x = 90.0
 			wheel.material_override = _mat(Color(0.035, 0.04, 0.045))
 			truck.add_child(wheel)
+			truck_wheels.append(wheel)
+			_delivery_truck_cylinder(truck, "DeliveryTruckWheelHub", Vector3(wheel_x, 0.48, wheel_z + signf(wheel_z) * 0.13), 0.18, 0.055, Color(0.54, 0.60, 0.58), Vector3(90.0, 0.0, 0.0))
+			_delivery_truck_box(truck, "DeliveryTruckMudguard", Vector3(wheel_x, 0.96, wheel_z), Vector3(0.94, 0.10, 0.20), Color(0.23, 0.30, 0.32))
+	_delivery_truck_box(truck, "DeliveryTruckChassis", Vector3(0.0, 0.48, 0.0), Vector3(6.45, 0.28, 2.50), Color(0.10, 0.15, 0.17))
+	for side in [-1.0, 1.0]:
+		_delivery_truck_box(truck, "DeliveryTruckCargoRail", Vector3(0.0, 2.37, side * 1.54), Vector3(3.55, 0.12, 0.10), Color(0.29, 0.37, 0.39))
+		_delivery_truck_box(truck, "DeliveryTruckReflectiveStripe", Vector3(0.0, 0.78, side * 1.56), Vector3(3.22, 0.16, 0.045), Color(0.96, 0.65, 0.15))
+		_delivery_truck_box(truck, "DeliveryTruckSideStep", Vector3(-1.85, 0.48, side * 1.55), Vector3(0.78, 0.12, 0.25), Color(0.16, 0.22, 0.24))
+		for rib_x in [-1.45, -0.72, 0.0, 0.72, 1.45]:
+			_delivery_truck_box(truck, "DeliveryTruckCargoRib", Vector3(rib_x, 1.45, side * 1.54), Vector3(0.075, 1.48, 0.065), Color(0.39, 0.47, 0.48))
+		_delivery_truck_box(truck, "DeliveryTruckMirrorArm", Vector3(-2.45, 1.78, side * 1.52), Vector3(0.12, 0.06, 0.32), Color(0.18, 0.25, 0.27))
+		_delivery_truck_box(truck, "DeliveryTruckMirror", Vector3(-2.45, 1.88, side * 1.70), Vector3(0.20, 0.25, 0.08), Color(0.10, 0.17, 0.19))
+		_delivery_truck_box(truck, "DeliveryTruckDoorPlate", Vector3(-2.05, 1.36, side * 1.43), Vector3(0.86, 0.70, 0.045), Color(0.98, 0.66, 0.18))
+		_delivery_truck_box(truck, "DeliveryTruckDoorHandle", Vector3(-1.74, 1.43, side * 1.47), Vector3(0.16, 0.055, 0.035), Color(0.15, 0.20, 0.22))
+	_delivery_truck_box(truck, "DeliveryTruckFrontGrille", Vector3(-3.02, 1.05, 0.0), Vector3(0.08, 0.48, 1.15), Color(0.08, 0.12, 0.14))
+	_delivery_truck_box(truck, "DeliveryTruckFrontBumper", Vector3(-3.13, 0.54, 0.0), Vector3(0.24, 0.18, 2.35), Color(0.28, 0.35, 0.37))
+	_delivery_truck_box(truck, "DeliveryTruckFrontPlate", Vector3(-3.26, 0.43, 0.0), Vector3(0.035, 0.13, 0.55), Color(0.13, 0.56, 0.53))
+	for headlight_z in [-0.94, 0.94]:
+		_delivery_truck_box(truck, "DeliveryTruckHeadlight", Vector3(-3.05, 1.56, headlight_z), Vector3(0.08, 0.22, 0.34), Color(0.96, 0.86, 0.58))
+		_delivery_truck_box(truck, "DeliveryTruckRearLight", Vector3(1.82, 0.78, headlight_z), Vector3(0.08, 0.30, 0.22), Color(0.80, 0.12, 0.08))
+	_delivery_truck_box(truck, "DeliveryTruckRearDoor", Vector3(1.79, 1.44, 0.0), Vector3(0.08, 1.55, 2.55), Color(0.40, 0.48, 0.48))
+	_delivery_truck_box(truck, "DeliveryTruckRearDoorSplit", Vector3(1.84, 1.44, 0.0), Vector3(0.035, 1.45, 0.045), Color(0.12, 0.19, 0.21))
+	_delivery_truck_box(truck, "DeliveryTruckRearHazardStripe", Vector3(1.86, 0.68, 0.0), Vector3(0.035, 0.16, 2.38), Color(0.95, 0.64, 0.14))
+	_delivery_truck_cylinder(truck, "DeliveryTruckRoofBeacon", Vector3(-2.0, 2.25, 0.0), 0.14, 0.22, Color(0.98, 0.58, 0.12))
 	var sign := Label3D.new()
-	sign.text = "ZEKA TOYS  #%d" % (index + 1)
+	sign.text = "ZEKA LOGISTICS  #%d" % (index + 1)
 	sign.position = Vector3(0.0, 2.45, 1.52)
 	sign.font_size = 22
 	sign.pixel_size = 0.012
 	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.modulate = Color(0.12, 0.20, 0.18)
 	truck.add_child(sign)
+	truck.set_meta("wheels", truck_wheels)
 	if is_instance_valid(factory_visual_root):
 		factory_visual_root.add_child(truck)
 	else:
