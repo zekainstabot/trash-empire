@@ -2667,7 +2667,6 @@ func _reset_automation_units_for_new_world() -> void:
 	auto_pickup_scan_timer = 0.0
 	suction_scan_timer = 0.0
 	suction_pull_timer = 0.0
-	drone_timer = 0.0
 
 
 func _close_main_menu() -> void:
