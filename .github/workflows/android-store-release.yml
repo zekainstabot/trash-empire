@@ -125,6 +125,19 @@ jobs:
           timeout 240 "$GODOT_BIN" --headless --editor --verbose --path . --quit
           echo "Godot resource import completed"
 
+      - name: Run full gameplay smoke test before publishing
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          "$GODOT_BIN" --headless --path . --quit-after 900 -- --test-gameplay 2>&1 | tee build/gameplay-smoke.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:" build/gameplay-smoke.log; then
+            echo "Godot reported errors during the gameplay smoke test."
+            exit 1
+          fi
+          grep -q "GAMEPLAY_SMOKE_TEST_OK" build/gameplay-smoke.log
+
       - name: Diagnose Android export preset configuration
         shell: bash
         run: |
@@ -140,6 +153,7 @@ jobs:
           fi
           test -s build/TrashEmpire-release.apk
           jarsigner -verify -verbose -certs build/TrashEmpire-release.apk
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs build/TrashEmpire-release.apk
 
       - name: Export signed AAB for Google Play
         shell: bash
