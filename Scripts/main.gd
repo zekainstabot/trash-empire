@@ -267,6 +267,15 @@ func _finish_boot_sequence() -> void:
 	var boot_layer := get_node_or_null("BootLoadingLayer")
 	if is_instance_valid(boot_layer):
 		boot_layer.queue_free()
+	if OS.get_cmdline_user_args().has("--test-gameplay"):
+		await _close_main_menu()
+		if not world_initialized or not is_instance_valid(player) or not is_instance_valid(camera) or not is_instance_valid(factory_visual_root) or trash_nodes.is_empty():
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the world, player, factory, or trash pool did not initialize.")
+			get_tree().quit(1)
+			return
+		print("GAMEPLAY_SMOKE_TEST_OK: player, camera, factory, city, and trash pool initialized.")
+		await get_tree().create_timer(1.5).timeout
+		get_tree().quit(0)
 
 func _process(delta: float) -> void:
 	if main_menu_open:
@@ -2329,7 +2338,7 @@ func _start_new_world() -> void:
 	# Factory machinery and conveyors are created as direct scene children, not
 	# under factory_visual_root. Remove those generated visuals on every NEW run.
 	var factory_reset_prefixes := [
-		"MegaProcessMachine", "FactoryMainConveyor", "FactoryProductOutput",
+		"MegaProcessMachine", "FactoryMainConveyor",
 		"FactoryWasteConveyorItem", "FactorySpecificProduct", "FactoryProductTruck",
 		"FactoryDoorMoving", "DeliveryConveyor", "TeddyShippingPackage",
 		"FinishedPlasticBottle", "PlasticBottleCap", "FinishedCardboardBox",
@@ -2434,6 +2443,8 @@ func _reset_automation_units_for_new_world() -> void:
 
 	if is_instance_valid(auto_pickup_target):
 		auto_pickup_target.set_meta("drone_reserved", -1)
+	if is_instance_valid(suction_target):
+		suction_target.set_meta("drone_reserved", -1)
 	auto_pickup_target = null
 	suction_target = null
 	auto_pickup_timer = 0.0
