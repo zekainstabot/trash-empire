@@ -621,6 +621,12 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 	_add_robot_sphere(robot, "SortingRobotEyeR", Vector3(0.12, 1.46, -0.377), 0.045, Color(0.16, 1.0, 0.78))
 	_add_robot_box(robot, "SortingRobotFrontCollector", Vector3(0, 0.36, -0.58), Vector3(0.78, 0.15, 0.32), Color(0.72, 0.79, 0.76))
 	_add_robot_box(robot, "SortingRobotStatusLamp", Vector3(0, 0.98, -0.32), Vector3(0.16, 0.045, 0.025), Color(0.12, 0.95, 0.70))
+	_add_robot_box(robot, "SortingRobotLowerBumper", Vector3(0, 0.27, -0.48), Vector3(0.88, 0.13, 0.18), Color(0.10, 0.15, 0.17))
+	_add_robot_box(robot, "SortingRobotRearModule", Vector3(0, 0.78, 0.43), Vector3(0.62, 0.42, 0.18), Color(0.12, 0.19, 0.21))
+	_add_robot_box(robot, "SortingRobotRearStatus", Vector3(0, 0.82, 0.535), Vector3(0.34, 0.07, 0.025), Color(0.95, 0.42, 0.16))
+	for side in [-1.0, 1.0]:
+		_add_robot_box(robot, "SortingRobotSideArmor", Vector3(side * 0.48, 0.70, 0.02), Vector3(0.12, 0.48, 0.58), robot_color.darkened(0.18))
+		_add_robot_box(robot, "SortingRobotSideAccent", Vector3(side * 0.55, 0.72, -0.12), Vector3(0.025, 0.10, 0.30), Color(0.18, 0.88, 0.72))
 	for side in [-1.0, 1.0]:
 		for z in [-0.28, 0.28]:
 			var wheel := MeshInstance3D.new()
@@ -633,6 +639,17 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 			wheel.rotation_degrees.z = 90
 			wheel.material_override = _mat(Color(0.045, 0.055, 0.06))
 			robot.add_child(wheel)
+			var hub := MeshInstance3D.new()
+			hub.name = "SortingRobotWheelHub"
+			var hub_mesh := CylinderMesh.new()
+			hub_mesh.top_radius = 0.105
+			hub_mesh.bottom_radius = 0.105
+			hub_mesh.height = 0.155
+			hub.mesh = hub_mesh
+			hub.position = Vector3(side * 0.52, 0.32, z)
+			hub.rotation_degrees.z = 90.0
+			hub.material_override = _mat(Color(0.34, 0.43, 0.44))
+			robot.add_child(hub)
 	robot.set_meta("category_index", category_index)
 	robot.set_meta("target", null)
 	robot.set_meta("cargo", null)
@@ -1747,6 +1764,7 @@ func _robot_limb(parent: Node3D, part_name: String, pos: Vector3, color: Color) 
 	pivot.position = pos
 	parent.add_child(pivot)
 	_add_robot_box(pivot, "UpperArm", Vector3(0, -0.19, 0), Vector3(0.25, 0.43, 0.27), color)
+	_add_robot_box(pivot, "ForearmArmor", Vector3(0, -0.29, -0.15), Vector3(0.29, 0.25, 0.12), color.lightened(0.16))
 	_add_robot_sphere(pivot, "ElbowJoint", Vector3(0, -0.39, 0), 0.13, Color(0.08, 0.14, 0.16))
 	_add_robot_sphere(pivot, "Hand", Vector3(0, -0.47, -0.015), 0.15, Color(0.58, 0.68, 0.65))
 	return pivot
@@ -1757,7 +1775,10 @@ func _robot_leg(parent: Node3D, part_name: String, pos: Vector3) -> Node3D:
 	pivot.position = pos
 	parent.add_child(pivot)
 	_add_robot_box(pivot, "Shin", Vector3(0, -0.20, 0), Vector3(0.24, 0.40, 0.25), Color(0.25, 0.36, 0.39))
+	_add_robot_box(pivot, "ShinFrontArmor", Vector3(0, -0.20, -0.135), Vector3(0.27, 0.27, 0.035), Color(0.43, 0.55, 0.54))
+	_add_robot_sphere(pivot, "KneeJoint", Vector3(0, -0.025, -0.015), 0.13, Color(0.08, 0.14, 0.16))
 	_add_robot_box(pivot, "Boot", Vector3(0, -0.42, -0.09), Vector3(0.34, 0.16, 0.43), Color(0.07, 0.12, 0.15))
+	_add_robot_box(pivot, "BootSole", Vector3(0, -0.505, -0.09), Vector3(0.36, 0.035, 0.45), Color(0.025, 0.04, 0.05))
 	return pivot
 
 func _build_trash() -> void:
@@ -2927,6 +2948,8 @@ func _build_helper_drones() -> void:
 		_add_robot_box(drone, "DroneTopBattery", Vector3(0, 0.13, 0.015), Vector3(0.22, 0.075, 0.19), Color(0.18, 0.25, 0.28))
 		_add_robot_box(drone, "DroneFrontNose", Vector3(0, -0.015, -0.19), Vector3(0.18, 0.10, 0.12), Color(0.12, 0.34, 0.37))
 		_add_robot_sphere(drone, "DroneCameraLens", Vector3(0, -0.015, -0.255), 0.055, Color(0.08, 0.92, 0.83))
+		_add_robot_box(drone, "DroneRearTailPanel", Vector3(0, 0.015, 0.19), Vector3(0.15, 0.075, 0.12), Color(0.18, 0.28, 0.31))
+		_add_robot_box(drone, "DroneFrontSafetyMark", Vector3(0, -0.085, -0.12), Vector3(0.13, 0.025, 0.025), Color(0.95, 0.62, 0.18))
 		_add_robot_sphere(drone, "DroneStatusLight", Vector3(0, 0.17, 0.12), 0.025, Color(0.30, 1.0, 0.62))
 
 		for sx in [-1.0, 1.0]:
@@ -2934,7 +2957,8 @@ func _build_helper_drones() -> void:
 				var rotor_pos := Vector3(sx * 0.39, 0.045, sz * 0.36)
 				var arm := _add_robot_box(drone, "DroneArm", Vector3(sx * 0.20, 0.035, sz * 0.18), Vector3(0.43, 0.055, 0.075), Color(0.27, 0.34, 0.36))
 				arm.rotation_degrees.y = -35.0 if sx == sz else 35.0
-				_add_robot_sphere(drone, "MotorHousing", rotor_pos, 0.085, Color(0.13, 0.19, 0.21))
+						_add_robot_sphere(drone, "MotorHousing", rotor_pos, 0.085, Color(0.13, 0.19, 0.21))
+				_add_robot_sphere(drone, "MotorTopCap", rotor_pos + Vector3(0, 0.12, 0), 0.045, Color(0.28, 0.91, 0.74))
 				_add_robot_box(drone, "PropellerBladeA", rotor_pos + Vector3(0, 0.075, 0), Vector3(0.31, 0.018, 0.045), Color(0.10, 0.15, 0.17))
 				var blade_b := _add_robot_box(drone, "PropellerBladeB", rotor_pos + Vector3(0, 0.078, 0), Vector3(0.31, 0.014, 0.035), Color(0.16, 0.23, 0.25))
 				blade_b.rotation_degrees.y = 90.0
@@ -2972,8 +2996,14 @@ func _build_ground_collector() -> void:
 	# Low, four-wheel autonomous collection rover with a front loading scoop.
 	_add_robot_box(ground_collector, "RoverChassis", Vector3(0, 0.48, 0), Vector3(1.05, 0.42, 1.35), Color(0.13, 0.24, 0.27))
 	_add_robot_box(ground_collector, "RoverTop", Vector3(0, 0.76, 0.05), Vector3(0.72, 0.18, 0.78), Color(0.24, 0.42, 0.43))
+	_add_robot_box(ground_collector, "RoverBatteryHousing", Vector3(0, 0.91, 0.36), Vector3(0.58, 0.22, 0.36), Color(0.08, 0.15, 0.18))
+	_add_robot_box(ground_collector, "RoverBatteryIndicator", Vector3(0, 1.035, 0.36), Vector3(0.28, 0.025, 0.035), Color(0.18, 0.96, 0.68))
 	_add_robot_box(ground_collector, "RoverFrontScoop", Vector3(0, 0.22, -0.78), Vector3(0.92, 0.12, 0.34), Color(0.72, 0.78, 0.72))
+	_add_robot_box(ground_collector, "RoverScoopLeftBrace", Vector3(-0.40, 0.32, -0.65), Vector3(0.10, 0.30, 0.16), Color(0.34, 0.43, 0.43))
+	_add_robot_box(ground_collector, "RoverScoopRightBrace", Vector3(0.40, 0.32, -0.65), Vector3(0.10, 0.30, 0.16), Color(0.34, 0.43, 0.43))
 	_add_robot_box(ground_collector, "RoverSensor", Vector3(0, 0.82, -0.30), Vector3(0.28, 0.12, 0.12), Color(0.12, 0.95, 0.76))
+	_add_robot_box(ground_collector, "RoverSideArmorL", Vector3(-0.53, 0.48, 0.05), Vector3(0.08, 0.30, 0.88), Color(0.20, 0.34, 0.37))
+	_add_robot_box(ground_collector, "RoverSideArmorR", Vector3(0.53, 0.48, 0.05), Vector3(0.08, 0.30, 0.88), Color(0.20, 0.34, 0.37))
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
 			var wheel := MeshInstance3D.new()
