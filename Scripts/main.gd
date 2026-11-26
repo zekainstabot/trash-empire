@@ -4473,7 +4473,9 @@ func _build_recycling_mega_factory() -> void:
 				var angle := t * PI * 0.5
 				var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
 				var bend_z := bend_start_z + bend_radius * sin(angle)
-				var bend_rotation := rad_to_deg(angle)
+				# Local X is the conveyor's long axis: rotate it from +Z at the
+				# distributor entrance toward +X at the machine branch.
+				var bend_rotation: float = rad_to_deg(angle) - 90.0
 				var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.42), dark_steel, false)
 				bend_frame.rotation_degrees.y = bend_rotation
 				var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len * 1.04, 0.08, 1.18), belt_color, false)
