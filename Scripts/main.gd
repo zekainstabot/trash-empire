@@ -1030,7 +1030,7 @@ func _process_sorting_robots(delta: float) -> void:
 			target = null
 			var cooldown := float(robot.get_meta("scan_timer", 0.0)) - delta
 			if cooldown <= 0.0:
-				robot.set_meta("scan_timer", 0.65)
+				robot.set_meta("scan_timer", 0.90)
 				var best_distance := 22.0 + float(sorting_robot_upgrade_level) * 5.0
 				for item in trash_nodes:
 					if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
@@ -3597,7 +3597,7 @@ func _process_auto_pickup(delta: float) -> void:
 		if is_instance_valid(auto_pickup_target) and auto_pickup_target.get_meta("drone_reserved", -1) == -4:
 			auto_pickup_target.set_meta("drone_reserved", -1)
 		auto_pickup_target = null
-		auto_pickup_scan_timer = 0.12
+		auto_pickup_scan_timer = 0.24
 		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.85 + float(magnet_power_level - 1) * 0.7
 		var best_distance := magnet_range
 		var player_xz := Vector2(player.global_position.x, player.global_position.z)
@@ -3685,7 +3685,7 @@ func _process_vacuum_suction(delta: float) -> void:
 		if is_instance_valid(suction_target) and suction_target.get_meta("drone_reserved", -1) == -3:
 			suction_target.set_meta("drone_reserved", -1)
 		suction_target = null
-		suction_scan_timer = 0.10
+		suction_scan_timer = 0.20
 		var vacuum_range := collection_range + 1.8 + float(suction_level) * 1.25
 		var nearest := vacuum_range
 		var player_xz := Vector2(player.global_position.x, player.global_position.z)
@@ -3909,7 +3909,7 @@ func _process_helper_drones(delta: float) -> void:
 			target = null
 			var scan_cooldown := float(drone.get_meta("scan_cooldown", 0.0)) - delta
 			if scan_cooldown <= 0.0:
-				drone.set_meta("scan_cooldown", 0.45)
+				drone.set_meta("scan_cooldown", 0.65)
 				# Drones dispatch from their depot and search the whole reachable city, not just around the player.
 				var best_distance := 190.0
 				for item in trash_nodes:
@@ -3998,7 +3998,7 @@ func _process_ground_collector(delta: float) -> void:
 		target = null
 		var cooldown := float(rover.get_meta("scan_cooldown", 0.0)) - delta
 		if cooldown <= 0.0:
-			rover.set_meta("scan_cooldown", 0.35)
+			rover.set_meta("scan_cooldown", 0.55)
 			var nearest := 20.0 + float(ground_robot_level - 1) * 7.0
 			var rover_xz := Vector2(rover.global_position.x, rover.global_position.z)
 			for item in trash_nodes:
