@@ -104,7 +104,7 @@ func _ready() -> void:
 
 func _set_recycle_category(item_roll: int) -> void:
 	# The four color-coded recycling stations use material categories.
-	if item_roll in [0, 8, 22, 23]:
+	if item_roll in [0, 3, 8, 22, 23, 26]:
 		set_meta("recycle_category", "plastic")
 	elif item_roll in [2, 4, 5, 13, 14, 15, 21, 28]:
 		set_meta("recycle_category", "paper")
