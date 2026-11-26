@@ -207,6 +207,7 @@ var street_sweeper_route: Array[Vector3] = []
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
+const STARTER_SELL_POINT := Vector3(143.0, 0.0, 5.5)
 
 func _ready() -> void:
 	# Establish a known, non-black first frame before loading saves or building UI.
@@ -341,6 +342,7 @@ func _build_world() -> void:
 	_build_city_dump_area()
 	_build_recycling_mega_factory()
 	_build_industrial_campus_details()
+	_build_starter_dropoff_pad()
 	_build_sorting_district()
 	_build_city_pedestrians()
 	_build_world_bounds()
@@ -383,6 +385,25 @@ func _build_industrial_road_fixtures() -> void:
 		_box("IndustrialAccessRoadDrain", Vector3(119.25, 0.075, side * 3.88), Vector3(21.5, 0.035, 0.22), drain_steel, false)
 		for slot in range(22):
 			_box("IndustrialAccessDrainSlot", Vector3(108.8 + float(slot) * 0.98, 0.098, side * 3.88), Vector3(0.035, 0.012, 0.16), drain_dark, false)
+
+
+func _build_starter_dropoff_pad() -> void:
+	var center := STARTER_SELL_POINT
+	var steel := Color(0.15, 0.22, 0.24)
+	var yellow := Color(0.96, 0.66, 0.14)
+	_box("IndustrialStartupDropoffPad", center + Vector3(0, 0.035, 0), Vector3(6.2, 0.07, 6.2), steel, false)
+	_box("IndustrialStartupDropoffInner", center + Vector3(0, 0.078, 0), Vector3(5.35, 0.018, 5.35), Color(0.22, 0.29, 0.30), false)
+	for side in [-1.0, 1.0]:
+		_box("IndustrialStartupDropoffEdge", center + Vector3(side * 2.78, 0.092, 0), Vector3(0.14, 0.022, 5.5), yellow, false)
+		_box("IndustrialStartupDropoffEdge", center + Vector3(0, 0.092, side * 2.78), Vector3(5.5, 0.022, 0.14), yellow, false)
+	for stripe_index in range(7):
+		_box("IndustrialStartupDropoffStripe", center + Vector3(-2.0 + float(stripe_index) * 0.66, 0.095, -2.55), Vector3(0.34, 0.02, 0.30), yellow, false)
+	for bollard_x in [-2.55, 2.55]:
+		for bollard_z in [-2.55, 2.55]:
+			_cylinder("IndustrialStartupDropoffBollard", center + Vector3(bollard_x, 0.48, bollard_z), 0.13, 0.92, yellow, false)
+	_box("IndustrialStartupDropoffKiosk", center + Vector3(0, 1.10, -3.65), Vector3(1.25, 1.55, 0.52), Color(0.055, 0.095, 0.105), false)
+	_box("IndustrialStartupDropoffDisplay", center + Vector3(0, 1.26, -3.94), Vector3(0.82, 0.55, 0.045), Color(0.08, 0.63, 0.58), false)
+	_label_3d("STARTUP RECYCLING DROP-OFF", center + Vector3(0, 2.20, -3.65), 0.16)
 
 
 func _build_industrial_campus_details() -> void:
@@ -3890,8 +3911,13 @@ func _process_auto_sell(delta: float) -> void:
 	# Backpack unloading is fully automatic and must remain available even while
 	# factory machinery is under repair. Only horizontal distance matters so
 	# small differences in player/collider height cannot block the interaction.
-	var unloading_point := _factory_waste_drop_point() if waste_tank_built else SELL_POINT
 	var player_xz := Vector2(player.global_position.x, player.global_position.z)
+	var unloading_point := _factory_waste_drop_point() if waste_tank_built else SELL_POINT
+	if not waste_tank_built:
+		var startup_xz := Vector2(STARTER_SELL_POINT.x, STARTER_SELL_POINT.z)
+		var city_xz := Vector2(SELL_POINT.x, SELL_POINT.z)
+		if player_xz.distance_to(startup_xz) < player_xz.distance_to(city_xz):
+			unloading_point = STARTER_SELL_POINT
 	var unload_xz := Vector2(unloading_point.x, unloading_point.z)
 	var inside_zone := player_xz.distance_to(unload_xz) <= 5.5
 	if not inside_zone or carried <= 0:
