@@ -333,8 +333,8 @@ func _build_city_rework_layout() -> void:
 	for side in [-1.0, 1.0]:
 		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(126.0, 0.18, 0.28), curb, false)
 		_box("BoulevardEdgeLine", Vector3(49.0, 0.061, side * 3.72), Vector3(126.0, 0.025, 0.12), road_white, false)
-		_add_sidewalk_x_segments("BoulevardSidewalk", -14.0, 112.0, 0.075, 0.15, side * 6.0, 3.2, sidewalk, [16.0, 48.0, 80.0, 104.0], 7.8)
-		_box("BoulevardGrassVerge", Vector3(49.0, 0.025, side * 8.0), Vector3(126.0, 0.05, 1.0), grass.lightened(0.08), false)
+		_add_sidewalk_x_segments("BoulevardSidewalk", -14.0, 112.0, 0.075, 0.15, side * 6.0, 3.2, sidewalk, [16.0, 48.0, 80.0, 104.0], 13.0)
+		_add_sidewalk_x_segments("BoulevardGrassVerge", -14.0, 112.0, 0.025, 0.05, side * 8.45, 0.9, grass.lightened(0.08), [16.0, 48.0, 80.0, 104.0], 13.0)
 	# Double yellow no-passing divider and broken white lane separators.
 	for offset in [-0.13, 0.13]:
 		for segment in [[-14.0, 12.3], [19.7, 44.3], [51.7, 76.3], [83.7, 100.3], [107.7, 112.0]]:
@@ -356,7 +356,7 @@ func _build_city_rework_layout() -> void:
 		_box("CityCrossStreet", Vector3(street_x, 0.028, 0.0), Vector3(6.8, 0.056, 74.0), road_asphalt, false)
 		for side in [-1.0, 1.0]:
 			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 74.0), curb, false)
-			_add_sidewalk_z_segments("CrossStreetWalkway", -37.0, 37.0, 0.075, 0.15, street_x + side * 5.0, 2.7, sidewalk, [-29.0, -22.0, 0.0, 22.0, 29.0], 8.0)
+			_add_sidewalk_z_segments("CrossStreetWalkway", -37.0, 37.0, 0.075, 0.15, street_x + side * 5.0, 2.7, sidewalk, [Vector2(-29.0, 9.0), Vector2(-22.0, 9.0), Vector2(0.0, 16.0), Vector2(22.0, 9.0), Vector2(29.0, 9.0)], 8.0)
 			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
 				var edge_start: float = segment[0]
 				var edge_end: float = segment[1]
@@ -380,7 +380,7 @@ func _build_city_rework_layout() -> void:
 	for street_z in [-22.0, 22.0]:
 		_box("NeighborhoodStreet", Vector3(49.0, 0.024, street_z), Vector3(126.0, 0.048, 5.4), road_asphalt, false)
 		for side in [-1.0, 1.0]:
-			_add_sidewalk_x_segments("NeighborhoodSidewalk", -14.0, 112.0, 0.07, 0.14, street_z + side * 3.45, 1.5, sidewalk, [16.0, 48.0, 80.0, 104.0], 7.8)
+			_add_sidewalk_x_segments("NeighborhoodSidewalk", -14.0, 112.0, 0.07, 0.14, street_z + side * 3.45, 1.5, sidewalk, [16.0, 48.0, 80.0, 104.0], 13.0)
 			for segment in [[-14.0, 12.0], [20.0, 44.0], [52.0, 76.0], [84.0, 100.0], [108.0, 112.0]]:
 				var edge_start: float = segment[0]
 				var edge_end: float = segment[1]
@@ -409,15 +409,15 @@ func _build_city_rework_layout() -> void:
 	_build_city_block_building(Vector3(96.0, 0.0, 31.0), "SUPERMARKET", Color(0.52, 0.66, 0.58), 1, 6.0)
 
 	# A proper public park occupies the open civic block, with paths and seating.
-	_box("CityParkLawn", Vector3(70.0, 0.055, 11.5), Vector3(19.0, 0.11, 12.0), Color(0.25, 0.48, 0.27), false)
-	_box("ParkPathLong", Vector3(70.0, 0.12, 11.5), Vector3(17.0, 0.04, 1.5), sidewalk, false)
+	_box("CityParkLawn", Vector3(70.0, 0.055, 11.5), Vector3(12.0, 0.11, 12.0), Color(0.25, 0.48, 0.27), false)
+	_box("ParkPathLong", Vector3(70.0, 0.12, 11.5), Vector3(10.5, 0.04, 1.5), sidewalk, false)
 	_box("ParkPathCross", Vector3(70.0, 0.125, 11.5), Vector3(1.5, 0.04, 10.0), sidewalk, false)
 	_cylinder("CityParkFountainBasin", Vector3(70.0, 0.30, 11.5), 1.55, 0.42, Color(0.48, 0.53, 0.50), false)
 	_cylinder("CityParkFountainWater", Vector3(70.0, 0.53, 11.5), 1.30, 0.05, Color(0.19, 0.55, 0.69), false)
 	_cylinder("CityParkFountainCore", Vector3(70.0, 0.83, 11.5), 0.24, 0.58, Color(0.70, 0.72, 0.67), false)
 	for bench_pos in [Vector3(63.0, 0.0, 11.5), Vector3(77.0, 0.0, 11.5)]:
 		_make_bench(bench_pos)
-	for tree_pos in [Vector3(63.0, 0.0, 7.0), Vector3(77.0, 0.0, 7.0), Vector3(63.0, 0.0, 16.0), Vector3(77.0, 0.0, 16.0)]:
+	for tree_pos in [Vector3(65.0, 0.0, 10.0), Vector3(72.0, 0.0, 10.0), Vector3(65.0, 0.0, 16.0), Vector3(72.0, 0.0, 16.0)]:
 		_build_neighborhood_tree(tree_pos)
 
 	# Player's starting plaza and waste drop-off remain easy to find.
@@ -808,9 +808,14 @@ func _add_sidewalk_x_segments(node_name: String, start_x: float, end_x: float, c
 
 func _add_sidewalk_z_segments(node_name: String, start_z: float, end_z: float, center_y: float, thickness: float, fixed_x: float, width_x: float, color: Color, gap_centers: Array, gap_width: float) -> void:
 	var cursor := start_z
-	for gap_center in gap_centers:
-		var gap_start: float = maxf(start_z, float(gap_center) - gap_width * 0.5)
-		var gap_end: float = minf(end_z, float(gap_center) + gap_width * 0.5)
+	for gap_entry in gap_centers:
+		var gap_center := float(gap_entry)
+		var this_gap_width := gap_width
+		if gap_entry is Vector2:
+			gap_center = gap_entry.x
+			this_gap_width = gap_entry.y
+		var gap_start: float = maxf(start_z, gap_center - this_gap_width * 0.5)
+		var gap_end: float = minf(end_z, gap_center + this_gap_width * 0.5)
 		if gap_start > cursor:
 			var segment_length := gap_start - cursor
 			_box(node_name, Vector3(fixed_x, center_y, (cursor + gap_start) * 0.5), Vector3(width_x, thickness, segment_length), color, false)
@@ -955,12 +960,17 @@ func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -
 
 
 func _build_neighborhood_tree(pos: Vector3) -> void:
-	# Hard safety check: vegetation cannot be placed on roadway or sidewalk footprints.
-	# Main boulevard and town streets run along Z; connectors run along X.
-	if absf(pos.z) < 4.2 or absf(absf(pos.z) - 22.0) < 4.4 or absf(absf(pos.z) - 29.0) < 4.5:
+	# Keep the complete tree canopy outside roads and sidewalks, not only its trunk.
+	# Boulevard asphalt and its wide sidewalks occupy the central north/south strip.
+	if absf(pos.z) < 9.2:
 		return
+	# Neighborhood streets at Z=+/-22 and cross-town streets at Z=+/-29.
+	if absf(absf(pos.z) - 22.0) < 5.7 or absf(absf(pos.z) - 29.0) < 4.5:
+		return
+	# Each perpendicular street also has sidewalks on both sides; reserve the
+	# full road-plus-sidewalk corridor so foliage cannot spill over either.
 	for road_x in [16.0, 48.0, 80.0, 104.0]:
-		if absf(pos.x - road_x) < 4.6:
+		if absf(pos.x - road_x) < 7.9:
 			return
 	if absf(pos.x - 49.0) < 7.0:
 		return
