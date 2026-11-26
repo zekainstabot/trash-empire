@@ -134,16 +134,12 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.18
 		1:
-			var can := CylinderMesh.new()
-			can.top_radius = 0.14
-			can.bottom_radius = 0.16
-			can.height = 0.34
-			can.radial_segments = 8
-			shape = can
-			base_color = Color(0.66, 0.72, 0.74)
-			visual_position.y = 0.16
-			visual_rotation.z = PI * 0.5
-			metallic = 0.42
+			# Crushed aluminum can with pinched ends and irregular folded sidewalls.
+			shape = _mobile_crushed_can_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.115
+			visual_rotation.z = rng.randf_range(-0.16, 0.16)
+			metallic = 0.68
 		2:
 			var cup := CylinderMesh.new()
 			cup.top_radius = 0.19
@@ -295,7 +291,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll == 0 or item_roll == 8:
+	if item_roll in [0, 1, 8]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -332,6 +328,45 @@ func _mobile_bottle_mesh(item_roll: int) -> ArrayMesh:
 			surface.add_vertex(p00)
 			surface.add_vertex(p01)
 			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p11)
+			surface.add_vertex(p10)
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_crushed_can_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const SIDES := 10
+	var phase := rng.randf_range(0.0, TAU)
+	var rings: Array[Vector2] = [
+		Vector2(-0.235, 0.045), Vector2(-0.205, 0.105),
+		Vector2(-0.155, 0.125), Vector2(-0.085, 0.105),
+		Vector2(-0.015, 0.092), Vector2(0.065, 0.115),
+		Vector2(0.125, 0.082), Vector2(0.175, 0.065),
+		Vector2(0.205, 0.105), Vector2(0.235, 0.045)
+	]
+	var palette: Array[Color] = [
+		Color(0.43, 0.49, 0.52), Color(0.79, 0.83, 0.83),
+		Color(0.59, 0.65, 0.67), Color(0.91, 0.92, 0.88)
+	]
+	for ring in range(rings.size() - 1):
+		for side in range(SIDES):
+			var a0 := TAU * float(side) / float(SIDES) + phase
+			var a1 := TAU * float(side + 1) / float(SIDES) + phase
+			var deform0 := 1.0 + 0.20 * sin(a0 * 3.0 + float(ring) * 1.7) + 0.10 * cos(a0 * 5.0 - float(ring))
+			var deform1 := 1.0 + 0.20 * sin(a1 * 3.0 + float(ring) * 1.7) + 0.10 * cos(a1 * 5.0 - float(ring))
+			var p00 := Vector3(rings[ring].x, cos(a0) * rings[ring].y * deform0, sin(a0) * rings[ring].y * deform0)
+			var p01 := Vector3(rings[ring].x, cos(a1) * rings[ring].y * deform1, sin(a1) * rings[ring].y * deform1)
+			var p10 := Vector3(rings[ring + 1].x, cos(a0) * rings[ring + 1].y * deform0, sin(a0) * rings[ring + 1].y * deform0)
+			var p11 := Vector3(rings[ring + 1].x, cos(a1) * rings[ring + 1].y * deform1, sin(a1) * rings[ring + 1].y * deform1)
+			var shade := palette[(ring + side + int(rng.randi_range(0, 1))) % palette.size()]
+			surface.set_color(shade)
+			surface.add_vertex(p00)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.set_color(palette[(ring + side + 2) % palette.size()])
 			surface.add_vertex(p01)
 			surface.add_vertex(p11)
 			surface.add_vertex(p10)
