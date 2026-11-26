@@ -90,6 +90,11 @@ func _ready() -> void:
 			_make_takeaway_tray(rng)
 		29:
 			_make_cable_bundle(rng)
+		31:
+			shape = _mobile_old_television_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.015
+			visual_rotation.y = rng.randf_range(-0.12, 0.12)
 		30:
 			_make_safety_helmet(rng)
 		31:
@@ -187,7 +192,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.025
 			visual_rotation.y = rng.randf_range(0.0, TAU)
-		14, 15, 17, 31:
+		14, 15, 17:
 			var crate := BoxMesh.new()
 			crate.size = Vector3(0.42, 0.18, 0.32)
 			shape = crate
@@ -232,11 +237,9 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			visual_position.y = 0.008
 			visual_rotation.y = rng.randf_range(0.0, TAU)
 		9:
-			var shoe := BoxMesh.new()
-			shoe.size = Vector3(0.50, 0.17, 0.26)
-			shape = shoe
-			base_color = Color(0.27, 0.23, 0.19)
-			visual_position.y = 0.09
+			shape = _mobile_old_shoe_mesh()
+			base_color = Color.WHITE
+			visual_position.y = 0.015
 			visual_rotation.y = rng.randf_range(0.0, TAU)
 		24:
 			shape = _mobile_tire_mesh()
@@ -323,7 +326,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 22, 24]:
+	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 22, 24, 31]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -486,6 +489,73 @@ func _mobile_plastic_bag_mesh() -> ArrayMesh:
 			surface.add_vertex(c)
 			surface.add_vertex(d)
 			previous = current
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _append_box_surface(surface: SurfaceTool, center: Vector3, size: Vector3, color: Color) -> void:
+	var half: Vector3 = size * 0.5
+	var corners: Array[Vector3] = [
+		center + Vector3(-half.x, -half.y, -half.z), center + Vector3(half.x, -half.y, -half.z),
+		center + Vector3(-half.x, half.y, -half.z), center + Vector3(half.x, half.y, -half.z),
+		center + Vector3(-half.x, -half.y, half.z), center + Vector3(half.x, -half.y, half.z),
+		center + Vector3(-half.x, half.y, half.z), center + Vector3(half.x, half.y, half.z)
+	]
+	var faces := [[0, 2, 1, 1, 2, 3], [4, 5, 6, 5, 7, 6], [0, 1, 4, 1, 5, 4], [2, 6, 3, 3, 6, 7], [0, 4, 2, 2, 4, 6], [1, 3, 5, 3, 7, 5]]
+	for face_index in range(faces.size()):
+		var face_color: Color = color
+		if face_index == 1:
+			face_color = color.lightened(0.14)
+		elif face_index == 3:
+			face_color = color.darkened(0.16)
+		surface.set_color(face_color)
+		for vertex_index in faces[face_index]:
+			surface.add_vertex(corners[vertex_index])
+
+
+func _mobile_old_shoe_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Layered rubber outsole, leather upper, toe cap and raised heel counter.
+	_append_box_surface(surface, Vector3(0.025, 0.035, 0.0), Vector3(0.55, 0.07, 0.29), Color(0.10, 0.105, 0.10))
+	_append_box_surface(surface, Vector3(0.025, 0.105, 0.0), Vector3(0.49, 0.14, 0.26), Color(0.25, 0.21, 0.17))
+	_append_box_surface(surface, Vector3(-0.14, 0.205, 0.0), Vector3(0.25, 0.17, 0.245), Color(0.35, 0.29, 0.22))
+	_append_box_surface(surface, Vector3(0.205, 0.14, 0.0), Vector3(0.16, 0.13, 0.245), Color(0.31, 0.26, 0.20))
+	_append_box_surface(surface, Vector3(-0.12, 0.295, 0.0), Vector3(0.19, 0.025, 0.16), Color(0.18, 0.16, 0.14))
+	# Four crossed fabric laces and eyelet rows.
+	for lace_index in range(4):
+		var x: float = -0.20 + float(lace_index) * 0.052
+		var lace := Vector3(x, 0.315 - float(lace_index) * 0.012, -0.085 if lace_index % 2 == 0 else 0.085)
+		_append_box_surface(surface, lace, Vector3(0.095, 0.012, 0.018), Color(0.78, 0.74, 0.65))
+		_append_box_surface(surface, Vector3(x, 0.305 - float(lace_index) * 0.012, 0.0), Vector3(0.018, 0.012, 0.17), Color(0.72, 0.67, 0.57))
+	# Worn stitching and scuffed toe panels.
+	_append_box_surface(surface, Vector3(0.22, 0.19, -0.13), Vector3(0.11, 0.025, 0.012), Color(0.57, 0.48, 0.36))
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_old_television_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Deep CRT cabinet and a recessed dark screen with a thick molded bezel.
+	_append_box_surface(surface, Vector3(0.0, 0.30, 0.02), Vector3(0.76, 0.55, 0.46), Color(0.22, 0.245, 0.23))
+	_append_box_surface(surface, Vector3(-0.035, 0.34, -0.218), Vector3(0.62, 0.41, 0.035), Color(0.38, 0.39, 0.35))
+	_append_box_surface(surface, Vector3(-0.035, 0.34, -0.241), Vector3(0.53, 0.33, 0.012), Color(0.045, 0.075, 0.085))
+	_append_box_surface(surface, Vector3(-0.035, 0.34, -0.25), Vector3(0.49, 0.29, 0.008), Color(0.12, 0.22, 0.24))
+	# Control panel, rotary knobs, ventilation ribs and short broken antenna.
+	_append_box_surface(surface, Vector3(0.30, 0.31, -0.235), Vector3(0.075, 0.22, 0.025), Color(0.16, 0.18, 0.17))
+	for knob_index in range(3):
+		var knob_x: float = 0.30
+		var knob_y: float = 0.25 + float(knob_index) * 0.07
+		_append_box_surface(surface, Vector3(knob_x, knob_y, -0.255), Vector3(0.035, 0.035, 0.018), Color(0.66, 0.63, 0.52))
+	for vent_index in range(5):
+		_append_box_surface(surface, Vector3(-0.25 + float(vent_index) * 0.09, 0.045, -0.215), Vector3(0.055, 0.012, 0.018), Color(0.09, 0.11, 0.105))
+	_append_box_surface(surface, Vector3(-0.25, 0.60, 0.05), Vector3(0.018, 0.23, 0.018), Color(0.48, 0.50, 0.47))
+	# A few bright fractured lines across the damaged glass face.
+	for crack_index in range(4):
+		var crack_x: float = rng.randf_range(-0.22, 0.18)
+		var crack_y: float = rng.randf_range(0.20, 0.47)
+		_append_box_surface(surface, Vector3(crack_x, crack_y, -0.258), Vector3(rng.randf_range(0.08, 0.20), 0.006, 0.004), Color(0.58, 0.73, 0.72))
 	surface.generate_normals()
 	return surface.commit()
 
@@ -1057,18 +1127,18 @@ func _make_soda_bottle(rng: RandomNumberGenerator) -> void:
 	add_child(_flat_box(Vector3(0.14, 0.08, 0.02), Vector3(-0.02, 0.20, -0.14), Color(0.95, 0.80, 0.48)))
 
 func _make_old_shoe(rng: RandomNumberGenerator) -> void:
-	add_child(_flat_box(Vector3(0.48, 0.16, 0.25), Vector3(0.03, 0.10, 0), Color(0.25, 0.22, 0.18)))
-	add_child(_flat_box(Vector3(0.24, 0.20, 0.23), Vector3(-0.10, 0.23, 0), Color(0.38, 0.32, 0.25)))
-	# Distinct toe cap, layered rubber sole, heel and worn lace eyelets.
-	add_child(_flat_box(Vector3(0.54, 0.055, 0.27), Vector3(0.03, 0.025, 0), Color(0.12, 0.12, 0.11)))
-	add_child(_flat_box(Vector3(0.18, 0.07, 0.24), Vector3(-0.19, 0.16, 0), Color(0.30, 0.27, 0.23)))
-	for i in range(4):
-		var lace := _flat_box(Vector3(0.13, 0.018, 0.025), Vector3(-0.12 + i * 0.045, 0.285, -0.13), Color(0.82, 0.78, 0.68))
-		lace.rotation.z = -0.12
-		add_child(lace)
-	for side in [-1.0, 1.0]:
-		add_child(_cylinder_piece(0.018, 0.018, 0.025, Vector3(-0.13, 0.27, side * 0.13), Color(0.68, 0.64, 0.56)))
-	rotation.z = rng.randf_range(-0.15, 0.15)
+	var shoe := MeshInstance3D.new()
+	shoe.name = "WornWorkBoot"
+	shoe.mesh = _mobile_old_shoe_mesh()
+	shoe.position.y = 0.015
+	shoe.rotation.y = rng.randf_range(0.0, TAU)
+	shoe.rotation.z = rng.randf_range(-0.15, 0.15)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.91
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	shoe.material_override = material
+	add_child(shoe)
 
 func _make_gear(rng: RandomNumberGenerator) -> void:
 	# Rusty steel cogwheel with a central opening and chunky teeth.
@@ -1278,34 +1348,18 @@ func _make_cable_bundle(rng: RandomNumberGenerator) -> void:
 
 
 func _make_old_television(rng: RandomNumberGenerator) -> void:
-	# Abandoned CRT television: deep rear cabinet, curved-looking glass face,
-	# thick bezel, side controls, ventilation slots and a snapped aerial.
-	var cabinet := _flat_box(Vector3(0.78, 0.58, 0.48), Vector3(0, 0.32, 0.02), Color(0.23, 0.25, 0.24))
-	cabinet.rotation.y = rng.randf_range(-0.12, 0.12)
-	add_child(cabinet)
-	var screen := _flat_box(Vector3(0.59, 0.40, 0.035), Vector3(-0.035, 0.35, -0.235), Color(0.055, 0.075, 0.08))
-	add_child(screen)
-	var glass := _flat_box(Vector3(0.54, 0.35, 0.012), Vector3(-0.035, 0.35, -0.258), Color(0.12, 0.19, 0.20, 0.88))
-	add_child(glass)
-	for x in [-0.36, 0.29]:
-		add_child(_flat_box(Vector3(0.055, 0.48, 0.055), Vector3(x, 0.35, -0.255), Color(0.37, 0.38, 0.35)))
-	for y in [0.11, 0.59]:
-		add_child(_flat_box(Vector3(0.70, 0.055, 0.055), Vector3(-0.035, y, -0.255), Color(0.37, 0.38, 0.35)))
-	# Broken glass cracks on the screen.
-	for i in range(4):
-		var crack := _flat_box(Vector3(rng.randf_range(0.12, 0.25), 0.008, 0.006), Vector3(rng.randf_range(-0.20, 0.14), rng.randf_range(0.22, 0.48), -0.268), Color(0.63, 0.72, 0.70))
-		crack.rotation.z = rng.randf_range(-0.9, 0.9)
-		add_child(crack)
-	var control_panel := _flat_box(Vector3(0.12, 0.34, 0.045), Vector3(0.34, 0.34, -0.25), Color(0.18, 0.19, 0.18))
-	add_child(control_panel)
-	for y in [0.25, 0.39, 0.49]:
-		var knob := _cylinder_piece(0.035, 0.035, 0.025, Vector3(0.34, y, -0.282), Color(0.72, 0.70, 0.62))
-		knob.rotation_degrees.x = 90
-		add_child(knob)
-	for i in range(5):
-		add_child(_flat_box(Vector3(0.018, 0.24, 0.018), Vector3(-0.20 + i * 0.09, 0.32, 0.27), Color(0.10, 0.11, 0.10)))
-	add_child(_flat_box(Vector3(0.22, 0.045, 0.18), Vector3(0, 0.025, 0.02), Color(0.16, 0.17, 0.16)))
-	rotation.y = rng.randf_range(0.0, TAU)
+	var television := MeshInstance3D.new()
+	television.name = "BrokenCRT_Television"
+	television.mesh = _mobile_old_television_mesh(rng)
+	television.position.y = 0.015
+	television.rotation.y = rng.randf_range(-0.12, 0.12)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.68
+	material.metallic = 0.12
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	television.material_override = material
+	add_child(television)
 
 func _make_safety_helmet(rng: RandomNumberGenerator) -> void:
 	var shell := MeshInstance3D.new()
