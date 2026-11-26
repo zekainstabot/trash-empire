@@ -2239,7 +2239,7 @@ func _build_skill_tree(parent: Control) -> void:
 		folder_buttons.append(folder)
 
 		var category_body := VBoxContainer.new()
-		category_body.add_theme_constant_override("separation", 8)
+		category_body.add_theme_constant_override("separation", 12)
 		category_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		category_body.visible = false
 		parent.add_child(category_body)
@@ -2249,18 +2249,32 @@ func _build_skill_tree(parent: Control) -> void:
 			# One large touch target per upgrade: the title, description and price
 			# all belong to the same button, so players can tap anywhere on the card.
 			var upgrade_row := Button.new()
-			upgrade_row.custom_minimum_size = Vector2(0, 132)
+			upgrade_row.custom_minimum_size = Vector2(0, 154)
 			upgrade_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			upgrade_row.add_theme_stylebox_override("normal", _button_style(Color(0.075, 0.15, 0.15)))
 			upgrade_row.add_theme_stylebox_override("hover", _button_style(Color(0.11, 0.25, 0.21)))
 			upgrade_row.add_theme_stylebox_override("pressed", _button_style(Color(0.06, 0.12, 0.12)))
 			upgrade_row.add_theme_stylebox_override("disabled", _button_style(Color(0.07, 0.11, 0.105)))
+			var card_outline := StyleBoxFlat.new()
+			card_outline.bg_color = Color(0.075, 0.15, 0.15)
+			card_outline.set_corner_radius_all(14)
+			card_outline.set_border_width_all(1)
+			card_outline.border_color = Color(0.20, 0.39, 0.36, 0.9)
+			card_outline.content_margin_left = 10
+			card_outline.content_margin_right = 10
+			card_outline.content_margin_top = 8
+			card_outline.content_margin_bottom = 8
+			upgrade_row.add_theme_stylebox_override("normal", card_outline)
 			upgrade_row.pressed.connect(_purchase_upgrade_branch.bind(String(branch)))
 			category_body.add_child(upgrade_row)
 
 			var card_content := HBoxContainer.new()
 			card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			card_content.add_theme_constant_override("separation", 12)
+			card_content.offset_left = 12
+			card_content.offset_top = 9
+			card_content.offset_right = -12
+			card_content.offset_bottom = -9
+			card_content.add_theme_constant_override("separation", 14)
 			card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			upgrade_row.add_child(card_content)
 
@@ -2268,19 +2282,22 @@ func _build_skill_tree(parent: Control) -> void:
 			upgrade_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			upgrade_info.size_flags_stretch_ratio = 1.0
 			upgrade_info.alignment = BoxContainer.ALIGNMENT_CENTER
-			upgrade_info.add_theme_constant_override("separation", 7)
+			upgrade_info.add_theme_constant_override("separation", 5)
 			upgrade_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			card_content.add_child(upgrade_info)
 
 			var row := upgrade_row
 			var title_label := Label.new()
+			title_label.custom_minimum_size = Vector2(0, 24)
 			title_label.add_theme_font_size_override("font_size", 17)
+			title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			title_label.add_theme_color_override("font_color", Color(0.96, 1.0, 0.98))
 			title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			upgrade_info.add_child(title_label)
 
 			var level_label := Label.new()
 			level_label.text = "LEVEL 0 / 3"
+			level_label.custom_minimum_size = Vector2(0, 18)
 			level_label.add_theme_font_size_override("font_size", 12)
 			level_label.add_theme_color_override("font_color", Color(0.40, 0.91, 0.72))
 			level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2288,25 +2305,38 @@ func _build_skill_tree(parent: Control) -> void:
 
 			var description := Label.new()
 			description.text = String(descriptions.get(String(branch), "Improves this part of your operation."))
-			description.custom_minimum_size = Vector2(0, 38)
+			description.custom_minimum_size = Vector2(0, 48)
+			description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			description.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			description.add_theme_font_size_override("font_size", 13)
+			description.add_theme_constant_override("line_spacing", 2)
 			description.add_theme_color_override("font_color", Color(0.75, 0.85, 0.81))
 			description.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			upgrade_info.add_child(description)
 
 			var price_panel := PanelContainer.new()
-			price_panel.custom_minimum_size = Vector2(112, 82)
+			price_panel.custom_minimum_size = Vector2(104, 94)
+			price_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 			price_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			price_panel.add_theme_stylebox_override("panel", _button_style(Color(0.035, 0.15, 0.105)))
+			var price_style := StyleBoxFlat.new()
+			price_style.bg_color = Color(0.035, 0.15, 0.105)
+			price_style.set_corner_radius_all(11)
+			price_style.set_border_width_all(1)
+			price_style.border_color = Color(0.18, 0.55, 0.39)
+			price_style.content_margin_left = 5
+			price_style.content_margin_right = 5
+			price_style.content_margin_top = 5
+			price_style.content_margin_bottom = 5
+			price_panel.add_theme_stylebox_override("panel", price_style)
 			price_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			card_content.add_child(price_panel)
 			var price_label := Label.new()
 			price_label.text = "BUY"
 			price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			price_label.add_theme_font_size_override("font_size", 16)
+			price_label.add_theme_font_size_override("font_size", 15)
 			price_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.72))
 			price_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			price_panel.add_child(price_label)
