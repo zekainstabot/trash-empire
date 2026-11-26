@@ -5256,6 +5256,8 @@ func _update_ui() -> void:
 	_refresh_waste_tank_inventory_label()
 	_refresh_factory_machine_status()
 	_update_missions()
+	# Keep upgrade affordability colors in sync whenever the wallet changes.
+	_refresh_upgrade_prices()
 
 func _set_message(value: String) -> void:
 	# Temporary yellow toast messages below the mission panel are disabled.
