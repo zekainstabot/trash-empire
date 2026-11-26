@@ -2631,7 +2631,7 @@ func _start_upgrade_scroll_glide() -> void:
 		return
 	var scroll_bar := skill_scroll_container.get_v_scroll_bar()
 	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
-	var glide_distance := clampf(skill_scroll_velocity.y * 0.36, -540.0, 540.0)
+	var glide_distance := clampf(skill_scroll_velocity.y * 0.42, -620.0, 620.0)
 	if absf(glide_distance) >= 12.0:
 		skill_scroll_target = clampf(skill_scroll_target + glide_distance, 0.0, float(scroll_max))
 		skill_scroll_smoothing = true
@@ -2646,7 +2646,7 @@ func _process_upgrade_scroll_smoothing(delta: float) -> void:
 	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
 	skill_scroll_target = clampf(skill_scroll_target, 0.0, float(scroll_max))
 	var current_scroll := float(skill_scroll_container.scroll_vertical)
-	var blend := 1.0 - exp(-delta * 5.0)
+	var blend := 1.0 - exp(-delta * 2.6)
 	var next_scroll := lerpf(current_scroll, skill_scroll_target, blend)
 	if absf(skill_scroll_target - next_scroll) < 0.45:
 		next_scroll = skill_scroll_target
