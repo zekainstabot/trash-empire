@@ -348,8 +348,8 @@ func _build_city_rework_layout() -> void:
 	# One continuous, walkable city surface replaces the old fenced concrete yard.
 	var grass := Color(0.27, 0.43, 0.29)
 	var asphalt := Color(0.105, 0.125, 0.14)
-	var sidewalk := Color(0.78, 0.70, 0.55)
-	var curb := Color(0.88, 0.81, 0.66)
+	var sidewalk := Color(0.43, 0.29, 0.19)
+	var curb := Color(0.63, 0.47, 0.32)
 	var white := Color(0.90, 0.88, 0.79)
 	_box("CityTerrain", Vector3(49.0, -0.34, 0.0), Vector3(126.0, 0.68, 74.0), grass, true)
 	# Keep the cleanup ground out of the factory footprint. These slabs previously
@@ -857,12 +857,21 @@ func _add_sidewalk_x_segments(node_name: String, start_x: float, end_x: float, c
 		var gap_start: float = maxf(start_x, float(gap_center) - gap_width * 0.5)
 		var gap_end: float = minf(end_x, float(gap_center) + gap_width * 0.5)
 		if gap_start > cursor:
-			var segment_length := gap_start - cursor
-			_box(node_name, Vector3((cursor + gap_start) * 0.5, center_y, fixed_z), Vector3(segment_length, thickness, width_z), color, false)
+			_sidewalk_detailed_segment_x(node_name, cursor, gap_start, center_y, thickness, fixed_z, width_z, color)
 		cursor = maxf(cursor, gap_end)
 	if end_x > cursor:
-		var segment_length := end_x - cursor
-		_box(node_name, Vector3((cursor + end_x) * 0.5, center_y, fixed_z), Vector3(segment_length, thickness, width_z), color, false)
+		_sidewalk_detailed_segment_x(node_name, cursor, end_x, center_y, thickness, fixed_z, width_z, color)
+
+
+func _sidewalk_detailed_segment_x(node_name: String, start_x: float, end_x: float, center_y: float, thickness: float, fixed_z: float, width_z: float, color: Color) -> void:
+	_box(node_name, Vector3((start_x + end_x) * 0.5, center_y, fixed_z), Vector3(end_x - start_x, thickness, width_z), color, false)
+	var seam := color.darkened(0.20)
+	var x := start_x + 2.0
+	while x < end_x - 0.25:
+		_box(node_name + "TileSeam", Vector3(x, center_y + thickness * 0.51, fixed_z), Vector3(0.045, 0.008, width_z - 0.12), seam, false)
+		x += 2.0
+	_box(node_name + "TileBorder", Vector3((start_x + end_x) * 0.5, center_y + thickness * 0.51, fixed_z - width_z * 0.5 + 0.08), Vector3(end_x - start_x, 0.008, 0.06), color.lightened(0.15), false)
+	_box(node_name + "TileBorder", Vector3((start_x + end_x) * 0.5, center_y + thickness * 0.51, fixed_z + width_z * 0.5 - 0.08), Vector3(end_x - start_x, 0.008, 0.06), color.lightened(0.15), false)
 
 
 func _add_sidewalk_z_segments(node_name: String, start_z: float, end_z: float, center_y: float, thickness: float, fixed_x: float, width_x: float, color: Color, gap_centers: Array, gap_width: float) -> void:
@@ -878,12 +887,21 @@ func _add_sidewalk_z_segments(node_name: String, start_z: float, end_z: float, c
 		var gap_start: float = maxf(start_z, gap_center - this_gap_width * 0.5)
 		var gap_end: float = minf(end_z, gap_center + this_gap_width * 0.5)
 		if gap_start > cursor:
-			var segment_length := gap_start - cursor
-			_box(node_name, Vector3(fixed_x, center_y, (cursor + gap_start) * 0.5), Vector3(width_x, thickness, segment_length), color, false)
+			_sidewalk_detailed_segment_z(node_name, cursor, gap_start, center_y, thickness, fixed_x, width_x, color)
 		cursor = maxf(cursor, gap_end)
 	if end_z > cursor:
-		var segment_length := end_z - cursor
-		_box(node_name, Vector3(fixed_x, center_y, (cursor + end_z) * 0.5), Vector3(width_x, thickness, segment_length), color, false)
+		_sidewalk_detailed_segment_z(node_name, cursor, end_z, center_y, thickness, fixed_x, width_x, color)
+
+
+func _sidewalk_detailed_segment_z(node_name: String, start_z: float, end_z: float, center_y: float, thickness: float, fixed_x: float, width_x: float, color: Color) -> void:
+	_box(node_name, Vector3(fixed_x, center_y, (start_z + end_z) * 0.5), Vector3(width_x, thickness, end_z - start_z), color, false)
+	var seam := color.darkened(0.20)
+	var z := start_z + 2.0
+	while z < end_z - 0.25:
+		_box(node_name + "TileSeam", Vector3(fixed_x, center_y + thickness * 0.51, z), Vector3(width_x - 0.12, 0.008, 0.045), seam, false)
+		z += 2.0
+	_box(node_name + "TileBorder", Vector3(fixed_x - width_x * 0.5 + 0.08, center_y + thickness * 0.51, (start_z + end_z) * 0.5), Vector3(0.06, 0.008, end_z - start_z), color.lightened(0.15), false)
+	_box(node_name + "TileBorder", Vector3(fixed_x + width_x * 0.5 - 0.08, center_y + thickness * 0.51, (start_z + end_z) * 0.5), Vector3(0.06, 0.008, end_z - start_z), color.lightened(0.15), false)
 
 
 func _build_connected_city_streets() -> void:
@@ -891,7 +909,7 @@ func _build_connected_city_streets() -> void:
 	# All road surfaces are decorative and non-colliding; the city stays walkable.
 	var asphalt := Color(0.14, 0.17, 0.18)
 	var curb := Color(0.88, 0.81, 0.66)
-	var sidewalk := Color(0.78, 0.70, 0.55)
+	var sidewalk := Color(0.43, 0.29, 0.19)
 	# Two continuous cross-town streets run through the former front/back wall lines.
 	for street_z in [-29.0, 29.0]:
 		_box("CrossTownStreet", Vector3(49.0, 0.022, street_z), Vector3(126.0, 0.045, 5.8), asphalt, false)
