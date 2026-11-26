@@ -3,6 +3,7 @@ config_version=5
 
 [application]
 config/name="Zeka City: Cleanup Empire"
+config/description="Industrial cleanup, recycling, automation and factory management."
 run/main_scene="res://Scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/description="Zeka City: Cleanup Empire — a 3D collection, recycling, and upgrade simulator."
