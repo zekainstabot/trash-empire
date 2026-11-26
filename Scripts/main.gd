@@ -5693,16 +5693,50 @@ func _spawn_final_cleanup_trash() -> void:
 		trash_nodes.append(item)
 
 
+func _is_safe_final_landfill_position(point: Vector2) -> bool:
+	# Keep salvage piles out of vehicle lanes, crossings, machine footprints and service pads.
+	if point.x < 112.0:
+		if not _is_clear_trash_spawn(Vector3(point.x, 0.05, point.y)):
+			return false
+		if absf(point.y) < 4.65:
+			return false
+		for street_x in [16.0, 48.0, 80.0, 104.0]:
+			if absf(point.x - street_x) < 3.9:
+				return false
+		for street_z in [-22.0, 22.0]:
+			if absf(point.y - street_z) < 3.35:
+				return false
+		return true
+	if point.x < 135.0:
+		return false
+	if point.distance_to(Vector2(STARTER_SELL_POINT.x, STARTER_SELL_POINT.z)) < 7.0:
+		return false
+	for row in range(5):
+		var row_z: float = _factory_row_z(row)
+		if absf(point.y - row_z) < 3.35:
+			return false
+		if absf(absf(point.y - row_z) - 4.92) < 0.72:
+			return false
+	return true
+
+
 func _random_final_landfill_position(rng: RandomNumberGenerator) -> Vector3:
-	# Spread endgame litter across every unlocked district, not only the far landfill.
+	# Endgame debris is distributed through open yards and parks, never on roads or machinery.
 	var point := Vector2.ZERO
-	if rng.randf() < 0.78:
-		var center: Vector2 = FINAL_LANDFILL_CLUSTERS[rng.randi_range(0, FINAL_LANDFILL_CLUSTERS.size() - 1)]
-		point = center + Vector2(rng.randfn(0.0, 4.2), rng.randfn(0.0, 3.6))
-	else:
-		point = Vector2(rng.randf_range(-11.0, 203.0), rng.randf_range(-29.0, 29.0))
-	point.x = clampf(point.x, -11.5, 203.0)
-	point.y = clampf(point.y, -29.0, 29.0)
+	var accepted := false
+	for attempt in range(24):
+		if rng.randf() < 0.78:
+			var center: Vector2 = FINAL_LANDFILL_CLUSTERS[rng.randi_range(0, FINAL_LANDFILL_CLUSTERS.size() - 1)]
+			point = center + Vector2(rng.randfn(0.0, 4.2), rng.randfn(0.0, 3.6))
+		else:
+			point = Vector2(rng.randf_range(-11.0, 203.0), rng.randf_range(-29.0, 29.0))
+		point.x = clampf(point.x, -11.5, 203.0)
+		point.y = clampf(point.y, -29.0, 29.0)
+		if _is_safe_final_landfill_position(point):
+			accepted = true
+			break
+	if not accepted:
+		point = Vector2(8.0, 18.0)
 	var nearest_cluster_distance := 1000.0
 	for center in FINAL_LANDFILL_CLUSTERS:
 		nearest_cluster_distance = minf(nearest_cluster_distance, point.distance_to(center))
