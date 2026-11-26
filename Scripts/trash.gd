@@ -23,9 +23,10 @@ func _ready() -> void:
 		rotation.y = rng.randf_range(0.0, TAU)
 		if has_meta("rare_type"):
 			_add_rare_visual(String(get_meta("rare_type")))
-		if has_meta("final_cleanup_units"):
-			spin_speed = 0.0
-			set_process(false)
+		# Keep mobile litter static: 1,000 per-item _process callbacks add
+		# avoidable CPU work on Android, while the low-poly meshes remain readable.
+		spin_speed = 0.0
+		set_process(false)
 		return
 
 	match item_roll:
