@@ -809,11 +809,13 @@ func _add_sidewalk_x_segments(node_name: String, start_x: float, end_x: float, c
 func _add_sidewalk_z_segments(node_name: String, start_z: float, end_z: float, center_y: float, thickness: float, fixed_x: float, width_x: float, color: Color, gap_centers: Array, gap_width: float) -> void:
 	var cursor := start_z
 	for gap_entry in gap_centers:
-		var gap_center := float(gap_entry)
+		var gap_center := 0.0
 		var this_gap_width := gap_width
 		if gap_entry is Vector2:
 			gap_center = gap_entry.x
 			this_gap_width = gap_entry.y
+		else:
+			gap_center = float(gap_entry)
 		var gap_start: float = maxf(start_z, gap_center - this_gap_width * 0.5)
 		var gap_end: float = minf(end_z, gap_center + this_gap_width * 0.5)
 		if gap_start > cursor:
