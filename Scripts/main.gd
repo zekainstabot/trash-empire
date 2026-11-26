@@ -4459,37 +4459,34 @@ func _build_recycling_mega_factory() -> void:
 	
 		# Use the existing distributor spine; avoid a duplicate parallel conveyor.
 	
-		# True quarter-turn conveyor elbow: short tangent-aligned plates follow one smooth arc.
-		# The previous long overlapping plates made the first bend look kinked and bulky.
+		# Keep quarter-turn elbows only at the two outer ends of the distributor.
+		# The three middle row connections stay straight; they do not need extra bends.
 		for row in range(5):
 			var feed_z := _factory_row_z(row)
-			var bend_radius := 1.15
-			var bend_start_x := 147.0
-			var bend_start_z := feed_z - bend_radius
-			var bend_segments := 24
-			var segment_len := (bend_radius * PI * 0.5 / float(bend_segments)) * 1.12
-			for bend_i in range(bend_segments):
-				var t := (float(bend_i) + 0.5) / float(bend_segments)
-				var angle := t * PI * 0.5
-				var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
-				var bend_z := bend_start_z + bend_radius * sin(angle)
-				# Local X is the conveyor's long axis: rotate it from +Z at the
-				# distributor entrance toward +X at the machine branch.
-				var bend_rotation: float = rad_to_deg(angle) - 90.0
-				var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.42), dark_steel, false)
-				bend_frame.rotation_degrees.y = bend_rotation
-				var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len * 1.04, 0.08, 1.18), belt_color, false)
-				bend_belt.rotation_degrees.y = bend_rotation
-				# Curved side guards follow the outside edges and meet the straight branch rails.
-				for side in [-1.0, 1.0]:
-					var rail_x: float = bend_x + cos(angle) * 0.72 * side
-					var rail_z: float = bend_z - sin(angle) * 0.72 * side
-					var bend_rail := _box("FactoryFirstMachineFeedBendRail%d_%d_%d" % [row, bend_i, int(side)], Vector3(rail_x, 1.075, rail_z), Vector3(segment_len * 1.08, 0.24, 0.085), steel, false)
-					bend_rail.rotation_degrees.y = bend_rotation
-			# The straight branch overlaps the elbow slightly so the rubber surface has no gap.
+			if row == 0 or row == 4:
+				var bend_radius := 1.15
+				var bend_start_x := 147.0
+				var bend_start_z := feed_z - bend_radius
+				var bend_segments := 24
+				var segment_len := (bend_radius * PI * 0.5 / float(bend_segments)) * 1.12
+				for bend_i in range(bend_segments):
+					var t := (float(bend_i) + 0.5) / float(bend_segments)
+					var angle := t * PI * 0.5
+					var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
+					var bend_z := bend_start_z + bend_radius * sin(angle)
+					var bend_rotation: float = rad_to_deg(angle) - 90.0
+					var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.42), dark_steel, false)
+					bend_frame.rotation_degrees.y = bend_rotation
+					var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len * 1.04, 0.08, 1.18), belt_color, false)
+					bend_belt.rotation_degrees.y = bend_rotation
+					for side in [-1.0, 1.0]:
+						var rail_x: float = bend_x + cos(angle) * 0.72 * side
+						var rail_z: float = bend_z - sin(angle) * 0.72 * side
+						var bend_rail := _box("FactoryFirstMachineFeedBendRail%d_%d_%d" % [row, bend_i, int(side)], Vector3(rail_x, 1.075, rail_z), Vector3(segment_len * 1.08, 0.24, 0.085), steel, false)
+						bend_rail.rotation_degrees.y = bend_rotation
+			# All five branch belts remain straight after leaving the distributor.
 			_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.35, 0.68, feed_z), Vector3(2.85, 0.30, 1.45), dark_steel, false)
 			_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(2.90, 0.08, 1.22), belt_color, false)
-			# Straight-side rails begin after the bend and continue cleanly along the production lane.
 			for side_z in [feed_z - 0.72, feed_z + 0.72]:
 				_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(149.55, 1.075, side_z), Vector3(2.45, 0.24, 0.085), steel, false)
 	
@@ -5766,6 +5763,7 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	waste_feed_busy = true
 	var target_z := _factory_row_z(selected_row)
 	var belt_y := 0.99
+	var has_end_bend := selected_row == 0 or selected_row == 4
 	var bend_radius := 1.15
 	var bend_start_z := target_z - bend_radius
 	var tween := create_tween()
@@ -5774,14 +5772,16 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	# Follow the physical trunk belt from the tank to the distributor.
 	tween.tween_property(selected_item, "global_position", Vector3(137.0, belt_y, 0.0), 0.8 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	tween.tween_property(selected_item, "global_position", Vector3(146.4, belt_y, 0.0), 0.9 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
-	# Follow the distributor spine to the selected row's visible elbow.
-	tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, bend_start_z), maxf(0.35, absf(bend_start_z) / 12.0) / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
-	# Trace the same quarter-circle bend as the physical branch conveyor.
-	for bend_i in range(1, 13):
-		var angle := (float(bend_i) / 12.0) * PI * 0.5
-		var bend_point := Vector3(147.0 + bend_radius * (1.0 - cos(angle)), belt_y, bend_start_z + bend_radius * sin(angle))
-		tween.tween_property(selected_item, "global_position", bend_point, 0.045 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
-	# Continue along the straight branch belt into the first machine.
+	# Travel down the distributor. Only the first and last rows have a physical elbow.
+	if has_end_bend:
+		tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, bend_start_z), maxf(0.35, absf(bend_start_z) / 12.0) / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
+		for bend_i in range(1, 13):
+			var angle := (float(bend_i) / 12.0) * PI * 0.5
+			var bend_point := Vector3(147.0 + bend_radius * (1.0 - cos(angle)), belt_y, bend_start_z + bend_radius * sin(angle))
+			tween.tween_property(selected_item, "global_position", bend_point, 0.045 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
+	else:
+		tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, target_z), maxf(0.35, absf(target_z) / 12.0) / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
+	# All rows then use a straight branch belt into the first machine.
 	tween.tween_property(selected_item, "global_position", Vector3(150.4, belt_y, target_z), 0.35 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	tween.tween_callback(_finish_waste_feed_item.bind(selected_item, selected_row))
 
