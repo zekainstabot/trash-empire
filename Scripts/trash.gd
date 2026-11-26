@@ -146,7 +146,12 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.015
 			visual_rotation.z = rng.randf_range(-0.10, 0.10)
-		3, 4, 13, 21, 22, 28:
+		3:
+			shape = _mobile_food_wrapper_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.065
+			visual_rotation.y = rng.randf_range(-0.45, 0.45)
+		4, 13, 21, 22, 28:
 			var sheet := BoxMesh.new()
 			sheet.size = Vector3(0.46, 0.045, 0.30)
 			shape = sheet
@@ -371,6 +376,43 @@ func _mobile_crushed_can_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
 	return surface.commit()
 
 
+func _mobile_food_wrapper_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Sealed snack packet with a puffed centre, pinched crimped ends and foil folds.
+	var profile: Array[Vector2] = [
+		Vector2(-0.31, 0.035), Vector2(-0.275, 0.075),
+		Vector2(-0.225, 0.105), Vector2(-0.13, 0.115),
+		Vector2(0.045, 0.105), Vector2(0.19, 0.095),
+		Vector2(0.255, 0.070), Vector2(0.31, 0.032)
+	]
+	const SIDES := 8
+	var phase := rng.randf_range(0.0, TAU)
+	var wrapper_color := [Color(0.88, 0.24, 0.12), Color(0.12, 0.43, 0.78), Color(0.91, 0.68, 0.12)][rng.randi_range(0, 2)]
+	for ring in range(profile.size() - 1):
+		for side in range(SIDES):
+			var a0 := TAU * float(side) / float(SIDES) + phase
+			var a1 := TAU * float(side + 1) / float(SIDES) + phase
+			var fold0 := 1.0 + 0.13 * sin(a0 * 3.0 + float(ring) * 1.4)
+			var fold1 := 1.0 + 0.13 * sin(a1 * 3.0 + float(ring) * 1.4)
+			var p00 := Vector3(profile[ring].x, cos(a0) * profile[ring].y * fold0, sin(a0) * profile[ring].y * fold0)
+			var p01 := Vector3(profile[ring].x, cos(a1) * profile[ring].y * fold1, sin(a1) * profile[ring].y * fold1)
+			var p10 := Vector3(profile[ring + 1].x, cos(a0) * profile[ring + 1].y * fold0, sin(a0) * profile[ring + 1].y * fold0)
+			var p11 := Vector3(profile[ring + 1].x, cos(a1) * profile[ring + 1].y * fold1, sin(a1) * profile[ring + 1].y * fold1)
+			var color := Color(0.76, 0.79, 0.78) if ring == 0 or ring == profile.size() - 2 else wrapper_color
+			if side % 3 == 0 and ring > 1 and ring < profile.size() - 2:
+				color = color.lightened(0.16)
+			surface.set_color(color)
+			surface.add_vertex(p00)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p11)
+			surface.add_vertex(p10)
+	surface.generate_normals()
+	return surface.commit()
+
+
 func _mobile_paper_cup_mesh() -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -484,17 +526,19 @@ func _make_paper_cup(rng: RandomNumberGenerator) -> void:
 	add_child(logo)
 
 func _make_food_wrapper(rng: RandomNumberGenerator) -> void:
-	var wrapper := _flat_box(Vector3(0.52, 0.025, 0.30), Vector3(0, 0.035, 0), [Color(0.88, 0.22, 0.12), Color(0.16, 0.48, 0.82), Color(0.92, 0.68, 0.12)][rng.randi_range(0, 2)])
-	add_child(wrapper)
-	var folded_left := _flat_box(Vector3(0.13, 0.035, 0.24), Vector3(-0.28, 0.055, 0), Color(0.82, 0.82, 0.72))
-	folded_left.rotation.y = -0.35
-	add_child(folded_left)
-	var folded_right := _flat_box(Vector3(0.13, 0.035, 0.24), Vector3(0.28, 0.055, 0), Color(0.90, 0.88, 0.78))
-	folded_right.rotation.y = 0.35
-	add_child(folded_right)
-	var print_mark := _flat_box(Vector3(0.18, 0.012, 0.08), Vector3(0, 0.058, -0.02), Color(0.96, 0.88, 0.62))
-	add_child(print_mark)
-	rotation.z = rng.randf_range(-0.08, 0.08)
+	var packet := MeshInstance3D.new()
+	packet.name = "CrimpedSnackWrapper"
+	packet.mesh = _mobile_food_wrapper_mesh(rng)
+	packet.position.y = 0.075
+	packet.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.metallic = 0.22
+	material.roughness = 0.34
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	packet.material_override = material
+	add_child(packet)
+
 
 func _make_crumpled_paper(rng: RandomNumberGenerator) -> void:
 	for i in range(5):
