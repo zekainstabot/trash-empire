@@ -141,14 +141,11 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			visual_rotation.z = rng.randf_range(-0.16, 0.16)
 			metallic = 0.68
 		2:
-			var cup := CylinderMesh.new()
-			cup.top_radius = 0.19
-			cup.bottom_radius = 0.13
-			cup.height = 0.32
-			cup.radial_segments = 8
-			shape = cup
-			base_color = Color(0.86, 0.80, 0.65)
-			visual_position.y = 0.16
+			# Single-surface tapered takeaway cup with a rolled lip and paper sleeve.
+			shape = _mobile_paper_cup_mesh()
+			base_color = Color.WHITE
+			visual_position.y = 0.015
+			visual_rotation.z = rng.randf_range(-0.10, 0.10)
 		3, 4, 13, 21, 22, 28:
 			var sheet := BoxMesh.new()
 			sheet.size = Vector3(0.46, 0.045, 0.30)
@@ -291,7 +288,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 8]:
+	if item_roll in [0, 1, 2, 8]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -370,6 +367,46 @@ func _mobile_crushed_can_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
 			surface.add_vertex(p01)
 			surface.add_vertex(p11)
 			surface.add_vertex(p10)
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_paper_cup_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const SIDES := 10
+	# Radius / height profile: tapered paper wall, broad rolled rim and inner lip.
+	var profile: Array[Vector2] = [
+		Vector2(0.125, 0.015), Vector2(0.132, 0.045),
+		Vector2(0.145, 0.105), Vector2(0.177, 0.285),
+		Vector2(0.190, 0.325), Vector2(0.204, 0.337),
+		Vector2(0.204, 0.350), Vector2(0.181, 0.350),
+		Vector2(0.179, 0.331)
+	]
+	var paper := Color(0.88, 0.83, 0.70)
+	var sleeve := Color(0.48, 0.29, 0.16)
+	var rim := Color(0.97, 0.94, 0.84)
+	for ring in range(profile.size() - 1):
+		var section := paper
+		if ring == 1 or ring == 2:
+			section = sleeve
+		elif ring >= 4:
+			section = rim
+		for side in range(SIDES):
+			var a0 := TAU * float(side) / float(SIDES)
+			var a1 := TAU * float(side + 1) / float(SIDES)
+			var p00 := Vector3(cos(a0) * profile[ring].x, profile[ring].y, sin(a0) * profile[ring].x)
+			var p01 := Vector3(cos(a1) * profile[ring].x, profile[ring].y, sin(a1) * profile[ring].x)
+			var p10 := Vector3(cos(a0) * profile[ring + 1].x, profile[ring + 1].y, sin(a0) * profile[ring + 1].x)
+			var p11 := Vector3(cos(a1) * profile[ring + 1].x, profile[ring + 1].y, sin(a1) * profile[ring + 1].x)
+			surface.set_color(section)
+			# Reverse winding for outward-facing normals on a vertical surface of revolution.
+			surface.add_vertex(p00)
+			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.add_vertex(p11)
 	surface.generate_normals()
 	return surface.commit()
 
