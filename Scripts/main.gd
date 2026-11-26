@@ -1019,6 +1019,10 @@ func _process_sorting_robots(delta: float) -> void:
 				robot.set_meta("mode", "idle")
 			continue
 		if not is_instance_valid(target) or not trash_nodes.has(target):
+			# If another system removed a still-valid target from trash_nodes,
+			# release this robot's reservation so it cannot remain locked.
+			if is_instance_valid(target) and int(target.get_meta("drone_reserved", -1)) == -30 - i:
+				target.set_meta("drone_reserved", -1)
 			robot.set_meta("target", null)
 			target = null
 			var cooldown := float(robot.get_meta("scan_timer", 0.0)) - delta
