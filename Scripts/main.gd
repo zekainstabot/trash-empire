@@ -1239,9 +1239,7 @@ func _build_first_district_details() -> void:
 	for x in [-3.35, -1.85]:
 		_box("BenchLeg", Vector3(x, 0.32, 4.2), Vector3(0.12, 0.58, 0.48), Color(0.16, 0.20, 0.21), false)
 	_make_bin(Vector3(0.8, 0, 11.0), Color(0.16, 0.48, 0.38), "WASTE")
-	# Marked pedestrian crossing and a small information board.
-	for i in range(5):
-		_box("PedestrianCrossingStripe", Vector3(-8.0, 0.055, -1.0 + float(i) * 0.72), Vector3(4.5, 0.035, 0.32), Color(0.82, 0.84, 0.78), false)
+	# Pedestrian crossing stripes removed for a clean roadway.
 	# Extra warm lighting around the starting area.
 	_make_lamp(Vector3(5.5, 0, 7.5))
 	_make_lamp(Vector3(-5.0, 0, 13.0))
