@@ -394,18 +394,19 @@ func _mobile_food_wrapper_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
 	]
 	const SIDES := 8
 	var phase := rng.randf_range(0.0, TAU)
-	var wrapper_color := [Color(0.88, 0.24, 0.12), Color(0.12, 0.43, 0.78), Color(0.91, 0.68, 0.12)][rng.randi_range(0, 2)]
+	var wrapper_colors: Array[Color] = [Color(0.88, 0.24, 0.12), Color(0.12, 0.43, 0.78), Color(0.91, 0.68, 0.12)]
+	var wrapper_color: Color = wrapper_colors[rng.randi_range(0, 2)]
 	for ring in range(profile.size() - 1):
 		for side in range(SIDES):
 			var a0 := TAU * float(side) / float(SIDES) + phase
 			var a1 := TAU * float(side + 1) / float(SIDES) + phase
-			var fold0 := 1.0 + 0.13 * sin(a0 * 3.0 + float(ring) * 1.4)
-			var fold1 := 1.0 + 0.13 * sin(a1 * 3.0 + float(ring) * 1.4)
+			var fold0: float = 1.0 + 0.13 * sin(a0 * 3.0 + float(ring) * 1.4)
+			var fold1: float = 1.0 + 0.13 * sin(a1 * 3.0 + float(ring) * 1.4)
 			var p00 := Vector3(profile[ring].x, cos(a0) * profile[ring].y * fold0, sin(a0) * profile[ring].y * fold0)
 			var p01 := Vector3(profile[ring].x, cos(a1) * profile[ring].y * fold1, sin(a1) * profile[ring].y * fold1)
 			var p10 := Vector3(profile[ring + 1].x, cos(a0) * profile[ring + 1].y * fold0, sin(a0) * profile[ring + 1].y * fold0)
 			var p11 := Vector3(profile[ring + 1].x, cos(a1) * profile[ring + 1].y * fold1, sin(a1) * profile[ring + 1].y * fold1)
-			var color := Color(0.76, 0.79, 0.78) if ring == 0 or ring == profile.size() - 2 else wrapper_color
+			var color: Color = Color(0.76, 0.79, 0.78) if ring == 0 or ring == profile.size() - 2 else wrapper_color
 			if side % 3 == 0 and ring > 1 and ring < profile.size() - 2:
 				color = color.lightened(0.16)
 			surface.set_color(color)
