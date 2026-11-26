@@ -5301,7 +5301,8 @@ func _cylinder(node_name: String, pos: Vector3, radius: float, height: float, co
 	return mesh
 
 func _process_waste_feed_conveyor(delta: float) -> void:
-	if not waste_tank_built or waste_feed_busy or waste_tank_inventory <= 0:
+	# Pause new factory input while the machinery is broken.
+	if machine_broken or not waste_tank_built or waste_feed_busy or waste_tank_inventory <= 0:
 		return
 	waste_feed_timer += delta
 	if waste_feed_timer < 0.55 / _waste_tank_discharge_multiplier():
@@ -5355,6 +5356,9 @@ func _finish_waste_feed_item(item: Node3D, row: int) -> void:
 	_save_game()
 
 func _process_factory_production(delta: float) -> void:
+	# A breakdown stops all factory processing until repairs are completed.
+	if machine_broken:
+		return
 	# Each machine has its own input/output stage. A machine only transforms
 	# material into the product that belongs to its recycling line.
 	factory_production_timer += delta
