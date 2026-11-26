@@ -2116,6 +2116,26 @@ func _start_new_world() -> void:
 		for factory_child in factory_visual_root.get_children():
 			factory_visual_root.remove_child(factory_child)
 			factory_child.queue_free()
+	# Factory machinery and conveyors are created as direct scene children, not
+	# under factory_visual_root. Remove those generated visuals on every NEW run.
+	var factory_reset_prefixes := [
+		"MegaProcessMachine", "FactoryMainConveyor", "FactoryProductOutput",
+		"FinishedPlasticBottle", "PlasticBottleCap", "FinishedCardboardBox",
+		"CardboardBoxTape", "FinishedMetalComponent", "MetalComponentCore",
+		"FinishedGlassJar", "GlassJarRim", "RefurbishedElectronicUnit",
+		"ElectronicDisplay", "FactoryRowTruck", "FactoryTruckLane"
+	]
+	for child in get_children():
+		for prefix in factory_reset_prefixes:
+			if child.name.begins_with(prefix):
+				child.queue_free()
+				break
+	conveyor_rollers.clear()
+	factory_conveyor_slats.clear()
+	mega_factory_machine_labels.clear()
+	# A fresh world starts with only the first machine and its connected belt.
+	_build_mega_factory_machine(0)
+	_build_factory_row_main_conveyor(0)
 	unload_timer = 0.0
 	player.set("move_speed", 4.5)
 	for item in trash_nodes:
