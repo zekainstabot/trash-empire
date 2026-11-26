@@ -912,6 +912,13 @@ func _process_sorting_robots(delta: float) -> void:
 		var robot := sorting_robots[i]
 		if not is_instance_valid(robot) or not robot.visible:
 			continue
+		var previous_position: Vector3 = robot.get_meta("previous_position", robot.global_position)
+		var travel_distance := robot.global_position.distance_to(previous_position)
+		if travel_distance > 0.0001:
+			for wheel in robot.get_meta("wheels", []):
+				if is_instance_valid(wheel):
+					wheel.rotate_object_local(Vector3.UP, travel_distance * 3.0)
+		robot.set_meta("previous_position", robot.global_position)
 		var mode := String(robot.get_meta("mode", "idle"))
 		var target := robot.get_meta("target") as Node3D
 		if mode == "return":
@@ -2496,6 +2503,7 @@ func _reset_automation_units_for_new_world() -> void:
 		robot.set_meta("cargo", null)
 		robot.set_meta("mode", "idle")
 		robot.global_position = sorting_pad_positions[index] + Vector3(0.0, 0.0, 1.7)
+		robot.set_meta("previous_position", robot.global_position)
 
 	for sweeper in street_sweepers:
 		if not is_instance_valid(sweeper):
