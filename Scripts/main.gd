@@ -3538,7 +3538,9 @@ func _collect_nearby() -> void:
 		var nearest: Node3D
 		var best := collection_range
 		for item in trash_nodes:
-			if is_instance_valid(item) and _can_collect_city_dump_trash(item) and carried + (2 if item.has_meta("bulky") else 1) <= capacity:
+			# Do not steal pieces already claimed by a drone, rover, sorting robot,
+			# magnet or vacuum. Those systems own the target until they release it.
+			if is_instance_valid(item) and item.get_meta("drone_reserved", -1) == -1 and _can_collect_city_dump_trash(item) and carried + (2 if item.has_meta("bulky") else 1) <= capacity:
 				var distance := player.global_position.distance_to(item.global_position)
 				if distance < best:
 					best = distance
