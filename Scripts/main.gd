@@ -4140,64 +4140,66 @@ func _build_recycling_mega_factory() -> void:
 
 	# Open-air factory: no roof, walls, or structural columns.
 
-	# Dedicated transfer conveyor links the central cross-feed spine directly to the main waste tank.
-	# Its left end meets the tank outlet and its right end meets the middle of the five-row feed spine.
-	_box("WasteFeedMainFrame", Vector3(137.7, 0.68, 0.0), Vector3(18.6, 0.30, 1.8), dark_steel, false)
-	_box("WasteFeedMainBelt", Vector3(137.7, 0.925, 0.0), Vector3(18.35, 0.08, 1.35), belt_color, false)
-	# Keep the final section of the trunk open where it meets the distributor.
-	for side_z in [-0.78, 0.78]:
-		_box("WasteFeedMainRail", Vector3(135.55, 1.08, side_z), Vector3(14.05, 0.28, 0.08), steel, false)
-	for transfer_x in range(129, 145, 2):
-		var transfer_roller := _cylinder("WasteFeedMainRoller", Vector3(float(transfer_x), 0.88, 0.0), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
-		transfer_roller.rotation_degrees.x = 90.0
-	# Reinforced intake lip makes the physical connection to the tank outlet visible.
-	_box("WasteTankConveyorIntakeFrame", Vector3(128.55, 0.68, 0.0), Vector3(1.25, 0.34, 1.95), dark_steel, false)
-	_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.925, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
-	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
-	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.925, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
-	# Split the distributor guard rails around every branch junction so the belts read as one connected path.
-	var distributor_gaps: Array[float] = []
-	for row in range(5):
-		distributor_gaps.append(_factory_row_z(row))
-	var gap_half_width := 1.65
-	var rail_cursor := -26.75
-	for gap_center in distributor_gaps:
-		var gap_start: float = gap_center - gap_half_width
-		var segment_length: float = gap_start - rail_cursor
-		if segment_length > 0.25:
+	# The tank-to-machine feed network is revealed only after storage is built.
+	if waste_tank_built:
+		# Dedicated transfer conveyor links the central cross-feed spine directly to the main waste tank.
+		# Its left end meets the tank outlet and its right end meets the middle of the five-row feed spine.
+		_box("WasteFeedMainFrame", Vector3(137.7, 0.68, 0.0), Vector3(18.6, 0.30, 1.8), dark_steel, false)
+		_box("WasteFeedMainBelt", Vector3(137.7, 0.925, 0.0), Vector3(18.35, 0.08, 1.35), belt_color, false)
+		# Keep the final section of the trunk open where it meets the distributor.
+		for side_z in [-0.78, 0.78]:
+			_box("WasteFeedMainRail", Vector3(135.55, 1.08, side_z), Vector3(14.05, 0.28, 0.08), steel, false)
+		for transfer_x in range(129, 145, 2):
+			var transfer_roller := _cylinder("WasteFeedMainRoller", Vector3(float(transfer_x), 0.88, 0.0), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
+			transfer_roller.rotation_degrees.x = 90.0
+		# Reinforced intake lip makes the physical connection to the tank outlet visible.
+		_box("WasteTankConveyorIntakeFrame", Vector3(128.55, 0.68, 0.0), Vector3(1.25, 0.34, 1.95), dark_steel, false)
+		_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.925, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
+		_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
+		_box("WasteFeedDistributorBelt", Vector3(147.0, 0.925, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
+		# Split the distributor guard rails around every branch junction so the belts read as one connected path.
+		var distributor_gaps: Array[float] = []
+		for row in range(5):
+			distributor_gaps.append(_factory_row_z(row))
+		var gap_half_width := 1.65
+		var rail_cursor := -26.75
+		for gap_center in distributor_gaps:
+			var gap_start: float = gap_center - gap_half_width
+			var segment_length: float = gap_start - rail_cursor
+			if segment_length > 0.25:
+				for side_x in [146.12, 147.88]:
+					_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + segment_length * 0.5), Vector3(0.08, 0.28, segment_length), steel, false)
+			rail_cursor = gap_center + gap_half_width
+		var final_length := 26.75 - rail_cursor
+		if final_length > 0.25:
 			for side_x in [146.12, 147.88]:
-				_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + segment_length * 0.5), Vector3(0.08, 0.28, segment_length), steel, false)
-		rail_cursor = gap_center + gap_half_width
-	var final_length := 26.75 - rail_cursor
-	if final_length > 0.25:
-		for side_x in [146.12, 147.88]:
-			_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + final_length * 0.5), Vector3(0.08, 0.28, final_length), steel, false)
-
-	# Use the existing distributor spine; avoid a duplicate parallel conveyor.
-
-	# Smooth quarter-turn elbows blend the central distributor into each production row.
-	for row in range(5):
-		var feed_z := _factory_row_z(row)
-		var bend_radius := 1.15
-		var bend_start_x := 147.0
-		var bend_start_z := feed_z - bend_radius
-		var bend_segments := 24
-		for bend_i in range(bend_segments):
-			var t := (float(bend_i) + 0.5) / float(bend_segments)
-			var angle := t * PI * 0.5
-			var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
-			var bend_z := bend_start_z + bend_radius * sin(angle)
-			var tangent_angle := atan2(-cos(angle), sin(angle))
-			var segment_len := 0.22
-			var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.38), dark_steel, false)
-			bend_frame.rotation_degrees.y = rad_to_deg(angle)
-			var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len, 0.08, 1.15), belt_color, false)
-			bend_belt.rotation_degrees.y = rad_to_deg(angle)
-		# Straight outlet overlaps the curved elbow and the main line, leaving no visible seam.
-		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.35, 0.68, feed_z), Vector3(2.85, 0.30, 1.45), dark_steel, false)
-		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(2.78, 0.08, 1.22), belt_color, false)
-		# Branch side rails are omitted at the elbow-to-row connection for a clean open merge.
-
+				_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + final_length * 0.5), Vector3(0.08, 0.28, final_length), steel, false)
+	
+		# Use the existing distributor spine; avoid a duplicate parallel conveyor.
+	
+		# Smooth quarter-turn elbows blend the central distributor into each production row.
+		for row in range(5):
+			var feed_z := _factory_row_z(row)
+			var bend_radius := 1.15
+			var bend_start_x := 147.0
+			var bend_start_z := feed_z - bend_radius
+			var bend_segments := 24
+			for bend_i in range(bend_segments):
+				var t := (float(bend_i) + 0.5) / float(bend_segments)
+				var angle := t * PI * 0.5
+				var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
+				var bend_z := bend_start_z + bend_radius * sin(angle)
+				var tangent_angle := atan2(-cos(angle), sin(angle))
+				var segment_len := 0.22
+				var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.38), dark_steel, false)
+				bend_frame.rotation_degrees.y = rad_to_deg(angle)
+				var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len, 0.08, 1.15), belt_color, false)
+				bend_belt.rotation_degrees.y = rad_to_deg(angle)
+			# Straight outlet overlaps the curved elbow and the main line, leaving no visible seam.
+			_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.35, 0.68, feed_z), Vector3(2.85, 0.30, 1.45), dark_steel, false)
+			_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(2.78, 0.08, 1.22), belt_color, false)
+			# Branch side rails are omitted at the elbow-to-row connection for a clean open merge.
+	
 	mega_factory_machine_labels.clear()
 	for row in range(5):
 		var z := _factory_row_z(row)
