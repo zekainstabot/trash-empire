@@ -2163,7 +2163,6 @@ func _build_ui() -> void:
 	collect.tooltip_text = "COLLECT"
 	collect.icon = load("res://robot_claw.svg") as Texture2D
 	collect.expand_icon = true
-	collect.icon_max_width = 66
 	collect.add_theme_stylebox_override("normal", _circle_button_style(Color(0.08, 0.34, 0.29, 0.58)))
 	collect.add_theme_stylebox_override("hover", _circle_button_style(Color(0.12, 0.46, 0.37, 0.68)))
 	collect.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.05, 0.24, 0.22, 0.76)))
