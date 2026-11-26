@@ -3612,6 +3612,17 @@ func _build_ground_collector() -> void:
 	_add_robot_box(ground_collector, "RoverSensor", Vector3(0, 0.82, -0.30), Vector3(0.28, 0.12, 0.12), Color(0.12, 0.95, 0.76))
 	_add_robot_box(ground_collector, "RoverSideArmorL", Vector3(-0.53, 0.48, 0.05), Vector3(0.08, 0.30, 0.88), Color(0.20, 0.34, 0.37))
 	_add_robot_box(ground_collector, "RoverSideArmorR", Vector3(0.53, 0.48, 0.05), Vector3(0.08, 0.30, 0.88), Color(0.20, 0.34, 0.37))
+	_add_robot_box(ground_collector, "RoverFrontBumper", Vector3(0, 0.40, -0.99), Vector3(1.02, 0.14, 0.12), Color(0.12, 0.18, 0.20))
+	for tooth_x in [-0.36, -0.18, 0.0, 0.18, 0.36]:
+		_add_robot_box(ground_collector, "RoverScoopTooth", Vector3(tooth_x, 0.16, -0.98), Vector3(0.085, 0.07, 0.12), Color(0.70, 0.76, 0.70))
+	for headlight_x in [-0.36, 0.36]:
+		_add_robot_box(ground_collector, "RoverHeadlight", Vector3(headlight_x, 0.60, -0.72), Vector3(0.17, 0.12, 0.045), Color(0.98, 0.86, 0.56))
+		_add_robot_box(ground_collector, "RoverHazardStripe", Vector3(headlight_x * 1.48, 0.50, 0.06), Vector3(0.035, 0.09, 0.52), Color(0.96, 0.64, 0.14))
+		_add_robot_sphere(ground_collector, "RoverWheelHub", Vector3(headlight_x * 1.52, 0.28, -0.43), 0.105, Color(0.54, 0.61, 0.60))
+		_add_robot_sphere(ground_collector, "RoverWheelHub", Vector3(headlight_x * 1.52, 0.28, 0.43), 0.105, Color(0.54, 0.61, 0.60))
+	_add_robot_box(ground_collector, "RoverRearCargoBin", Vector3(0, 0.98, 0.68), Vector3(0.58, 0.28, 0.30), Color(0.10, 0.17, 0.19))
+	_add_robot_box(ground_collector, "RoverRearCargoRim", Vector3(0, 1.14, 0.68), Vector3(0.64, 0.06, 0.34), Color(0.46, 0.54, 0.53))
+	_add_robot_sphere(ground_collector, "RoverWarningBeacon", Vector3(0.0, 1.10, -0.05), 0.075, Color(0.98, 0.57, 0.12))
 	var rover_wheels: Array[Node3D] = []
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
