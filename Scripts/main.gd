@@ -980,7 +980,7 @@ func _process_sorting_robots(delta: float) -> void:
 			drop_point.y = robot.global_position.y
 			robot.global_position = robot.global_position.move_toward(drop_point, _sorting_robot_speed() * delta)
 			if robot.global_position.distance_to(drop_point) < 0.8:
-				var cargo := robot.get_meta("cargo") as Node3D
+				var cargo := robot.get_meta("cargo", null) as Node3D
 				if is_instance_valid(cargo):
 					if not waste_tank_built or waste_tank_inventory >= _waste_tank_capacity():
 						_set_message("Sorting robot is waiting at the factory tank for storage to become available.")
@@ -2564,7 +2564,7 @@ func _reset_automation_units_for_new_world() -> void:
 		var target := drone.get_meta("target", null) as Node3D
 		if is_instance_valid(target):
 			target.set_meta("drone_reserved", -1)
-		var lifting_item := drone.get_meta("lifting_item") as Node3D
+		var lifting_item := drone.get_meta("lifting_item", null) as Node3D
 		if is_instance_valid(lifting_item):
 			lifting_item.queue_free()
 		for cargo_item in drone.get_meta("cargo_items", []):
@@ -2604,7 +2604,7 @@ func _reset_automation_units_for_new_world() -> void:
 		var target := robot.get_meta("target", null) as Node3D
 		if is_instance_valid(target):
 			target.set_meta("drone_reserved", -1)
-		var cargo := robot.get_meta("cargo") as Node3D
+		var cargo := robot.get_meta("cargo", null) as Node3D
 		if is_instance_valid(cargo):
 			cargo.queue_free()
 		robot.set_meta("target", null)
@@ -3820,7 +3820,7 @@ func _process_helper_drones(delta: float) -> void:
 				# on the player's auto-sell area or proximity to the tank.
 				_drone_deposit_cycle(drone)
 			continue
-		var lifting_item := drone.get_meta("lifting_item") as Node3D
+		var lifting_item := drone.get_meta("lifting_item", null) as Node3D
 		if is_instance_valid(lifting_item):
 			var grip_pos := drone.global_position + Vector3(0, -0.30, 0)
 			lifting_item.global_position = lifting_item.global_position.move_toward(grip_pos, 3.8 * delta)
