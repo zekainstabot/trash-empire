@@ -3636,7 +3636,11 @@ func _process_auto_pickup(delta: float) -> void:
 
 func _process_vacuum_suction(delta: float) -> void:
 	# Independent vacuum system: separate target, range, speed and timing from the magnet.
+	# Reservation -3 prevents drones and the ground rover from claiming a piece
+	# while the vacuum is physically pulling it toward the player.
 	if suction_level <= 0 or not is_instance_valid(player) or carried >= capacity:
+		if is_instance_valid(suction_target) and suction_target.get_meta("drone_reserved", -1) == -3:
+			suction_target.set_meta("drone_reserved", -1)
 		suction_target = null
 		suction_scan_timer = 0.0
 		suction_pull_timer = 0.0
@@ -3644,9 +3648,11 @@ func _process_vacuum_suction(delta: float) -> void:
 
 	suction_scan_timer -= delta
 	var target_valid := is_instance_valid(suction_target) and trash_nodes.has(suction_target)
-	if target_valid and suction_target.get_meta("drone_reserved", -1) != -1:
+	if target_valid and suction_target.get_meta("drone_reserved", -1) != -3:
 		target_valid = false
 	if not target_valid or suction_target == auto_pickup_target or suction_scan_timer <= 0.0:
+		if is_instance_valid(suction_target) and suction_target.get_meta("drone_reserved", -1) == -3:
+			suction_target.set_meta("drone_reserved", -1)
 		suction_target = null
 		suction_scan_timer = 0.10
 		var vacuum_range := collection_range + 1.8 + float(suction_level) * 1.25
@@ -3665,11 +3671,13 @@ func _process_vacuum_suction(delta: float) -> void:
 			if distance < nearest:
 				nearest = distance
 				suction_target = item
+				suction_target.set_meta("drone_reserved", -3)
 
 	if not is_instance_valid(suction_target):
 		suction_pull_timer = 0.0
 		return
 	if _is_city_dump_trash(suction_target) and not _player_at_city_dump_front():
+		suction_target.set_meta("drone_reserved", -1)
 		suction_target = null
 		suction_pull_timer = 0.0
 		return
@@ -3690,10 +3698,13 @@ func _process_vacuum_suction(delta: float) -> void:
 	suction_pull_timer = 0.0
 	var collected_item := suction_target
 	suction_target = null
-	if is_instance_valid(collected_item) and trash_nodes.has(collected_item) and _pickup_trash_item(collected_item):
-		_update_ui()
-		_save_game()
-		_set_message("VACUUM SUCTION  +1")
+	if is_instance_valid(collected_item) and trash_nodes.has(collected_item):
+		if collected_item.get_meta("drone_reserved", -1) == -3:
+			collected_item.set_meta("drone_reserved", -1)
+		if _pickup_trash_item(collected_item):
+			_update_ui()
+			_save_game()
+			_set_message("VACUUM SUCTION  +1")
 	if carried >= capacity:
 		_set_message("Bag full! Return to the recycling station.")
 
