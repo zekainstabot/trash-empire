@@ -3563,6 +3563,8 @@ func _collect_nearby() -> void:
 func _process_auto_pickup(delta: float) -> void:
 	# The vacuum replaces the magnet as the active hand collector once purchased.
 	if suction_level > 0 or auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
+		if is_instance_valid(auto_pickup_target) and auto_pickup_target.get_meta("drone_reserved", -1) == -4:
+			auto_pickup_target.set_meta("drone_reserved", -1)
 		auto_pickup_timer = 0.0
 		auto_pickup_scan_timer = 0.0
 		auto_pickup_target = null
@@ -3572,7 +3574,9 @@ func _process_auto_pickup(delta: float) -> void:
 	# may invalidate a target while the magnet is pulling it.
 	auto_pickup_scan_timer -= delta
 	var target_is_registered := is_instance_valid(auto_pickup_target) and trash_nodes.has(auto_pickup_target)
-	if not target_is_registered or auto_pickup_target.get_meta("drone_reserved", -1) != -1 or auto_pickup_scan_timer <= 0.0:
+	if not target_is_registered or auto_pickup_target.get_meta("drone_reserved", -1) != -4 or auto_pickup_scan_timer <= 0.0:
+		if is_instance_valid(auto_pickup_target) and auto_pickup_target.get_meta("drone_reserved", -1) == -4:
+			auto_pickup_target.set_meta("drone_reserved", -1)
 		auto_pickup_target = null
 		auto_pickup_scan_timer = 0.12
 		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.85 + float(magnet_power_level - 1) * 0.7
@@ -3592,16 +3596,20 @@ func _process_auto_pickup(delta: float) -> void:
 			if distance < best_distance:
 				best_distance = distance
 				auto_pickup_target = item
+				auto_pickup_target.set_meta("drone_reserved", -4)
 
 	if not is_instance_valid(auto_pickup_target):
 		auto_pickup_timer = 0.0
 		return
-	if not trash_nodes.has(auto_pickup_target):
+	if not trash_nodes.has(auto_pickup_target) or auto_pickup_target.get_meta("drone_reserved", -1) != -4:
+		if is_instance_valid(auto_pickup_target) and auto_pickup_target.get_meta("drone_reserved", -1) == -4:
+			auto_pickup_target.set_meta("drone_reserved", -1)
 		auto_pickup_target = null
 		auto_pickup_timer = 0.0
 		return
 	# Never let a bunker item pass through a side wall.
 	if _is_city_dump_trash(auto_pickup_target) and not _player_at_city_dump_front():
+		auto_pickup_target.set_meta("drone_reserved", -1)
 		auto_pickup_target = null
 		auto_pickup_timer = 0.0
 		return
@@ -3624,6 +3632,8 @@ func _process_auto_pickup(delta: float) -> void:
 	auto_pickup_timer = 0.0
 	var picked := auto_pickup_target
 	auto_pickup_target = null
+	if is_instance_valid(picked) and picked.get_meta("drone_reserved", -1) == -4:
+		picked.set_meta("drone_reserved", -1)
 	if is_instance_valid(picked) and trash_nodes.has(picked) and _pickup_trash_item(picked):
 		_update_ui()
 		_save_game()
