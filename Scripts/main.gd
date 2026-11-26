@@ -2513,6 +2513,7 @@ func _reset_automation_units_for_new_world() -> void:
 		sweeper.set_meta("route_index", 0)
 		if not street_sweeper_route.is_empty():
 			sweeper.global_position = street_sweeper_route[0]
+			sweeper.set_meta("previous_position", sweeper.global_position)
 
 	if is_instance_valid(auto_pickup_target):
 		auto_pickup_target.set_meta("drone_reserved", -1)
@@ -3172,6 +3173,7 @@ func _build_street_sweeper() -> void:
 	var sweeper := _make_street_sweeper()
 	add_child(sweeper)
 	sweeper.global_position = street_sweeper_route[0]
+	sweeper.set_meta("previous_position", sweeper.global_position)
 	sweeper.set_meta("route_index", 1)
 	sweeper.set_meta("cargo", 0)
 	sweeper.set_meta("returning", false)
@@ -3196,6 +3198,7 @@ func _make_street_sweeper() -> Node3D:
 	_city_truck_box(root, "SweeperHopperTop", Vector3(0, 1.91, 0.82), Vector3(1.72, 0.12, 1.76), Color(0.34, 0.40, 0.38))
 	_city_truck_box(root, "SweeperHopperRear", Vector3(0, 1.34, 1.70), Vector3(1.48, 0.82, 0.06), Color(0.13, 0.19, 0.19))
 	_city_truck_box(root, "SweeperFrontBumper", Vector3(0, 0.60, -1.98), Vector3(1.82, 0.20, 0.22), Color(0.16, 0.19, 0.19))
+	var sweeper_wheels: Array[Node3D] = []
 	for side in [-1.0, 1.0]:
 		_city_truck_box(root, "SweeperHeadlight", Vector3(side * 0.57, 1.05, -1.80), Vector3(0.25, 0.19, 0.08), Color(1.0, 0.88, 0.52))
 		_city_truck_box(root, "SweeperAmberBeacon", Vector3(side * 0.48, 2.20, -1.05), Vector3(0.16, 0.12, 0.16), Color(1.0, 0.42, 0.04))
@@ -3212,17 +3215,17 @@ func _make_street_sweeper() -> Node3D:
 			wheel.rotation_degrees.z = 90.0
 			wheel.material_override = _mat(rubber)
 			root.add_child(wheel)
+			sweeper_wheels.append(wheel)
 			var hub := MeshInstance3D.new()
 			hub.name = "SweeperWheelHub"
 			var hub_mesh := CylinderMesh.new()
 			hub_mesh.top_radius = 0.19
 			hub_mesh.bottom_radius = 0.19
-			hub_mesh.height = 0.26
+			hub_mesh.height = 0.07
 			hub.mesh = hub_mesh
-			hub.position = Vector3(side * 0.82, 0.40, axle_z)
-			hub.rotation_degrees.z = 90.0
+			hub.position = Vector3.ZERO
 			hub.material_override = _mat(Color(0.58, 0.60, 0.56))
-			root.add_child(hub)
+			wheel.add_child(hub)
 		# Side brush assemblies: yellow guards and black radial bristles.
 		_city_truck_box(root, "BrushArm", Vector3(side * 1.02, 0.34, -1.18), Vector3(0.52, 0.10, 0.24), Color(0.28, 0.31, 0.29))
 		var brush := Node3D.new()
@@ -3249,6 +3252,7 @@ func _make_street_sweeper() -> Node3D:
 			brush.add_child(bristle)
 		brush.set_meta("side", side)
 	_city_truck_box(root, "SweeperSuctionMouth", Vector3(0, 0.30, -1.80), Vector3(0.78, 0.12, 0.30), Color(0.08, 0.10, 0.10))
+	root.set_meta("wheels", sweeper_wheels)
 	return root
 
 
@@ -3256,6 +3260,13 @@ func _process_street_sweeper(delta: float) -> void:
 	for sweeper in street_sweepers:
 		if not is_instance_valid(sweeper):
 			continue
+		var previous_position: Vector3 = sweeper.get_meta("previous_position", sweeper.global_position)
+		var travel_distance := sweeper.global_position.distance_to(previous_position)
+		if travel_distance > 0.0001:
+			for wheel in sweeper.get_meta("wheels", []):
+				if is_instance_valid(wheel):
+					wheel.rotate_object_local(Vector3.UP, travel_distance / 0.39)
+		sweeper.set_meta("previous_position", sweeper.global_position)
 		for child in sweeper.get_children():
 			if child.name == "RotatingStreetBrush":
 				child.rotation.y += delta * 10.0
@@ -3282,6 +3293,7 @@ func _process_street_sweeper(delta: float) -> void:
 					sweeper.set_meta("returning", false)
 					sweeper.set_meta("route_index", 0)
 					sweeper.global_position = street_sweeper_route[0]
+					sweeper.set_meta("previous_position", sweeper.global_position)
 			continue
 		if cargo >= 30:
 			sweeper.set_meta("returning", true)
