@@ -271,7 +271,7 @@ func _finish_boot_sequence() -> void:
 		boot_layer.queue_free()
 	if OS.get_cmdline_user_args().has("--test-gameplay"):
 		await _close_main_menu()
-		_start_new_world()
+		await _start_new_world()
 		if not world_initialized or not is_instance_valid(player) or not is_instance_valid(camera) or not is_instance_valid(factory_visual_root) or trash_nodes.is_empty():
 			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the world, player, factory, or trash pool did not initialize.")
 			get_tree().quit(1)
