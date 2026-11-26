@@ -202,6 +202,8 @@ var skill_tree_built := false
 var world_initialized := false
 var city_pedestrians: Array[Dictionary] = []
 var pedestrian_clock := 0.0
+var street_sweepers: Array[Node3D] = []
+var street_sweeper_route: Array[Vector3] = []
 
 const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
@@ -288,6 +290,7 @@ func _process(delta: float) -> void:
 	_process_vacuum_suction(delta)
 	_process_helper_drones(delta)
 	_process_sorting_robots(delta)
+	_process_street_sweeper(delta)
 	_process_trash_respawn(delta)
 	_animate_city_pedestrians(delta)
 
@@ -322,6 +325,7 @@ func _build_world() -> void:
 	add_child(sun)
 
 	_build_city_rework_layout()
+	_build_street_sweeper()
 	_build_city_dump_area()
 	_build_recycling_mega_factory()
 	_build_sorting_district()
@@ -2819,6 +2823,177 @@ func _reset_joystick() -> void:
 	joystick_touch = -1
 	player.call("set_touch_move", Vector2.ZERO)
 	joystick_knob.position = (joystick_pad.size - joystick_knob.size) * 0.5
+
+func _is_on_city_asphalt(point: Vector3) -> bool:
+	# The sweeper is restricted to the boulevard and the four paved cross streets.
+	var on_boulevard := point.x >= -14.0 and point.x <= 112.0 and absf(point.z) <= 3.82
+	if on_boulevard:
+		return true
+	for street_x in [16.0, 48.0, 80.0, 104.0]:
+		if absf(point.x - street_x) <= 3.12 and point.z >= -37.0 and point.z <= 37.0:
+			return true
+	return false
+
+
+func _build_street_sweeper() -> void:
+	street_sweeper_route = [
+		Vector3(-11.0, 0.0, 0.0),
+		Vector3(16.0, 0.0, 0.0),
+		Vector3(16.0, 0.0, -34.0),
+		Vector3(16.0, 0.0, 0.0),
+		Vector3(48.0, 0.0, 0.0),
+		Vector3(48.0, 0.0, 34.0),
+		Vector3(48.0, 0.0, 0.0),
+		Vector3(80.0, 0.0, 0.0),
+		Vector3(80.0, 0.0, -34.0),
+		Vector3(80.0, 0.0, 0.0),
+		Vector3(104.0, 0.0, 0.0),
+		Vector3(104.0, 0.0, 34.0),
+		Vector3(104.0, 0.0, 0.0),
+		Vector3(-11.0, 0.0, 0.0)
+	]
+	street_sweepers.clear()
+	var sweeper := _make_street_sweeper()
+	add_child(sweeper)
+	sweeper.global_position = street_sweeper_route[0]
+	sweeper.set_meta("route_index", 1)
+	sweeper.set_meta("cargo", 0)
+	sweeper.set_meta("returning", false)
+	street_sweepers.append(sweeper)
+
+
+func _make_street_sweeper() -> Node3D:
+	var root := Node3D.new()
+	root.name = "AutonomousStreetSweeper"
+	var yellow := Color(0.94, 0.62, 0.08)
+	var dark_yellow := Color(0.66, 0.39, 0.045)
+	var glass := Color(0.10, 0.22, 0.27)
+	var rubber := Color(0.025, 0.031, 0.034)
+	_city_truck_box(root, "SweeperLowerChassis", Vector3(0, 0.70, 0.0), Vector3(1.55, 0.32, 3.55), Color(0.12, 0.16, 0.16))
+	_city_truck_box(root, "SweeperCab", Vector3(0, 1.40, -1.05), Vector3(1.48, 1.25, 1.42), yellow)
+	_city_truck_box(root, "SweeperCabGlassFront", Vector3(0, 1.57, -1.78), Vector3(1.18, 0.76, 0.045), glass)
+	_city_truck_box(root, "SweeperCabGlassSideL", Vector3(-0.755, 1.57, -1.05), Vector3(0.035, 0.72, 0.92), glass)
+	_city_truck_box(root, "SweeperCabGlassSideR", Vector3(0.755, 1.57, -1.05), Vector3(0.035, 0.72, 0.92), glass)
+	_city_truck_box(root, "SweeperCabRoof", Vector3(0, 2.06, -1.05), Vector3(1.58, 0.16, 1.50), dark_yellow)
+	# Rear-mounted cylindrical debris hopper and its visible metal cover.
+	_city_truck_box(root, "SweeperHopper", Vector3(0, 1.32, 0.82), Vector3(1.68, 1.12, 1.72), Color(0.23, 0.29, 0.28))
+	_city_truck_box(root, "SweeperHopperTop", Vector3(0, 1.91, 0.82), Vector3(1.72, 0.12, 1.76), Color(0.34, 0.40, 0.38))
+	_city_truck_box(root, "SweeperHopperRear", Vector3(0, 1.34, 1.70), Vector3(1.48, 0.82, 0.06), Color(0.13, 0.19, 0.19))
+	_city_truck_box(root, "SweeperFrontBumper", Vector3(0, 0.60, -1.98), Vector3(1.82, 0.20, 0.22), Color(0.16, 0.19, 0.19))
+	for side in [-1.0, 1.0]:
+		_city_truck_box(root, "SweeperHeadlight", Vector3(side * 0.57, 1.05, -1.80), Vector3(0.25, 0.19, 0.08), Color(1.0, 0.88, 0.52))
+		_city_truck_box(root, "SweeperAmberBeacon", Vector3(side * 0.48, 2.20, -1.05), Vector3(0.16, 0.12, 0.16), Color(1.0, 0.42, 0.04))
+		for axle_z in [-1.15, 1.22]:
+			var wheel := MeshInstance3D.new()
+			wheel.name = "SweeperWheel"
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.39
+			wheel_mesh.bottom_radius = 0.39
+			wheel_mesh.height = 0.24
+			wheel_mesh.radial_segments = 24
+			wheel.mesh = wheel_mesh
+			wheel.position = Vector3(side * 0.82, 0.40, axle_z)
+			wheel.rotation_degrees.z = 90.0
+			wheel.material_override = _mat(rubber)
+			root.add_child(wheel)
+			var hub := MeshInstance3D.new()
+			hub.name = "SweeperWheelHub"
+			var hub_mesh := CylinderMesh.new()
+			hub_mesh.top_radius = 0.19
+			hub_mesh.bottom_radius = 0.19
+			hub_mesh.height = 0.26
+			hub.mesh = hub_mesh
+			hub.position = Vector3(side * 0.82, 0.40, axle_z)
+			hub.rotation_degrees.z = 90.0
+			hub.material_override = _mat(Color(0.58, 0.60, 0.56))
+			root.add_child(hub)
+		# Side brush assemblies: yellow guards and black radial bristles.
+		_city_truck_box(root, "BrushArm", Vector3(side * 1.02, 0.34, -1.18), Vector3(0.52, 0.10, 0.24), Color(0.28, 0.31, 0.29))
+		var brush := Node3D.new()
+		brush.name = "RotatingStreetBrush"
+		brush.position = Vector3(side * 1.30, 0.19, -1.43)
+		root.add_child(brush)
+		var disc := MeshInstance3D.new()
+		var disc_mesh := CylinderMesh.new()
+		disc_mesh.top_radius = 0.43
+		disc_mesh.bottom_radius = 0.43
+		disc_mesh.height = 0.10
+		disc.mesh = disc_mesh
+		disc.material_override = _mat(dark_yellow)
+		brush.add_child(disc)
+		for bristle_index in range(12):
+			var angle := TAU * float(bristle_index) / 12.0
+			var bristle := MeshInstance3D.new()
+			var bristle_mesh := BoxMesh.new()
+			bristle_mesh.size = Vector3(0.07, 0.10, 0.36)
+			bristle.mesh = bristle_mesh
+			bristle.position = Vector3(cos(angle) * 0.29, -0.08, sin(angle) * 0.29)
+			bristle.rotation.y = -angle
+			bristle.material_override = _mat(Color(0.045, 0.052, 0.048))
+			brush.add_child(bristle)
+		brush.set_meta("side", side)
+	_city_truck_box(root, "SweeperSuctionMouth", Vector3(0, 0.30, -1.80), Vector3(0.78, 0.12, 0.30), Color(0.08, 0.10, 0.10))
+	return root
+
+
+func _process_street_sweeper(delta: float) -> void:
+	for sweeper in street_sweepers:
+		if not is_instance_valid(sweeper):
+			continue
+		for child in sweeper.get_children():
+			if child.name == "RotatingStreetBrush":
+				child.rotation.y += delta * 10.0
+		var cargo := int(sweeper.get_meta("cargo", 0))
+		var returning := bool(sweeper.get_meta("returning", false))
+		if returning:
+			var dump_point := _factory_waste_drop_point()
+			dump_point.y = sweeper.global_position.y
+			var direction := dump_point - sweeper.global_position
+			if direction.length() > 0.12:
+				sweeper.rotation.y = atan2(-direction.x, -direction.z)
+			sweeper.global_position = sweeper.global_position.move_toward(dump_point, delta * 5.0)
+			if sweeper.global_position.distance_to(dump_point) <= 1.1:
+				if waste_tank_built and waste_tank_inventory < _waste_tank_capacity():
+					var delivered := mini(cargo, _waste_tank_capacity() - waste_tank_inventory)
+					waste_tank_inventory += delivered
+					_refresh_waste_tank_inventory_label()
+					_refresh_sorting_district()
+					_update_ui()
+					_save_game()
+					sweeper.set_meta("cargo", cargo - delivered)
+				if int(sweeper.get_meta("cargo", 0)) <= 0:
+					sweeper.set_meta("cargo", 0)
+					sweeper.set_meta("returning", false)
+					sweeper.set_meta("route_index", 0)
+					sweeper.global_position = street_sweeper_route[0]
+			continue
+		if cargo >= 30:
+			sweeper.set_meta("returning", true)
+			continue
+		var route_index := int(sweeper.get_meta("route_index", 0)) % street_sweeper_route.size()
+		var waypoint: Vector3 = street_sweeper_route[route_index]
+		var travel := waypoint - sweeper.global_position
+		if travel.length() > 0.10:
+			sweeper.rotation.y = lerp_angle(sweeper.rotation.y, atan2(-travel.x, -travel.z), minf(1.0, delta * 3.0))
+			sweeper.global_position = sweeper.global_position.move_toward(waypoint, delta * 3.6)
+		else:
+			sweeper.set_meta("route_index", (route_index + 1) % street_sweeper_route.size())
+		# Brushes only pick up litter physically placed on the asphalt surface.
+		for item in trash_nodes.duplicate():
+			if not is_instance_valid(item) or item.get_meta("drone_reserved", -1) != -1:
+				continue
+			if not _is_on_city_asphalt(item.global_position):
+				continue
+			if sweeper.global_position.distance_to(item.global_position) > 2.25:
+				continue
+			item.queue_free()
+			trash_nodes.erase(item)
+			_register_final_cleanup_pickup(item)
+			cargo += 1
+			sweeper.set_meta("cargo", cargo)
+			if cargo >= 30:
+				break
+
 
 func _register_final_cleanup_pickup(item: Node3D) -> void:
 	if not is_instance_valid(item):
