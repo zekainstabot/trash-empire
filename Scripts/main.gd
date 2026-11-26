@@ -374,10 +374,6 @@ func _build_city_rework_layout() -> void:
 						clear_of_junctions = false
 				if clear_of_junctions:
 					_box("CrossStreetLaneDash", Vector3(street_x + lane_z, 0.064, float(dash_z)), Vector3(0.09, 0.022, 4.2), road_white, false)
-		# Correctly oriented zebra bars: bars span the road width (X), spaced along Z.
-		for cross_z in [-5.1, 5.1]:
-			for stripe in range(7):
-				_box("CityZebraCrossing", Vector3(street_x, 0.068, cross_z - 2.1 + float(stripe) * 0.7), Vector3(5.8, 0.025, 0.34), road_white, false)
 
 	# Narrow neighborhood streets get realistic edge paint, broken center markings,
 	# parking-bay separators and curbside pavements.
@@ -6201,8 +6197,7 @@ func _build_city_polish() -> void:
 		for z_side in [-4.1, 4.1]:
 			for x_offset in range(-13, 14, 2):
 				_box("StreetCurbStone", Vector3(district_x + float(x_offset), 0.075, z_side), Vector3(1.75, 0.13, 0.22), Color(0.59, 0.60, 0.55), false)
-		for stripe in range(5):
-			_box("PedestrianCrossingStripe", Vector3(district_x - 2.2 + stripe * 1.1, 0.052, 3.0), Vector3(0.62, 0.018, 0.48), Color(0.88, 0.87, 0.78), false)
+		# Intersection cross-street paint removed; keep the curb stones only.
 
 
 
@@ -6288,8 +6283,6 @@ func _build_commercial_district() -> void:
 		_make_lamp(Vector3(lamp_x, 0, 5.2))
 	for bin_pos in [Vector3(89, 0, 5.1), Vector3(103, 0, -5.1)]:
 		_make_bin(bin_pos, Color(0.12, 0.42, 0.34), "MARKET")
-	for x in range(92, 101, 2):
-		_box("MarketCrosswalkStripe", Vector3(float(x), 0.075, 7.0), Vector3(0.9, 0.02, 0.42), Color(0.91, 0.89, 0.80), false)
 
 
 func _build_ad_billboards() -> void:
