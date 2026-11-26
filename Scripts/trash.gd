@@ -157,6 +157,11 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			transparent = true
 			visual_position.y = 0.025
 			visual_rotation.y = rng.randf_range(0.0, TAU)
+		4:
+			shape = _mobile_crumpled_paper_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.025
+			visual_rotation.y = rng.randf_range(0.0, TAU)
 		4, 13, 21, 28:
 			var sheet := BoxMesh.new()
 			sheet.size = Vector3(0.46, 0.045, 0.30)
@@ -299,7 +304,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 3, 8, 22]:
+	if item_roll in [0, 1, 2, 3, 4, 8, 22]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -466,6 +471,38 @@ func _mobile_plastic_bag_mesh() -> ArrayMesh:
 	return surface.commit()
 
 
+func _mobile_crumpled_paper_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Triangulated paper sheet folded into an irregular compact wad.
+	const GRID := 7
+	var heights: Array[float] = []
+	for z_index in range(GRID + 1):
+		for x_index in range(GRID + 1):
+			var x := -0.19 + 0.38 * float(x_index) / float(GRID)
+			var z := -0.16 + 0.32 * float(z_index) / float(GRID)
+			var ridge := absf(sin(x * 27.0 + z * 11.0 + 0.7) * cos(z * 31.0 - x * 9.0))
+			var mound := maxf(0.0, 1.0 - (x * x / 0.045 + z * z / 0.032))
+			heights.append(0.025 + ridge * 0.11 + mound * 0.09)
+	var paper_colors: Array[Color] = [Color(0.91, 0.88, 0.78), Color(0.79, 0.76, 0.67), Color(0.97, 0.94, 0.85)]
+	for z_index in range(GRID):
+		for x_index in range(GRID):
+			var i := z_index * (GRID + 1) + x_index
+			var p00 := Vector3(-0.19 + 0.38 * float(x_index) / float(GRID), heights[i], -0.16 + 0.32 * float(z_index) / float(GRID))
+			var p10 := Vector3(-0.19 + 0.38 * float(x_index + 1) / float(GRID), heights[i + 1], p00.z)
+			var p01 := Vector3(p00.x, heights[i + GRID + 1], -0.16 + 0.32 * float(z_index + 1) / float(GRID))
+			var p11 := Vector3(p10.x, heights[i + GRID + 2], p01.z)
+			surface.set_color(paper_colors[(x_index * 3 + z_index + rng.randi_range(0, 2)) % paper_colors.size()])
+			surface.add_vertex(p00)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p11)
+	surface.generate_normals()
+	return surface.commit()
+
+
 func _mobile_paper_cup_mesh() -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -594,18 +631,17 @@ func _make_food_wrapper(rng: RandomNumberGenerator) -> void:
 
 
 func _make_crumpled_paper(rng: RandomNumberGenerator) -> void:
-	for i in range(5):
-		var ball := MeshInstance3D.new()
-		var sphere := SphereMesh.new()
-		sphere.radius = rng.randf_range(0.10, 0.17)
-		sphere.height = sphere.radius * 1.45
-		sphere.radial_segments = 7
-		sphere.rings = 4
-		ball.mesh = sphere
-		ball.position = Vector3(rng.randf_range(-0.14, 0.14), rng.randf_range(0.04, 0.13), rng.randf_range(-0.12, 0.12))
-		ball.scale = Vector3(1.0, 0.72, 0.88)
-		ball.material_override = _material([Color(0.88, 0.84, 0.72), Color(0.72, 0.68, 0.58), Color(0.94, 0.91, 0.82)][rng.randi_range(0, 2)])
-		add_child(ball)
+	var paper := MeshInstance3D.new()
+	paper.name = "CrumpledPaperWad"
+	paper.mesh = _mobile_crumpled_paper_mesh(rng)
+	paper.position.y = 0.025
+	paper.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.94
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	paper.material_override = material
+	add_child(paper)
 
 func _make_cardboard_scrap(rng: RandomNumberGenerator) -> void:
 	var sheet := _flat_box(Vector3(0.56, 0.045, 0.42), Vector3(0, 0.035, 0), Color(0.58, 0.39, 0.22))
