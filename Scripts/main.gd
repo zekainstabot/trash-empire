@@ -4452,10 +4452,8 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	for cleat_i in range(cleat_count):
 		var cleat_x := start_x + 0.65 + float(cleat_i) * ((belt_length - 1.30) / float(cleat_count - 1))
 		_box("FactoryMainConveyorCleat%d_%d" % [row, cleat_i], Vector3(cleat_x, 0.985, z), Vector3(0.11, 0.055, 1.12), Color(0.10, 0.13, 0.14), false)
-	# Large end drums expose the belt's return mechanism at both ends.
-	for drum_x in [start_x + 0.12, end_x - 0.12]:
-		var drum := _cylinder("FactoryMainConveyorEndDrum%d" % row, Vector3(drum_x, 0.88, z), 0.17, 1.30, steel, false)
-		drum.rotation_degrees.x = 90.0
+	# Keep the conveyor ends flush: remove the protruding return-drum geometry.
+	# The belt frame and rollers terminate cleanly without exposed drum pieces.
 
 func _build_mega_factory_machine_connections(index: int) -> void:
 	# Legacy hook: the continuous row conveyor is built once for each production row.
