@@ -5282,19 +5282,25 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	if row < 0 or row >= 5 or mega_factory_built_count < row * 3 + 1:
 		return
 	var sell_stage := _factory_row_sell_stage(row)
+	# A freed visual must never count as cargo or trigger payment for a load
+	# that contains fewer than three real products.
 	var queue: Array = factory_row_belt_items[row]
+	var valid_queue: Array = []
+	for item in queue:
+		if is_instance_valid(item):
+			valid_queue.append(item)
+	queue = valid_queue
+	factory_row_belt_items[row] = queue
 	if _factory_row_sellable_stock(row) < 3 or queue.size() < 3:
 		return
 	factory_shipping_busy = true
-	# Remove the three real products from the belt queue; these exact objects
-	# are animated into the truck rather than replaced with generic cargo cubes.
+	# Remove exactly three valid product objects from the belt queue.
 	var loaded_products: Array[Node3D] = []
 	for package_index in range(3):
 		var product: Node3D = queue.pop_front()
-		if is_instance_valid(product):
-			loaded_products.append(product)
+		loaded_products.append(product)
 	factory_row_belt_items[row] = queue
-	_factory_row_remove_sellable_stock(row, loaded_products.size())
+	_factory_row_remove_sellable_stock(row, 3)
 	_reposition_factory_belt_queue(row)
 	var truck := _create_factory_row_truck(row)
 	var z := _factory_row_z(row)
