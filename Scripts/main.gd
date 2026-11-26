@@ -2646,7 +2646,7 @@ func _process_upgrade_scroll_smoothing(delta: float) -> void:
 	var scroll_max := maxi(0, int(scroll_bar.max_value - scroll_bar.page))
 	skill_scroll_target = clampf(skill_scroll_target, 0.0, float(scroll_max))
 	var current_scroll := float(skill_scroll_container.scroll_vertical)
-	var blend := 1.0 - exp(-delta * 8.5)
+	var blend := 1.0 - exp(-delta * 5.0)
 	var next_scroll := lerpf(current_scroll, skill_scroll_target, blend)
 	if absf(skill_scroll_target - next_scroll) < 0.45:
 		next_scroll = skill_scroll_target
