@@ -93,8 +93,6 @@ func _ready() -> void:
 			_make_safety_helmet(rng)
 		31:
 			_make_old_television(rng)
-		31:
-			_make_old_television(rng)
 	rotation.y = rng.randf_range(0.0, TAU)
 	if has_meta("rare_type"):
 		_add_rare_visual(String(get_meta("rare_type")))
@@ -117,73 +115,191 @@ func _set_recycle_category(item_roll: int) -> void:
 
 
 func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
-	# Use the same recognizable, multi-part object models on Android as desktop.
-	# Keep meshes modest, but do not replace real objects with generic primitives.
+	# One low-poly MeshInstance per item on Android keeps the city readable
+	# without multiplying draw calls across the large live litter pool.
+	var shape: Mesh
+	var base_color := Color(0.48, 0.52, 0.50)
+	var transparent := false
+	var metallic := 0.16
+	var visual_position := Vector3(0.0, 0.08, 0.0)
+	var visual_rotation := Vector3.ZERO
+	var visual_scale := Vector3.ONE
+
 	match item_roll:
-		0:
-			_make_plastic_bottle(rng)
+		0, 8:
+			var bottle := CylinderMesh.new()
+			bottle.top_radius = 0.12
+			bottle.bottom_radius = 0.17
+			bottle.height = 0.46
+			bottle.radial_segments = 8
+			shape = bottle
+			base_color = Color(0.20, 0.60, 0.47) if item_roll == 0 else Color(0.82, 0.27, 0.13)
+			visual_position.y = 0.18
+			visual_rotation.z = PI * 0.5
 		1:
-			_make_crushed_can(rng)
+			var can := CylinderMesh.new()
+			can.top_radius = 0.14
+			can.bottom_radius = 0.16
+			can.height = 0.34
+			can.radial_segments = 8
+			shape = can
+			base_color = Color(0.66, 0.72, 0.74)
+			visual_position.y = 0.16
+			visual_rotation.z = PI * 0.5
+			metallic = 0.42
 		2:
-			_make_paper_cup(rng)
-		3:
-			_make_food_wrapper(rng)
-		4:
-			_make_crumpled_paper(rng)
-		5:
-			_make_cardboard_scrap(rng)
-		6:
-			_make_battery(rng)
+			var cup := CylinderMesh.new()
+			cup.top_radius = 0.19
+			cup.bottom_radius = 0.13
+			cup.height = 0.32
+			cup.radial_segments = 8
+			shape = cup
+			base_color = Color(0.86, 0.80, 0.65)
+			visual_position.y = 0.16
+		3, 4, 13, 21, 22, 28:
+			var sheet := BoxMesh.new()
+			sheet.size = Vector3(0.46, 0.045, 0.30)
+			shape = sheet
+			base_color = {
+				3: Color(0.86, 0.26, 0.13),
+				4: Color(0.83, 0.80, 0.68),
+				13: Color(0.76, 0.73, 0.62),
+				21: Color(0.88, 0.72, 0.13),
+				22: Color(0.64, 0.78, 0.73, 0.76),
+				28: Color(0.70, 0.72, 0.67)
+			}[item_roll]
+			transparent = item_roll == 22
+			visual_position.y = 0.045
+			visual_rotation.y = rng.randf_range(-0.5, 0.5)
+		5, 14, 15, 17, 26, 31:
+			var crate := BoxMesh.new()
+			crate.size = Vector3(0.42, 0.18, 0.32)
+			shape = crate
+			base_color = {
+				5: Color(0.59, 0.40, 0.23),
+				14: Color(0.68, 0.49, 0.27),
+				15: Color(0.72, 0.31, 0.14),
+				17: Color(0.08, 0.34, 0.25),
+				26: Color(0.18, 0.46, 0.82),
+				31: Color(0.22, 0.25, 0.25)
+			}[item_roll]
+			visual_position.y = 0.10
+			if item_roll == 31:
+				crate.size = Vector3(0.72, 0.48, 0.42)
+				visual_position.y = 0.24
+			elif item_roll == 17:
+				crate.size = Vector3(0.48, 0.045, 0.34)
+				visual_position.y = 0.045
+				metallic = 0.32
+			elif item_roll == 26:
+				crate.size = Vector3(0.26, 0.20, 0.24)
+		6, 20, 25:
+			var canister := CylinderMesh.new()
+			canister.top_radius = 0.15 if item_roll != 25 else 0.16
+			canister.bottom_radius = 0.15 if item_roll != 25 else 0.14
+			canister.height = 0.38 if item_roll != 25 else 0.34
+			canister.radial_segments = 8
+			shape = canister
+			base_color = Color(0.18, 0.20, 0.22) if item_roll == 6 else (Color(0.20, 0.29, 0.27) if item_roll == 20 else Color(0.73, 0.32, 0.16))
+			visual_position.y = 0.19 if item_roll != 25 else 0.17
+			metallic = 0.36
 		7:
-			_make_broken_glass(rng)
-		8:
-			_make_soda_bottle(rng)
+			var shard := BoxMesh.new()
+			shard.size = Vector3(0.32, 0.025, 0.22)
+			shape = shard
+			base_color = Color(0.44, 0.72, 0.76, 0.72)
+			transparent = true
+			visual_position.y = 0.035
+			visual_rotation.y = rng.randf_range(0.0, TAU)
 		9:
-			_make_old_shoe(rng)
-		10:
-			_make_gear(rng)
-		11:
-			_make_screws(rng)
-		12:
-			_make_wrench(rng)
-		13:
-			_make_newspaper(rng)
-		14:
-			_make_crushed_carton(rng)
-		15:
-			_make_food_box(rng)
-		16:
-			_make_rusted_pipe(rng)
-		17:
-			_make_circuit_board(rng)
+			var shoe := BoxMesh.new()
+			shoe.size = Vector3(0.50, 0.17, 0.26)
+			shape = shoe
+			base_color = Color(0.27, 0.23, 0.19)
+			visual_position.y = 0.09
+			visual_rotation.y = rng.randf_range(0.0, TAU)
+		10, 24, 27, 29:
+			var ring := TorusMesh.new()
+			ring.inner_radius = 0.20 if item_roll != 24 else 0.25
+			ring.outer_radius = 0.34 if item_roll != 24 else 0.43
+			ring.rings = 8
+			ring.ring_segments = 12
+			shape = ring
+			base_color = {
+				10: Color(0.48, 0.43, 0.34),
+				24: Color(0.055, 0.065, 0.067),
+				27: Color(0.45, 0.70, 0.64, 0.78),
+				29: Color(0.13, 0.16, 0.18)
+			}[item_roll]
+			visual_position.y = 0.12 if item_roll != 24 else 0.40
+			visual_rotation.x = PI * 0.5
+			transparent = item_roll == 27
+			metallic = 0.30
+		11, 12, 16:
+			var tool := CylinderMesh.new()
+			tool.top_radius = 0.055 if item_roll == 11 else 0.11
+			tool.bottom_radius = tool.top_radius
+			tool.height = 0.24 if item_roll == 11 else 0.62
+			tool.radial_segments = 8
+			shape = tool
+			base_color = Color(0.62, 0.66, 0.65) if item_roll != 16 else Color(0.48, 0.29, 0.18)
+			visual_position.y = 0.12
+			visual_rotation.z = PI * 0.5
+			metallic = 0.42
+			if item_roll == 12:
+				tool.height = 0.50
+				tool.top_radius = 0.07
+				tool.bottom_radius = 0.07
 		18:
-			_make_broken_fan(rng)
+			var fan := CylinderMesh.new()
+			fan.top_radius = 0.22
+			fan.bottom_radius = 0.22
+			fan.height = 0.08
+			fan.radial_segments = 10
+			shape = fan
+			base_color = Color(0.51, 0.56, 0.55)
+			visual_position.y = 0.06
+			metallic = 0.38
 		19:
-			_make_scrap_spring(rng)
-		20:
-			_make_oil_can(rng)
-		21:
-			_make_banana_peel(rng)
-		22:
-			_make_plastic_bag(rng)
+			var spring := TorusMesh.new()
+			spring.inner_radius = 0.075
+			spring.outer_radius = 0.15
+			spring.rings = 8
+			spring.ring_segments = 10
+			shape = spring
+			base_color = Color(0.50, 0.54, 0.54)
+			visual_position.y = 0.14
+			visual_rotation.x = PI * 0.5
+			metallic = 0.48
 		23:
-			_make_milk_carton(rng)
-		24:
-			_make_old_tire(rng)
-		25:
-			_make_paint_bucket(rng)
-		26:
-			_make_toy_blocks(rng)
-		27:
-			_make_glass_jar(rng)
-		28:
-			_make_takeaway_tray(rng)
-		29:
-			_make_cable_bundle(rng)
+			var carton := BoxMesh.new()
+			carton.size = Vector3(0.30, 0.42, 0.26)
+			shape = carton
+			base_color = Color(0.84, 0.85, 0.78)
+			visual_position.y = 0.21
 		30:
-			_make_safety_helmet(rng)
-		31:
-			_make_old_television(rng)
+			var helmet := SphereMesh.new()
+			helmet.radius = 0.25
+			helmet.height = 0.32
+			helmet.radial_segments = 8
+			helmet.rings = 5
+			shape = helmet
+			base_color = Color(0.92, 0.66, 0.12)
+			visual_position.y = 0.15
+			visual_scale = Vector3(1.25, 0.70, 1.0)
+
+	var visual := MeshInstance3D.new()
+	visual.name = "MobileTrashVisual"
+	visual.mesh = shape
+	visual.position = visual_position
+	visual.rotation = visual_rotation
+	visual.scale = visual_scale
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var material := _material(base_color, transparent)
+	material.metallic = metallic
+	material.roughness = 0.72
+	visual.material_override = material
+	add_child(visual)
 
 
 func _add_rare_visual(rare_type: String) -> void:
