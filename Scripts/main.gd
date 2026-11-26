@@ -48,7 +48,6 @@ var sorting_pad_positions: Array[Vector3] = [Vector3(119.5, 0, -26), Vector3(119
 var sorting_station_colors: Array[Color] = [Color(0.12, 0.42, 0.88), Color(0.88, 0.76, 0.22), Color(0.48, 0.52, 0.55), Color(0.15, 0.68, 0.42)]
 var sorting_station_names: Array[String] = ["PLASTIC", "PAPER", "METAL", "GLASS"]
 var sorting_station_categories: Array[String] = ["plastic", "paper", "metal", "glass"]
-var drone_timer := 0.0
 var helper_drones: Array[Node3D] = []
 var auto_pickup_timer := 0.0
 var auto_pickup_scan_timer := 0.0
@@ -2514,7 +2513,6 @@ func _start_new_world() -> void:
 	waste_feed_busy = false
 	waste_feed_line_index = 0
 	delivery_trucks.clear()
-	drone_timer = 0.0
 	_refresh_helper_drone_visibility()
 	auto_pickup_timer = 0.0
 	recycling_bonus = 1.0
@@ -2612,6 +2610,7 @@ func _reset_automation_units_for_new_world() -> void:
 		drone.set_meta("cargo_bulky", 0)
 		drone.set_meta("returning", false)
 		drone.set_meta("deposit_timer", 0.0)
+		drone.set_meta("pickup_timer", 0.0)
 		drone.set_meta("scan_cooldown", 0.0)
 		drone.global_position = _drone_dock_point(drone)
 
@@ -3866,7 +3865,6 @@ func _refresh_ground_collector() -> void:
 func _process_helper_drones(delta: float) -> void:
 	if drone_level <= 0 or not is_instance_valid(player):
 		return
-	drone_timer += delta
 	var interval := maxf(0.75, 3.2 - float(drone_level - 1) * 0.65)
 	var drone_speed := (5.0 + float(drone_level - 1) * 1.5) * (1.0 + float(drone_speed_upgrade_level) * 0.20)
 	for i in range(mini(drone_level, helper_drones.size())):
@@ -3927,6 +3925,7 @@ func _process_helper_drones(delta: float) -> void:
 				if target != null:
 					target.set_meta("drone_reserved", i)
 					drone.set_meta("target", target)
+					drone.set_meta("pickup_timer", 0.0)
 			else:
 				drone.set_meta("scan_cooldown", scan_cooldown)
 		if target == null:
@@ -3940,8 +3939,10 @@ func _process_helper_drones(delta: float) -> void:
 		var destination := target.global_position + Vector3(0, 0.20, 0)
 		drone.global_position = drone.global_position.move_toward(destination, drone_speed * delta)
 		drone.look_at(target.global_position, Vector3.UP)
-		if drone.global_position.distance_to(destination) < 0.42 and drone_timer >= interval:
-			drone_timer = 0.0
+		var pickup_timer := float(drone.get_meta("pickup_timer", 0.0)) + delta
+		drone.set_meta("pickup_timer", pickup_timer)
+		if drone.global_position.distance_to(destination) < 0.42 and pickup_timer >= interval:
+			drone.set_meta("pickup_timer", 0.0)
 			var weight := 2 if target.has_meta("bulky") else 1
 			var slots := int(drone.get_meta("cargo_slots", 0))
 			var drone_capacity := _drone_cargo_capacity()
