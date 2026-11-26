@@ -328,7 +328,23 @@ func _finish_boot_sequence() -> void:
 			get_tree().quit(1)
 			return
 
-		print("GAMEPLAY_SMOKE_TEST_OK: world, movement, collection, automatic recycling, factory construction, and rover upgrade.")
+		await _purchase_skill_node("drones", 1)
+		if helper_drones.is_empty() or not is_instance_valid(helper_drones[0]) or not helper_drones[0].visible:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the helper drone upgrade did not deploy its drone.")
+			get_tree().quit(1)
+			return
+
+		await _purchase_skill_node("sorting_robot", 1)
+		var visible_sorters := 0
+		for sorting_robot in sorting_robots:
+			if is_instance_valid(sorting_robot) and sorting_robot.visible:
+				visible_sorters += 1
+		if visible_sorters < 1:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the sorting robot upgrade did not activate a loader.")
+			get_tree().quit(1)
+			return
+
+		print("GAMEPLAY_SMOKE_TEST_OK: movement, collection, recycling, factory construction, rover, drones, and sorting loaders.")
 		await get_tree().create_timer(0.5).timeout
 		get_tree().quit(0)
 
