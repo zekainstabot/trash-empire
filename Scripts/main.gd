@@ -1334,7 +1334,7 @@ func _build_factory_expansion() -> void:
 		var z_positions: Array[float] = [0.0, 0.0, 0.0, 10.0, 20.0, 30.0]
 		var start_z: float = -4.9 if stage == 2 else (z_positions[stage - 1] + 1.8)
 		var end_z: float = -1.7 if stage == 2 else (z_positions[stage] - 1.7)
-		_build_factory_link(start_z, end_z)
+		_build_factory_link(Vector3(7.5, 0.0, start_z), Vector3(7.5, 0.0, end_z))
 		var new_nodes: Array[Node] = []
 		for child_index in range(first_new_child, get_child_count()):
 			new_nodes.append(get_child(child_index))
@@ -1505,18 +1505,63 @@ func _build_factory_module(stage: int) -> void:
 	_box("FactoryModule%dStatusHousing" % stage, Vector3(9.45, 2.05, z - 0.82), Vector3(0.34, 0.48, 0.30), Color(0.035, 0.06, 0.07), false)
 	_cylinder("FactoryModule%dStatusLamp" % stage, Vector3(9.45, 2.30, z - 0.82), 0.12, 0.10, Color(0.10, 0.95, 0.56), false)
 
-func _build_factory_link(start_z: float, end_z: float) -> void:
-	var middle := (start_z + end_z) * 0.5
-	var length := absf(end_z - start_z)
-	_box("FactoryConveyorFrame", Vector3(7.5, 0.78, middle), Vector3(1.75, 0.28, length), Color(0.07, 0.11, 0.12), true)
-	_box("FactoryConveyorBelt", Vector3(7.5, 0.96, middle), Vector3(1.48, 0.07, maxf(0.2, length - 0.12)), Color(0.025, 0.04, 0.045), false)
-	for x in [6.68, 8.32]:
-		_box("FactoryConveyorRail", Vector3(x, 1.18, middle), Vector3(0.10, 0.40, length), Color(0.48, 0.54, 0.52), false)
-	for i in range(maxi(2, int(length / 0.65))):
-		var z := start_z + (end_z - start_z) * float(i) / float(maxi(1, int(length / 0.65) - 1))
-		var roller := _cylinder("FactoryConveyorRoller", Vector3(7.5, 0.83, z), 0.095, 1.42, Color(0.55, 0.60, 0.58), true)
-		# Factory belt runs along Z, so each roller axle must span the X width.
+func _build_factory_link(start_pos: Vector3, end_pos: Vector3) -> void:
+	# Build the conveyor in a local coordinate system whose Z axis follows the path.
+	# This keeps the frame, belt, rails and roller axles aligned at every yaw angle.
+	var direction := end_pos - start_pos
+	direction.y = 0.0
+	var length := direction.length()
+	if length < 0.1:
+		return
+
+	var middle := (start_pos + end_pos) * 0.5
+	middle.y = 0.0
+	var angle := atan2(direction.x, direction.z)
+
+	var conveyor_root := Node3D.new()
+	conveyor_root.name = "FactoryConveyorLink"
+	conveyor_root.position = middle
+	conveyor_root.rotation.y = angle
+	add_child(conveyor_root)
+
+	# Reinforced frame with a matching collision body, belt surface and side guards.
+	var frame_body := StaticBody3D.new()
+	frame_body.name = "FactoryConveyorFrame"
+	frame_body.position.y = 0.78
+	conveyor_root.add_child(frame_body)
+
+	var frame_mesh := MeshInstance3D.new()
+	var frame_box := BoxMesh.new()
+	frame_box.size = Vector3(1.75, 0.28, length)
+	frame_mesh.mesh = frame_box
+	frame_mesh.material_override = _mat(Color(0.07, 0.11, 0.12))
+	frame_body.add_child(frame_mesh)
+
+	var frame_collision := CollisionShape3D.new()
+	var frame_shape := BoxShape3D.new()
+	frame_shape.size = frame_box.size
+	frame_collision.shape = frame_shape
+	frame_body.add_child(frame_collision)
+
+	_box_child(conveyor_root, "FactoryConveyorBelt", Vector3(0.0, 0.96, 0.0), Vector3(1.48, 0.07, maxf(0.2, length - 0.12)), Color(0.025, 0.04, 0.045))
+	for side in [-1.0, 1.0]:
+		_box_child(conveyor_root, "FactoryConveyorRail", Vector3(side * 0.82, 1.18, 0.0), Vector3(0.10, 0.40, length), Color(0.48, 0.54, 0.52))
+
+	# Rollers are children of the rotated root, so their axles stay perpendicular to travel.
+	var roller_count := maxi(2, int(ceil(length / 0.65)) + 1)
+	for i in range(roller_count):
+		var t := (float(i) + 0.5) / float(roller_count)
+		var roller := MeshInstance3D.new()
+		roller.name = "FactoryConveyorRoller"
+		var roller_mesh := CylinderMesh.new()
+		roller_mesh.top_radius = 0.095
+		roller_mesh.bottom_radius = 0.095
+		roller_mesh.height = 1.42
+		roller.mesh = roller_mesh
+		roller.position = Vector3(0.0, 0.83, (t - 0.5) * length)
 		roller.rotation_degrees.z = 90.0
+		roller.material_override = _mat(Color(0.55, 0.60, 0.58))
+		conveyor_root.add_child(roller)
 		conveyor_rollers.append(roller)
 
 func _create_world_action_button(node_name: String, title: String, world_position: Vector3, dimensions: Vector3, action: Callable, color: Color) -> Node3D:
