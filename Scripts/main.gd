@@ -409,15 +409,15 @@ func _build_city_rework_layout() -> void:
 	_build_city_block_building(Vector3(96.0, 0.0, 31.0), "SUPERMARKET", Color(0.52, 0.66, 0.58), 1, 6.0)
 
 	# A proper public park occupies the open civic block, with paths and seating.
-	_box("CityParkLawn", Vector3(70.0, 0.055, 11.5), Vector3(12.0, 0.11, 12.0), Color(0.25, 0.48, 0.27), false)
-	_box("ParkPathLong", Vector3(70.0, 0.12, 11.5), Vector3(10.5, 0.04, 1.5), sidewalk, false)
-	_box("ParkPathCross", Vector3(70.0, 0.125, 11.5), Vector3(1.5, 0.04, 10.0), sidewalk, false)
-	_cylinder("CityParkFountainBasin", Vector3(70.0, 0.30, 11.5), 1.55, 0.42, Color(0.48, 0.53, 0.50), false)
-	_cylinder("CityParkFountainWater", Vector3(70.0, 0.53, 11.5), 1.30, 0.05, Color(0.19, 0.55, 0.69), false)
-	_cylinder("CityParkFountainCore", Vector3(70.0, 0.83, 11.5), 0.24, 0.58, Color(0.70, 0.72, 0.67), false)
-	for bench_pos in [Vector3(63.0, 0.0, 11.5), Vector3(77.0, 0.0, 11.5)]:
+	_box("CityParkLawn", Vector3(69.0, 0.055, 13.0), Vector3(9.0, 0.11, 9.5), Color(0.25, 0.48, 0.27), false)
+	_box("ParkPathLong", Vector3(69.0, 0.12, 13.0), Vector3(8.0, 0.04, 1.5), sidewalk, false)
+	_box("ParkPathCross", Vector3(69.0, 0.125, 13.0), Vector3(1.5, 0.04, 8.0), sidewalk, false)
+	_cylinder("CityParkFountainBasin", Vector3(69.0, 0.30, 13.0), 1.55, 0.42, Color(0.48, 0.53, 0.50), false)
+	_cylinder("CityParkFountainWater", Vector3(69.0, 0.53, 13.0), 1.30, 0.05, Color(0.19, 0.55, 0.69), false)
+	_cylinder("CityParkFountainCore", Vector3(69.0, 0.83, 13.0), 0.24, 0.58, Color(0.70, 0.72, 0.67), false)
+	for bench_pos in [Vector3(65.5, 0.0, 13.0), Vector3(72.0, 0.0, 13.0)]:
 		_make_bench(bench_pos)
-	for tree_pos in [Vector3(65.0, 0.0, 10.0), Vector3(72.0, 0.0, 10.0), Vector3(65.0, 0.0, 16.0), Vector3(72.0, 0.0, 16.0)]:
+	for tree_pos in [Vector3(65.5, 0.0, 10.0), Vector3(72.0, 0.0, 10.0), Vector3(65.5, 0.0, 16.0), Vector3(72.0, 0.0, 16.0)]:
 		_build_neighborhood_tree(tree_pos)
 
 	# Player's starting plaza and waste drop-off remain easy to find.
@@ -6266,21 +6266,21 @@ func _build_commercial_district() -> void:
 		_build_market_shop(Vector3(shop_xs[i], 0, 23.5), shop_names[i + 3], shop_colors[i + 3], i + 3)
 
 	# A proper civic square, with a tiered fountain, pavers, planters and seating.
-	var plaza := Vector3(96, 0, 13.0)
-	_box("MarketSquareBase", plaza + Vector3(0, 0.055, 0), Vector3(9.0, 0.11, 12.0), Color(0.61, 0.59, 0.51), false)
-	for x in range(92, 101, 2):
-		_box("MarketSquarePaverLine", Vector3(float(x), 0.116, 13), Vector3(0.025, 0.008, 11.6), Color(0.45, 0.46, 0.42), false)
+	var plaza := Vector3(94.5, 0, 13.0)
+	_box("MarketSquareBase", plaza + Vector3(0, 0.055, 0), Vector3(6.0, 0.11, 10.0), Color(0.61, 0.59, 0.51), false)
+	for x in range(92, 97, 2):
+		_box("MarketSquarePaverLine", Vector3(float(x), 0.116, 13), Vector3(0.025, 0.008, 9.6), Color(0.45, 0.46, 0.42), false)
 	for z in [8.0, 18.0]:
-		_box("MarketSquareBorder", Vector3(96, 0.14, z), Vector3(9.0, 0.08, 0.12), Color(0.34, 0.37, 0.34), false)
-	_cylinder("FountainLowerBasin", Vector3(96, 0.32, 13), 2.0, 0.48, Color(0.43, 0.48, 0.47), false)
-	_cylinder("FountainWater", Vector3(96, 0.57, 13), 1.72, 0.06, Color(0.18, 0.55, 0.68), false)
-	_cylinder("FountainColumn", Vector3(96, 0.92, 13), 0.34, 0.72, Color(0.68, 0.67, 0.60), false)
-	_cylinder("FountainTopBowl", Vector3(96, 1.34, 13), 0.82, 0.18, Color(0.55, 0.61, 0.59), false)
-	_cylinder("FountainJet", Vector3(96, 1.70, 13), 0.10, 0.62, Color(0.26, 0.66, 0.78), false)
-	for corner in [Vector3(92.5, 0, 9), Vector3(99.5, 0, 9), Vector3(92.5, 0, 17), Vector3(99.5, 0, 17)]:
+		_box("MarketSquareBorder", Vector3(94.5, 0.14, z), Vector3(6.0, 0.08, 0.12), Color(0.34, 0.37, 0.34), false)
+	_cylinder("FountainLowerBasin", Vector3(94.5, 0.32, 13), 2.0, 0.48, Color(0.43, 0.48, 0.47), false)
+	_cylinder("FountainWater", Vector3(94.5, 0.57, 13), 1.72, 0.06, Color(0.18, 0.55, 0.68), false)
+	_cylinder("FountainColumn", Vector3(94.5, 0.92, 13), 0.34, 0.72, Color(0.68, 0.67, 0.60), false)
+	_cylinder("FountainTopBowl", Vector3(94.5, 1.34, 13), 0.82, 0.18, Color(0.55, 0.61, 0.59), false)
+	_cylinder("FountainJet", Vector3(94.5, 1.70, 13), 0.10, 0.62, Color(0.26, 0.66, 0.78), false)
+	for corner in [Vector3(92.5, 0, 9), Vector3(96.5, 0, 9), Vector3(92.5, 0, 17), Vector3(96.5, 0, 17)]:
 		_box("MarketPlanterStone", corner + Vector3(0, 0.35, 0), Vector3(1.8, 0.7, 1.5), Color(0.36, 0.38, 0.34), false)
 		_cylinder("MarketPlanterShrub", corner + Vector3(0, 0.95, 0), 0.62, 0.9, Color(0.17, 0.37, 0.20), false)
-	for bench in [Vector3(92, 0, 13), Vector3(100, 0, 13)]:
+	for bench in [Vector3(92, 0, 13), Vector3(96.5, 0, 13)]:
 		_make_bench(bench)
 
 	# Four parking bays are kept clear of the boulevard and plaza.
