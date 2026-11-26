@@ -4084,40 +4084,27 @@ func _factory_row_machine_name(row: int, column: int) -> String:
 	]
 	return machine_names[clampi(row, 0, 4)][clampi(column, 0, 2)]
 
-func _build_factory_finished_product(row: int) -> void:
-	var x := 198.0
-	var z := _factory_row_z(row)
-	var frame := Color(0.10, 0.13, 0.15)
-	var accent: Color = [Color(0.18, 0.68, 0.48), Color(0.72, 0.57, 0.34), Color(0.55, 0.60, 0.65), Color(0.42, 0.76, 0.82), Color(0.25, 0.42, 0.62)][row]
-	_box("FactoryProductOutputStand%d" % row, Vector3(x, 0.52, z), Vector3(3.8, 0.9, 3.4), Color(0.16, 0.23, 0.22), false)
-	match row:
-		0:
-			for i in range(3):
-				var bx := x + float(i - 1) * 0.85
-				_cylinder("FinishedPlasticBottle", Vector3(bx, 1.35, z), 0.30, 1.15, accent, false)
-				_cylinder("PlasticBottleCap", Vector3(bx, 1.96, z), 0.12, 0.12, frame, false)
-		1:
-			for i in range(3):
-				var bx := x + float(i - 1) * 0.78
-				_box("FinishedCardboardBox", Vector3(bx, 1.30, z), Vector3(0.72, 0.85, 0.72), accent, false)
-				_box("CardboardBoxTape", Vector3(bx, 1.74, z), Vector3(0.12, 0.025, 0.74), Color(0.90, 0.82, 0.58), false)
-		2:
-			for i in range(3):
-				var bx := x + float(i - 1) * 0.88
-				_box("FinishedMetalComponent", Vector3(bx, 1.18, z), Vector3(0.72, 0.62, 0.72), accent, false)
-				_cylinder("MetalComponentCore", Vector3(bx, 1.53, z), 0.20, 0.12, frame, false)
-		3:
-			for i in range(3):
-				var bx := x + float(i - 1) * 0.85
-				_cylinder("FinishedGlassJar", Vector3(bx, 1.34, z), 0.32, 1.0, accent, false)
-				_cylinder("GlassJarRim", Vector3(bx, 1.88, z), 0.20, 0.10, Color(0.76, 0.84, 0.84), false)
-		4:
-			for i in range(3):
-				var bx := x + float(i - 1) * 0.85
-				_box("RefurbishedElectronicUnit", Vector3(bx, 1.35, z), Vector3(0.78, 0.82, 0.62), frame, false)
-				_box("ElectronicDisplay", Vector3(bx, 1.38, z - 0.325), Vector3(0.56, 0.48, 0.025), accent, false)
+func _remove_legacy_factory_output_products(node: Node) -> void:
+	# Remove the old oversized static product display from every production-line exit.
+	var legacy_prefixes := [
+		"FactoryProductOutputStand", "FinishedPlasticBottle", "PlasticBottleCap",
+		"FinishedCardboardBox", "CardboardBoxTape", "FinishedMetalComponent",
+		"MetalComponentCore", "FinishedGlassJar", "GlassJarRim",
+		"RefurbishedElectronicUnit", "ElectronicDisplay"
+	]
+	for child in node.get_children():
+		var remove_child := false
+		for prefix in legacy_prefixes:
+			if child.name.begins_with(prefix):
+				remove_child = true
+				break
+		if remove_child:
+			child.queue_free()
+		else:
+			_remove_legacy_factory_output_products(child)
 
 func _build_recycling_mega_factory() -> void:
+	_remove_legacy_factory_output_products(self)
 	# Clean, open industrial hall: five parallel lines with clear service lanes.
 	var steel := Color(0.16, 0.22, 0.24)
 	var dark_steel := Color(0.055, 0.085, 0.095)
