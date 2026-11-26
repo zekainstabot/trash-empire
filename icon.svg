@@ -1,8 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="112" fill="#173d35"/>
-<path d="M166 132h180l-15 42H181z" fill="#b8e986"/>
-<path d="M190 188h132l-18 190H208z" fill="#e7f2d5"/>
-<path d="M218 218v124m38-124v124m38-124v124" stroke="#4d8b63" stroke-width="17" stroke-linecap="round"/>
-<path d="M204 116l18-34h68l18 34" fill="none" stroke="#b8e986" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M115 392c44 40 238 40 282 0" fill="none" stroke="#b8e986" stroke-width="22" stroke-linecap="round"/>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#263f44"/><stop offset="1" stop-color="#101d23"/></linearGradient>
+  <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f0f5ec"/><stop offset="1" stop-color="#9fb6b0"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
+  <marker id="tealArrow" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#36d8b5"/></marker>
+  <marker id="amberArrow" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#f1b64c"/></marker>
+</defs>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/>
+<circle cx="256" cy="256" r="190" fill="#1b3035" stroke="#597176" stroke-width="13"/>
+<circle cx="256" cy="256" r="160" fill="#14262b" stroke="#334d52" stroke-width="10"/>
+<circle cx="256" cy="256" r="139" fill="none" stroke="#425d61" stroke-width="3" stroke-dasharray="5 12"/>
+<g fill="none" stroke-linecap="round" stroke-width="22">
+  <path d="M244 124A132 132 0 0 1 365 202" stroke="#36d8b5" marker-end="url(#tealArrow)"/>
+  <path d="M375 277A132 132 0 0 1 258 388" stroke="#f1b64c" marker-end="url(#amberArrow)"/>
+  <path d="M185 345A132 132 0 0 1 143 220" stroke="#36d8b5" marker-end="url(#tealArrow)"/>
+</g>
+<ellipse cx="256" cy="337" rx="94" ry="17" fill="#071317" opacity=".55" filter="url(#shadow)"/>
+<path d="M174 323V246l48 25v-25l47 25v-25l47 25v-49h27v101z" fill="url(#steel)" stroke="#718a86" stroke-width="5" stroke-linejoin="round"/>
+<path d="M295 222v-55h28v73" fill="#e8ad43" stroke="#8b6b34" stroke-width="5" stroke-linejoin="round"/>
+<path d="M306 160c-8-13 9-17 2-30m17 30c-8-13 9-17 2-30" fill="none" stroke="#93aaa5" stroke-width="7" stroke-linecap="round" opacity=".72"/>
+<rect x="190" y="286" width="24" height="37" rx="3" fill="#1c5960"/><rect x="230" y="286" width="24" height="37" rx="3" fill="#1c5960"/><rect x="270" y="286" width="24" height="37" rx="3" fill="#1c5960"/><rect x="313" y="286" width="18" height="37" rx="3" fill="#d79c36"/>
+<path d="M171 328h171" stroke="#f1b64c" stroke-width="8" stroke-linecap="round"/>
+<circle cx="256" cy="256" r="12" fill="#f1b64c" stroke="#fff1c9" stroke-width="4"/>
 </svg>
