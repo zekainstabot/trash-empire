@@ -136,6 +136,7 @@ const FACTORY_INPUT_CAPACITY_PER_ROW := 90
 const FACTORY_PRODUCT_CAPACITY_PER_ROW := 60
 var factory_production_timer := 0.0
 var waste_tank_inventory := 0
+var factory_waste_deposited_total := 0
 const WASTE_TANK_BASE_CAPACITY := 300
 var waste_tank_capacity_upgrade_level := 0
 
@@ -1012,6 +1013,8 @@ func _process_sorting_robots(delta: float) -> void:
 					robot.set_meta("cargo", null)
 					sorting_bin_counts[i] += 1
 					waste_tank_inventory += 1
+					factory_waste_deposited_total += 1
+					_update_missions()
 					_refresh_waste_tank_inventory_label()
 					_refresh_sorting_district()
 					_update_ui()
@@ -2540,6 +2543,7 @@ func _start_new_world() -> void:
 	waste_feed_busy = false
 	waste_feed_line_index = 0
 	waste_tank_inventory = 0
+	factory_waste_deposited_total = 0
 	mega_factory_build_paid = 0.0
 	mega_factory_build_timer = 0.0
 	if is_instance_valid(factory_visual_root):
@@ -3430,6 +3434,8 @@ func _process_street_sweeper(delta: float) -> void:
 				if waste_tank_built and waste_tank_inventory < _waste_tank_capacity():
 					var delivered := mini(cargo, _waste_tank_capacity() - waste_tank_inventory)
 					waste_tank_inventory += delivered
+					factory_waste_deposited_total += delivered
+					_update_missions()
 					_refresh_waste_tank_inventory_label()
 					_refresh_sorting_district()
 					_update_ui()
@@ -4084,7 +4090,9 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 	else:
 		rover.set_meta("cargo_slots", slots - 1)
 	waste_tank_inventory += 1
+	factory_waste_deposited_total += 1
 	_refresh_waste_tank_inventory_label()
+	_update_missions()
 	_update_ui()
 	_save_game()
 	if int(rover.get_meta("cargo_slots", 0)) <= 0:
@@ -4133,7 +4141,9 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 	else:
 		drone.set_meta("cargo_slots", slots - 1)
 	waste_tank_inventory += 1
+	factory_waste_deposited_total += 1
 	_refresh_waste_tank_inventory_label()
+	_update_missions()
 	_update_ui()
 	_save_game()
 	if int(drone.get_meta("cargo_slots", 0)) <= 0:
@@ -4176,6 +4186,8 @@ func _process_auto_sell(delta: float) -> void:
 			else:
 				carried -= 1
 			waste_tank_inventory += 1
+			factory_waste_deposited_total += 1
+			_update_missions()
 			_update_ui()
 			_save_game()
 			if carried == 0:
@@ -4744,6 +4756,7 @@ func _save_game() -> void:
 	save.set_value("progress", "factory_row_product_stock", factory_row_product_stock)
 	save.set_value("progress", "factory_total_products_made", factory_total_products_made)
 	save.set_value("progress", "waste_tank_inventory", waste_tank_inventory)
+	save.set_value("progress", "factory_waste_deposited_total", factory_waste_deposited_total)
 	save.set_value("progress", "mega_factory_build_paid", mega_factory_build_paid)
 	save.set_value("progress", "waste_tank_built", waste_tank_built)
 	save.set_value("progress", "teddy_stock_values", teddy_stock_values)
@@ -4813,6 +4826,7 @@ func _load_game() -> void:
 	while factory_row_stage2_stock.size() < 5: factory_row_stage2_stock.append(0)
 	while factory_row_product_stock.size() < 5: factory_row_product_stock.append(0)
 	waste_tank_inventory = clampi(int(save.get_value("progress", "waste_tank_inventory", 0)), 0, _waste_tank_capacity())
+	factory_waste_deposited_total = maxi(0, int(save.get_value("progress", "factory_waste_deposited_total", waste_tank_inventory)))
 	mega_factory_build_paid = clampf(float(save.get_value("progress", "mega_factory_build_paid", 0.0)), 0.0, _mega_factory_machine_cost(mega_factory_built_count))
 	waste_tank_built = bool(save.get_value("progress", "waste_tank_built", false))
 	teddy_stock_values.clear()
@@ -6240,7 +6254,7 @@ func _mission_is_complete(stage: int) -> bool:
 		30:
 			return total_trash_collected >= 1000
 		31:
-			return factory_row_input_stock.size() > 0 and (factory_row_input_stock[0] >= 3 or factory_total_products_made >= 1)
+			return factory_waste_deposited_total >= 3
 	return false
 
 
