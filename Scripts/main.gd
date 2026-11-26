@@ -2158,13 +2158,14 @@ func _build_ui() -> void:
 	message_label.visible = false
 	_update_missions()
 
-	var collect := _button("COLLECT", Vector2(-124, -150), Vector2(104, 104), layer)
+	var collect := _button("🦾", Vector2(-124, -150), Vector2(104, 104), layer)
 	_anchor_bottom_right(collect)
+	collect.tooltip_text = "COLLECT"
 	collect.add_theme_stylebox_override("normal", _circle_button_style(Color(0.08, 0.34, 0.29, 0.58)))
 	collect.add_theme_stylebox_override("hover", _circle_button_style(Color(0.12, 0.46, 0.37, 0.68)))
 	collect.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.05, 0.24, 0.22, 0.76)))
-	collect.add_theme_color_override("font_color", Color(1, 1, 1, 0.88))
-	collect.add_theme_font_size_override("font_size", 16)
+	collect.add_theme_color_override("font_color", Color(1, 1, 1, 0.96))
+	collect.add_theme_font_size_override("font_size", 40)
 	collect.pressed.connect(_collect_nearby)
 
 
