@@ -4025,8 +4025,19 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 		return
 	var bulky := int(rover.get_meta("cargo_bulky", 0)) > 0
 	var cargo_items: Array = rover.get_meta("cargo_items", [])
-	if not cargo_items.is_empty():
-		var cargo_item = cargo_items.pop_front()
+	# Remove an item matching the cargo type being deposited. Removing the
+	# first visual item unconditionally could leave a bulky item attached after
+	# its two storage slots had already been deducted.
+	var cargo_index := -1
+	for cargo_i in range(cargo_items.size()):
+		var candidate = cargo_items[cargo_i]
+		if is_instance_valid(candidate) and candidate.has_meta("bulky") == bulky:
+			cargo_index = cargo_i
+			break
+	if cargo_index < 0 and not cargo_items.is_empty():
+		cargo_index = 0
+	if cargo_index >= 0:
+		var cargo_item = cargo_items.pop_at(cargo_index)
 		if is_instance_valid(cargo_item):
 			if cargo_item.get_parent() == rover:
 				rover.remove_child(cargo_item)
@@ -4064,13 +4075,23 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		_set_message("Drone is waiting at the factory tank for storage to become available.")
 		return
 	var cargo_items: Array = drone.get_meta("cargo_items", [])
-	if not cargo_items.is_empty():
-		var cargo_item = cargo_items.pop_front()
+	# Keep the visible cargo in sync with the bulky/regular storage units
+	# removed below; otherwise a regular item could be deleted for a bulky one.
+	var cargo_index := -1
+	for cargo_i in range(cargo_items.size()):
+		var candidate = cargo_items[cargo_i]
+		if is_instance_valid(candidate) and candidate.has_meta("bulky") == bulky:
+			cargo_index = cargo_i
+			break
+	if cargo_index < 0 and not cargo_items.is_empty():
+		cargo_index = 0
+	if cargo_index >= 0:
+		var cargo_item = cargo_items.pop_at(cargo_index)
 		if is_instance_valid(cargo_item):
 			if cargo_item.get_parent() == drone:
 				drone.remove_child(cargo_item)
 			cargo_item.queue_free()
-		drone.set_meta("cargo_items", cargo_items)
+	drone.set_meta("cargo_items", cargo_items)
 	if bulky:
 		drone.set_meta("cargo_bulky", int(drone.get_meta("cargo_bulky", 0)) - 1)
 		drone.set_meta("cargo_slots", slots - 2)
