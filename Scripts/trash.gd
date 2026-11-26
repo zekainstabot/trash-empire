@@ -220,12 +220,10 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			visual_position.y = 0.19 if item_roll != 25 else 0.17
 			metallic = 0.36
 		7:
-			var shard := BoxMesh.new()
-			shard.size = Vector3(0.32, 0.025, 0.22)
-			shape = shard
-			base_color = Color(0.44, 0.72, 0.76, 0.72)
+			shape = _mobile_broken_glass_mesh(rng)
+			base_color = Color.WHITE
 			transparent = true
-			visual_position.y = 0.035
+			visual_position.y = 0.008
 			visual_rotation.y = rng.randf_range(0.0, TAU)
 		9:
 			var shoe := BoxMesh.new()
@@ -314,7 +312,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 3, 4, 5, 6, 8, 22]:
+	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 22]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -477,6 +475,40 @@ func _mobile_plastic_bag_mesh() -> ArrayMesh:
 			surface.add_vertex(c)
 			surface.add_vertex(d)
 			previous = current
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_broken_glass_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Five individually shaped shards overlap slightly like a real broken bottle.
+	for shard_index in range(5):
+		var center_x: float = rng.randf_range(-0.16, 0.16)
+		var center_z: float = rng.randf_range(-0.12, 0.12)
+		var length: float = rng.randf_range(0.13, 0.25)
+		var width: float = rng.randf_range(0.07, 0.15)
+		var angle: float = rng.randf_range(0.0, TAU)
+		var direction := Vector2(cos(angle), sin(angle))
+		var side := Vector2(-direction.y, direction.x)
+		var tip := Vector3(center_x + direction.x * length, rng.randf_range(0.018, 0.035), center_z + direction.y * length)
+		var rear := Vector3(center_x - direction.x * length * 0.55, 0.012, center_z - direction.y * length * 0.55)
+		var left := Vector3(center_x + side.x * width, 0.014, center_z + side.y * width)
+		var right := Vector3(center_x - side.x * width, 0.014, center_z - side.y * width)
+		var glass_color: Color = [Color(0.42, 0.72, 0.74, 0.64), Color(0.62, 0.84, 0.82, 0.58), Color(0.31, 0.58, 0.62, 0.72)][shard_index % 3]
+		# Broad translucent face with a raised pointed tip.
+		surface.set_color(glass_color)
+		surface.add_vertex(rear)
+		surface.add_vertex(left)
+		surface.add_vertex(tip)
+		surface.add_vertex(rear)
+		surface.add_vertex(tip)
+		surface.add_vertex(right)
+		# A narrow bright facet catches light along one sharp edge.
+		surface.set_color(Color(0.83, 0.96, 0.91, 0.82))
+		surface.add_vertex(left)
+		surface.add_vertex(Vector3(center_x + direction.x * length * 0.82, 0.025, center_z + direction.y * length * 0.82))
+		surface.add_vertex(tip)
 	surface.generate_normals()
 	return surface.commit()
 
@@ -793,10 +825,18 @@ func _make_battery(rng: RandomNumberGenerator) -> void:
 	add_child(battery)
 
 func _make_broken_glass(rng: RandomNumberGenerator) -> void:
-	for i in range(4):
-		var shard := _flat_box(Vector3(rng.randf_range(0.16, 0.30), 0.025, rng.randf_range(0.10, 0.22)), Vector3(rng.randf_range(-0.22, 0.22), 0.04, rng.randf_range(-0.18, 0.18)), Color(0.45, 0.75, 0.78, 0.75))
-		shard.rotation.y = rng.randf_range(0, TAU)
-		add_child(shard)
+	var glass := MeshInstance3D.new()
+	glass.name = "BrokenGlassShards"
+	glass.mesh = _mobile_broken_glass_mesh(rng)
+	glass.position.y = 0.008
+	glass.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE, true)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.12
+	material.metallic = 0.08
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	glass.material_override = material
+	add_child(glass)
 
 func _make_soda_bottle(rng: RandomNumberGenerator) -> void:
 	var body := _cylinder_piece(0.17, 0.16, 0.40, Vector3(0, 0.20, 0), Color(0.82, 0.26, 0.12))
