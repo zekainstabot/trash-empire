@@ -7009,7 +7009,10 @@ func _load_next_teddy_package(truck_index: int, loaded_count: int) -> void:
 		return
 	var package := Node3D.new()
 	package.name = "TeddyShippingPackage"
-	package.position = Vector3(9.45, 1.05, 30.25)
+	# Spawn each package at the conveyor exit aligned with its own truck dock.
+	# A fixed Z coordinate made upgraded fleet trucks receive packages diagonally.
+	var dock_z := 30.25 + (float(truck_index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
+	package.position = Vector3(9.45, 1.05, dock_z)
 	var carton := MeshInstance3D.new()
 	var carton_mesh := BoxMesh.new()
 	carton_mesh.size = Vector3(0.72, 0.62, 0.62)
