@@ -399,10 +399,7 @@ func _build_city_rework_layout() -> void:
 		for side in [-1.0, 1.0]:
 			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 74.0), curb, false)
 			_add_sidewalk_z_segments("CrossStreetWalkway", -37.0, 37.0, 0.075, 0.15, street_x + side * 5.0, 2.7, sidewalk, [Vector2(-29.0, 9.0), Vector2(-22.0, 9.0), Vector2(0.0, 16.0), Vector2(22.0, 9.0), Vector2(29.0, 9.0)], 8.0)
-			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
-				var edge_start: float = segment[0]
-				var edge_end: float = segment[1]
-				_box("CrossStreetEdgeLine", Vector3(street_x + side * 3.12, 0.061, (edge_start + edge_end) * 0.5), Vector3(0.09, 0.022, edge_end - edge_start), road_white, false)
+
 		for offset in [-0.13, 0.13]:
 			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
 				var line_start: float = segment[0]
@@ -431,13 +428,7 @@ func _build_city_rework_layout() -> void:
 			var line_start: float = segment[0]
 			var line_end: float = segment[1]
 			_box("NeighborhoodCenterLine", Vector3((line_start + line_end) * 0.5, 0.058, street_z), Vector3(line_end - line_start, 0.02, 0.09), road_yellow, false)
-		for dash_x in range(-10, 115, 10):
-			var clear_of_junctions := true
-			for junction_x in [16.0, 48.0, 80.0, 104.0]:
-				if absf(float(dash_x) - junction_x) < 5.0:
-					clear_of_junctions = false
-			if clear_of_junctions:
-				_box("NeighborhoodParkingDivider", Vector3(float(dash_x), 0.059, street_z + 2.0), Vector3(0.08, 0.02, 0.85), road_white, false)
+
 
 	# Residential and civic buildings are arranged as real blocks, leaving clear
 	# pedestrian routes and keeping the four sorting-station plots unobstructed.
@@ -915,8 +906,7 @@ func _build_connected_city_streets() -> void:
 		_box("CrossTownStreet", Vector3(49.0, 0.022, street_z), Vector3(126.0, 0.045, 5.8), asphalt, false)
 		_box("CrossTownSidewalk", Vector3(49.0, 0.055, street_z - 3.55), Vector3(126.0, 0.11, 1.25), sidewalk, false)
 		_box("CrossTownSidewalk", Vector3(49.0, 0.055, street_z + 3.55), Vector3(126.0, 0.11, 1.25), sidewalk, false)
-		for dash_x in range(-8, 109, 8):
-			_box("CrossTownRoadMarking", Vector3(float(dash_x), 0.052, street_z), Vector3(3.0, 0.012, 0.12), Color(0.88, 0.81, 0.62), false)
+
 	# Side streets join the central avenue to both cross-town roads, creating real alleys.
 	for street_x in [16.0, 48.0, 80.0, 104.0]:
 		_box("NeighborhoodConnectorRoad", Vector3(street_x, 0.025, 0.0), Vector3(5.2, 0.05, 74.0), asphalt, false)
