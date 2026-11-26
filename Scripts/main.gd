@@ -5413,7 +5413,7 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 		var p0 := Vector3(nose_center_x + cos(a0) * nose_guard_radius, 1.105, z + sin(a0) * nose_guard_radius)
 		var p1 := Vector3(nose_center_x + cos(a1) * nose_guard_radius, 1.105, z + sin(a1) * nose_guard_radius)
 		var guard_segment := _box("FactoryMainConveyorNoseGuard%d_%d" % [row, guard_i], (p0 + p1) * 0.5, Vector3(p0.distance_to(p1) + 0.035, 0.27, 0.10), steel, false)
-		guard_segment.rotation_degrees.y = rad_to_deg(atan2(p1.z - p0.z, p1.x - p0.x))
+		guard_segment.rotation_degrees.y = -rad_to_deg(atan2(p1.z - p0.z, p1.x - p0.x))
 	# Side guards run along the full conveyor, with only a short opening exactly
 	# where the incoming branch joins the main belt.
 	# Match the opening to the full width of the incoming branch mouth.
