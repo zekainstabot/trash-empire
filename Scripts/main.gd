@@ -3053,7 +3053,7 @@ func _build_helper_drones() -> void:
 				var rotor_pos := Vector3(sx * 0.39, 0.045, sz * 0.36)
 				var arm := _add_robot_box(drone, "DroneArm", Vector3(sx * 0.20, 0.035, sz * 0.18), Vector3(0.43, 0.055, 0.075), Color(0.27, 0.34, 0.36))
 				arm.rotation_degrees.y = -35.0 if sx == sz else 35.0
-						_add_robot_sphere(drone, "MotorHousing", rotor_pos, 0.085, Color(0.13, 0.19, 0.21))
+				_add_robot_sphere(drone, "MotorHousing", rotor_pos, 0.085, Color(0.13, 0.19, 0.21))
 				_add_robot_sphere(drone, "MotorTopCap", rotor_pos + Vector3(0, 0.12, 0), 0.045, Color(0.28, 0.91, 0.74))
 				_add_robot_box(drone, "PropellerBladeA", rotor_pos + Vector3(0, 0.075, 0), Vector3(0.31, 0.018, 0.045), Color(0.10, 0.15, 0.17))
 				var blade_b := _add_robot_box(drone, "PropellerBladeB", rotor_pos + Vector3(0, 0.078, 0), Vector3(0.31, 0.014, 0.035), Color(0.16, 0.23, 0.25))
