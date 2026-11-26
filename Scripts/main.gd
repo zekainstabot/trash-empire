@@ -339,13 +339,15 @@ func _finish_boot_sequence() -> void:
 			return
 
 		money = 10000.0
+		_build_sorting_station(0)
+		if sorting_robot_levels[0] != 1 or sorting_robots.is_empty() or not sorting_robots[0].visible or not is_instance_valid(sorting_bins[0]):
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the first recycling station did not build its loader and bin.")
+			get_tree().quit(1)
+			return
+		money = 10000.0
 		await _purchase_skill_node("sorting_robot", 1)
-		var visible_sorters := 0
-		for sorting_robot in sorting_robots:
-			if is_instance_valid(sorting_robot) and sorting_robot.visible:
-				visible_sorters += 1
-		if visible_sorters < 1:
-			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the sorting robot upgrade did not activate a loader.")
+		if sorting_robot_upgrade_level != 1:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: sorting loader efficiency upgrade did not apply.")
 			get_tree().quit(1)
 			return
 
