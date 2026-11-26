@@ -209,16 +209,21 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.025
 			visual_rotation.z = rng.randf_range(-0.12, 0.12)
-		20, 25:
+		20:
 			var canister := CylinderMesh.new()
-			canister.top_radius = 0.15 if item_roll != 25 else 0.16
-			canister.bottom_radius = 0.15 if item_roll != 25 else 0.14
-			canister.height = 0.38 if item_roll != 25 else 0.34
+			canister.top_radius = 0.15
+			canister.bottom_radius = 0.15
+			canister.height = 0.38
 			canister.radial_segments = 8
 			shape = canister
-			base_color = Color(0.18, 0.20, 0.22) if item_roll == 6 else (Color(0.20, 0.29, 0.27) if item_roll == 20 else Color(0.73, 0.32, 0.16))
-			visual_position.y = 0.19 if item_roll != 25 else 0.17
+			base_color = Color(0.20, 0.29, 0.27)
+			visual_position.y = 0.19
 			metallic = 0.36
+		25:
+			shape = _mobile_paint_bucket_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.015
+			visual_rotation.y = rng.randf_range(0.0, TAU)
 		7:
 			shape = _mobile_broken_glass_mesh(rng)
 			base_color = Color.WHITE
@@ -480,6 +485,79 @@ func _mobile_plastic_bag_mesh() -> ArrayMesh:
 			surface.add_vertex(c)
 			surface.add_vertex(d)
 			previous = current
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_paint_bucket_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const SIDES := 12
+	var bottom_radius: float = 0.145
+	var top_radius: float = 0.185
+	var bucket_colors: Array[Color] = [Color(0.67, 0.25, 0.12), Color(0.76, 0.32, 0.16), Color(0.53, 0.20, 0.11)]
+	# Tapered, slightly dented steel shell with alternating worn panels.
+	for side in range(SIDES):
+		var a0: float = TAU * float(side) / float(SIDES)
+		var a1: float = TAU * float(side + 1) / float(SIDES)
+		var dent0: float = 1.0 - (0.055 if side in [2, 3] else 0.0)
+		var dent1: float = 1.0 - (0.055 if (side + 1) % SIDES in [2, 3] else 0.0)
+		var b0 := Vector3(cos(a0) * bottom_radius * dent0, 0.025, sin(a0) * bottom_radius * dent0)
+		var b1 := Vector3(cos(a1) * bottom_radius * dent1, 0.025, sin(a1) * bottom_radius * dent1)
+		var t0 := Vector3(cos(a0) * top_radius * dent0, 0.335, sin(a0) * top_radius * dent0)
+		var t1 := Vector3(cos(a1) * top_radius * dent1, 0.335, sin(a1) * top_radius * dent1)
+		surface.set_color(bucket_colors[side % bucket_colors.size()])
+		surface.add_vertex(b0)
+		surface.add_vertex(t0)
+		surface.add_vertex(b1)
+		surface.add_vertex(b1)
+		surface.add_vertex(t0)
+		surface.add_vertex(t1)
+	# Rolled steel rim and lower reinforcing bead.
+	for ring_radius in [top_radius, bottom_radius * 1.04]:
+		var ring_y: float = 0.335 if ring_radius == top_radius else 0.055
+		var tube_radius: float = 0.012
+		for side in range(SIDES):
+			var a0: float = TAU * float(side) / float(SIDES)
+			var a1: float = TAU * float(side + 1) / float(SIDES)
+			var p0 := Vector3(cos(a0) * ring_radius, ring_y, sin(a0) * ring_radius)
+			var p1 := Vector3(cos(a1) * ring_radius, ring_y, sin(a1) * ring_radius)
+			var q0 := Vector3(cos(a0) * (ring_radius + tube_radius), ring_y, sin(a0) * (ring_radius + tube_radius))
+			var q1 := Vector3(cos(a1) * (ring_radius + tube_radius), ring_y, sin(a1) * (ring_radius + tube_radius))
+			surface.set_color(Color(0.57, 0.59, 0.57))
+			surface.add_vertex(p0)
+			surface.add_vertex(q0)
+			surface.add_vertex(p1)
+			surface.add_vertex(p1)
+			surface.add_vertex(q0)
+			surface.add_vertex(q1)
+	# Wire handle, built as faceted segments, attached to both sides of the rim.
+	var handle_points: Array[Vector3] = []
+	for point_index in range(13):
+		var t: float = float(point_index) / 12.0
+		handle_points.append(Vector3(-0.17 + 0.34 * t, 0.34 + sin(t * PI) * 0.19, 0.0))
+	for point_index in range(handle_points.size() - 1):
+		var p0: Vector3 = handle_points[point_index]
+		var p1: Vector3 = handle_points[point_index + 1]
+		var direction := (p1 - p0).normalized()
+		var side_axis := Vector3(0.0, 0.0, 0.009)
+		var offset := direction.cross(side_axis).normalized() * 0.009
+		surface.set_color(Color(0.60, 0.62, 0.60))
+		surface.add_vertex(p0 - offset)
+		surface.add_vertex(p0 + offset)
+		surface.add_vertex(p1 - offset)
+		surface.add_vertex(p1 - offset)
+		surface.add_vertex(p0 + offset)
+		surface.add_vertex(p1 + offset)
+	# Dried paint drips and splashes on the front of the bucket.
+	for drip_index in range(4):
+		var x: float = -0.105 + float(drip_index) * 0.065
+		var drip_length: float = rng.randf_range(0.045, 0.12)
+		var paint_color: Color = Color(0.88, 0.77, 0.48) if drip_index % 2 == 0 else Color(0.20, 0.42, 0.55)
+		surface.set_color(paint_color)
+		surface.add_vertex(Vector3(x - 0.012, 0.20, -0.151))
+		surface.add_vertex(Vector3(x + 0.012, 0.20, -0.151))
+		surface.add_vertex(Vector3(x + 0.006, 0.20 - drip_length, -0.153))
 	surface.generate_normals()
 	return surface.commit()
 
@@ -1090,10 +1168,19 @@ func _make_old_tire(rng: RandomNumberGenerator) -> void:
 	add_child(tire)
 
 func _make_paint_bucket(rng: RandomNumberGenerator) -> void:
-	add_child(_cylinder_piece(0.19, 0.16, 0.36, Vector3(0, 0.19, 0), Color(0.72, 0.31, 0.16)))
-	add_child(_cylinder_piece(0.20, 0.20, 0.045, Vector3(0, 0.38, 0), Color(0.58, 0.62, 0.61)))
-	add_child(_flat_box(Vector3(0.20, 0.12, 0.025), Vector3(0, 0.20, -0.16), Color(0.92, 0.84, 0.62)))
-	rotation.y = rng.randf_range(0.0, TAU)
+	var bucket := MeshInstance3D.new()
+	bucket.name = "WornPaintBucket"
+	bucket.mesh = _mobile_paint_bucket_mesh(rng)
+	bucket.position.y = 0.015
+	bucket.rotation.y = rng.randf_range(0.0, TAU)
+	bucket.rotation.z = rng.randf_range(-0.06, 0.06)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.78
+	material.metallic = 0.38
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	bucket.material_override = material
+	add_child(bucket)
 
 func _make_toy_blocks(rng: RandomNumberGenerator) -> void:
 	var colors := [Color(0.86, 0.18, 0.13), Color(0.16, 0.43, 0.82), Color(0.92, 0.70, 0.12), Color(0.18, 0.62, 0.38)]
