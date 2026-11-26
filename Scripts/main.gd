@@ -336,6 +336,7 @@ func _build_world() -> void:
 	add_child(sun)
 
 	_build_city_rework_layout()
+	_build_industrial_road_fixtures()
 	_build_street_sweeper()
 	_build_city_dump_area()
 	_build_recycling_mega_factory()
@@ -345,6 +346,43 @@ func _build_world() -> void:
 	_build_world_bounds()
 	refill_world_button = _create_gear_refill_button(Vector3(0.0, 2.0, -35.20), Callable(self, "_refill_first_district"))
 	refill_world_button.rotation_degrees.y = 90.0
+
+
+func _build_industrial_road_fixtures() -> void:
+	# Flat, non-colliding utility details reinforce the municipal/industrial road
+	# language while preserving the requested longitudinal-only lane markings.
+	var reflector := Color(0.96, 0.68, 0.16)
+	var drain_steel := Color(0.24, 0.30, 0.31)
+	var drain_dark := Color(0.045, 0.06, 0.065)
+
+	for road_x in range(-10, 113, 8):
+		for side in [-1.0, 1.0]:
+			_box("IndustrialBoulevardReflector", Vector3(float(road_x), 0.078, side * 3.42), Vector3(0.30, 0.025, 0.10), reflector, false)
+
+	for street_x in [16.0, 48.0, 80.0, 104.0]:
+		for road_z in range(-34, 35, 8):
+			for side in [-1.0, 1.0]:
+				_box("IndustrialCrossStreetReflector", Vector3(street_x + side * 2.86, 0.078, float(road_z)), Vector3(0.10, 0.025, 0.30), reflector, false)
+		for side in [-1.0, 1.0]:
+			var drain_x := street_x + side * 3.08
+			for drain_z in [-27.0, -9.0, 9.0, 27.0]:
+				_box("IndustrialStreetDrainFrame", Vector3(drain_x, 0.074, drain_z), Vector3(0.34, 0.035, 0.92), drain_steel, false)
+				for slot in range(5):
+					_box("IndustrialStreetDrainSlot", Vector3(drain_x, 0.095, drain_z - 0.34 + float(slot) * 0.17), Vector3(0.25, 0.012, 0.035), drain_dark, false)
+
+	for cover_x in [4.0, 36.0, 68.0, 100.0]:
+		for side in [-1.0, 1.0]:
+			_cylinder("IndustrialBoulevardManhole", Vector3(cover_x, 0.072, side * 3.05), 0.34, 0.035, drain_steel, false)
+			_cylinder("IndustrialBoulevardManholeInset", Vector3(cover_x, 0.094, side * 3.05), 0.27, 0.012, drain_dark, false)
+			for slot in range(4):
+				_box("IndustrialManholeSlot", Vector3(cover_x - 0.16 + float(slot) * 0.105, 0.103, side * 3.05), Vector3(0.025, 0.008, 0.32), drain_steel, false)
+
+	# The factory approach gets durable yellow edge paint and drainage channels.
+	for side in [-1.0, 1.0]:
+		_box("IndustrialAccessRoadEdgeLine", Vector3(119.25, 0.068, side * 3.48), Vector3(22.5, 0.022, 0.085), reflector, false)
+		_box("IndustrialAccessRoadDrain", Vector3(119.25, 0.075, side * 3.88), Vector3(21.5, 0.035, 0.22), drain_steel, false)
+		for slot in range(22):
+			_box("IndustrialAccessDrainSlot", Vector3(108.8 + float(slot) * 0.98, 0.098, side * 3.88), Vector3(0.035, 0.012, 0.16), drain_dark, false)
 
 
 func _build_industrial_campus_details() -> void:
