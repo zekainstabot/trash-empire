@@ -2495,7 +2495,7 @@ func _close_main_menu() -> void:
 
 func _build_skill_tree(parent: Control) -> void:
 	var categories := [
-		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
+		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction","ground_robot"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
 		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","drone_speed","drone_capacity","sorting_robot","repair_robot","waste_tank_unload","waste_tank_capacity","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
 	]
@@ -2503,7 +2503,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","ground_robot":"GROUND COLLECTOR","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","waste_tank_unload":"WASTE TANK DISCHARGE","waste_tank_capacity":"WASTE TANK CAPACITY","factory_truck_interval":"FACTORY TRUCK ARRIVAL"
 	}
 	var descriptions := {
@@ -2524,9 +2524,8 @@ func _build_skill_tree(parent: Control) -> void:
 		"drones":"Add helper drones that collect trash for you.",
 		"drone_speed":"Make every helper drone fly faster on collection and return trips.",
 		"drone_capacity":"Increase how much waste each helper drone carries before returning to its own station.",
+		"ground_robot":"Deploy a four-wheel autonomous collection rover. Each level improves its speed and cargo capacity.",
 		"sorting_robot":"Increase all built sorting robots’ travel speed and search radius.",
-		
-		"repair_robot":"Automatically repairs factory breakdowns and reduces downtime.",
 		"dispatch":"Send product delivery trucks more frequently.",
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
@@ -2731,6 +2730,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"magnet_power": return Color(0.20, 0.78, 0.88)
 		"suction": return Color(0.12, 0.82, 0.70)
 		"drones": return Color(0.65, 0.78, 0.30)
+		"ground_robot": return Color(0.96, 0.66, 0.16)
 		"city_truck": return Color(0.95, 0.72, 0.18)
 		"city_fleet": return Color(0.82, 0.58, 0.24)
 		"dispatch": return Color(0.16, 0.70, 0.82)
@@ -2761,6 +2761,7 @@ func _skill_icon(branch: String) -> String:
 		"drones": return "🚁"
 		"drone_speed": return "💨"
 		"drone_capacity": return "📦"
+		"ground_robot": return "🚜"
 		"repair_robot": return "🛠"
 		"city_truck": return "🚛"
 		"city_fleet": return "🚚"
@@ -2830,6 +2831,7 @@ func _skill_level(branch: String) -> int:
 		"drones": return drone_level
 		"drone_speed": return drone_speed_upgrade_level
 		"drone_capacity": return drone_capacity_upgrade_level
+		"ground_robot": return ground_robot_level
 		"sorting_robot": return sorting_robot_upgrade_level
 		"conveyor_speed": return conveyor_speed_upgrade_level
 		"waste_tank_unload": return waste_tank_unload_upgrade_level
@@ -2875,6 +2877,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"drones": await _upgrade_drones()
 		"drone_speed": await _upgrade_drone_speed()
 		"drone_capacity": await _upgrade_drone_capacity()
+		"ground_robot": await _upgrade_ground_robot()
 		"sorting_robot": await _upgrade_sorting_robot()
 		"conveyor_speed": await _upgrade_conveyor_speed()
 		"waste_tank_unload": await _upgrade_waste_tank_unload()
@@ -2891,7 +2894,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"waste_tank_unload":58.0,"waste_tank_capacity":72.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
+	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"ground_robot":65.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"waste_tank_unload":58.0,"waste_tank_capacity":72.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -5718,7 +5721,8 @@ func _spawn_district_two_trash(amount: int) -> void:
 func _refill_first_district() -> void:
 	# Each lever pull adds up to 500 items, while the regular city supply is capped at 1,000.
 	var alive_count := _count_regular_trash()
-	var amount := mini(500, maxi(0, 1000 - alive_count))
+	var manual_refill_capacity := 500 + maxi(0, spawn_upgrade_level - 1) * 6
+	var amount := mini(manual_refill_capacity, maxi(0, 1000 - alive_count))
 	if amount <= 0:
 		_set_message("CITY TRASH LIMIT REACHED: 1,000 / 1,000")
 		return
