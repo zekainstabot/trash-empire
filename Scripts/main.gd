@@ -356,14 +356,14 @@ func _build_industrial_campus_details() -> void:
 	var floor_joint := Color(0.22, 0.27, 0.27)
 
 	for side in [-1.0, 1.0]:
-		var rack_z := side * 32.55
+		var rack_z: float = float(side) * 32.55
 		for support_x in [149.0, 162.0, 175.0, 188.0, 201.0]:
 			_box("IndustrialCampusPipeRackFoot", Vector3(support_x, 0.20, rack_z), Vector3(0.76, 0.38, 0.76), structural_steel, false)
 			_box("IndustrialCampusPipeRackColumn", Vector3(support_x, 2.45, rack_z), Vector3(0.24, 4.55, 0.24), pipe_steel, false)
 			_box("IndustrialCampusPipeRackCrossbeam", Vector3(support_x, 4.78, rack_z), Vector3(0.34, 0.24, 2.05), structural_steel, false)
 			_box("IndustrialCampusPipeRackSafetyBand", Vector3(support_x, 1.05, rack_z), Vector3(0.25, 0.46, 0.27), safety_yellow, false)
 		for pipe_index in range(3):
-			var pipe_z := rack_z + (float(pipe_index) - 1.0) * 0.58
+			var pipe_z: float = rack_z + (float(pipe_index) - 1.0) * 0.58
 			var pipe_y := 3.95 + float(pipe_index) * 0.43
 			var utility_pipe := _cylinder("IndustrialCampusUtilityPipe", Vector3(175.0, pipe_y, pipe_z), 0.105, 52.0, pipe_steel.darkened(float(pipe_index) * 0.08), false)
 			utility_pipe.rotation_degrees.z = 90.0
