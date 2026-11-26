@@ -207,27 +207,64 @@ const YARD_LIMIT := 14.5
 const SELL_POINT := Vector3(1.35, 0.0, -6.5)
 
 func _ready() -> void:
-	# Always activate a camera on the very first frame. The gameplay camera
-	# is created later when PLAY is pressed; without this boot camera some
-	# Android devices show only the viewport clear color and no menu.
+	# Establish a known, non-black first frame before loading saves or building UI.
+	RenderingServer.set_default_clear_color(Color(0.035, 0.055, 0.065, 1.0))
 	camera = Camera3D.new()
 	camera.name = "BootCamera"
 	camera.position = Vector3(0.0, 12.0, 24.0)
 	camera.rotation_degrees = Vector3(-22.0, 0.0, 0.0)
-	camera.current = true
 	camera.near = 0.05
 	camera.far = 250.0
 	add_child(camera)
+	camera.make_current()
 
-	# Build the lightweight title UI before creating the 3D world.
+	# Draw a tiny startup screen immediately. The previous boot path performed
+	# save loading and the complete HUD construction before Android rendered a
+	# frame, which could leave slower devices displaying only a black screen.
+	var boot_layer := CanvasLayer.new()
+	boot_layer.name = "BootLoadingLayer"
+	boot_layer.layer = 100
+	add_child(boot_layer)
+	var boot_backdrop := ColorRect.new()
+	boot_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	boot_backdrop.color = Color(0.035, 0.055, 0.065, 1.0)
+	boot_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	boot_layer.add_child(boot_backdrop)
+	var boot_title := Label.new()
+	boot_title.text = "ZEKA CITY"
+	boot_title.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	boot_title.position = Vector2(-150, -34)
+	boot_title.size = Vector2(300, 48)
+	boot_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boot_title.add_theme_font_size_override("font_size", 30)
+	boot_title.add_theme_color_override("font_color", Color(0.48, 0.94, 0.75))
+	boot_layer.add_child(boot_title)
+	var boot_status := Label.new()
+	boot_status.text = "LOADING GAME..."
+	boot_status.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	boot_status.position = Vector2(-150, 18)
+	boot_status.size = Vector2(300, 28)
+	boot_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boot_status.add_theme_font_size_override("font_size", 14)
+	boot_status.add_theme_color_override("font_color", Color(0.88, 0.93, 0.91))
+	boot_layer.add_child(boot_status)
 	main_menu_open = true
+	set_process(true)
+	set_physics_process(true)
+	call_deferred("_finish_boot_sequence")
+
+
+func _finish_boot_sequence() -> void:
+	# Run after the loading screen has had a chance to render on mobile.
+	await get_tree().process_frame
 	_load_game()
 	_build_ui()
 	_update_ui()
 	if is_instance_valid(main_menu_panel):
 		main_menu_panel.show()
-	set_process(true)
-	set_physics_process(true)
+	var boot_layer := get_node_or_null("BootLoadingLayer")
+	if is_instance_valid(boot_layer):
+		boot_layer.queue_free()
 
 func _process(delta: float) -> void:
 	if main_menu_open:
