@@ -5400,6 +5400,20 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	# Deep side frame with a clearly separate moving rubber belt.
 	_box("FactoryMainConveyorFrame%d" % row, Vector3(center_x, 0.68, z), Vector3(belt_length, 0.42, 1.66), frame_color, false)
 	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.925, z), Vector3(belt_length - 0.28, 0.075, 1.30), rubber, false)
+	# Rounded discharge nose: the half-disc sits under the straight belt edge
+	# and exposes a smooth semicircular return instead of a blunt square cut.
+	var nose_center_x := end_x - 0.14
+	var nose := _cylinder("FactoryMainConveyorEndNose%d" % row, Vector3(nose_center_x, 0.925, z), 0.65, 0.075, rubber, false)
+	# Wrap the two side guards around the rounded nose in short aligned sections.
+	var nose_guard_radius := 0.79
+	var nose_guard_segments := 12
+	for guard_i in range(nose_guard_segments):
+		var a0 := -PI * 0.5 + (float(guard_i) / float(nose_guard_segments)) * PI
+		var a1 := -PI * 0.5 + (float(guard_i + 1) / float(nose_guard_segments)) * PI
+		var p0 := Vector3(nose_center_x + cos(a0) * nose_guard_radius, 1.105, z + sin(a0) * nose_guard_radius)
+		var p1 := Vector3(nose_center_x + cos(a1) * nose_guard_radius, 1.105, z + sin(a1) * nose_guard_radius)
+		var guard_segment := _box("FactoryMainConveyorNoseGuard%d_%d" % [row, guard_i], (p0 + p1) * 0.5, Vector3(p0.distance_to(p1) + 0.035, 0.27, 0.10), steel, false)
+		guard_segment.rotation_degrees.y = rad_to_deg(atan2(p1.z - p0.z, p1.x - p0.x))
 	# Side guards run along the full conveyor, with only a short opening exactly
 	# where the incoming branch joins the main belt.
 	# Match the opening to the full width of the incoming branch mouth.
