@@ -90,11 +90,6 @@ func _ready() -> void:
 			_make_takeaway_tray(rng)
 		29:
 			_make_cable_bundle(rng)
-		31:
-			shape = _mobile_old_television_mesh(rng)
-			base_color = Color.WHITE
-			visual_position.y = 0.015
-			visual_rotation.y = rng.randf_range(-0.12, 0.12)
 		30:
 			_make_safety_helmet(rng)
 		31:
@@ -305,16 +300,27 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			shape = carton
 			base_color = Color(0.84, 0.85, 0.78)
 			visual_position.y = 0.21
+		27:
+			shape = _mobile_glass_jar_mesh()
+			base_color = Color(0.58, 0.80, 0.73, 0.42)
+			transparent = true
+			visual_position.y = 0.015
+			visual_rotation.z = rng.randf_range(-0.10, 0.10)
+		29:
+			shape = _mobile_cable_bundle_mesh()
+			base_color = Color.WHITE
+			visual_position.y = 0.02
+			visual_rotation.y = rng.randf_range(0.0, TAU)
 		30:
-			var helmet := SphereMesh.new()
-			helmet.radius = 0.25
-			helmet.height = 0.32
-			helmet.radial_segments = 8
-			helmet.rings = 5
-			shape = helmet
-			base_color = Color(0.92, 0.66, 0.12)
-			visual_position.y = 0.15
-			visual_scale = Vector3(1.25, 0.70, 1.0)
+			shape = _mobile_safety_helmet_mesh()
+			base_color = Color.WHITE
+			visual_position.y = 0.015
+			visual_rotation.y = rng.randf_range(0.0, TAU)
+		31:
+			shape = _mobile_old_television_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.015
+			visual_rotation.y = rng.randf_range(-0.12, 0.12)
 
 	var visual := MeshInstance3D.new()
 	visual.name = "MobileTrashVisual"
@@ -326,7 +332,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 22, 24, 31]:
+	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 22, 24, 27, 29, 30, 31]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -511,6 +517,100 @@ func _append_box_surface(surface: SurfaceTool, center: Vector3, size: Vector3, c
 		surface.set_color(face_color)
 		for vertex_index in faces[face_index]:
 			surface.add_vertex(corners[vertex_index])
+
+
+func _mobile_glass_jar_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const SIDES := 12
+	var rings: Array[Vector2] = [
+		Vector2(0.025, 0.145), Vector2(0.045, 0.16), Vector2(0.29, 0.16),
+		Vector2(0.32, 0.145), Vector2(0.34, 0.105), Vector2(0.37, 0.085),
+		Vector2(0.405, 0.085), Vector2(0.42, 0.10)
+	]
+	for ring_index in range(rings.size() - 1):
+		var tint := Color(0.60, 0.83, 0.76, 0.42) if ring_index < 5 else Color(0.48, 0.69, 0.62, 0.58)
+		surface.set_color(tint)
+		for side in range(SIDES):
+			var a0: float = TAU * float(side) / float(SIDES)
+			var a1: float = TAU * float(side + 1) / float(SIDES)
+			var p00 := Vector3(cos(a0) * rings[ring_index].y, rings[ring_index].x, sin(a0) * rings[ring_index].y)
+			var p01 := Vector3(cos(a1) * rings[ring_index].y, rings[ring_index].x, sin(a1) * rings[ring_index].y)
+			var p10 := Vector3(cos(a0) * rings[ring_index + 1].y, rings[ring_index + 1].x, sin(a0) * rings[ring_index + 1].y)
+			var p11 := Vector3(cos(a1) * rings[ring_index + 1].y, rings[ring_index + 1].x, sin(a1) * rings[ring_index + 1].y)
+			surface.add_vertex(p00)
+			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.add_vertex(p11)
+	# Heavy glass base and rolled mouth rim.
+	_append_box_surface(surface, Vector3(0.0, 0.035, 0.0), Vector3(0.25, 0.035, 0.25), Color(0.48, 0.70, 0.63, 0.62))
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_cable_bundle_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var cable_colors: Array[Color] = [Color(0.10, 0.12, 0.14), Color(0.76, 0.22, 0.12), Color(0.12, 0.34, 0.62)]
+	for cable_index in range(3):
+		var center := Vector3(-0.09 + float(cable_index) * 0.09, 0.10 + float(cable_index) * 0.025, 0.0)
+		var major_radius: float = 0.105 + float(cable_index % 2) * 0.012
+		var minor_radius: float = 0.026
+		for ring_index in range(16):
+			var a0: float = TAU * float(ring_index) / 16.0
+			var a1: float = TAU * float(ring_index + 1) / 16.0
+			for side in range(6):
+				var b0: float = TAU * float(side) / 6.0
+				var b1: float = TAU * float(side + 1) / 6.0
+				var p00 := center + Vector3(cos(a0) * (major_radius + cos(b0) * minor_radius), sin(b0) * minor_radius, sin(a0) * (major_radius + cos(b0) * minor_radius))
+				var p01 := center + Vector3(cos(a1) * (major_radius + cos(b0) * minor_radius), sin(b0) * minor_radius, sin(a1) * (major_radius + cos(b0) * minor_radius))
+				var p10 := center + Vector3(cos(a0) * (major_radius + cos(b1) * minor_radius), sin(b1) * minor_radius, sin(a0) * (major_radius + cos(b1) * minor_radius))
+				var p11 := center + Vector3(cos(a1) * (major_radius + cos(b1) * minor_radius), sin(b1) * minor_radius, sin(a1) * (major_radius + cos(b1) * minor_radius))
+				surface.set_color(cable_colors[cable_index])
+				surface.add_vertex(p00)
+				surface.add_vertex(p01)
+				surface.add_vertex(p10)
+				surface.add_vertex(p01)
+				surface.add_vertex(p11)
+				surface.add_vertex(p10)
+	# Three visible cut cable ends with colored insulation cores.
+	for end_index in range(3):
+		var x: float = -0.16 + float(end_index) * 0.16
+		_append_box_surface(surface, Vector3(x, 0.045, 0.12), Vector3(0.07, 0.055, 0.07), cable_colors[end_index])
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_safety_helmet_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var yellow := Color(0.94, 0.65, 0.08)
+	# Low-poly domed shell built from stacked elliptical rings.
+	var rings: Array[Vector2] = [Vector2(0.065, 0.255), Vector2(0.12, 0.24), Vector2(0.19, 0.19), Vector2(0.245, 0.105), Vector2(0.265, 0.025)]
+	const SIDES := 12
+	for ring_index in range(rings.size() - 1):
+		for side in range(SIDES):
+			var a0: float = TAU * float(side) / float(SIDES)
+			var a1: float = TAU * float(side + 1) / float(SIDES)
+			var p00 := Vector3(cos(a0) * rings[ring_index].y, rings[ring_index].x, sin(a0) * rings[ring_index].y)
+			var p01 := Vector3(cos(a1) * rings[ring_index].y, rings[ring_index].x, sin(a1) * rings[ring_index].y)
+			var p10 := Vector3(cos(a0) * rings[ring_index + 1].y, rings[ring_index + 1].x, sin(a0) * rings[ring_index + 1].y)
+			var p11 := Vector3(cos(a1) * rings[ring_index + 1].y, rings[ring_index + 1].x, sin(a1) * rings[ring_index + 1].y)
+			surface.set_color(yellow.lightened(0.08) if side % 4 == 0 else yellow)
+			surface.add_vertex(p00)
+			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.add_vertex(p11)
+	# Full brim, reinforced front lip, central ridge and suspension rails.
+	_append_box_surface(surface, Vector3(0.0, 0.055, 0.0), Vector3(0.63, 0.035, 0.40), Color(0.84, 0.54, 0.045))
+	_append_box_surface(surface, Vector3(0.0, 0.073, -0.18), Vector3(0.34, 0.018, 0.035), Color(1.0, 0.79, 0.20))
+	_append_box_surface(surface, Vector3(0.0, 0.20, 0.0), Vector3(0.045, 0.035, 0.37), Color(1.0, 0.78, 0.20))
+	surface.generate_normals()
+	return surface.commit()
 
 
 func _mobile_old_shoe_mesh() -> ArrayMesh:
@@ -1319,10 +1419,17 @@ func _make_toy_blocks(rng: RandomNumberGenerator) -> void:
 	add_child(blocks)
 
 func _make_glass_jar(rng: RandomNumberGenerator) -> void:
-	var jar := _cylinder_piece(0.14, 0.16, 0.34, Vector3(0, 0.18, 0), Color(0.48, 0.72, 0.65))
-	jar.rotation_degrees.z = rng.randf_range(-12.0, 12.0)
+	var jar := MeshInstance3D.new()
+	jar.name = "ThickGlassPreserveJar"
+	jar.mesh = _mobile_glass_jar_mesh()
+	jar.position.y = 0.015
+	jar.rotation.z = rng.randf_range(-0.10, 0.10)
+	var material := _material(Color(0.58, 0.80, 0.73, 0.42), true)
+	material.roughness = 0.18
+	material.metallic = 0.05
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	jar.material_override = material
 	add_child(jar)
-	add_child(_cylinder_piece(0.075, 0.075, 0.08, Vector3(0, 0.37, 0), Color(0.72, 0.76, 0.72)))
 
 func _make_takeaway_tray(rng: RandomNumberGenerator) -> void:
 	var tray := _flat_box(Vector3(0.48, 0.07, 0.36), Vector3(0, 0.07, 0), Color(0.72, 0.73, 0.68))
@@ -1332,19 +1439,18 @@ func _make_takeaway_tray(rng: RandomNumberGenerator) -> void:
 		add_child(_flat_box(Vector3(0.12, 0.045, 0.25), Vector3(x, 0.12, 0), Color(0.83, 0.82, 0.75)))
 
 func _make_cable_bundle(rng: RandomNumberGenerator) -> void:
-	for i in range(3):
-		var cable := MeshInstance3D.new()
-		var torus := TorusMesh.new()
-		torus.inner_radius = 0.10
-		torus.outer_radius = 0.15
-		torus.rings = 8
-		torus.ring_segments = 16
-		cable.mesh = torus
-		cable.position = Vector3(rng.randf_range(-0.10, 0.10), 0.13 + float(i) * 0.035, rng.randf_range(-0.08, 0.08))
-		cable.rotation_degrees.x = 90.0
-		cable.rotation.z = rng.randf_range(-0.35, 0.35)
-		cable.material_override = _material([Color(0.12, 0.14, 0.16), Color(0.72, 0.24, 0.13), Color(0.12, 0.38, 0.62)][i])
-		add_child(cable)
+	var bundle := MeshInstance3D.new()
+	bundle.name = "RecoveredPowerCableBundle"
+	bundle.mesh = _mobile_cable_bundle_mesh()
+	bundle.position.y = 0.02
+	bundle.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.56
+	material.metallic = 0.12
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	bundle.material_override = material
+	add_child(bundle)
 
 
 func _make_old_television(rng: RandomNumberGenerator) -> void:
@@ -1362,19 +1468,17 @@ func _make_old_television(rng: RandomNumberGenerator) -> void:
 	add_child(television)
 
 func _make_safety_helmet(rng: RandomNumberGenerator) -> void:
-	var shell := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.27
-	sphere.height = 0.34
-	sphere.radial_segments = 12
-	sphere.rings = 6
-	shell.mesh = sphere
-	shell.position.y = 0.16
-	shell.scale = Vector3(1.25, 0.70, 1.0)
-	shell.material_override = _material(Color(0.91, 0.66, 0.12))
-	add_child(shell)
-	add_child(_flat_box(Vector3(0.62, 0.055, 0.34), Vector3(0, 0.055, 0), Color(0.88, 0.61, 0.10)))
-	rotation.y = rng.randf_range(0.0, TAU)
+	var helmet := MeshInstance3D.new()
+	helmet.name = "IndustrialSafetyHelmet"
+	helmet.mesh = _mobile_safety_helmet_mesh()
+	helmet.position.y = 0.015
+	helmet.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.42
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	helmet.material_override = material
+	add_child(helmet)
 
 
 func _flat_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
