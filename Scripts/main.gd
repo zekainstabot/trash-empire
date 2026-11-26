@@ -901,8 +901,8 @@ func _build_neighborhood_furniture() -> void:
 	# Low planters, benches and hydrants make the residential streets feel lived-in.
 	# All pieces are decorative so they never obstruct player or truck movement.
 	for item in [
-		{"x": 20.0, "z": -14.0}, {"x": 37.0, "z": 14.0},
-		{"x": 54.0, "z": -14.0}, {"x": 71.0, "z": 14.0}
+		{"x": 24.0, "z": -14.0}, {"x": 37.0, "z": 14.0},
+		{"x": 57.0, "z": -14.0}, {"x": 71.0, "z": 14.0}
 	]:
 		var p := Vector3(float(item.x), 0.0, float(item.z))
 		_box("StreetPlanter", p + Vector3(0, 0.22, 0), Vector3(2.2, 0.44, 0.85), Color(0.30, 0.32, 0.29), false)
@@ -6267,17 +6267,17 @@ func _build_commercial_district() -> void:
 
 	# A proper civic square, with a tiered fountain, pavers, planters and seating.
 	var plaza := Vector3(96, 0, 13.0)
-	_box("MarketSquareBase", plaza + Vector3(0, 0.055, 0), Vector3(17.5, 0.11, 12.0), Color(0.61, 0.59, 0.51), false)
-	for x in range(88, 105, 2):
+	_box("MarketSquareBase", plaza + Vector3(0, 0.055, 0), Vector3(9.0, 0.11, 12.0), Color(0.61, 0.59, 0.51), false)
+	for x in range(92, 101, 2):
 		_box("MarketSquarePaverLine", Vector3(float(x), 0.116, 13), Vector3(0.025, 0.008, 11.6), Color(0.45, 0.46, 0.42), false)
 	for z in [8.0, 18.0]:
-		_box("MarketSquareBorder", Vector3(96, 0.14, z), Vector3(17.0, 0.08, 0.12), Color(0.34, 0.37, 0.34), false)
+		_box("MarketSquareBorder", Vector3(96, 0.14, z), Vector3(9.0, 0.08, 0.12), Color(0.34, 0.37, 0.34), false)
 	_cylinder("FountainLowerBasin", Vector3(96, 0.32, 13), 2.0, 0.48, Color(0.43, 0.48, 0.47), false)
 	_cylinder("FountainWater", Vector3(96, 0.57, 13), 1.72, 0.06, Color(0.18, 0.55, 0.68), false)
 	_cylinder("FountainColumn", Vector3(96, 0.92, 13), 0.34, 0.72, Color(0.68, 0.67, 0.60), false)
 	_cylinder("FountainTopBowl", Vector3(96, 1.34, 13), 0.82, 0.18, Color(0.55, 0.61, 0.59), false)
 	_cylinder("FountainJet", Vector3(96, 1.70, 13), 0.10, 0.62, Color(0.26, 0.66, 0.78), false)
-	for corner in [Vector3(89, 0, 9), Vector3(103, 0, 9), Vector3(89, 0, 17), Vector3(103, 0, 17)]:
+	for corner in [Vector3(92, 0, 9), Vector3(100, 0, 9), Vector3(92, 0, 17), Vector3(100, 0, 17)]:
 		_box("MarketPlanterStone", corner + Vector3(0, 0.35, 0), Vector3(1.8, 0.7, 1.5), Color(0.36, 0.38, 0.34), false)
 		_cylinder("MarketPlanterShrub", corner + Vector3(0, 0.95, 0), 0.62, 0.9, Color(0.17, 0.37, 0.20), false)
 	for bench in [Vector3(92, 0, 13), Vector3(100, 0, 13)]:
