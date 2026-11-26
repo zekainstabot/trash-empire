@@ -4480,8 +4480,8 @@ func _build_recycling_mega_factory() -> void:
 				bend_belt.rotation_degrees.y = bend_rotation
 				# Curved side guards follow the outside edges and meet the straight branch rails.
 				for side in [-1.0, 1.0]:
-					var rail_x := bend_x + cos(angle) * 0.72 * side
-					var rail_z := bend_z - sin(angle) * 0.72 * side
+					var rail_x: float = bend_x + cos(angle) * 0.72 * side
+					var rail_z: float = bend_z - sin(angle) * 0.72 * side
 					var bend_rail := _box("FactoryFirstMachineFeedBendRail%d_%d_%d" % [row, bend_i, int(side)], Vector3(rail_x, 1.075, rail_z), Vector3(segment_len * 1.08, 0.24, 0.085), steel, false)
 					bend_rail.rotation_degrees.y = bend_rotation
 			# The straight branch overlaps the elbow slightly so the rubber surface has no gap.
