@@ -162,20 +162,10 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.025
 			visual_rotation.y = rng.randf_range(0.0, TAU)
-		13, 21, 28:
-			var sheet := BoxMesh.new()
-			sheet.size = Vector3(0.46, 0.045, 0.30)
-			shape = sheet
-			base_color = {
-				3: Color(0.86, 0.26, 0.13),
-				4: Color(0.83, 0.80, 0.68),
-				13: Color(0.76, 0.73, 0.62),
-				21: Color(0.88, 0.72, 0.13),
-				22: Color(0.64, 0.78, 0.73, 0.76),
-				28: Color(0.70, 0.72, 0.67)
-			}[item_roll]
-			transparent = item_roll == 22
-			visual_position.y = 0.045
+		13, 14, 15, 21, 23, 28:
+			shape = _mobile_paper_products_mesh(item_roll)
+			base_color = Color.WHITE
+			visual_position.y = 0.015
 			visual_rotation.y = rng.randf_range(-0.5, 0.5)
 		5:
 			shape = _mobile_cardboard_scrap_mesh(rng)
@@ -187,24 +177,13 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.025
 			visual_rotation.y = rng.randf_range(0.0, TAU)
-		14, 15, 17:
+		17:
 			var crate := BoxMesh.new()
-			crate.size = Vector3(0.42, 0.18, 0.32)
+			crate.size = Vector3(0.48, 0.045, 0.34)
 			shape = crate
-			base_color = {
-				14: Color(0.68, 0.49, 0.27),
-				15: Color(0.72, 0.31, 0.14),
-				17: Color(0.08, 0.34, 0.25),
-				31: Color(0.22, 0.25, 0.25)
-			}[item_roll]
-			visual_position.y = 0.10
-			if item_roll == 31:
-				crate.size = Vector3(0.72, 0.48, 0.42)
-				visual_position.y = 0.24
-			elif item_roll == 17:
-				crate.size = Vector3(0.48, 0.045, 0.34)
-				visual_position.y = 0.045
-				metallic = 0.32
+			base_color = Color(0.08, 0.34, 0.25)
+			visual_position.y = 0.045
+			metallic = 0.32
 		6:
 			shape = _mobile_battery_mesh(rng)
 			base_color = Color.WHITE
@@ -242,21 +221,16 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			visual_position.y = 0.40
 			visual_rotation.x = PI * 0.5
 			visual_rotation.z = rng.randf_range(-0.08, 0.08)
-		10, 27, 29:
+		10:
 			var ring := TorusMesh.new()
-			ring.inner_radius = 0.20 if item_roll != 27 else 0.25
-			ring.outer_radius = 0.34 if item_roll != 27 else 0.43
+			ring.inner_radius = 0.20
+			ring.outer_radius = 0.34
 			ring.rings = 8
 			ring.ring_segments = 12
 			shape = ring
-			base_color = {
-				10: Color(0.48, 0.43, 0.34),
-				27: Color(0.45, 0.70, 0.64, 0.78),
-				29: Color(0.13, 0.16, 0.18)
-			}[item_roll]
+			base_color = Color(0.48, 0.43, 0.34)
 			visual_position.y = 0.12
 			visual_rotation.x = PI * 0.5
-			transparent = item_roll == 27
 			metallic = 0.30
 		11, 12, 16:
 			var tool := CylinderMesh.new()
@@ -294,12 +268,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			visual_position.y = 0.14
 			visual_rotation.x = PI * 0.5
 			metallic = 0.48
-		23:
-			var carton := BoxMesh.new()
-			carton.size = Vector3(0.30, 0.42, 0.26)
-			shape = carton
-			base_color = Color(0.84, 0.85, 0.78)
-			visual_position.y = 0.21
+
 		27:
 			shape = _mobile_glass_jar_mesh()
 			base_color = Color(0.58, 0.80, 0.73, 0.42)
@@ -332,7 +301,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 22, 24, 27, 29, 30, 31]:
+	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15, 21, 22, 23, 24, 27, 28, 29, 30, 31]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -517,6 +486,83 @@ func _append_box_surface(surface: SurfaceTool, center: Vector3, size: Vector3, c
 		surface.set_color(face_color)
 		for vertex_index in faces[face_index]:
 			surface.add_vertex(corners[vertex_index])
+
+
+func _append_rotated_box_surface(surface: SurfaceTool, center: Vector3, size: Vector3, color: Color, rotation_y: float = 0.0, rotation_z: float = 0.0) -> void:
+	var half: Vector3 = size * 0.5
+	var transform := Basis(Vector3.UP, rotation_y) * Basis(Vector3.BACK, rotation_z)
+	var corners: Array[Vector3] = [
+		Vector3(-half.x, -half.y, -half.z), Vector3(half.x, -half.y, -half.z),
+		Vector3(-half.x, half.y, -half.z), Vector3(half.x, half.y, -half.z),
+		Vector3(-half.x, -half.y, half.z), Vector3(half.x, -half.y, half.z),
+		Vector3(-half.x, half.y, half.z), Vector3(half.x, half.y, half.z)
+	]
+	var faces := [[0, 2, 1, 1, 2, 3], [4, 5, 6, 5, 7, 6], [0, 1, 4, 1, 5, 4], [2, 6, 3, 3, 6, 7], [0, 4, 2, 2, 4, 6], [1, 3, 5, 3, 7, 5]]
+	for face_index in range(faces.size()):
+		var face_color: Color = color
+		if face_index == 1:
+			face_color = color.lightened(0.12)
+		elif face_index == 3:
+			face_color = color.darkened(0.14)
+		surface.set_color(face_color)
+		for vertex_index in faces[face_index]:
+			surface.add_vertex(center + transform * corners[vertex_index])
+
+
+func _mobile_paper_products_mesh(item_roll: int) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var paper := Color(0.78, 0.75, 0.66)
+	var ink := Color(0.20, 0.23, 0.22)
+	match item_roll:
+		13:
+			# Folded newspaper with layered sheets, dark print columns and masthead.
+			_append_box_surface(surface, Vector3(0.0, 0.035, 0.0), Vector3(0.48, 0.025, 0.34), paper)
+			_append_rotated_box_surface(surface, Vector3(-0.025, 0.055, 0.012), Vector3(0.44, 0.012, 0.31), Color(0.87, 0.84, 0.75), -0.035, 0.025)
+			_append_box_surface(surface, Vector3(0.0, 0.064, -0.105), Vector3(0.31, 0.006, 0.025), Color(0.25, 0.29, 0.27))
+			for line_index in range(5):
+				_append_box_surface(surface, Vector3(-0.09 + float(line_index % 3) * 0.09, 0.064, -0.045 + float(line_index / 3) * 0.065), Vector3(0.065, 0.005, 0.008), ink)
+			_append_box_surface(surface, Vector3(0.13, 0.064, 0.005), Vector3(0.085, 0.005, 0.12), Color(0.55, 0.58, 0.53))
+		14:
+			# Crushed brown carton with buckled panels, exposed corrugation and torn flaps.
+			_append_rotated_box_surface(surface, Vector3(0.0, 0.055, 0.0), Vector3(0.42, 0.07, 0.30), Color(0.56, 0.37, 0.20), -0.12, 0.10)
+			_append_rotated_box_surface(surface, Vector3(-0.12, 0.11, -0.08), Vector3(0.22, 0.025, 0.15), Color(0.73, 0.54, 0.32), 0.28, -0.16)
+			_append_rotated_box_surface(surface, Vector3(0.13, 0.10, 0.09), Vector3(0.24, 0.022, 0.13), Color(0.66, 0.45, 0.25), -0.35, 0.18)
+			for crease_index in range(3):
+				_append_box_surface(surface, Vector3(-0.12 + float(crease_index) * 0.12, 0.10, 0.0), Vector3(0.012, 0.008, 0.24), Color(0.36, 0.25, 0.16))
+		15:
+			# Disposable takeaway carton, open rim, folded lid and grease-stained interior.
+			_append_box_surface(surface, Vector3(0.0, 0.055, 0.0), Vector3(0.39, 0.08, 0.33), Color(0.69, 0.27, 0.12))
+			_append_box_surface(surface, Vector3(0.0, 0.13, -0.145), Vector3(0.39, 0.12, 0.035), Color(0.75, 0.34, 0.16))
+			_append_box_surface(surface, Vector3(-0.18, 0.13, 0.0), Vector3(0.035, 0.12, 0.29), Color(0.77, 0.37, 0.18))
+			_append_box_surface(surface, Vector3(0.18, 0.13, 0.0), Vector3(0.035, 0.12, 0.29), Color(0.65, 0.24, 0.11))
+			_append_rotated_box_surface(surface, Vector3(0.0, 0.18, 0.18), Vector3(0.40, 0.025, 0.16), Color(0.91, 0.77, 0.49), 0.0, -0.16)
+			_append_box_surface(surface, Vector3(0.0, 0.101, 0.0), Vector3(0.26, 0.008, 0.20), Color(0.47, 0.31, 0.19))
+		21:
+			# Split banana peel with three curled yellow flaps around the dark stem.
+			_append_rotated_box_surface(surface, Vector3(0.0, 0.055, 0.0), Vector3(0.12, 0.07, 0.12), Color(0.42, 0.29, 0.10))
+			_append_rotated_box_surface(surface, Vector3(-0.14, 0.025, -0.01), Vector3(0.31, 0.025, 0.10), Color(0.92, 0.73, 0.10), -0.10, -0.18)
+			_append_rotated_box_surface(surface, Vector3(0.14, 0.025, 0.01), Vector3(0.31, 0.025, 0.10), Color(0.86, 0.64, 0.07), 0.10, 0.18)
+			_append_rotated_box_surface(surface, Vector3(0.0, 0.022, -0.14), Vector3(0.10, 0.025, 0.31), Color(0.97, 0.79, 0.15), 0.04, -0.12)
+			_append_box_surface(surface, Vector3(0.0, 0.095, 0.0), Vector3(0.06, 0.035, 0.06), Color(0.31, 0.22, 0.09))
+		23:
+			# Milk carton with folded gable top, printed blue side panel and screw cap.
+			_append_box_surface(surface, Vector3(0.0, 0.21, 0.0), Vector3(0.32, 0.40, 0.27), Color(0.88, 0.87, 0.78))
+			_append_rotated_box_surface(surface, Vector3(0.0, 0.445, -0.065), Vector3(0.33, 0.11, 0.15), Color(0.79, 0.83, 0.79), 0.0, -0.52)
+			_append_rotated_box_surface(surface, Vector3(0.0, 0.445, 0.065), Vector3(0.33, 0.11, 0.15), Color(0.79, 0.83, 0.79), 0.0, 0.52)
+			_append_box_surface(surface, Vector3(0.0, 0.23, -0.14), Vector3(0.23, 0.20, 0.012), Color(0.22, 0.48, 0.66))
+			_append_box_surface(surface, Vector3(0.08, 0.52, 0.0), Vector3(0.09, 0.045, 0.09), Color(0.93, 0.92, 0.82))
+		28:
+			# Molded fibre tray with four compartments, rolled rim and dark food residue.
+			_append_box_surface(surface, Vector3(0.0, 0.035, 0.0), Vector3(0.48, 0.035, 0.36), Color(0.68, 0.69, 0.63))
+			_append_box_surface(surface, Vector3(0.0, 0.075, -0.16), Vector3(0.48, 0.055, 0.035), Color(0.82, 0.81, 0.73))
+			_append_box_surface(surface, Vector3(0.0, 0.075, 0.16), Vector3(0.48, 0.055, 0.035), Color(0.82, 0.81, 0.73))
+			_append_box_surface(surface, Vector3(-0.22, 0.075, 0.0), Vector3(0.035, 0.055, 0.29), Color(0.77, 0.77, 0.69))
+			_append_box_surface(surface, Vector3(0.22, 0.075, 0.0), Vector3(0.035, 0.055, 0.29), Color(0.77, 0.77, 0.69))
+			_append_box_surface(surface, Vector3(0.0, 0.075, 0.0), Vector3(0.025, 0.035, 0.30), Color(0.74, 0.74, 0.66))
+			_append_box_surface(surface, Vector3(0.0, 0.055, 0.0), Vector3(0.13, 0.008, 0.10), Color(0.42, 0.34, 0.25))
+	surface.generate_normals()
+	return surface.commit()
 
 
 func _mobile_glass_jar_mesh() -> ArrayMesh:
@@ -1280,23 +1326,43 @@ func _make_wrench(rng: RandomNumberGenerator) -> void:
 	rotation.y = rng.randf_range(0.0, TAU)
 
 func _make_newspaper(rng: RandomNumberGenerator) -> void:
-	var paper := _flat_box(Vector3(0.46, 0.025, 0.34), Vector3(0, 0.035, 0), Color(0.78, 0.75, 0.64))
+	var paper := MeshInstance3D.new()
+	paper.name = "DiscardedNewspaper"
+	paper.mesh = _mobile_paper_products_mesh(13)
+	paper.position.y = 0.015
 	paper.rotation.y = rng.randf_range(-0.25, 0.25)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.94
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	paper.material_override = material
 	add_child(paper)
-	for i in range(3):
-		add_child(_flat_box(Vector3(0.27, 0.008, 0.018), Vector3(-0.04, 0.052, -0.09 + i * 0.075), Color(0.25, 0.27, 0.25)))
 
 func _make_crushed_carton(rng: RandomNumberGenerator) -> void:
-	var carton := _flat_box(Vector3(0.40, 0.20, 0.28), Vector3(0, 0.11, 0), Color(0.68, 0.48, 0.26))
+	var carton := MeshInstance3D.new()
+	carton.name = "CrushedCorrugatedCarton"
+	carton.mesh = _mobile_paper_products_mesh(14)
+	carton.position.y = 0.015
 	carton.rotation.y = rng.randf_range(-0.5, 0.5)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.96
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	carton.material_override = material
 	add_child(carton)
-	add_child(_flat_box(Vector3(0.42, 0.035, 0.30), Vector3(0, 0.21, 0), Color(0.78, 0.62, 0.38)))
 
 func _make_food_box(rng: RandomNumberGenerator) -> void:
-	var box := _flat_box(Vector3(0.38, 0.22, 0.32), Vector3(0, 0.12, 0), Color(0.72, 0.30, 0.13))
-	box.rotation.y = rng.randf_range(-0.4, 0.4)
-	add_child(box)
-	add_child(_flat_box(Vector3(0.18, 0.015, 0.33), Vector3(0, 0.24, 0), Color(0.92, 0.78, 0.46)))
+	var food_box := MeshInstance3D.new()
+	food_box.name = "OpenTakeawayFoodBox"
+	food_box.mesh = _mobile_paper_products_mesh(15)
+	food_box.position.y = 0.015
+	food_box.rotation.y = rng.randf_range(-0.4, 0.4)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.88
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	food_box.material_override = material
+	add_child(food_box)
 
 func _make_rusted_pipe(rng: RandomNumberGenerator) -> void:
 	var pipe := _cylinder_piece(0.12, 0.12, 0.72, Vector3(0, 0.10, 0), Color(0.48, 0.29, 0.18))
@@ -1347,12 +1413,17 @@ func _make_oil_can(rng: RandomNumberGenerator) -> void:
 	add_child(_cylinder_piece(0.055, 0.055, 0.10, Vector3(0.18, 0.40, 0), Color(0.62, 0.66, 0.62)))
 
 func _make_banana_peel(rng: RandomNumberGenerator) -> void:
-	for side in [-1.0, 1.0]:
-		var peel := _flat_box(Vector3(0.34, 0.045, 0.12), Vector3(side * 0.13, 0.035, 0), Color(0.88, 0.72, 0.12))
-		peel.rotation.y = side * 0.28
-		add_child(peel)
-	add_child(_flat_box(Vector3(0.14, 0.05, 0.10), Vector3(0, 0.055, 0), Color(0.43, 0.31, 0.12)))
-	rotation.y = rng.randf_range(0.0, TAU)
+	var peel := MeshInstance3D.new()
+	peel.name = "SplitBananaPeel"
+	peel.mesh = _mobile_paper_products_mesh(21)
+	peel.position.y = 0.015
+	peel.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.82
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	peel.material_override = material
+	add_child(peel)
 
 func _make_plastic_bag(rng: RandomNumberGenerator) -> void:
 	var bag := MeshInstance3D.new()
@@ -1369,11 +1440,17 @@ func _make_plastic_bag(rng: RandomNumberGenerator) -> void:
 
 
 func _make_milk_carton(rng: RandomNumberGenerator) -> void:
-	var body := _flat_box(Vector3(0.34, 0.42, 0.28), Vector3(0, 0.23, 0), Color(0.82, 0.84, 0.77))
-	body.rotation.y = rng.randf_range(-0.18, 0.18)
-	add_child(body)
-	add_child(_flat_box(Vector3(0.36, 0.10, 0.30), Vector3(0, 0.49, 0), Color(0.30, 0.55, 0.72)))
-	add_child(_cylinder_piece(0.045, 0.045, 0.07, Vector3(0.08, 0.57, 0), Color(0.94, 0.91, 0.76)))
+	var carton := MeshInstance3D.new()
+	carton.name = "FoldedMilkCarton"
+	carton.mesh = _mobile_paper_products_mesh(23)
+	carton.position.y = 0.015
+	carton.rotation.y = rng.randf_range(-0.18, 0.18)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.74
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	carton.material_override = material
+	add_child(carton)
 
 func _make_old_tire(rng: RandomNumberGenerator) -> void:
 	var tire := MeshInstance3D.new()
@@ -1432,11 +1509,17 @@ func _make_glass_jar(rng: RandomNumberGenerator) -> void:
 	add_child(jar)
 
 func _make_takeaway_tray(rng: RandomNumberGenerator) -> void:
-	var tray := _flat_box(Vector3(0.48, 0.07, 0.36), Vector3(0, 0.07, 0), Color(0.72, 0.73, 0.68))
+	var tray := MeshInstance3D.new()
+	tray.name = "MouldedTakeawayTray"
+	tray.mesh = _mobile_paper_products_mesh(28)
+	tray.position.y = 0.015
 	tray.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.91
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	tray.material_override = material
 	add_child(tray)
-	for x in [-0.16, 0.0, 0.16]:
-		add_child(_flat_box(Vector3(0.12, 0.045, 0.25), Vector3(x, 0.12, 0), Color(0.83, 0.82, 0.75)))
 
 func _make_cable_bundle(rng: RandomNumberGenerator) -> void:
 	var bundle := MeshInstance3D.new()
