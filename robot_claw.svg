@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+ <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8f3ef"/><stop offset=".48" stop-color="#91aaa6"/><stop offset="1" stop-color="#405d60"/></linearGradient>
+ <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#65f0d2"/><stop offset="1" stop-color="#087d79"/></linearGradient>
+</defs>
+<g stroke="#102b31" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+ <!-- wrist -->
+ <path d="M48 111 L50 91 L78 91 L82 111 Z" fill="url(#steel)"/>
+ <path d="M45 103 L84 103 L86 115 L43 115 Z" fill="#29464c"/>
+ <path d="M53 108 L75 108" stroke="#61e7cf" stroke-width="4"/>
+ <!-- palm housing -->
+ <path d="M43 84 L39 65 Q38 57 46 53 L61 47 Q70 44 77 51 L89 63 L82 82 Q77 91 66 91 L51 90 Q44 89 43 84Z" fill="url(#steel)"/>
+ <path d="M51 61 L67 55 L78 64 L74 80 L53 81 Z" fill="#28484d"/>
+ <path d="M57 65 L70 61 L74 70 L62 76 Z" fill="url(#teal)" stroke-width="3"/>
+ <!-- upper claw finger -->
+ <path d="M78 57 L88 43 L103 32 Q111 27 116 34 Q120 41 112 47 L99 57 L91 69" fill="none" stroke="url(#steel)" stroke-width="11"/>
+ <path d="M108 34 L118 29 L122 37 L115 44" fill="#d5e3dc" stroke-width="4"/>
+ <!-- lower claw finger -->
+ <path d="M82 78 L99 82 L111 94 Q117 101 111 107 Q105 112 98 105 L84 94 L72 91" fill="none" stroke="url(#steel)" stroke-width="11"/>
+ <path d="M108 101 L119 105 L115 114 L104 111" fill="#d5e3dc" stroke-width="4"/>
+ <!-- joints -->
+ <circle cx="88" cy="58" r="6" fill="url(#teal)" stroke-width="3"/>
+ <circle cx="91" cy="86" r="6" fill="url(#teal)" stroke-width="3"/>
+</g>
+</svg>
