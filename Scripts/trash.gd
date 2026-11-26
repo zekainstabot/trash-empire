@@ -232,20 +232,25 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color(0.27, 0.23, 0.19)
 			visual_position.y = 0.09
 			visual_rotation.y = rng.randf_range(0.0, TAU)
-		10, 24, 27, 29:
+		24:
+			shape = _mobile_tire_mesh()
+			base_color = Color.WHITE
+			visual_position.y = 0.40
+			visual_rotation.x = PI * 0.5
+			visual_rotation.z = rng.randf_range(-0.08, 0.08)
+		10, 27, 29:
 			var ring := TorusMesh.new()
-			ring.inner_radius = 0.20 if item_roll != 24 else 0.25
-			ring.outer_radius = 0.34 if item_roll != 24 else 0.43
+			ring.inner_radius = 0.20 if item_roll != 27 else 0.25
+			ring.outer_radius = 0.34 if item_roll != 27 else 0.43
 			ring.rings = 8
 			ring.ring_segments = 12
 			shape = ring
 			base_color = {
 				10: Color(0.48, 0.43, 0.34),
-				24: Color(0.055, 0.065, 0.067),
 				27: Color(0.45, 0.70, 0.64, 0.78),
 				29: Color(0.13, 0.16, 0.18)
 			}[item_roll]
-			visual_position.y = 0.12 if item_roll != 24 else 0.40
+			visual_position.y = 0.12
 			visual_rotation.x = PI * 0.5
 			transparent = item_roll == 27
 			metallic = 0.30
@@ -312,7 +317,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 22]:
+	if item_roll in [0, 1, 2, 3, 4, 5, 6, 7, 8, 22, 24]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -475,6 +480,76 @@ func _mobile_plastic_bag_mesh() -> ArrayMesh:
 			surface.add_vertex(c)
 			surface.add_vertex(d)
 			previous = current
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_tire_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const MAJOR := 0.335
+	const MINOR := 0.095
+	const RINGS := 36
+	const SIDES := 12
+	# Continuous rubber carcass, with a rounded shoulder and dark sidewall.
+	for ring_index in range(RINGS):
+		var u0: float = TAU * float(ring_index) / float(RINGS)
+		var u1: float = TAU * float(ring_index + 1) / float(RINGS)
+		for side_index in range(SIDES):
+			var v0: float = TAU * float(side_index) / float(SIDES)
+			var v1: float = TAU * float(side_index + 1) / float(SIDES)
+			var p00 := Vector3((MAJOR + MINOR * cos(v0)) * cos(u0), MINOR * sin(v0), (MAJOR + MINOR * cos(v0)) * sin(u0))
+			var p10 := Vector3((MAJOR + MINOR * cos(v0)) * cos(u1), MINOR * sin(v0), (MAJOR + MINOR * cos(v0)) * sin(u1))
+			var p01 := Vector3((MAJOR + MINOR * cos(v1)) * cos(u0), MINOR * sin(v1), (MAJOR + MINOR * cos(v1)) * sin(u0))
+			var p11 := Vector3((MAJOR + MINOR * cos(v1)) * cos(u1), MINOR * sin(v1), (MAJOR + MINOR * cos(v1)) * sin(u1))
+			var tread_zone: bool = absf(sin(v0)) < 0.48
+			surface.set_color(Color(0.075, 0.082, 0.083) if tread_zone else Color(0.035, 0.041, 0.043))
+			surface.add_vertex(p00)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p11)
+	# Raised tread lugs across the crown: angled blocks with narrow gaps.
+	for block_index in range(32):
+		var angle: float = TAU * float(block_index) / 32.0
+		var tangent := Vector3(-sin(angle), 0.0, cos(angle))
+		var radial := Vector3(cos(angle), 0.0, sin(angle))
+		for row in range(3):
+			var y_offset: float = (float(row) - 1.0) * 0.052
+			var center := radial * 0.435 + Vector3(0.0, y_offset, 0.0) + tangent * (0.012 if row == 1 else -0.012)
+			var half_tangent: float = 0.026
+			var half_y: float = 0.018
+			var outer := center + radial * 0.012
+			var a := outer - tangent * half_tangent - Vector3(0.0, half_y, 0.0)
+			var b := outer + tangent * half_tangent - Vector3(0.0, half_y, 0.0)
+			var c := outer - tangent * half_tangent + Vector3(0.0, half_y, 0.0)
+			var d := outer + tangent * half_tangent + Vector3(0.0, half_y, 0.0)
+			surface.set_color(Color(0.105, 0.112, 0.112))
+			surface.add_vertex(a)
+			surface.add_vertex(c)
+			surface.add_vertex(b)
+			surface.add_vertex(b)
+			surface.add_vertex(c)
+			surface.add_vertex(d)
+	# Sidewall raised bead rings and worn rubber scuff patches.
+	for side_sign in [-1.0, 1.0]:
+		for ring_radius in [0.255, 0.405]:
+			for segment in range(48):
+				var a0: float = TAU * float(segment) / 48.0
+				var a1: float = TAU * float(segment + 1) / 48.0
+				var y: float = side_sign * 0.084
+				var p0 := Vector3(cos(a0) * ring_radius, y, sin(a0) * ring_radius)
+				var p1 := Vector3(cos(a1) * ring_radius, y, sin(a1) * ring_radius)
+				var p2 := Vector3(cos(a0) * (ring_radius + 0.008), y + side_sign * 0.004, sin(a0) * (ring_radius + 0.008))
+				var p3 := Vector3(cos(a1) * (ring_radius + 0.008), y + side_sign * 0.004, sin(a1) * (ring_radius + 0.008))
+				surface.set_color(Color(0.16, 0.17, 0.16))
+				surface.add_vertex(p0)
+				surface.add_vertex(p2)
+				surface.add_vertex(p1)
+				surface.add_vertex(p1)
+				surface.add_vertex(p2)
+				surface.add_vertex(p3)
 	surface.generate_normals()
 	return surface.commit()
 
@@ -1000,21 +1075,19 @@ func _make_milk_carton(rng: RandomNumberGenerator) -> void:
 	add_child(_cylinder_piece(0.045, 0.045, 0.07, Vector3(0.08, 0.57, 0), Color(0.94, 0.91, 0.76)))
 
 func _make_old_tire(rng: RandomNumberGenerator) -> void:
-	# A clean, recognizable discarded tire. Keep the center hollow and avoid
-	# detached tread blocks or bolts that look like extra debris around it.
 	var tire := MeshInstance3D.new()
-	tire.name = "DiscardedTire"
-	var torus := TorusMesh.new()
-	torus.inner_radius = 0.25
-	torus.outer_radius = 0.43
-	torus.rings = 16
-	torus.ring_segments = 32
-	tire.mesh = torus
-	tire.position.y = 0.43
+	tire.name = "WornIndustrialTire"
+	tire.mesh = _mobile_tire_mesh()
+	tire.position.y = 0.40
 	tire.rotation_degrees.x = 90.0
-	tire.material_override = _material(Color(0.055, 0.065, 0.067))
+	tire.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.94
+	material.metallic = 0.0
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	tire.material_override = material
 	add_child(tire)
-	rotation.y = rng.randf_range(0.0, TAU)
 
 func _make_paint_bucket(rng: RandomNumberGenerator) -> void:
 	add_child(_cylinder_piece(0.19, 0.16, 0.36, Vector3(0, 0.19, 0), Color(0.72, 0.31, 0.16)))
