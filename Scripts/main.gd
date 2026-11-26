@@ -2240,8 +2240,28 @@ func _start_new_world() -> void:
 	magnet_power_level = 1
 	suction_level = 0
 	drone_level = 0
+	drone_speed_upgrade_level = 0
+	drone_capacity_upgrade_level = 0
+	ground_robot_level = 0
+	ground_collector_timer = 0.0
 	sorting_robot_levels = [0, 0, 0, 0]
 	sorting_bin_counts = [0, 0, 0, 0]
+	sorting_robot_upgrade_level = 0
+	conveyor_speed_upgrade_level = 0
+	waste_tank_unload_upgrade_level = 0
+	waste_tank_capacity_upgrade_level = 0
+	repair_robot_level = 0
+	machine_broken = false
+	machine_work_timer = 0.0
+	machine_repair_timer = 0.0
+	factory_truck_interval_upgrade_level = 0
+	_reset_automation_units_for_new_world()
+	_refresh_helper_drone_visibility()
+	_refresh_ground_collector()
+	if is_instance_valid(magnet_tool):
+		magnet_tool.visible = false
+	if is_instance_valid(suction_tool):
+		suction_tool.visible = false
 	_refresh_sorting_district()
 	dispatch_upgrade_level = 0
 	city_truck_upgrade_level = 0
@@ -2262,6 +2282,14 @@ func _start_new_world() -> void:
 	truck_dispatch_timer = 0.0
 	shipping_active = false
 	dispatch_trucks_remaining = 0
+	factory_shipping_timer = 0.0
+	factory_shipping_cooldown = 0.0
+	factory_shipping_busy = false
+	factory_shipping_row = 0
+	factory_shipping_trucks.clear()
+	waste_feed_timer = 0.0
+	waste_feed_busy = false
+	waste_feed_line_index = 0
 	delivery_trucks.clear()
 	drone_timer = 0.0
 	_refresh_helper_drone_visibility()
@@ -2281,8 +2309,16 @@ func _start_new_world() -> void:
 	factory_row_stage1_stock = [0, 0, 0, 0, 0]
 	factory_row_stage2_stock = [0, 0, 0, 0, 0]
 	factory_row_product_stock = [0, 0, 0, 0, 0]
+	factory_row_belt_items = [[], [], [], [], []]
 	factory_total_products_made = 0
 	factory_production_timer = 0.0
+	factory_shipping_timer = 0.0
+	factory_shipping_cooldown = 0.0
+	factory_shipping_busy = false
+	factory_shipping_row = 0
+	waste_feed_timer = 0.0
+	waste_feed_busy = false
+	waste_feed_line_index = 0
 	waste_tank_inventory = 0
 	mega_factory_build_paid = 0.0
 	mega_factory_build_timer = 0.0
@@ -2294,17 +2330,24 @@ func _start_new_world() -> void:
 	# under factory_visual_root. Remove those generated visuals on every NEW run.
 	var factory_reset_prefixes := [
 		"MegaProcessMachine", "FactoryMainConveyor", "FactoryProductOutput",
+		"FactoryWasteConveyorItem", "FactorySpecificProduct", "FactoryProductTruck",
+		"FactoryDoorMoving", "DeliveryConveyor", "TeddyShippingPackage",
 		"FinishedPlasticBottle", "PlasticBottleCap", "FinishedCardboardBox",
 		"CardboardBoxTape", "FinishedMetalComponent", "MetalComponentCore",
 		"FinishedGlassJar", "GlassJarRim", "RefurbishedElectronicUnit",
-		"ElectronicDisplay", "FactoryRowTruck", "FactoryTruckLane"
+		"ElectronicDisplay", "FactoryRowTruck"
 	]
+	for row_items in factory_row_belt_items:
+		for product in row_items:
+			if is_instance_valid(product):
+				product.queue_free()
 	for child in get_children():
 		for prefix in factory_reset_prefixes:
 			if child.name.begins_with(prefix):
 				child.queue_free()
 				break
 	conveyor_rollers.clear()
+	conveyor_slats.clear()
 	factory_conveyor_slats.clear()
 	mega_factory_machine_labels.clear()
 	# A fresh world starts with only the first machine and its connected belt.
@@ -2324,6 +2367,81 @@ func _start_new_world() -> void:
 	_save_game()
 	_set_message("NEW WORLD STARTED!")
 	_close_main_menu()
+
+func _reset_automation_units_for_new_world() -> void:
+	for drone in helper_drones:
+		if not is_instance_valid(drone):
+			continue
+		var target := drone.get_meta("target") as Node3D
+		if is_instance_valid(target):
+			target.set_meta("drone_reserved", -1)
+		var lifting_item := drone.get_meta("lifting_item") as Node3D
+		if is_instance_valid(lifting_item):
+			lifting_item.queue_free()
+		for cargo_item in drone.get_meta("cargo_items", []):
+			if is_instance_valid(cargo_item):
+				cargo_item.queue_free()
+		drone.set_meta("target", null)
+		drone.set_meta("lifting_item", null)
+		drone.set_meta("cargo_items", [])
+		drone.set_meta("cargo_slots", 0)
+		drone.set_meta("cargo_bulky", 0)
+		drone.set_meta("returning", false)
+		drone.set_meta("deposit_timer", 0.0)
+		drone.set_meta("scan_cooldown", 0.0)
+		drone.global_position = _drone_dock_point(drone)
+
+	if is_instance_valid(ground_collector):
+		var rover_target := ground_collector.get_meta("target") as Node3D
+		if is_instance_valid(rover_target):
+			rover_target.set_meta("drone_reserved", -1)
+		for cargo_item in ground_collector.get_meta("cargo_items", []):
+			if is_instance_valid(cargo_item):
+				cargo_item.queue_free()
+		ground_collector.set_meta("target", null)
+		ground_collector.set_meta("cargo_items", [])
+		ground_collector.set_meta("cargo_slots", 0)
+		ground_collector.set_meta("cargo_bulky", 0)
+		ground_collector.set_meta("returning", false)
+		ground_collector.set_meta("deposit_timer", 0.0)
+		ground_collector.set_meta("scan_cooldown", 0.0)
+		ground_collector.global_position = Vector3(144.0, 0.0, 10.0)
+		ground_collector.set_meta("previous_position", ground_collector.global_position)
+
+	for index in range(sorting_robots.size()):
+		var robot := sorting_robots[index]
+		if not is_instance_valid(robot):
+			continue
+		var target := robot.get_meta("target") as Node3D
+		if is_instance_valid(target):
+			target.set_meta("drone_reserved", -1)
+		var cargo := robot.get_meta("cargo") as Node3D
+		if is_instance_valid(cargo):
+			cargo.queue_free()
+		robot.set_meta("target", null)
+		robot.set_meta("cargo", null)
+		robot.set_meta("mode", "idle")
+		robot.global_position = sorting_pad_positions[index] + Vector3(0.0, 0.0, 1.7)
+
+	for sweeper in street_sweepers:
+		if not is_instance_valid(sweeper):
+			continue
+		sweeper.set_meta("cargo", 0)
+		sweeper.set_meta("returning", false)
+		sweeper.set_meta("route_index", 0)
+		if not street_sweeper_route.is_empty():
+			sweeper.global_position = street_sweeper_route[0]
+
+	if is_instance_valid(auto_pickup_target):
+		auto_pickup_target.set_meta("drone_reserved", -1)
+	auto_pickup_target = null
+	suction_target = null
+	auto_pickup_timer = 0.0
+	auto_pickup_scan_timer = 0.0
+	suction_scan_timer = 0.0
+	suction_pull_timer = 0.0
+	drone_timer = 0.0
+
 
 func _close_main_menu() -> void:
 	# Build the heavy 3D scene only after the title menu has been rendered
@@ -3438,9 +3556,9 @@ func _build_ground_collector() -> void:
 			ground_collector.add_child(wheel)
 			rover_wheels.append(wheel)
 	ground_collector.set_meta("wheels", rover_wheels)
-	ground_collector.set_meta("previous_position", ground_collector.global_position)
 	ground_collector.visible = ground_robot_level > 0
 	ground_collector.global_position = Vector3(144.0, 0.0, 10.0)
+	ground_collector.set_meta("previous_position", ground_collector.global_position)
 	ground_collector.set_meta("target", null)
 	ground_collector.set_meta("cargo_slots", 0)
 	ground_collector.set_meta("cargo_items", [])
