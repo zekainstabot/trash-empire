@@ -2334,7 +2334,7 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	for stripe_index in range(24):
 		var hazard_stripe := ColorRect.new()
 		hazard_stripe.position = Vector2(float(stripe_index) * screen.x / 24.0, screen.y * 0.965)
-		hazard_stripe.size = Vector2(screen.x / 48.0, 7)
+		hazard_stripe.size = Vector2(screen.x / 24.0, 7)
 		hazard_stripe.color = Color(0.95, 0.65, 0.15) if stripe_index % 2 == 0 else Color(0.055, 0.075, 0.08)
 		hazard_stripe.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		main_menu_panel.add_child(hazard_stripe)
