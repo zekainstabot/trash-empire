@@ -177,7 +177,12 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			transparent = item_roll == 22
 			visual_position.y = 0.045
 			visual_rotation.y = rng.randf_range(-0.5, 0.5)
-		5, 14, 15, 17, 26, 31:
+		5:
+			shape = _mobile_cardboard_scrap_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.035
+			visual_rotation.y = rng.randf_range(0.0, TAU)
+		14, 15, 17, 26, 31:
 			var crate := BoxMesh.new()
 			crate.size = Vector3(0.42, 0.18, 0.32)
 			shape = crate
@@ -304,7 +309,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 3, 4, 8, 22]:
+	if item_roll in [0, 1, 2, 3, 4, 5, 8, 22]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -467,6 +472,57 @@ func _mobile_plastic_bag_mesh() -> ArrayMesh:
 			surface.add_vertex(c)
 			surface.add_vertex(d)
 			previous = current
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_cardboard_scrap_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Single corrugated sheet with torn, uneven edges and visible flute ridges.
+	const SEGMENTS := 12
+	var points: Array[Vector3] = []
+	for i in range(SEGMENTS + 1):
+		var x := -0.29 + 0.58 * float(i) / float(SEGMENTS)
+		var torn := 0.018 * sin(float(i) * 2.7 + rng.seed * 0.00001)
+		var z_front := -0.21 + torn
+		var z_back := 0.21 - torn * 0.65
+		points.append(Vector3(x, 0.035 + 0.012 * sin(float(i) * 1.9), z_front))
+		points.append(Vector3(x, 0.035 + 0.012 * cos(float(i) * 1.7), z_back))
+	for i in range(SEGMENTS):
+		var p0 := points[i * 2]
+		var p1 := points[i * 2 + 1]
+		var p2 := points[(i + 1) * 2]
+		var p3 := points[(i + 1) * 2 + 1]
+		var corrugation := 0.008 * sin(float(i) * 2.4)
+		var ridge0 := Vector3(p0.x, p0.y + corrugation, (p0.z + p1.z) * 0.5)
+		var ridge1 := Vector3(p2.x, p2.y - corrugation, (p2.z + p3.z) * 0.5)
+		var brown := Color(0.62, 0.43, 0.27) if i % 3 else Color(0.72, 0.54, 0.35)
+		surface.set_color(brown)
+		surface.add_vertex(p0)
+		surface.add_vertex(ridge0)
+		surface.add_vertex(p2)
+		surface.add_vertex(p2)
+		surface.add_vertex(ridge0)
+		surface.add_vertex(ridge1)
+		surface.add_vertex(ridge0)
+		surface.add_vertex(p1)
+		surface.add_vertex(ridge1)
+		surface.add_vertex(ridge1)
+		surface.add_vertex(p1)
+		surface.add_vertex(p3)
+	# Ragged folded flap across one corner, integrated into the same surface.
+	var flap_a := Vector3(-0.12, 0.058, -0.13)
+	var flap_b := Vector3(0.27, 0.052, -0.16)
+	var flap_c := Vector3(0.20, 0.085, 0.18)
+	var flap_d := Vector3(-0.08, 0.075, 0.15)
+	surface.set_color(Color(0.78, 0.60, 0.40))
+	surface.add_vertex(flap_a)
+	surface.add_vertex(flap_c)
+	surface.add_vertex(flap_b)
+	surface.add_vertex(flap_a)
+	surface.add_vertex(flap_d)
+	surface.add_vertex(flap_c)
 	surface.generate_normals()
 	return surface.commit()
 
@@ -644,15 +700,17 @@ func _make_crumpled_paper(rng: RandomNumberGenerator) -> void:
 	add_child(paper)
 
 func _make_cardboard_scrap(rng: RandomNumberGenerator) -> void:
-	var sheet := _flat_box(Vector3(0.56, 0.045, 0.42), Vector3(0, 0.035, 0), Color(0.58, 0.39, 0.22))
-	add_child(sheet)
-	var flap := _flat_box(Vector3(0.22, 0.055, 0.40), Vector3(0.20, 0.075, 0), Color(0.70, 0.49, 0.29))
-	flap.rotation.z = rng.randf_range(-0.22, 0.22)
-	add_child(flap)
-	for x in [-0.17, 0.0, 0.17]:
-		var corrugation := _flat_box(Vector3(0.025, 0.012, 0.34), Vector3(x, 0.065, 0), Color(0.42, 0.28, 0.16))
-		add_child(corrugation)
-
+	var cardboard := MeshInstance3D.new()
+	cardboard.name = "TornCorrugatedCardboard"
+	cardboard.mesh = _mobile_cardboard_scrap_mesh(rng)
+	cardboard.position.y = 0.035
+	cardboard.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.96
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	cardboard.material_override = material
+	add_child(cardboard)
 
 func _make_battery(rng: RandomNumberGenerator) -> void:
 	var body := _cylinder_piece(0.12, 0.12, 0.42, Vector3(0, 0.21, 0), Color(0.18, 0.19, 0.22))
