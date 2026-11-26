@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f0f5ec"/><stop offset="1" stop-color="#a5bbb4"/></linearGradient>
+  <marker id="tealArrow" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#36d8b5"/></marker>
+  <marker id="amberArrow" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#f1b64c"/></marker>
+</defs>
+<circle cx="256" cy="256" r="126" fill="#172a30" fill-opacity=".22" stroke="#a4bcb6" stroke-width="13"/>
+<g fill="none" stroke-linecap="round" stroke-width="19">
+  <path d="M247 134A122 122 0 0 1 360 203" stroke="#36d8b5" marker-end="url(#tealArrow)"/>
+  <path d="M365 278A122 122 0 0 1 259 378" stroke="#f1b64c" marker-end="url(#amberArrow)"/>
+  <path d="M186 340A122 122 0 0 1 149 221" stroke="#36d8b5" marker-end="url(#tealArrow)"/>
+</g>
+<path d="M178 320V245l45 24v-23l45 23v-23l45 23v-46h25v97z" fill="url(#steel)" stroke="#718a86" stroke-width="5" stroke-linejoin="round"/>
+<path d="M292 222v-50h27v69" fill="#e8ad43" stroke="#8b6b34" stroke-width="5" stroke-linejoin="round"/>
+<path d="M303 164c-7-12 8-15 2-27m16 27c-7-12 8-15 2-27" fill="none" stroke="#a5bbb4" stroke-width="6" stroke-linecap="round"/>
+<rect x="193" y="284" width="22" height="36" rx="3" fill="#1c5960"/><rect x="232" y="284" width="22" height="36" rx="3" fill="#1c5960"/><rect x="271" y="284" width="22" height="36" rx="3" fill="#1c5960"/><rect x="313" y="284" width="17" height="36" rx="3" fill="#d79c36"/>
+<path d="M176 325h169" stroke="#f1b64c" stroke-width="8" stroke-linecap="round"/>
+</svg>
