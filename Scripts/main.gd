@@ -2250,12 +2250,12 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 		grid_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		main_menu_panel.add_child(grid_line)
 	for grid_y in range(0, int(screen.y), 64):
-		var grid_line := ColorRect.new()
-		grid_line.position = Vector2(0, grid_y)
-		grid_line.size = Vector2(screen.x, 1)
-		grid_line.color = Color(0.30, 0.55, 0.55, 0.035)
-		grid_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		main_menu_panel.add_child(grid_line)
+		var grid_row_line := ColorRect.new()
+		grid_row_line.position = Vector2(0, grid_y)
+		grid_row_line.size = Vector2(screen.x, 1)
+		grid_row_line.color = Color(0.30, 0.55, 0.55, 0.035)
+		grid_row_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		main_menu_panel.add_child(grid_row_line)
 	var skyline_heights := [54.0, 86.0, 62.0, 118.0, 76.0, 96.0, 66.0, 108.0, 58.0, 90.0]
 	for building_index in range(skyline_heights.size()):
 		var building := ColorRect.new()
