@@ -974,7 +974,7 @@ func _process_sorting_robots(delta: float) -> void:
 					wheel.rotate_object_local(Vector3.UP, travel_distance * 3.0)
 		robot.set_meta("previous_position", robot.global_position)
 		var mode := String(robot.get_meta("mode", "idle"))
-		var target := robot.get_meta("target") as Node3D
+		var target := robot.get_meta("target", null) as Node3D
 		if mode == "return":
 			var drop_point := _factory_waste_drop_point()
 			drop_point.y = robot.global_position.y
@@ -2561,7 +2561,7 @@ func _reset_automation_units_for_new_world() -> void:
 	for drone in helper_drones:
 		if not is_instance_valid(drone):
 			continue
-		var target := drone.get_meta("target") as Node3D
+		var target := drone.get_meta("target", null) as Node3D
 		if is_instance_valid(target):
 			target.set_meta("drone_reserved", -1)
 		var lifting_item := drone.get_meta("lifting_item") as Node3D
@@ -2581,7 +2581,7 @@ func _reset_automation_units_for_new_world() -> void:
 		drone.global_position = _drone_dock_point(drone)
 
 	if is_instance_valid(ground_collector):
-		var rover_target := ground_collector.get_meta("target") as Node3D
+		var rover_target := ground_collector.get_meta("target", null) as Node3D
 		if is_instance_valid(rover_target):
 			rover_target.set_meta("drone_reserved", -1)
 		for cargo_item in ground_collector.get_meta("cargo_items", []):
@@ -2601,7 +2601,7 @@ func _reset_automation_units_for_new_world() -> void:
 		var robot := sorting_robots[index]
 		if not is_instance_valid(robot):
 			continue
-		var target := robot.get_meta("target") as Node3D
+		var target := robot.get_meta("target", null) as Node3D
 		if is_instance_valid(target):
 			target.set_meta("drone_reserved", -1)
 		var cargo := robot.get_meta("cargo") as Node3D
@@ -3839,7 +3839,7 @@ func _process_helper_drones(delta: float) -> void:
 		if int(drone.get_meta("cargo_slots", 0)) >= _drone_cargo_capacity():
 			drone.set_meta("returning", true)
 			continue
-		var target := drone.get_meta("target") as Node3D
+		var target := drone.get_meta("target", null) as Node3D
 		if not is_instance_valid(target):
 			target = null
 			var scan_cooldown := float(drone.get_meta("scan_cooldown", 0.0)) - delta
@@ -3922,7 +3922,7 @@ func _process_ground_collector(delta: float) -> void:
 		rover.set_meta("target", null)
 		return
 
-	var target := rover.get_meta("target") as Node3D
+	var target := rover.get_meta("target", null) as Node3D
 	if not is_instance_valid(target) or not trash_nodes.has(target):
 		target = null
 		var cooldown := float(rover.get_meta("scan_cooldown", 0.0)) - delta
