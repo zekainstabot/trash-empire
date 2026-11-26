@@ -18,7 +18,21 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
           unzip -q Godot_v4.5.1-stable_linux.x86_64.zip
           chmod +x Godot_v4.5.1-stable_linux.x86_64
-      - name: Import project
-        run: ./Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path . --quit
-      - name: Run gameplay scene headlessly
-        run: ./Godot_v4.5.1-stable_linux.x86_64 --headless --path . --quit-after 180
+      - name: Import project and fail on script errors
+        shell: bash
+        run: |
+          set -o pipefail
+          ./Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path . --quit 2>&1 | tee godot-import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:" godot-import.log; then
+            echo "Godot reported script or resource errors during import."
+            exit 1
+          fi
+      - name: Run gameplay scene and fail on script errors
+        shell: bash
+        run: |
+          set -o pipefail
+          ./Godot_v4.5.1-stable_linux.x86_64 --headless --path . --quit-after 180 2>&1 | tee godot-runtime.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:" godot-runtime.log; then
+            echo "Godot reported script or resource errors while running the main scene."
+            exit 1
+          fi
