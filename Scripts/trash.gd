@@ -128,15 +128,11 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 
 	match item_roll:
 		0, 8:
-			var bottle := CylinderMesh.new()
-			bottle.top_radius = 0.12
-			bottle.bottom_radius = 0.17
-			bottle.height = 0.46
-			bottle.radial_segments = 8
-			shape = bottle
-			base_color = Color(0.20, 0.60, 0.47) if item_roll == 0 else Color(0.82, 0.27, 0.13)
+			# A custom low-poly bottle profile keeps the mobile version recognisable:
+			# molded shoulder, narrow neck, cap and a contrasting wrap label.
+			shape = _mobile_bottle_mesh(item_roll)
+			base_color = Color.WHITE
 			visual_position.y = 0.18
-			visual_rotation.z = PI * 0.5
 		1:
 			var can := CylinderMesh.new()
 			can.top_radius = 0.14
@@ -299,8 +295,48 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
+	if item_roll == 0 or item_roll == 8:
+		material.vertex_color_use_as_albedo = true
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
 	add_child(visual)
+
+
+func _mobile_bottle_mesh(item_roll: int) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var profile: Array[Vector2] = [
+		Vector2(-0.39, 0.105), Vector2(-0.36, 0.14), Vector2(-0.29, 0.15),
+		Vector2(-0.24, 0.17), Vector2(-0.12, 0.17), Vector2(0.12, 0.17),
+		Vector2(0.20, 0.145), Vector2(0.24, 0.105), Vector2(0.29, 0.078),
+		Vector2(0.35, 0.078), Vector2(0.36, 0.088), Vector2(0.43, 0.088)
+	]
+	var bottle_color := Color(0.13, 0.48, 0.36) if item_roll == 0 else Color(0.68, 0.16, 0.075)
+	var label_color := Color(0.91, 0.88, 0.70) if item_roll == 0 else Color(0.96, 0.76, 0.43)
+	var cap_color := Color(0.91, 0.70, 0.12)
+	const SIDES := 8
+	for ring in range(profile.size() - 1):
+		var section_color := bottle_color
+		if ring == 4 or ring == 5:
+			section_color = label_color
+		elif ring >= 9:
+			section_color = cap_color
+		for side in range(SIDES):
+			var a0 := TAU * float(side) / float(SIDES)
+			var a1 := TAU * float(side + 1) / float(SIDES)
+			var p00 := Vector3(profile[ring].x, cos(a0) * profile[ring].y, sin(a0) * profile[ring].y)
+			var p01 := Vector3(profile[ring].x, cos(a1) * profile[ring].y, sin(a1) * profile[ring].y)
+			var p10 := Vector3(profile[ring + 1].x, cos(a0) * profile[ring + 1].y, sin(a0) * profile[ring + 1].y)
+			var p11 := Vector3(profile[ring + 1].x, cos(a1) * profile[ring + 1].y, sin(a1) * profile[ring + 1].y)
+			surface.set_color(section_color)
+			surface.add_vertex(p00)
+			surface.add_vertex(p10)
+			surface.add_vertex(p01)
+			surface.add_vertex(p01)
+			surface.add_vertex(p10)
+			surface.add_vertex(p11)
+	surface.generate_normals()
+	return surface.commit()
 
 
 func _add_rare_visual(rare_type: String) -> void:
