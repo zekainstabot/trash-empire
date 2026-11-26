@@ -5247,7 +5247,15 @@ func _process_factory_row_shipping(delta: float) -> void:
 func _ensure_factory_row_belt_visuals(row: int) -> void:
 	if row < 0 or row >= 5:
 		return
+	# Remove freed product references before comparing queue length. A stale
+	# reference otherwise counts as a product forever and can block dispatch.
 	var queue: Array = factory_row_belt_items[row]
+	var valid_queue: Array = []
+	for item in queue:
+		if is_instance_valid(item):
+			valid_queue.append(item)
+	factory_row_belt_items[row] = valid_queue
+	queue = valid_queue
 	var expected := _factory_row_sellable_stock(row)
 	var stage := maxi(0, _factory_row_sell_stage(row) - 1)
 	while queue.size() < expected:
