@@ -6998,6 +6998,14 @@ func _dispatch_truck_fleet() -> void:
 		arrive.set_ease(Tween.EASE_OUT)
 		arrive.tween_property(truck, "position", Vector3(12.2, 0.0, dock_z), 1.8)
 		arrive.tween_callback(_load_next_teddy_package.bind(index, 0))
+	# A stale fleet array must not leave shipping permanently locked.
+	if dispatch_trucks_remaining == 0:
+		shipping_active = false
+
+func _finish_delivery_truck_dispatch() -> void:
+	dispatch_trucks_remaining = maxi(0, dispatch_trucks_remaining - 1)
+	if dispatch_trucks_remaining == 0:
+		shipping_active = false
 
 func _load_next_teddy_package(truck_index: int, loaded_count: int) -> void:
 	if truck_index >= delivery_trucks.size() or teddy_stock_values.is_empty() or loaded_count >= _truck_box_capacity():
@@ -7046,6 +7054,7 @@ func _load_next_teddy_package(truck_index: int, loaded_count: int) -> void:
 
 func _depart_delivery_truck(truck_index: int) -> void:
 	if truck_index < 0 or truck_index >= delivery_trucks.size():
+		_finish_delivery_truck_dispatch()
 		return
 	var truck := delivery_trucks[truck_index]
 	if is_instance_valid(truck):
@@ -7053,15 +7062,9 @@ func _depart_delivery_truck(truck_index: int) -> void:
 		depart.set_trans(Tween.TRANS_SINE)
 		depart.set_ease(Tween.EASE_IN)
 		depart.tween_property(truck, "position:x", 17.4, 2.0)
-		depart.tween_callback(func():
-			dispatch_trucks_remaining = maxi(0, dispatch_trucks_remaining - 1)
-			if dispatch_trucks_remaining == 0:
-				shipping_active = false
-		)
+		depart.tween_callback(_finish_delivery_truck_dispatch)
 	else:
-		dispatch_trucks_remaining = maxi(0, dispatch_trucks_remaining - 1)
-		if dispatch_trucks_remaining == 0:
-			shipping_active = false
+		_finish_delivery_truck_dispatch()
 
 func _upgrade_city_truck_frequency() -> void:
 	if city_truck_upgrade_level >= 3:
