@@ -1018,9 +1018,9 @@ func _process_sorting_robots(delta: float) -> void:
 					_save_game()
 				robot.set_meta("mode", "idle")
 			continue
-		if not is_instance_valid(target) or not trash_nodes.has(target):
-			# If another system removed a still-valid target from trash_nodes,
-			# release this robot's reservation so it cannot remain locked.
+		if not is_instance_valid(target) or not trash_nodes.has(target) or int(target.get_meta("drone_reserved", -1)) != -30 - i:
+			# The robot must still own the reservation when approaching pickup.
+			# If another system claimed or removed the item, abandon it safely.
 			if is_instance_valid(target) and int(target.get_meta("drone_reserved", -1)) == -30 - i:
 				target.set_meta("drone_reserved", -1)
 			robot.set_meta("target", null)
