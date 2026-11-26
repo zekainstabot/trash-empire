@@ -330,11 +330,11 @@ func _mobile_bottle_mesh(item_roll: int) -> ArrayMesh:
 			var p11 := Vector3(profile[ring + 1].x, cos(a1) * profile[ring + 1].y, sin(a1) * profile[ring + 1].y)
 			surface.set_color(section_color)
 			surface.add_vertex(p00)
-			surface.add_vertex(p10)
-			surface.add_vertex(p01)
 			surface.add_vertex(p01)
 			surface.add_vertex(p10)
+			surface.add_vertex(p01)
 			surface.add_vertex(p11)
+			surface.add_vertex(p10)
 	surface.generate_normals()
 	return surface.commit()
 
