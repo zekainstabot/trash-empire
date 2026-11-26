@@ -4282,26 +4282,75 @@ func _create_factory_row_truck(row: int) -> Node3D:
 	var truck := Node3D.new()
 	truck.name = "FactoryProductTruck%d" % (row + 1)
 	truck.position = Vector3(220.0, 0.0, _factory_row_z(row))
-	_box_child(truck, "TruckCargoBed", Vector3(1.15, 1.35, 0.0), Vector3(4.0, 1.35, 3.0), Color(0.76, 0.79, 0.76))
-	_box_child(truck, "TruckCab", Vector3(-2.15, 1.3, 0.0), Vector3(1.65, 1.65, 2.65), Color(0.82, 0.22, 0.12))
-	_box_child(truck, "TruckWindshield", Vector3(-3.0, 1.62, 0.0), Vector3(0.06, 0.78, 1.55), Color(0.12, 0.23, 0.29))
+	var paint: Color = [Color(0.78, 0.20, 0.12), Color(0.18, 0.43, 0.62), Color(0.78, 0.52, 0.12), Color(0.20, 0.52, 0.39), Color(0.48, 0.36, 0.62)][clampi(row, 0, 4)]
+	var dark_paint := paint.darkened(0.38)
+	var rubber := Color(0.025, 0.032, 0.038)
+	var glass := Color(0.08, 0.20, 0.27)
+	var metal := Color(0.48, 0.54, 0.55)
+
+	# Continuous chassis and a more defined cargo body.
+	_box_child(truck, "TruckChassis", Vector3(0.05, 0.78, 0.0), Vector3(6.15, 0.34, 2.45), Color(0.12, 0.15, 0.16))
+	_box_child(truck, "TruckCargoBed", Vector3(1.15, 1.35, 0.0), Vector3(4.0, 1.35, 2.85), Color(0.70, 0.75, 0.74))
+	_box_child(truck, "TruckCargoFrontWall", Vector3(-0.88, 1.72, 0.0), Vector3(0.16, 1.15, 2.9), metal)
+	for side_z in [-1.43, 1.43]:
+		_box_child(truck, "TruckCargoSideRail", Vector3(1.15, 1.83, side_z), Vector3(4.05, 0.22, 0.12), metal)
+		_box_child(truck, "TruckCargoLowerRail", Vector3(1.15, 1.10, side_z), Vector3(4.05, 0.16, 0.12), dark_paint)
+	for rail_x in [-0.78, 0.45, 1.75, 3.08]:
+		for side_z in [-1.43, 1.43]:
+			_box_child(truck, "TruckCargoPost", Vector3(rail_x, 1.52, side_z), Vector3(0.12, 0.85, 0.12), metal)
+	_box_child(truck, "TruckCab", Vector3(-2.15, 1.36, 0.0), Vector3(1.72, 1.78, 2.62), paint)
+	_box_child(truck, "TruckCabRoof", Vector3(-2.12, 2.30, 0.0), Vector3(1.82, 0.18, 2.72), dark_paint)
+	_box_child(truck, "TruckWindshield", Vector3(-3.025, 1.72, 0.0), Vector3(0.055, 0.88, 1.92), glass)
+	_box_child(truck, "TruckFrontGrille", Vector3(-3.04, 1.10, 0.0), Vector3(0.08, 0.48, 0.92), Color(0.12, 0.16, 0.17))
+	for side_z in [-1.34, 1.34]:
+		_box_child(truck, "TruckSideWindow", Vector3(-2.12, 1.78, side_z), Vector3(1.12, 0.72, 0.045), glass)
+		_box_child(truck, "TruckDoorPanel", Vector3(-2.10, 1.12, side_z), Vector3(1.18, 0.62, 0.055), dark_paint)
+		_box_child(truck, "TruckMirrorArm", Vector3(-2.82, 1.72, side_z * 1.10), Vector3(0.30, 0.07, 0.07), metal)
+		_box_child(truck, "TruckMirror", Vector3(-2.96, 1.78, side_z * 1.10), Vector3(0.12, 0.28, 0.20), rubber)
+	_box_child(truck, "TruckFrontBumper", Vector3(-3.12, 0.78, 0.0), Vector3(0.24, 0.22, 2.78), metal)
+	_box_child(truck, "TruckRearBumper", Vector3(3.22, 0.78, 0.0), Vector3(0.22, 0.22, 2.82), metal)
+	for side_z in [-0.94, 0.94]:
+		_box_child(truck, "TruckHeadlight", Vector3(-3.09, 1.18, side_z), Vector3(0.07, 0.30, 0.42), Color(1.0, 0.86, 0.48))
+		_box_child(truck, "TruckTailLight", Vector3(3.20, 1.12, side_z), Vector3(0.08, 0.38, 0.30), Color(0.82, 0.08, 0.06))
+	# Six tires with visible metal hubs and dark wheel arches.
 	for wheel_x in [-2.45, 0.0, 2.45]:
-		for wheel_z in [-1.45, 1.45]:
+		for wheel_z in [-1.48, 1.48]:
 			var wheel := MeshInstance3D.new()
 			var mesh := CylinderMesh.new()
-			mesh.top_radius = 0.46
-			mesh.bottom_radius = 0.46
-			mesh.height = 0.22
+			mesh.top_radius = 0.48
+			mesh.bottom_radius = 0.48
+			mesh.height = 0.25
 			wheel.mesh = mesh
-			wheel.position = Vector3(wheel_x, 0.48, wheel_z)
+			wheel.position = Vector3(wheel_x, 0.49, wheel_z)
 			wheel.rotation_degrees.x = 90.0
-			wheel.material_override = _mat(Color(0.035, 0.04, 0.045))
+			wheel.material_override = _mat(rubber)
 			truck.add_child(wheel)
+			var hub := MeshInstance3D.new()
+			var hub_mesh := CylinderMesh.new()
+			hub_mesh.top_radius = 0.23
+			hub_mesh.bottom_radius = 0.23
+			hub_mesh.height = 0.27
+			hub.mesh = hub_mesh
+			hub.position = Vector3(wheel_x, 0.49, wheel_z * 1.012)
+			hub.rotation_degrees.x = 90.0
+			hub.material_override = _mat(metal)
+			truck.add_child(hub)
+			var hub_cap := MeshInstance3D.new()
+			var cap_mesh := CylinderMesh.new()
+			cap_mesh.top_radius = 0.09
+			cap_mesh.bottom_radius = 0.09
+			cap_mesh.height = 0.29
+			hub_cap.mesh = cap_mesh
+			hub_cap.position = Vector3(wheel_x, 0.49, wheel_z * 1.025)
+			hub_cap.rotation_degrees.x = 90.0
+			hub_cap.material_override = _mat(dark_paint)
+			truck.add_child(hub_cap)
+	_box_child(truck, "TruckFuelTank", Vector3(-0.95, 0.76, 1.18), Vector3(0.90, 0.38, 0.34), metal)
 	var sign := Label3D.new()
 	sign.text = _factory_row_product(row)
-	sign.position = Vector3(0.0, 2.25, 1.52)
-	sign.font_size = 18
-	sign.pixel_size = 0.012
+	sign.position = Vector3(1.15, 2.12, 1.48)
+	sign.font_size = 16
+	sign.pixel_size = 0.010
 	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.modulate = Color(0.12, 0.20, 0.18)
 	truck.add_child(sign)
