@@ -135,7 +135,11 @@ const FACTORY_INPUT_CAPACITY_PER_ROW := 90
 const FACTORY_PRODUCT_CAPACITY_PER_ROW := 60
 var factory_production_timer := 0.0
 var waste_tank_inventory := 0
-const WASTE_TANK_CAPACITY := 300
+const WASTE_TANK_BASE_CAPACITY := 300
+var waste_tank_capacity_upgrade_level := 0
+
+func _waste_tank_capacity() -> int:
+	return WASTE_TANK_BASE_CAPACITY + waste_tank_capacity_upgrade_level * 200
 var mega_factory_build_paid := 0.0
 var mega_factory_build_timer := 0.0
 var mega_factory_machine_labels: Array[Label3D] = []
@@ -744,7 +748,7 @@ func _process_sorting_robots(delta: float) -> void:
 			if robot.global_position.distance_to(drop_point) < 0.8:
 				var cargo := robot.get_meta("cargo") as Node3D
 				if is_instance_valid(cargo):
-					if not waste_tank_built or waste_tank_inventory >= WASTE_TANK_CAPACITY:
+					if not waste_tank_built or waste_tank_inventory >= _waste_tank_capacity():
 						_set_message("Sorting robot is waiting at the factory tank for storage to become available.")
 						continue
 					cargo.queue_free()
@@ -2167,14 +2171,14 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","drone_speed","drone_capacity","sorting_robot","repair_robot","waste_tank_unload","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","drone_speed","drone_capacity","sorting_robot","repair_robot","waste_tank_unload","waste_tank_capacity","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
 		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
-		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","waste_tank_unload":"WASTE TANK DISCHARGE","factory_truck_interval":"FACTORY TRUCK ARRIVAL"
+		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","waste_tank_unload":"WASTE TANK DISCHARGE","waste_tank_capacity":"WASTE TANK CAPACITY","factory_truck_interval":"FACTORY TRUCK ARRIVAL"
 	}
 	var descriptions := {
 		"capacity":"Carry more waste before returning to unload.",
@@ -2201,7 +2205,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
 		"packaging":"Package products faster for shipment.",
-		"conveyor_speed":"Move recycling items through the factory line faster.","waste_tank_unload":"Feed stored waste from the main tank onto the factory conveyor faster.","factory_truck_interval":"Reduce the wait after each full truck: 45s, then 30s, 15s and 5s."
+		"conveyor_speed":"Move recycling items through the factory line faster.","waste_tank_unload":"Feed stored waste from the main tank onto the factory conveyor faster.","waste_tank_capacity":"Increase the main waste tank storage by 200 units per level.","factory_truck_interval":"Reduce the wait after each full truck: 45s, then 30s, 15s and 5s."
 	}
 
 	var folder_grid := GridContainer.new()
@@ -2409,6 +2413,7 @@ func _skill_branch_color(branch: String) -> Color:
 		"packaging": return Color(0.72, 0.32, 0.62)
 		"factory_truck_interval": return Color(0.18, 0.72, 0.62)
 		"waste_tank_unload": return Color(0.18, 0.78, 0.68)
+		"waste_tank_capacity": return Color(0.22, 0.68, 0.52)
 	return Color(0.25, 0.45, 0.42)
 
 func _skill_icon(branch: String) -> String:
@@ -2439,6 +2444,7 @@ func _skill_icon(branch: String) -> String:
 		"packaging": return "🏭"
 		"factory_truck_interval": return "🚛"
 		"waste_tank_unload": return "🗑️"
+		"waste_tank_capacity": return "🛢️"
 	return "◆"
 
 func _skill_hex_button_style() -> StyleBoxFlat:
@@ -2501,6 +2507,7 @@ func _skill_level(branch: String) -> int:
 		"sorting_robot": return sorting_robot_upgrade_level
 		"conveyor_speed": return conveyor_speed_upgrade_level
 		"waste_tank_unload": return waste_tank_unload_upgrade_level
+		"waste_tank_capacity": return waste_tank_capacity_upgrade_level
 		"repair_robot": return repair_robot_level
 		"city_truck": return city_truck_upgrade_level
 		"city_fleet": return city_fleet_upgrade_level
@@ -2545,6 +2552,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"sorting_robot": await _upgrade_sorting_robot()
 		"conveyor_speed": await _upgrade_conveyor_speed()
 		"waste_tank_unload": await _upgrade_waste_tank_unload()
+		"waste_tank_capacity": await _upgrade_waste_tank_capacity()
 		"repair_robot": await _upgrade_repair_robot()
 		"city_truck": await _upgrade_city_truck_frequency()
 		"city_fleet": await _upgrade_city_fleet()
@@ -2557,7 +2565,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 	_refresh_upgrade_prices()
 
 func _refresh_upgrade_prices() -> void:
-	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"waste_tank_unload":58.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
+	var base_costs := {"capacity":8.0,"speed":10.0,"unload":9.0,"range":12.0,"technology":14.0,"value":18.0,"supply":10.0,"auto":28.0,"luck":12.0,"magnet_power":20.0,"suction":45.0,"drones":55.0,"drone_speed":42.0,"drone_capacity":48.0,"dispatch":45.0,"fleet":85.0,"truck_capacity":70.0,"packaging":60.0,"factory_truck_interval":70.0,"sorting_robot":50.0,"conveyor_speed":65.0,"waste_tank_unload":58.0,"waste_tank_capacity":72.0,"repair_robot":75.0,"rare_drops":25.0,"respawn":60.0,"bulk_pickup":35.0}
 	for node in skill_node_data:
 		var branch := String(node.branch)
 		var current := _skill_level(branch)
@@ -3248,7 +3256,7 @@ func _ground_collector_deposit_cycle(rover: Node3D, delta: float) -> void:
 		rover.set_meta("deposit_timer", timer)
 		return
 	rover.set_meta("deposit_timer", 0.0)
-	if not waste_tank_built or waste_tank_inventory >= WASTE_TANK_CAPACITY:
+	if not waste_tank_built or waste_tank_inventory >= _waste_tank_capacity():
 		_set_message("Ground collector is waiting for available waste tank capacity.")
 		return
 	var bulky := int(rover.get_meta("cargo_bulky", 0)) > 0
@@ -3288,7 +3296,7 @@ func _drone_deposit_cycle(drone: Node3D) -> void:
 		return
 	drone.set_meta("deposit_timer", 0.0)
 	var bulky := int(drone.get_meta("cargo_bulky", 0)) > 0
-	if not waste_tank_built or waste_tank_inventory >= WASTE_TANK_CAPACITY:
+	if not waste_tank_built or waste_tank_inventory >= _waste_tank_capacity():
 		_set_message("Drone is waiting at the factory tank for storage to become available.")
 		return
 	var cargo_items: Array = drone.get_meta("cargo_items", [])
@@ -3333,7 +3341,7 @@ func _process_auto_sell(delta: float) -> void:
 	if unload_timer >= seconds_per_item:
 		unload_timer = 0.0
 		if waste_tank_built:
-			if waste_tank_inventory >= WASTE_TANK_CAPACITY:
+			if waste_tank_inventory >= _waste_tank_capacity():
 				_set_message("Factory tank is full. Conveyor will resume when space is available.")
 				return
 			var deposited_bulky := carried_bulky > 0
@@ -3347,7 +3355,7 @@ func _process_auto_sell(delta: float) -> void:
 			_save_game()
 			if carried == 0:
 				_update_missions()
-			_set_message("Waste sent to factory tank. Storage: %d / %d" % [waste_tank_inventory, WASTE_TANK_CAPACITY])
+			_set_message("Waste sent to factory tank. Storage: %d / %d" % [waste_tank_inventory, _waste_tank_capacity()])
 			return
 		var sold_bulky := carried_bulky > 0
 		if sold_bulky:
@@ -3570,6 +3578,21 @@ func _upgrade_waste_tank_unload() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Main waste tank discharge speed increased to %d%%." % int(_waste_tank_discharge_multiplier() * 100.0))
+
+func _upgrade_waste_tank_capacity() -> void:
+	if waste_tank_capacity_upgrade_level >= 3:
+		_set_message("Waste tank capacity is already at maximum.")
+		return
+	var next_level := waste_tank_capacity_upgrade_level + 1
+	var cost := _upgrade_cost(72.0, next_level)
+	if not await _pay_gradually(cost):
+		return
+	waste_tank_capacity_upgrade_level = next_level
+	_refresh_waste_tank_inventory_label()
+	_update_ui()
+	_refresh_upgrade_prices()
+	_save_game()
+	_set_message("Main waste tank capacity increased to %d units." % _waste_tank_capacity())
 
 func _upgrade_repair_robot() -> void:
 	if repair_robot_level >= 3:
@@ -3858,6 +3881,7 @@ func _save_game() -> void:
 	save.set_value("progress", "sorting_robot_upgrade_level", sorting_robot_upgrade_level)
 	save.set_value("progress", "conveyor_speed_upgrade_level", conveyor_speed_upgrade_level)
 	save.set_value("progress", "waste_tank_unload_upgrade_level", waste_tank_unload_upgrade_level)
+	save.set_value("progress", "waste_tank_capacity_upgrade_level", waste_tank_capacity_upgrade_level)
 	save.set_value("progress", "repair_robot_level", repair_robot_level)
 	save.set_value("progress", "machine_work_timer", machine_work_timer)
 	save.set_value("progress", "machine_broken", machine_broken)
@@ -3919,6 +3943,7 @@ func _load_game() -> void:
 	sorting_robot_upgrade_level = clampi(int(save.get_value("progress", "sorting_robot_upgrade_level", 0)), 0, 3)
 	conveyor_speed_upgrade_level = clampi(int(save.get_value("progress", "conveyor_speed_upgrade_level", 0)), 0, 3)
 	waste_tank_unload_upgrade_level = clampi(int(save.get_value("progress", "waste_tank_unload_upgrade_level", 0)), 0, 3)
+	waste_tank_capacity_upgrade_level = clampi(int(save.get_value("progress", "waste_tank_capacity_upgrade_level", 0)), 0, 3)
 	repair_robot_level = clampi(int(save.get_value("progress", "repair_robot_level", 0)), 0, 3)
 	machine_work_timer = float(save.get_value("progress", "machine_work_timer", 0.0))
 	machine_broken = false # Ignore old saves that recorded a breakdown.
@@ -3944,7 +3969,7 @@ func _load_game() -> void:
 	while factory_row_stage1_stock.size() < 5: factory_row_stage1_stock.append(0)
 	while factory_row_stage2_stock.size() < 5: factory_row_stage2_stock.append(0)
 	while factory_row_product_stock.size() < 5: factory_row_product_stock.append(0)
-	waste_tank_inventory = clampi(int(save.get_value("progress", "waste_tank_inventory", 0)), 0, WASTE_TANK_CAPACITY)
+	waste_tank_inventory = clampi(int(save.get_value("progress", "waste_tank_inventory", 0)), 0, _waste_tank_capacity())
 	mega_factory_build_paid = clampf(float(save.get_value("progress", "mega_factory_build_paid", 0.0)), 0.0, _mega_factory_machine_cost(mega_factory_built_count))
 	waste_tank_built = bool(save.get_value("progress", "waste_tank_built", false))
 	teddy_stock_values.clear()
@@ -4728,7 +4753,7 @@ func _build_waste_tank_structure() -> void:
 	waste_tank_inventory_label = Label3D.new()
 	waste_tank_inventory_label.name = "WasteTankInventoryLabel"
 	waste_tank_inventory_label.position = Vector3(124.8, 3.25, -22.5)
-	waste_tank_inventory_label.text = "WASTE  %d / %d" % [waste_tank_inventory, WASTE_TANK_CAPACITY]
+	waste_tank_inventory_label.text = "WASTE  %d / %d" % [waste_tank_inventory, _waste_tank_capacity()]
 	waste_tank_inventory_label.font_size = 22
 	waste_tank_inventory_label.pixel_size = 0.009
 	waste_tank_inventory_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -4737,7 +4762,7 @@ func _build_waste_tank_structure() -> void:
 
 func _refresh_waste_tank_inventory_label() -> void:
 	if is_instance_valid(waste_tank_inventory_label):
-		waste_tank_inventory_label.text = "WASTE  %d / %d" % [waste_tank_inventory, WASTE_TANK_CAPACITY]
+		waste_tank_inventory_label.text = "WASTE  %d / %d" % [waste_tank_inventory, _waste_tank_capacity()]
 
 func _refresh_factory_machine_status() -> void:
 	if is_instance_valid(factory_machine_status_label):
