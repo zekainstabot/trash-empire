@@ -34,18 +34,18 @@ jobs:
           set -euo pipefail
           PACKAGES=(
             "platform-tools"
-            "platforms;android-35"
-            "build-tools;35.0.1"
+            "platforms;android-36"
+            "build-tools;36.1.0"
             "cmdline-tools;latest"
             "cmake;3.10.2.4988404"
-            "ndk;28.1.13356709"
+            "ndk;29.0.14206865"
           )
           for attempt in 1 2 3; do
             echo "Android SDK installation attempt $attempt/3"
             # A failed Google SDK download can leave a truncated archive in the local cache.
-            rm -rf "$HOME/.android/cache" "$ANDROID_HOME/ndk/28.1.13356709"
+            rm -rf "$HOME/.android/cache" "$ANDROID_HOME/ndk/29.0.14206865"
             if sdkmanager --install "${PACKAGES[@]}"; then
-              test -d "$ANDROID_HOME/ndk/28.1.13356709"
+              test -d "$ANDROID_HOME/ndk/29.0.14206865"
               echo "Android SDK packages and NDK installed successfully."
               exit 0
             fi
@@ -60,19 +60,19 @@ jobs:
       - name: Download Godot editor
         shell: bash
         run: |
-          wget -q https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
-          unzip -q Godot_v4.5.1-stable_linux.x86_64.zip
-          chmod +x Godot_v4.5.1-stable_linux.x86_64
-          echo "GODOT_BIN=$PWD/Godot_v4.5.1-stable_linux.x86_64" >> "$GITHUB_ENV"
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q Godot_v4.7.2-stable_linux.x86_64.zip
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+          echo "GODOT_BIN=$PWD/Godot_v4.7.2-stable_linux.x86_64" >> "$GITHUB_ENV"
 
       - name: Install matching Android export templates
         shell: bash
         run: |
-          wget -q https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_export_templates.tpz
-          mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
-          unzip -q Godot_v4.5.1-stable_export_templates.tpz -d /tmp/godot-templates
-          cp -R /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.5.1.stable/"
-          test -s "$HOME/.local/share/godot/export_templates/4.5.1.stable/android_source.zip"
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          unzip -q Godot_v4.7.2-stable_export_templates.tpz -d /tmp/godot-templates
+          cp -R /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
+          test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
 
       - name: Configure permanent release signing key
         shell: bash
@@ -103,8 +103,16 @@ jobs:
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
           EOF
-          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/platforms/android-36"
           test -d "$JAVA_HOME"
+
+      - name: Set Android package version from this workflow run
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i "s/^version\\/code=.*/version\\/code=${GITHUB_RUN_NUMBER}/" export_presets.cfg
+          sed -i "s/^version\\/name=.*/version\\/name=\\\"1.0.${GITHUB_RUN_NUMBER}\\\"/" export_presets.cfg
+          grep -nE 'version/code|version/name|target_sdk' export_presets.cfg
 
       - name: Import resources
         shell: bash
@@ -123,7 +131,7 @@ jobs:
             echo "Godot reported script or scene loading errors."
             exit 1
           fi
-          "$GODOT_BIN" --headless --path . --quit-after 3 2>&1 | tee "$RUNNER_TEMP/godot-startup.log"
+          "$GODOT_BIN" --headless --path . --quit-after 600 -- --test-gameplay 2>&1 | tee "$RUNNER_TEMP/godot-startup.log"
           if grep -E "SCRIPT ERROR:|Parse Error:|Failed to load script|ERROR: Failed to load" "$RUNNER_TEMP/godot-startup.log"; then
             echo "Main scene failed during startup."
             exit 1
@@ -145,11 +153,3 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish APK to GitHub Releases
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: android-build-${{ github.run_number }}
-          name: Zeka City Cleanup Empire Android Build ${{ github.run_number }}
-          make_latest: true
-          files: build/TrashEmpire.apk
-          fail_on_unmatched_files: true
