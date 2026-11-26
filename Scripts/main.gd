@@ -3516,25 +3516,11 @@ func _upgrade_repair_robot() -> void:
 	_save_game()
 	_set_message("Maintenance robot upgraded!")
 
-func _process_machine_maintenance(delta: float) -> void:
-	if machine_broken:
-		if repair_robot_level <= 0:
-			return
-		machine_repair_timer += delta
-		if machine_repair_timer >= maxf(2.0, 14.0 - float(repair_robot_level) * 3.5):
-			machine_broken = false
-			machine_repair_timer = 0.0
-			machine_work_timer = 0.0
-			_set_message("Maintenance robot repaired the factory!")
-			_save_game()
-		return
-	machine_work_timer += delta
-	var failure_interval := maxf(240.0, 720.0 - float(repair_robot_level) * 120.0)
-	if machine_work_timer >= failure_interval:
-		machine_broken = true
-		machine_repair_timer = 0.0
-		_set_message("FACTORY BREAKDOWN! Hire a maintenance robot for automatic repairs.")
-		_update_ui()
+func _process_machine_maintenance(_delta: float) -> void:
+	# Factory breakdowns are disabled: machines never stop because of wear.
+	machine_broken = false
+	machine_work_timer = 0.0
+	machine_repair_timer = 0.0
 
 func _upgrade_conveyor_speed() -> void:
 	if conveyor_speed_upgrade_level >= 3:
@@ -3866,7 +3852,7 @@ func _load_game() -> void:
 	waste_tank_unload_upgrade_level = clampi(int(save.get_value("progress", "waste_tank_unload_upgrade_level", 0)), 0, 3)
 	repair_robot_level = clampi(int(save.get_value("progress", "repair_robot_level", 0)), 0, 3)
 	machine_work_timer = float(save.get_value("progress", "machine_work_timer", 0.0))
-	machine_broken = bool(save.get_value("progress", "machine_broken", false))
+	machine_broken = false # Ignore old saves that recorded a breakdown.
 	machine_repair_timer = float(save.get_value("progress", "machine_repair_timer", 0.0))
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
 	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
