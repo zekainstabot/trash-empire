@@ -275,8 +275,61 @@ func _finish_boot_sequence() -> void:
 			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the world, player, factory, or trash pool did not initialize.")
 			get_tree().quit(1)
 			return
-		print("GAMEPLAY_SMOKE_TEST_OK: player, camera, factory, city, and trash pool initialized.")
-		await get_tree().create_timer(1.5).timeout
+
+		var movement_start := player.global_position
+		player.set_touch_move(Vector2(0.0, -1.0))
+		await get_tree().create_timer(0.55).timeout
+		player.set_touch_move(Vector2.ZERO)
+		if player.global_position.distance_to(movement_start) < 0.20:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: touch movement did not move the player.")
+			get_tree().quit(1)
+			return
+
+		var test_item := Node3D.new()
+		test_item.set_script(TRASH_SCRIPT)
+		test_item.position = player.global_position + Vector3(0.0, 0.0, -0.85)
+		add_child(test_item)
+		trash_nodes.append(test_item)
+		await get_tree().process_frame
+		var carried_before_test := carried
+		_collect_nearby()
+		if carried <= carried_before_test:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the player could not collect nearby litter.")
+			get_tree().quit(1)
+			return
+
+		player.global_position = STARTER_SELL_POINT
+		player.velocity = Vector3.ZERO
+		unload_timer = 0.0
+		var money_before_test := money
+		_process_auto_sell(5.0)
+		if carried != 0 or money <= money_before_test:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: automatic recycling drop-off did not unload and pay.")
+			get_tree().quit(1)
+			return
+
+		money = 1000.0
+		factory_stage = 1
+		factory_built_stage = 1
+		factory_build_paid = 0.0
+		player.global_position = Vector3(7.5, 0.0, 0.0)
+		for build_step in range(40):
+			_process_factory_build(1.0)
+			if factory_stage >= 2:
+				break
+		if factory_stage < 2 or factory_built_stage < 2:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the first factory expansion could not be constructed.")
+			get_tree().quit(1)
+			return
+
+		await _purchase_skill_node("ground_robot", 1)
+		if ground_robot_level != 1 or not is_instance_valid(ground_collector) or not ground_collector.visible:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the ground collector upgrade did not deploy its rover.")
+			get_tree().quit(1)
+			return
+
+		print("GAMEPLAY_SMOKE_TEST_OK: world, movement, collection, automatic recycling, factory construction, and rover upgrade.")
+		await get_tree().create_timer(0.5).timeout
 		get_tree().quit(0)
 
 func _process(delta: float) -> void:
