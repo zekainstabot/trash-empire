@@ -204,7 +204,12 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 				metallic = 0.32
 			elif item_roll == 26:
 				crate.size = Vector3(0.26, 0.20, 0.24)
-		6, 20, 25:
+		6:
+			shape = _mobile_battery_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.025
+			visual_rotation.z = rng.randf_range(-0.12, 0.12)
+		20, 25:
 			var canister := CylinderMesh.new()
 			canister.top_radius = 0.15 if item_roll != 25 else 0.16
 			canister.bottom_radius = 0.15 if item_roll != 25 else 0.14
@@ -309,7 +314,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 	var material := _material(base_color, transparent)
 	material.metallic = metallic
 	material.roughness = 0.72
-	if item_roll in [0, 1, 2, 3, 4, 5, 8, 22]:
+	if item_roll in [0, 1, 2, 3, 4, 5, 6, 8, 22]:
 		material.vertex_color_use_as_albedo = true
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = material
@@ -472,6 +477,66 @@ func _mobile_plastic_bag_mesh() -> ArrayMesh:
 			surface.add_vertex(c)
 			surface.add_vertex(d)
 			previous = current
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_battery_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const SIDES := 10
+	var levels: Array[Vector2] = [
+		Vector2(0.105, 0.025), Vector2(0.125, 0.055),
+		Vector2(0.132, 0.095), Vector2(0.132, 0.335),
+		Vector2(0.122, 0.375), Vector2(0.105, 0.395)
+	]
+	var body_colors: Array[Color] = [Color(0.20, 0.22, 0.23), Color(0.28, 0.29, 0.27), Color(0.13, 0.15, 0.16)]
+	for ring_index in range(levels.size() - 1):
+		for side in range(SIDES):
+			var angle0: float = TAU * float(side) / float(SIDES)
+			var angle1: float = TAU * float(side + 1) / float(SIDES)
+			var p0 := Vector3(cos(angle0) * levels[ring_index].x, levels[ring_index].y, sin(angle0) * levels[ring_index].x)
+			var p1 := Vector3(cos(angle1) * levels[ring_index].x, levels[ring_index].y, sin(angle1) * levels[ring_index].x)
+			var p2 := Vector3(cos(angle0) * levels[ring_index + 1].x, levels[ring_index + 1].y, sin(angle0) * levels[ring_index + 1].x)
+			var p3 := Vector3(cos(angle1) * levels[ring_index + 1].x, levels[ring_index + 1].y, sin(angle1) * levels[ring_index + 1].x)
+			surface.set_color(body_colors[(side + ring_index) % body_colors.size()])
+			surface.add_vertex(p0)
+			surface.add_vertex(p2)
+			surface.add_vertex(p1)
+			surface.add_vertex(p1)
+			surface.add_vertex(p2)
+			surface.add_vertex(p3)
+	# Raised positive terminal and smaller negative terminal are modeled into the same mesh.
+	for terminal_index in range(2):
+		var terminal_x: float = -0.045 if terminal_index == 0 else 0.045
+		var terminal_radius: float = 0.032 if terminal_index == 0 else 0.024
+		var terminal_height: float = 0.055 if terminal_index == 0 else 0.028
+		var terminal_color: Color = Color(0.72, 0.73, 0.68) if terminal_index == 0 else Color(0.48, 0.50, 0.49)
+		for side in range(SIDES):
+			var a0: float = TAU * float(side) / float(SIDES)
+			var a1: float = TAU * float(side + 1) / float(SIDES)
+			var bottom0 := Vector3(terminal_x + cos(a0) * terminal_radius, 0.394, sin(a0) * terminal_radius)
+			var bottom1 := Vector3(terminal_x + cos(a1) * terminal_radius, 0.394, sin(a1) * terminal_radius)
+			var top0 := Vector3(terminal_x + cos(a0) * terminal_radius * 0.86, 0.394 + terminal_height, sin(a0) * terminal_radius * 0.86)
+			var top1 := Vector3(terminal_x + cos(a1) * terminal_radius * 0.86, 0.394 + terminal_height, sin(a1) * terminal_radius * 0.86)
+			surface.set_color(terminal_color)
+			surface.add_vertex(bottom0)
+			surface.add_vertex(top0)
+			surface.add_vertex(bottom1)
+			surface.add_vertex(bottom1)
+			surface.add_vertex(top0)
+			surface.add_vertex(top1)
+	# Corrosion scars on the front face, colored as part of the same mesh.
+	for scar_index in range(5):
+		var scar_x: float = rng.randf_range(-0.085, 0.085)
+		var scar_y: float = rng.randf_range(0.10, 0.31)
+		var scar_size: float = rng.randf_range(0.012, 0.027)
+		var front_z: float = -0.132
+		var scar_color: Color = Color(0.57, 0.34, 0.18) if scar_index % 2 == 0 else Color(0.67, 0.56, 0.36)
+		surface.set_color(scar_color)
+		surface.add_vertex(Vector3(scar_x - scar_size, scar_y, front_z))
+		surface.add_vertex(Vector3(scar_x, scar_y + scar_size * 1.4, front_z - 0.002))
+		surface.add_vertex(Vector3(scar_x + scar_size * 0.8, scar_y - scar_size * 0.5, front_z))
 	surface.generate_normals()
 	return surface.commit()
 
@@ -713,11 +778,19 @@ func _make_cardboard_scrap(rng: RandomNumberGenerator) -> void:
 	add_child(cardboard)
 
 func _make_battery(rng: RandomNumberGenerator) -> void:
-	var body := _cylinder_piece(0.12, 0.12, 0.42, Vector3(0, 0.21, 0), Color(0.18, 0.19, 0.22))
-	body.rotation_degrees.z = rng.randf_range(-15.0, 15.0)
-	add_child(body)
-	add_child(_flat_box(Vector3(0.20, 0.12, 0.025), Vector3(0, 0.22, -0.13), Color(0.88, 0.25, 0.12)))
-	add_child(_flat_box(Vector3(0.08, 0.025, 0.06), Vector3(0, 0.44, 0), Color(0.72, 0.75, 0.74)))
+	var battery := MeshInstance3D.new()
+	battery.name = "CorrodedIndustrialBattery"
+	battery.mesh = _mobile_battery_mesh(rng)
+	battery.position.y = 0.025
+	battery.rotation.y = rng.randf_range(0.0, TAU)
+	battery.rotation.z = rng.randf_range(-0.12, 0.12)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.82
+	material.metallic = 0.24
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	battery.material_override = material
+	add_child(battery)
 
 func _make_broken_glass(rng: RandomNumberGenerator) -> void:
 	for i in range(4):
