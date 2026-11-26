@@ -162,7 +162,7 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.025
 			visual_rotation.y = rng.randf_range(0.0, TAU)
-		4, 13, 21, 28:
+		13, 21, 28:
 			var sheet := BoxMesh.new()
 			sheet.size = Vector3(0.46, 0.045, 0.30)
 			shape = sheet
@@ -182,16 +182,19 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			base_color = Color.WHITE
 			visual_position.y = 0.035
 			visual_rotation.y = rng.randf_range(0.0, TAU)
-		14, 15, 17, 26, 31:
+		26:
+			shape = _mobile_toy_blocks_mesh(rng)
+			base_color = Color.WHITE
+			visual_position.y = 0.025
+			visual_rotation.y = rng.randf_range(0.0, TAU)
+		14, 15, 17, 31:
 			var crate := BoxMesh.new()
 			crate.size = Vector3(0.42, 0.18, 0.32)
 			shape = crate
 			base_color = {
-				5: Color(0.59, 0.40, 0.23),
 				14: Color(0.68, 0.49, 0.27),
 				15: Color(0.72, 0.31, 0.14),
 				17: Color(0.08, 0.34, 0.25),
-				26: Color(0.18, 0.46, 0.82),
 				31: Color(0.22, 0.25, 0.25)
 			}[item_roll]
 			visual_position.y = 0.10
@@ -202,8 +205,6 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 				crate.size = Vector3(0.48, 0.045, 0.34)
 				visual_position.y = 0.045
 				metallic = 0.32
-			elif item_roll == 26:
-				crate.size = Vector3(0.26, 0.20, 0.24)
 		6:
 			shape = _mobile_battery_mesh(rng)
 			base_color = Color.WHITE
@@ -485,6 +486,58 @@ func _mobile_plastic_bag_mesh() -> ArrayMesh:
 			surface.add_vertex(c)
 			surface.add_vertex(d)
 			previous = current
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _mobile_toy_blocks_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var colors: Array[Color] = [Color(0.86, 0.16, 0.12), Color(0.12, 0.39, 0.82), Color(0.94, 0.67, 0.10), Color(0.13, 0.58, 0.32)]
+	var centers: Array[Vector3] = [
+		Vector3(-0.115, 0.075, -0.075), Vector3(0.105, 0.065, -0.055),
+		Vector3(-0.065, 0.055, 0.115), Vector3(0.12, 0.12, 0.105)
+	]
+	var sizes: Array[Vector3] = [
+		Vector3(0.19, 0.14, 0.17), Vector3(0.17, 0.12, 0.18),
+		Vector3(0.20, 0.10, 0.15), Vector3(0.14, 0.22, 0.14)
+	]
+	for block_index in range(centers.size()):
+		var center: Vector3 = centers[block_index]
+		var half: Vector3 = sizes[block_index] * 0.5
+		var angle: float = rng.randf_range(-0.22, 0.22)
+		var corners: Array[Vector3] = []
+		for corner_index in range(8):
+			var point := Vector3(
+				 half.x if (corner_index & 1) != 0 else -half.x,
+				 half.y if (corner_index & 2) != 0 else -half.y,
+				 half.z if (corner_index & 4) != 0 else -half.z
+			)
+			point = Vector3(point.x * cos(angle) - point.z * sin(angle), point.y, point.x * sin(angle) + point.z * cos(angle))
+			corners.append(point + center)
+		var faces: Array[Array] = [[0, 2, 1, 1, 2, 3], [4, 5, 6, 5, 7, 6], [0, 1, 4, 1, 5, 4], [2, 6, 3, 3, 6, 7], [0, 4, 2, 2, 4, 6], [1, 3, 5, 3, 7, 5]]
+		for face_index in range(faces.size()):
+			var face_color: Color = colors[block_index]
+			if face_index == 1:
+				face_color = face_color.lightened(0.16)
+			elif face_index == 3:
+				face_color = face_color.darkened(0.18)
+			surface.set_color(face_color)
+			for vertex_index in faces[face_index]:
+				surface.add_vertex(corners[vertex_index])
+	# Small molded studs on the toy bricks make their identity immediately readable.
+	for stud_index in range(4):
+		var x: float = -0.12 + float(stud_index % 2) * 0.22
+		var z: float = -0.07 + float(stud_index / 2) * 0.17
+		var y: float = 0.205 if stud_index == 3 else 0.145
+		var radius: float = 0.027
+		for side in range(8):
+			var a0: float = TAU * float(side) / 8.0
+			var a1: float = TAU * float(side + 1) / 8.0
+			surface.set_color(colors[stud_index])
+			surface.add_vertex(Vector3(x, y, z))
+			surface.add_vertex(Vector3(x + cos(a0) * radius, y, z + sin(a0) * radius))
+			surface.add_vertex(Vector3(x + cos(a1) * radius, y, z + sin(a1) * radius))
 	surface.generate_normals()
 	return surface.commit()
 
@@ -1183,11 +1236,17 @@ func _make_paint_bucket(rng: RandomNumberGenerator) -> void:
 	add_child(bucket)
 
 func _make_toy_blocks(rng: RandomNumberGenerator) -> void:
-	var colors := [Color(0.86, 0.18, 0.13), Color(0.16, 0.43, 0.82), Color(0.92, 0.70, 0.12), Color(0.18, 0.62, 0.38)]
-	for i in range(4):
-		var block := _flat_box(Vector3(0.20, 0.18, 0.20), Vector3(rng.randf_range(-0.20, 0.20), 0.09 + float(i % 2) * 0.18, rng.randf_range(-0.18, 0.18)), colors[i])
-		block.rotation.y = rng.randf_range(0.0, TAU)
-		add_child(block)
+	var blocks := MeshInstance3D.new()
+	blocks.name = "BrokenPlasticToyBlocks"
+	blocks.mesh = _mobile_toy_blocks_mesh(rng)
+	blocks.position.y = 0.025
+	blocks.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.48
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	blocks.material_override = material
+	add_child(blocks)
 
 func _make_glass_jar(rng: RandomNumberGenerator) -> void:
 	var jar := _cylinder_piece(0.14, 0.16, 0.34, Vector3(0, 0.18, 0), Color(0.48, 0.72, 0.65))
