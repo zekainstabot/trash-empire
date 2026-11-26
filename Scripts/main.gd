@@ -4414,28 +4414,37 @@ func _build_recycling_mega_factory() -> void:
 	
 		# Use the existing distributor spine; avoid a duplicate parallel conveyor.
 	
-		# Smooth quarter-turn elbows blend the central distributor into each production row.
+		# True quarter-turn conveyor elbow: short tangent-aligned plates follow one smooth arc.
+		# The previous long overlapping plates made the first bend look kinked and bulky.
 		for row in range(5):
 			var feed_z := _factory_row_z(row)
 			var bend_radius := 1.15
 			var bend_start_x := 147.0
 			var bend_start_z := feed_z - bend_radius
 			var bend_segments := 24
+			var segment_len := (bend_radius * PI * 0.5 / float(bend_segments)) * 1.12
 			for bend_i in range(bend_segments):
 				var t := (float(bend_i) + 0.5) / float(bend_segments)
 				var angle := t * PI * 0.5
 				var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
 				var bend_z := bend_start_z + bend_radius * sin(angle)
-				var tangent_angle := atan2(-cos(angle), sin(angle))
-				var segment_len := 0.22
-				var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.38), dark_steel, false)
-				bend_frame.rotation_degrees.y = rad_to_deg(angle)
-				var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len, 0.08, 1.15), belt_color, false)
-				bend_belt.rotation_degrees.y = rad_to_deg(angle)
-			# Straight outlet overlaps the curved elbow and the main line, leaving no visible seam.
+				var bend_rotation := rad_to_deg(angle)
+				var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.42), dark_steel, false)
+				bend_frame.rotation_degrees.y = bend_rotation
+				var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len * 1.04, 0.08, 1.18), belt_color, false)
+				bend_belt.rotation_degrees.y = bend_rotation
+				# Curved side guards follow the outside edges and meet the straight branch rails.
+				for side in [-1.0, 1.0]:
+					var rail_x := bend_x + cos(angle) * 0.72 * side
+					var rail_z := bend_z - sin(angle) * 0.72 * side
+					var bend_rail := _box("FactoryFirstMachineFeedBendRail%d_%d_%d" % [row, bend_i, int(side)], Vector3(rail_x, 1.075, rail_z), Vector3(segment_len * 1.08, 0.24, 0.085), steel, false)
+					bend_rail.rotation_degrees.y = bend_rotation
+			# The straight branch overlaps the elbow slightly so the rubber surface has no gap.
 			_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.35, 0.68, feed_z), Vector3(2.85, 0.30, 1.45), dark_steel, false)
-			_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(2.78, 0.08, 1.22), belt_color, false)
-			# Branch side rails are omitted at the elbow-to-row connection for a clean open merge.
+			_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(2.90, 0.08, 1.22), belt_color, false)
+			# Straight-side rails begin after the bend and continue cleanly along the production lane.
+			for side_z in [feed_z - 0.72, feed_z + 0.72]:
+				_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(149.55, 1.075, side_z), Vector3(2.45, 0.24, 0.085), steel, false)
 	
 	mega_factory_machine_labels.clear()
 	for row in range(5):
