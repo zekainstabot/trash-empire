@@ -3684,7 +3684,7 @@ func _process_vacuum_suction(delta: float) -> void:
 			suction_target.set_meta("drone_reserved", -1)
 		suction_target = null
 		suction_scan_timer = 0.20
-		var vacuum_range := collection_range + 1.8 + float(suction_level) * 1.25
+		var vacuum_range := collection_range + 1.8 + float(suction_level) * 1.25 + float(magnet_power_level - 1) * 0.7
 		var nearest := vacuum_range
 		var player_xz := Vector2(player.global_position.x, player.global_position.z)
 		for item in trash_nodes:
@@ -3715,7 +3715,7 @@ func _process_vacuum_suction(delta: float) -> void:
 	var pickup_point := Vector3(player.global_position.x + forward.x * 0.92, suction_target.global_position.y, player.global_position.z + forward.z * 0.92)
 	var item_xz := Vector2(suction_target.global_position.x, suction_target.global_position.z)
 	var distance_to_target := item_xz.distance_to(Vector2(pickup_point.x, pickup_point.z))
-	var vacuum_speed := 4.2 + float(suction_level) * 1.9
+	var vacuum_speed := 4.2 + float(suction_level) * 1.9 + float(magnet_power_level - 1) * 1.25
 	if distance_to_target > 0.78:
 		suction_target.global_position = suction_target.global_position.move_toward(pickup_point, vacuum_speed * delta)
 		suction_pull_timer = 0.0
@@ -4501,7 +4501,7 @@ func _upgrade_magnet_power() -> void:
 	_update_ui()
 	_refresh_upgrade_prices()
 	_save_game()
-	_set_message("Magnet pull power increased!")
+	_set_message("Magnet / vacuum pull power increased!")
 
 func _upgrade_suction() -> void:
 	if suction_level >= 3:
