@@ -3111,6 +3111,7 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"truck_capacity": await _upgrade_truck_capacity()
 		"packaging": await _upgrade_packaging()
 		"factory_truck_interval": await _upgrade_factory_truck_interval()
+	_update_missions()
 	active_upgrade_branch = ""
 	_refresh_upgrade_prices()
 
