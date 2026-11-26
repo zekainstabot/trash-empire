@@ -271,6 +271,7 @@ func _finish_boot_sequence() -> void:
 		boot_layer.queue_free()
 	if OS.get_cmdline_user_args().has("--test-gameplay"):
 		await _close_main_menu()
+		_start_new_world()
 		if not world_initialized or not is_instance_valid(player) or not is_instance_valid(camera) or not is_instance_valid(factory_visual_root) or trash_nodes.is_empty():
 			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the world, player, factory, or trash pool did not initialize.")
 			get_tree().quit(1)
@@ -322,18 +323,22 @@ func _finish_boot_sequence() -> void:
 			get_tree().quit(1)
 			return
 
+		money = 10000.0
 		await _purchase_skill_node("ground_robot", 1)
 		if ground_robot_level != 1 or not is_instance_valid(ground_collector) or not ground_collector.visible:
 			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the ground collector upgrade did not deploy its rover.")
 			get_tree().quit(1)
 			return
 
+		money = 10000.0
 		await _purchase_skill_node("drones", 1)
-		if helper_drones.is_empty() or not is_instance_valid(helper_drones[0]) or not helper_drones[0].visible:
-			push_error("GAMEPLAY_SMOKE_TEST_FAILED: the helper drone upgrade did not deploy its drone.")
+		var first_drone_visible := not helper_drones.is_empty() and is_instance_valid(helper_drones[0]) and helper_drones[0].visible
+		if drone_level != 1 or not first_drone_visible:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: helper drone deployment failed (level=%d, count=%d, money=%.1f)." % [drone_level, helper_drones.size(), money])
 			get_tree().quit(1)
 			return
 
+		money = 10000.0
 		await _purchase_skill_node("sorting_robot", 1)
 		var visible_sorters := 0
 		for sorting_robot in sorting_robots:
