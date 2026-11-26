@@ -355,8 +355,8 @@ func _build_city_rework_layout() -> void:
 	# Keep the cleanup ground out of the factory footprint. These slabs previously
 	# occupied the exact same Y=0 plane as the factory apron/foundation and each
 	# other, causing severe z-fighting across the entire industrial area.
-	_box("FinalCleanupGroundWest", Vector3(121.25, -0.34, 0.0), Vector3(18.5, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
-	_box("FinalCleanupGroundEast", Vector3(205.0, -0.34, 0.0), Vector3(6.0, 0.68, 74.0), Color(0.34, 0.38, 0.30), true)
+	_box("FinalCleanupGroundWest", Vector3(121.25, -0.34, 0.0), Vector3(18.5, 0.68, 74.0), grass, true)
+	_box("FinalCleanupGroundEast", Vector3(205.0, -0.34, 0.0), Vector3(6.0, 0.68, 74.0), grass, true)
 	# Separate northern annex gives the autonomous drones a clear home away from roads,
 	# factory conveyors, loading trucks and sorting equipment.
 	_box("DroneHubAnnexGround", Vector3(130.0, -0.34, -43.5), Vector3(18.0, 0.68, 15.0), grass, true)
