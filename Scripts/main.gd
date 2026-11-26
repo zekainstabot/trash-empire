@@ -2240,11 +2240,57 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	shade.color = Color(0.025, 0.045, 0.055, 0.94)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main_menu_panel.add_child(shade)
+	# Subtle blueprint grid and a low industrial skyline give the title screen
+	# a branded factory atmosphere without loading a heavy background texture.
+	for grid_x in range(0, int(screen.x), 64):
+		var grid_line := ColorRect.new()
+		grid_line.position = Vector2(grid_x, 0)
+		grid_line.size = Vector2(1, screen.y)
+		grid_line.color = Color(0.30, 0.55, 0.55, 0.045)
+		grid_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		main_menu_panel.add_child(grid_line)
+	for grid_y in range(0, int(screen.y), 64):
+		var grid_line := ColorRect.new()
+		grid_line.position = Vector2(0, grid_y)
+		grid_line.size = Vector2(screen.x, 1)
+		grid_line.color = Color(0.30, 0.55, 0.55, 0.035)
+		grid_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		main_menu_panel.add_child(grid_line)
+	var skyline_heights := [54.0, 86.0, 62.0, 118.0, 76.0, 96.0, 66.0, 108.0, 58.0, 90.0]
+	for building_index in range(skyline_heights.size()):
+		var building := ColorRect.new()
+		var building_width := screen.x / float(skyline_heights.size()) + 1.0
+		building.position = Vector2(float(building_index) * building_width, screen.y - skyline_heights[building_index])
+		building.size = Vector2(building_width, skyline_heights[building_index])
+		building.color = Color(0.08, 0.16, 0.18, 0.62)
+		building.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		main_menu_panel.add_child(building)
+	var logo := TextureRect.new()
+	logo.texture = load("res://icon.svg")
+	logo.position = Vector2(screen.x * 0.78, screen.y * 0.055)
+	logo.size = Vector2(68, 68)
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_menu_panel.add_child(logo)
+	var system_status := Label.new()
+	system_status.text = "ZEKA INDUSTRIAL SYSTEMS  /  OPERATIONS ONLINE"
+	system_status.position = Vector2(screen.x * 0.12, screen.y * 0.065)
+	system_status.size = Vector2(screen.x * 0.62, 24)
+	system_status.add_theme_font_size_override("font_size", 11)
+	system_status.add_theme_color_override("font_color", Color(0.91, 0.66, 0.20))
+	system_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_menu_panel.add_child(system_status)
 	var accent := ColorRect.new()
 	accent.position = Vector2(screen.x * 0.08, screen.y * 0.19)
 	accent.size = Vector2(8, screen.y * 0.34)
-	accent.color = Color(0.22, 0.82, 0.57)
+	accent.color = Color(0.94, 0.65, 0.16)
 	main_menu_panel.add_child(accent)
+	var accent_inner := ColorRect.new()
+	accent_inner.position = Vector2(screen.x * 0.08 + 11, screen.y * 0.19)
+	accent_inner.size = Vector2(3, screen.y * 0.34)
+	accent_inner.color = Color(0.18, 0.73, 0.61)
+	main_menu_panel.add_child(accent_inner)
 	var title := Label.new()
 	title.text = "ZEKA CITY:\nCLEANUP EMPIRE"
 	title.position = Vector2(screen.x * 0.12, screen.y * 0.14)
@@ -2256,7 +2302,7 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	title.add_theme_constant_override("shadow_offset_y", 4)
 	main_menu_panel.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "BUILD YOUR RECYCLING BUSINESS"
+	subtitle.text = "INDUSTRIAL RECYCLING SIMULATOR"
 	subtitle.position = Vector2(screen.x * 0.12, screen.y * 0.44)
 	subtitle.size = Vector2(screen.x * 0.8, 36)
 	subtitle.add_theme_font_size_override("font_size", 14)
@@ -2278,13 +2324,20 @@ func _build_main_menu(layer: CanvasLayer, screen: Vector2) -> void:
 	exit_button.add_theme_stylebox_override("normal", _button_style(Color(0.19, 0.25, 0.26)))
 	exit_button.pressed.connect(_confirm_exit_game)
 	var footer := Label.new()
-	footer.text = "RECYCLE • UPGRADE • EXPAND"
-	footer.position = Vector2(button_x, screen.y * 0.68)
+	footer.text = "COLLECT  •  AUTOMATE  •  RECYCLE  •  EXPAND"
+	footer.position = Vector2(button_x, screen.y * 0.82)
 	footer.size = Vector2(button_width, 28)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.add_theme_font_size_override("font_size", 12)
 	footer.add_theme_color_override("font_color", Color(0.48, 0.58, 0.57))
 	main_menu_panel.add_child(footer)
+	for stripe_index in range(24):
+		var hazard_stripe := ColorRect.new()
+		hazard_stripe.position = Vector2(float(stripe_index) * screen.x / 24.0, screen.y * 0.965)
+		hazard_stripe.size = Vector2(screen.x / 48.0, 7)
+		hazard_stripe.color = Color(0.95, 0.65, 0.15) if stripe_index % 2 == 0 else Color(0.055, 0.075, 0.08)
+		hazard_stripe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		main_menu_panel.add_child(hazard_stripe)
 	# Keep the gameplay HUD behind the menu but hide it until play is selected.
 	for child in layer.get_children():
 		if child != main_menu_panel:
