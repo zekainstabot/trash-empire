@@ -2397,7 +2397,10 @@ func _confirm_exit_game() -> void:
 	dialog.dialog_text = "Are you sure you want to leave the factory?"
 	dialog.ok_button_text = "EXIT"
 	dialog.cancel_button_text = "CANCEL"
-	dialog.confirmed.connect(func() -> void: get_tree().quit())
+	dialog.confirmed.connect(func() -> void:
+		_save_game()
+		get_tree().quit()
+	)
 	add_child(dialog)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
@@ -3162,7 +3165,11 @@ func _skill_key_owned(key: String) -> bool:
 	return _skill_level(parts[0]) >= int(parts[1])
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		# Android may suspend or close the app without another gameplay input.
+		# Flush the latest state at the lifecycle boundary as a final safeguard.
+		_save_game()
+	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		_confirm_exit_game()
 
 func _input(event: InputEvent) -> void:
