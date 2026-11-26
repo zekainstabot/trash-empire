@@ -78,6 +78,7 @@ var movement_upgrade_button: Button
 var unload_upgrade_button: Button
 var trash_nodes: Array[Node3D] = []
 var final_zone_cleaned := 0
+var final_cleanup_spawned := false
 var total_trash_collected := 0
 var replenishment_threshold := 500
 var final_zone_label: Label
@@ -2300,6 +2301,7 @@ func _start_new_world() -> void:
 		await _close_main_menu()
 	money = 0
 	final_zone_cleaned = 0
+	final_cleanup_spawned = false
 	total_trash_collected = 0
 	tutorial_mission_stage = 0
 	carried = 0
@@ -2545,6 +2547,10 @@ func _close_main_menu() -> void:
 		_refresh_delivery_fleet()
 		_apply_unlocked_districts()
 		world_initialized = true
+		if final_cleanup_spawned or tutorial_mission_stage >= 29:
+			final_cleanup_spawned = true
+			_spawn_final_cleanup_trash()
+			_save_game()
 		if is_instance_valid(main_menu_play_button):
 			main_menu_play_button.disabled = false
 	# Explicitly activate gameplay and reveal every HUD/world overlay hidden by the title menu.
@@ -3326,13 +3332,16 @@ func _process_street_sweeper(delta: float) -> void:
 func _register_final_cleanup_pickup(item: Node3D) -> void:
 	if not is_instance_valid(item):
 		return
-	# Count every pickup; only the endgame landfill contributes to its cleanup goal.
-	total_trash_collected += 1
-	if item.global_position.x >= 135.0:
-		final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + 1)
+	# Endgame salvage bundles represent 100 units; ordinary litter represents one.
+	var cleanup_units := maxi(0, int(item.get_meta("final_cleanup_units", 0)))
+	var collected_units := maxi(1, cleanup_units)
+	total_trash_collected += collected_units
+	if cleanup_units > 0:
+		final_zone_cleaned = mini(FINAL_ZONE_TARGET, final_zone_cleaned + cleanup_units)
 	_update_final_zone_label()
 	_update_missions()
 	_maintain_city_trash_supply()
+	_save_game()
 
 func _maintain_city_trash_supply() -> void:
 	var alive_count := _count_regular_trash()
@@ -4492,6 +4501,7 @@ func _save_game() -> void:
 	var save := ConfigFile.new()
 	save.set_value("progress", "money", money)
 	save.set_value("progress", "final_zone_cleaned", final_zone_cleaned)
+	save.set_value("progress", "final_cleanup_spawned", final_cleanup_spawned)
 	save.set_value("progress", "total_trash_collected", total_trash_collected)
 	save.set_value("progress", "tutorial_mission_stage", tutorial_mission_stage)
 	save.set_value("progress", "tutorial_mission_version", 2)
@@ -4554,6 +4564,7 @@ func _load_game() -> void:
 		return
 	money = float(save.get_value("progress", "money", 0.0))
 	final_zone_cleaned = clampi(int(save.get_value("progress", "final_zone_cleaned", 0)), 0, FINAL_ZONE_TARGET)
+	final_cleanup_spawned = bool(save.get_value("progress", "final_cleanup_spawned", false))
 	total_trash_collected = int(save.get_value("progress", "total_trash_collected", final_zone_cleaned))
 	tutorial_mission_stage = clampi(int(save.get_value("progress", "tutorial_mission_stage", 0)), 0, 30)
 	capacity = clampi(int(save.get_value("progress", "capacity", 4)), 4, 40)
@@ -5666,17 +5677,17 @@ func _spawn_city_trash(amount: int) -> int:
 	return spawned
 
 func _spawn_final_cleanup_trash() -> void:
-	# The landfill is spread over the full cleanup yard, with dense irregular
-	# piles and loose debris between them. Each pickup is a visible, detailed item.
+	# Each interactive salvage bundle represents up to 100 visible landfill units.
 	var remaining_units := maxi(0, FINAL_ZONE_TARGET - final_zone_cleaned)
 	var remaining_objects := ceili(float(remaining_units) / 100.0)
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	_build_final_landfill_debris(remaining_units, rng)
 	for i in range(remaining_objects):
+		var units_in_bundle := mini(100, remaining_units - i * 100)
 		var item := Node3D.new()
 		item.set_script(TRASH_SCRIPT)
-		item.set_meta("final_cleanup_units", 1)
+		item.set_meta("final_cleanup_units", units_in_bundle)
 		item.position = _random_final_landfill_position(rng)
 		add_child(item)
 		trash_nodes.append(item)
@@ -5748,7 +5759,7 @@ func _build_final_landfill_debris(remaining_units: int, rng: RandomNumberGenerat
 		material.albedo_color = debris_colors[kind]
 		material.roughness = 0.94
 		visual.material_override = material
-		visual.custom_aabb = AABB(Vector3(135.0, -0.5, -31.0), Vector3(70.0, 6.0, 62.0))
+		visual.custom_aabb = AABB(Vector3(-12.0, -0.5, -31.0), Vector3(216.0, 6.0, 62.0))
 		add_child(visual)
 		for instance_index in range(count):
 			var position := _random_final_landfill_position(rng)
@@ -5767,7 +5778,7 @@ func _build_final_landfill_debris(remaining_units: int, rng: RandomNumberGenerat
 func _update_final_zone_label() -> void:
 	if is_instance_valid(final_zone_label):
 		var displayed_total := mini(total_trash_collected, COLLECTION_TARGET)
-		final_zone_label.text = "COLLECTED  %s / 600,000" % _format_counter(displayed_total)
+		final_zone_label.text = "TOTAL RECYCLED  %s / 600,000" % _format_counter(displayed_total)
 
 
 func _format_counter(value: int) -> String:
@@ -5988,6 +5999,11 @@ func _update_missions() -> void:
 	while tutorial_mission_stage < MISSION_ORDER.size() and _mission_is_complete(MISSION_ORDER[tutorial_mission_stage]):
 		tutorial_mission_stage += 1
 	if tutorial_mission_stage != previous_stage:
+		_save_game()
+	if world_initialized and tutorial_mission_stage >= 29 and not final_cleanup_spawned:
+		final_cleanup_spawned = true
+		_spawn_final_cleanup_trash()
+		_set_message("FINAL LANDFILL UNLOCKED — clear the endgame waste piles.")
 		_save_game()
 
 	var mission_texts: Array[String] = [
