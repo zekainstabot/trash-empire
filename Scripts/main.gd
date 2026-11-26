@@ -2711,13 +2711,13 @@ func _build_skill_tree(parent: Control) -> void:
 	var categories := [
 		{"title":"ROBOT & COLLECTION","folder":"📁\nROBOT","branches":["capacity","speed","range","unload","auto","bulk_pickup","magnet_power","suction","ground_robot"]},
 		{"title":"RECYCLING & ECONOMY","folder":"📁\nECONOMY","branches":["technology","value","supply","luck","rare_drops","respawn"]},
-		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","drone_speed","drone_capacity","sorting_robot","waste_tank_unload","waste_tank_capacity","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
+		{"title":"AUTOMATION & FLEET","folder":"📁\nFLEET","branches":["drones","drone_speed","drone_capacity","sorting_robot","waste_tank_unload","waste_tank_capacity","city_truck","city_fleet","dispatch","fleet","truck_capacity","packaging","conveyor_speed","factory_truck_interval"]}
 	]
 	var titles := {
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","ground_robot":"GROUND COLLECTOR","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","ground_robot":"GROUND COLLECTOR","sorting_robot":"SORTING ROBOT EFFICIENCY","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"CITY TRUCK FLEET","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","waste_tank_unload":"WASTE TANK DISCHARGE","waste_tank_capacity":"WASTE TANK CAPACITY","factory_truck_interval":"FACTORY TRUCK ARRIVAL"
 	}
 	var descriptions := {
@@ -2739,7 +2739,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"drone_speed":"Make every helper drone fly faster on collection and return trips.",
 		"drone_capacity":"Increase how much waste each helper drone carries before returning to its own station.",
 		"ground_robot":"Deploy a four-wheel autonomous collection rover. Each level improves its speed and cargo capacity.",
-		"sorting_robot":"Increase all built sorting robots’ travel speed and search radius.",
+		"sorting_robot":"Increase all built sorting robots’ travel speed and search radius.","city_truck":"Shorten the interval between municipal waste collection trucks.","city_fleet":"Add more municipal trucks so multiple deliveries can be queued at the depot.",
 		"dispatch":"Send product delivery trucks more frequently.",
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
