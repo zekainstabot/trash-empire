@@ -273,6 +273,7 @@ func _process(delta: float) -> void:
 		return
 	_process_upgrade_scroll_smoothing(delta)
 	_process_expansion_zone(delta)
+	_process_factory_build(delta)
 	_process_mega_factory_build(delta)
 	_process_factory_row_shipping(delta)
 	_process_waste_feed_conveyor(delta)
@@ -289,6 +290,7 @@ func _process(delta: float) -> void:
 	_process_auto_pickup(delta)
 	_process_vacuum_suction(delta)
 	_process_helper_drones(delta)
+	_process_ground_collector(delta)
 	_process_sorting_robots(delta)
 	_process_street_sweeper(delta)
 	_process_trash_respawn(delta)
@@ -301,16 +303,16 @@ func _build_world() -> void:
 	env.background_mode = Environment.BG_SKY
 	var sky_resource := Sky.new()
 	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.18, 0.42, 0.72)
-	sky_material.sky_horizon_color = Color(0.78, 0.86, 0.91)
-	sky_material.ground_bottom_color = Color(0.24, 0.30, 0.27)
-	sky_material.ground_horizon_color = Color(0.57, 0.65, 0.59)
+	sky_material.sky_top_color = Color(0.12, 0.22, 0.28)
+	sky_material.sky_horizon_color = Color(0.48, 0.56, 0.58)
+	sky_material.ground_bottom_color = Color(0.12, 0.16, 0.15)
+	sky_material.ground_horizon_color = Color(0.34, 0.40, 0.39)
 	sky_material.use_debanding = true
 	sky_resource.sky_material = sky_material
 	env.sky = sky_resource
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.78, 0.82, 0.79)
-	env.ambient_light_energy = 1.0
+	env.ambient_light_color = Color(0.62, 0.69, 0.68)
+	env.ambient_light_energy = 0.88
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 1.0
 	world_env.environment = env
@@ -318,7 +320,7 @@ func _build_world() -> void:
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -32, 0)
-	sun.light_energy = 1.18
+	sun.light_energy = 1.12
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.035
 	sun.directional_shadow_max_distance = 90.0
@@ -328,11 +330,63 @@ func _build_world() -> void:
 	_build_street_sweeper()
 	_build_city_dump_area()
 	_build_recycling_mega_factory()
+	_build_industrial_campus_details()
 	_build_sorting_district()
 	_build_city_pedestrians()
 	_build_world_bounds()
 	refill_world_button = _create_gear_refill_button(Vector3(0.0, 2.0, -35.20), Callable(self, "_refill_first_district"))
 	refill_world_button.rotation_degrees.y = 90.0
+
+
+func _build_industrial_campus_details() -> void:
+	# Decorative infrastructure frames the production hall without blocking
+	# conveyors, machine pads, truck lanes, or player paths.
+	var structural_steel := Color(0.19, 0.25, 0.27)
+	var pipe_steel := Color(0.48, 0.55, 0.55)
+	var safety_yellow := Color(0.94, 0.64, 0.14)
+	var floor_joint := Color(0.22, 0.27, 0.27)
+
+	for side in [-1.0, 1.0]:
+		var rack_z := side * 32.55
+		for support_x in [149.0, 162.0, 175.0, 188.0, 201.0]:
+			_box("IndustrialCampusPipeRackFoot", Vector3(support_x, 0.20, rack_z), Vector3(0.76, 0.38, 0.76), structural_steel, false)
+			_box("IndustrialCampusPipeRackColumn", Vector3(support_x, 2.45, rack_z), Vector3(0.24, 4.55, 0.24), pipe_steel, false)
+			_box("IndustrialCampusPipeRackCrossbeam", Vector3(support_x, 4.78, rack_z), Vector3(0.34, 0.24, 2.05), structural_steel, false)
+			_box("IndustrialCampusPipeRackSafetyBand", Vector3(support_x, 1.05, rack_z), Vector3(0.25, 0.46, 0.27), safety_yellow, false)
+		for pipe_index in range(3):
+			var pipe_z := rack_z + (float(pipe_index) - 1.0) * 0.58
+			var pipe_y := 3.95 + float(pipe_index) * 0.43
+			var utility_pipe := _cylinder("IndustrialCampusUtilityPipe", Vector3(175.0, pipe_y, pipe_z), 0.105, 52.0, pipe_steel.darkened(float(pipe_index) * 0.08), false)
+			utility_pipe.rotation_degrees.z = 90.0
+		for valve_x in [158.0, 184.0]:
+			_cylinder("IndustrialCampusPipeValve", Vector3(valve_x, 4.42, rack_z), 0.22, 0.42, Color(0.15, 0.35, 0.34), false)
+			_box("IndustrialCampusValveHandle", Vector3(valve_x, 4.72, rack_z), Vector3(0.56, 0.07, 0.08), safety_yellow, false)
+
+	for stack_z in [-28.8, 28.8]:
+		_cylinder("IndustrialCampusExhaustStackBase", Vector3(201.0, 0.52, stack_z), 0.86, 1.04, structural_steel, false)
+		_cylinder("IndustrialCampusExhaustStack", Vector3(201.0, 4.15, stack_z), 0.58, 6.35, Color(0.34, 0.41, 0.42), false)
+		for band_y in [2.0, 4.5, 6.8]:
+			_cylinder("IndustrialCampusExhaustCollar", Vector3(201.0, band_y, stack_z), 0.64, 0.16, structural_steel, false)
+		_cylinder("IndustrialCampusExhaustRainCap", Vector3(201.0, 7.42, stack_z), 0.82, 0.18, Color(0.16, 0.22, 0.24), false)
+		_box("IndustrialCampusExhaustWarningBand", Vector3(200.40, 5.7, stack_z), Vector3(0.05, 0.22, 0.68), safety_yellow, false)
+
+	for row in range(5):
+		var row_z := _factory_row_z(row)
+		for side in [-1.0, 1.0]:
+			_box("IndustrialCampusSafetyWalkway", Vector3(174.0, 0.312, row_z + side * 4.92), Vector3(48.0, 0.018, 0.11), safety_yellow, false)
+		for bay_x in [151.0, 164.0, 177.0, 190.0]:
+			for side in [-1.0, 1.0]:
+				_box("IndustrialCampusMachineBayMark", Vector3(bay_x, 0.314, row_z + side * 2.68), Vector3(3.0, 0.018, 0.07), safety_yellow, false)
+	for joint_x in [146.0, 160.0, 174.0, 188.0, 202.0]:
+		_box("IndustrialCampusConcreteJoint", Vector3(joint_x, 0.307, 0.0), Vector3(0.035, 0.012, 60.0), floor_joint, false)
+
+	for light_x in [153.0, 175.0, 197.0]:
+		for light_z in [-30.5, 30.5]:
+			_box("IndustrialCampusFloodlightMast", Vector3(light_x, 3.0, light_z), Vector3(0.14, 6.0, 0.14), structural_steel, false)
+			_box("IndustrialCampusFloodlightHousing", Vector3(light_x, 6.05, light_z), Vector3(0.88, 0.22, 0.48), structural_steel, false)
+			_box("IndustrialCampusFloodlightLens", Vector3(light_x, 5.92, light_z - signf(light_z) * 0.18), Vector3(0.62, 0.055, 0.08), Color(0.95, 0.84, 0.58), false)
+	_box("IndustrialCampusIdentitySign", Vector3(174.0, 6.55, -34.15), Vector3(15.0, 1.75, 0.24), Color(0.045, 0.085, 0.095), false)
+	_label_3d("ZEKA INDUSTRIAL RECYCLING COMPLEX", Vector3(174.0, 6.55, -33.98), 0.28)
 
 
 func _build_world_bounds() -> void:
@@ -1804,6 +1858,15 @@ func _build_player() -> void:
 	camera_pivot.add_child(camera)
 	player.set("camera_pivot", camera_pivot)
 
+	# Industrial service markings, cooling fins and high-visibility safety armor.
+	for shoulder_x in [-0.49, 0.49]:
+		_add_robot_box(robot_visual, "ShoulderHazardStripe", Vector3(shoulder_x, 1.48, -0.205), Vector3(0.23, 0.075, 0.035), Color(0.96, 0.62, 0.13))
+	for fin_y in [0.84, 1.02, 1.20]:
+		_add_robot_box(robot_visual, "BatteryCoolingFin", Vector3(0.0, fin_y, 0.505), Vector3(0.40, 0.055, 0.045), Color(0.34, 0.43, 0.44))
+	_add_robot_box(robot_visual, "BatteryServiceLatch", Vector3(0.0, 1.36, 0.505), Vector3(0.20, 0.09, 0.04), Color(0.91, 0.63, 0.16))
+	_add_robot_box(robot_visual, "BackpackWarningPlate", Vector3(0.0, 0.76, 0.505), Vector3(0.30, 0.12, 0.035), Color(0.06, 0.12, 0.14))
+	_add_robot_sphere(robot_visual, "BackpackStatusBeacon", Vector3(0.27, 1.34, 0.28), 0.065, Color(1.0, 0.56, 0.12))
+
 	# Short entrance animation when the game starts.
 	robot_visual.scale = Vector3(0.15, 0.15, 0.15)
 	robot_visual.position.y = -0.45
@@ -2273,6 +2336,9 @@ func _close_main_menu() -> void:
 		_build_player()
 		_build_trash()
 		_build_world()
+		# Reconstruct saved starter-factory stages before gameplay resumes.
+		_build_factory_expansion()
+		_refresh_factory_upgrade_button()
 		_refresh_delivery_fleet()
 		_apply_unlocked_districts()
 		world_initialized = true
@@ -3055,11 +3121,11 @@ func _maintain_city_trash_supply() -> void:
 	var alive_count := _count_regular_trash()
 	if alive_count > 500:
 		return
-	var amount := maxi(0, 1000 - alive_count)
+	var amount := maxi(0, 500 - alive_count)
 	if amount > 0:
 		_spawn_trash(amount)
 		_update_final_zone_label()
-		_set_message("CITY TRASH REFILLED: %d / 1,000" % _count_regular_trash())
+		_set_message("CITY SUPPLY RESTORED: %d / 1,000" % _count_regular_trash())
 
 func _spawn_city_replenishment(amount: int) -> void:
 	# Compatibility wrapper for older save/progression paths; global cap applies.
@@ -3293,6 +3359,7 @@ func _build_helper_drones() -> void:
 		_add_robot_box(drone, "DroneFrontSafetyMark", Vector3(0, -0.085, -0.12), Vector3(0.13, 0.025, 0.025), Color(0.95, 0.62, 0.18))
 		_add_robot_sphere(drone, "DroneStatusLight", Vector3(0, 0.17, 0.12), 0.025, Color(0.30, 1.0, 0.62))
 
+		var rotor_assemblies: Array[Node3D] = []
 		for sx in [-1.0, 1.0]:
 			for sz in [-1.0, 1.0]:
 				var rotor_pos := Vector3(sx * 0.39, 0.045, sz * 0.36)
@@ -3300,15 +3367,24 @@ func _build_helper_drones() -> void:
 				arm.rotation_degrees.y = -35.0 if sx == sz else 35.0
 				_add_robot_sphere(drone, "MotorHousing", rotor_pos, 0.085, Color(0.13, 0.19, 0.21))
 				_add_robot_sphere(drone, "MotorTopCap", rotor_pos + Vector3(0, 0.12, 0), 0.045, Color(0.28, 0.91, 0.74))
-				_add_robot_box(drone, "PropellerBladeA", rotor_pos + Vector3(0, 0.075, 0), Vector3(0.31, 0.018, 0.045), Color(0.10, 0.15, 0.17))
-				var blade_b := _add_robot_box(drone, "PropellerBladeB", rotor_pos + Vector3(0, 0.078, 0), Vector3(0.31, 0.014, 0.035), Color(0.16, 0.23, 0.25))
+				var rotor := Node3D.new()
+				rotor.name = "DroneRotorAssembly"
+				rotor.position = rotor_pos + Vector3(0, 0.075, 0)
+				drone.add_child(rotor)
+				_add_robot_box(rotor, "PropellerBladeA", Vector3.ZERO, Vector3(0.31, 0.018, 0.045), Color(0.10, 0.15, 0.17))
+				var blade_b := _add_robot_box(rotor, "PropellerBladeB", Vector3.ZERO, Vector3(0.31, 0.014, 0.035), Color(0.16, 0.23, 0.25))
 				blade_b.rotation_degrees.y = 90.0
 				_add_robot_sphere(drone, "MotorCap", rotor_pos + Vector3(0, 0.105, 0), 0.035, Color(0.13, 0.82, 0.70))
+				rotor_assemblies.append(rotor)
+		drone.set_meta("rotors", rotor_assemblies)
 
-		# Two landing skids make it read as a real utility drone, not a floating toy.
+		# Reinforced landing skids and a visible lifting winch.
 		for skid_x in [-0.13, 0.13]:
 			_add_robot_box(drone, "LandingStrut", Vector3(skid_x, -0.19, 0.025), Vector3(0.035, 0.20, 0.045), Color(0.20, 0.27, 0.29))
 			_add_robot_box(drone, "LandingSkid", Vector3(skid_x, -0.285, 0.025), Vector3(0.055, 0.035, 0.38), Color(0.12, 0.18, 0.20))
+		_add_robot_box(drone, "WinchHousing", Vector3(0, -0.245, 0.025), Vector3(0.16, 0.09, 0.16), Color(0.12, 0.19, 0.21))
+		_add_robot_box(drone, "WinchCable", Vector3(0, -0.335, 0.025), Vector3(0.025, 0.13, 0.025), Color(0.64, 0.69, 0.66))
+		_add_robot_box(drone, "CargoHook", Vector3(0, -0.415, 0.025), Vector3(0.12, 0.045, 0.10), Color(0.94, 0.62, 0.15))
 
 		drone.visible = i < drone_level
 		drone.global_position = _drone_dock_point(drone)
@@ -3345,6 +3421,7 @@ func _build_ground_collector() -> void:
 	_add_robot_box(ground_collector, "RoverSensor", Vector3(0, 0.82, -0.30), Vector3(0.28, 0.12, 0.12), Color(0.12, 0.95, 0.76))
 	_add_robot_box(ground_collector, "RoverSideArmorL", Vector3(-0.53, 0.48, 0.05), Vector3(0.08, 0.30, 0.88), Color(0.20, 0.34, 0.37))
 	_add_robot_box(ground_collector, "RoverSideArmorR", Vector3(0.53, 0.48, 0.05), Vector3(0.08, 0.30, 0.88), Color(0.20, 0.34, 0.37))
+	var rover_wheels: Array[Node3D] = []
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
 			var wheel := MeshInstance3D.new()
@@ -3359,6 +3436,9 @@ func _build_ground_collector() -> void:
 			wheel.rotation_degrees.z = 90.0
 			wheel.material_override = _mat(Color(0.055, 0.07, 0.075))
 			ground_collector.add_child(wheel)
+			rover_wheels.append(wheel)
+	ground_collector.set_meta("wheels", rover_wheels)
+	ground_collector.set_meta("previous_position", ground_collector.global_position)
 	ground_collector.visible = ground_robot_level > 0
 	ground_collector.global_position = Vector3(144.0, 0.0, 10.0)
 	ground_collector.set_meta("target", null)
@@ -3385,6 +3465,9 @@ func _process_helper_drones(delta: float) -> void:
 		var drone := helper_drones[i]
 		if not is_instance_valid(drone) or not drone.visible:
 			continue
+		for rotor in drone.get_meta("rotors", []):
+			if is_instance_valid(rotor):
+				rotor.rotation.y = fposmod(rotor.rotation.y + delta * 48.0, TAU)
 		if drone.get_meta("returning", false):
 			var return_pos := _drone_dock_point(drone)
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
@@ -3476,6 +3559,13 @@ func _process_ground_collector(delta: float) -> void:
 	var speed := 3.0 + float(ground_robot_level - 1) * 1.15
 	var capacity_slots := 3 + maxi(ground_robot_level - 1, 0) * 2
 	rover.set_meta("cargo_capacity", capacity_slots)
+	var previous_position: Vector3 = rover.get_meta("previous_position", rover.global_position)
+	var travel_distance := rover.global_position.distance_to(previous_position)
+	if travel_distance > 0.0001:
+		for wheel in rover.get_meta("wheels", []):
+			if is_instance_valid(wheel):
+				wheel.rotate_object_local(Vector3.RIGHT, travel_distance * 3.6)
+	rover.set_meta("previous_position", rover.global_position)
 	if bool(rover.get_meta("returning", false)):
 		var home := _factory_waste_drop_point()
 		rover.global_position = rover.global_position.move_toward(home, speed * delta)
@@ -4036,9 +4126,23 @@ func _upgrade_respawn() -> void:
 func _trash_respawn_interval_minutes() -> float:
 	return [0.0, 5.0, 4.0, 3.0][clampi(respawn_level, 0, 3)]
 
-func _process_trash_respawn(_delta: float) -> void:
-	# Supply is replenished immediately when the live city pool reaches 500.
-	pass
+func _process_trash_respawn(delta: float) -> void:
+	if respawn_level <= 0:
+		respawn_timer = 0.0
+		return
+	respawn_timer += delta
+	var interval_seconds := _trash_respawn_interval_minutes() * 60.0
+	if respawn_timer < interval_seconds:
+		return
+	respawn_timer = 0.0
+	var before_count := _count_regular_trash()
+	if before_count >= 1000:
+		return
+	_spawn_trash(1000 - before_count)
+	var after_count := _count_regular_trash()
+	if after_count > before_count:
+		_set_message("AUTOMATIC CITY REFILL  %d / 1,000" % after_count)
+		_save_game()
 
 func _upgrade_bulk_pickup() -> void:
 	var cost := _upgrade_cost(35.0, bulk_pickup_level + 1)
@@ -4159,6 +4263,7 @@ func _save_game() -> void:
 	save.set_value("progress", "tutorial_mission_stage", tutorial_mission_stage)
 	save.set_value("progress", "tutorial_mission_version", 2)
 	save.set_value("progress", "carried", carried)
+	save.set_value("progress", "carried_bulky", carried_bulky)
 	save.set_value("progress", "capacity", capacity)
 	save.set_value("progress", "bag_level", upgrade_level)
 	save.set_value("progress", "speed_level", speed_upgrade_level)
@@ -4218,8 +4323,9 @@ func _load_game() -> void:
 	final_zone_cleaned = clampi(int(save.get_value("progress", "final_zone_cleaned", 0)), 0, FINAL_ZONE_TARGET)
 	total_trash_collected = int(save.get_value("progress", "total_trash_collected", final_zone_cleaned))
 	tutorial_mission_stage = clampi(int(save.get_value("progress", "tutorial_mission_stage", 0)), 0, 30)
-	carried = int(save.get_value("progress", "carried", 0))
-	capacity = int(save.get_value("progress", "capacity", 4))
+	capacity = clampi(int(save.get_value("progress", "capacity", 4)), 4, 40)
+	carried = clampi(int(save.get_value("progress", "carried", 0)), 0, capacity)
+	carried_bulky = clampi(int(save.get_value("progress", "carried_bulky", 0)), 0, int(carried / 2))
 	upgrade_level = int(save.get_value("progress", "bag_level", 1))
 	speed_upgrade_level = int(save.get_value("progress", "speed_level", 1))
 	unload_upgrade_level = int(save.get_value("progress", "unload_level", 1))
@@ -4826,6 +4932,19 @@ func _build_mega_factory_machine(index: int) -> void:
 	_box("MegaProcessMachineTop%d" % index, Vector3(x, 3.89, z), Vector3(4.7, 0.18, 3.8), accent.darkened(0.2), false)
 	_box("MegaProcessMachineWindow%d" % index, Vector3(x, 2.56, z - 1.73), Vector3(1.9, 0.8, 0.06), accent, false)
 	_box("MegaProcessMachineControl%d" % index, Vector3(x + 1.65, 2.11, z - 1.78), Vector3(0.58, 0.9, 0.12), dark_steel, false)
+	_box("MegaProcessMachineScreen%d" % index, Vector3(x + 1.65, 2.42, z - 1.855), Vector3(0.34, 0.22, 0.035), Color(0.08, 0.68, 0.63), false)
+	_box("MegaProcessMachineEmergencyStop%d" % index, Vector3(x + 1.65, 1.68, z - 1.86), Vector3(0.20, 0.18, 0.07), Color(0.82, 0.12, 0.08), false)
+	_box("MegaProcessMachineServiceLabel%d" % index, Vector3(x, 1.45, z - 1.82), Vector3(0.78, 0.20, 0.055), Color(0.88, 0.61, 0.13), false)
+	for vent_i in range(4):
+		_box("MegaProcessMachineCoolingVent%d_%d" % [index, vent_i], Vector3(x - 1.18, 2.20 + float(vent_i) * 0.16, z + 1.735), Vector3(1.02, 0.055, 0.045), dark_steel, false)
+	for bolt_x in [-1.94, 1.94]:
+		for bolt_y in [1.42, 3.50]:
+			var bolt := _cylinder("MegaProcessMachineBolt%d" % index, Vector3(x + bolt_x, bolt_y, z - 1.79), 0.055, 0.045, Color(0.66, 0.72, 0.71), false)
+			bolt.rotation_degrees.x = 90.0
+	var drive_motor := _cylinder("MegaProcessMachineDriveMotor%d" % index, Vector3(x - 1.55, 4.24, z + 1.18), 0.28, 0.78, Color(0.17, 0.25, 0.28), false)
+	drive_motor.rotation_degrees.z = 90.0
+	_cylinder("MegaProcessMachineMotorCap%d" % index, Vector3(x - 1.55, 4.24, z + 1.60), 0.20, 0.08, Color(0.64, 0.70, 0.68), false)
+	_cylinder("MegaProcessMachineBeacon%d" % index, Vector3(x + 1.72, 4.10, z - 1.22), 0.12, 0.22, Color(0.98, 0.56, 0.12), false)
 	for wheel_x in [x - 1.5, x + 1.5]:
 		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.84, z + 2.0), 0.38, 0.22, accent, true)
 	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 4.31, z - 2.0), 0.13)
@@ -5786,8 +5905,10 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	tween.tween_callback(_finish_waste_feed_item.bind(selected_item, selected_row))
 
 func _finish_waste_feed_item(item: Node3D, row: int) -> void:
-	if is_instance_valid(item):
-		item.queue_free()
+	if not is_instance_valid(item):
+		waste_feed_busy = false
+		return
+	item.queue_free()
 	if row >= 0 and row < factory_row_input_stock.size():
 		factory_row_input_stock[row] += 1
 	waste_feed_busy = false
@@ -6428,25 +6549,43 @@ func _add_teddy_part(parent: Node3D, part_name: String, part_position: Vector3, 
 	parent.add_child(part)
 func _make_street_bin(pos: Vector3, color: Color) -> void:
 	# Compact domestic wheelie bin with a rounded lid and no industrial sorting label.
-	_box("StreetBinBody", pos + Vector3(0, 0.58, 0), Vector3(0.92, 1.12, 0.88), color, true)
+	# Heavy municipal steel bin with replaceable panels and reinforced corners.
+	_box("StreetBinBody", pos + Vector3(0, 0.58, 0), Vector3(0.92, 1.12, 0.88), color.darkened(0.08), true)
 	_box("StreetBinFront", pos + Vector3(0, 0.62, -0.455), Vector3(0.72, 0.72, 0.035), color.lightened(0.08), false)
-	var lid := _box("StreetBinLid", pos + Vector3(0, 1.18, 0.0), Vector3(1.02, 0.16, 0.96), Color(0.075, 0.10, 0.095), false)
+	for x in [-0.40, 0.40]:
+		_box("StreetBinCornerGuard", pos + Vector3(x, 0.60, -0.48), Vector3(0.075, 1.04, 0.07), Color(0.30, 0.37, 0.37), false)
+	for y in [0.34, 0.70, 1.02]:
+		_box("StreetBinReinforcementRib", pos + Vector3(0, y, -0.49), Vector3(0.80, 0.055, 0.045), Color(0.12, 0.19, 0.20), false)
+	_box("StreetBinHazardBand", pos + Vector3(0, 0.36, -0.515), Vector3(0.76, 0.11, 0.025), Color(0.94, 0.62, 0.13), false)
+	var lid := _box("StreetBinLid", pos + Vector3(0, 1.18, 0.0), Vector3(1.02, 0.16, 0.96), Color(0.055, 0.08, 0.09), false)
 	lid.rotation_degrees.x = -3.0
+	_box("StreetBinHingeBar", pos + Vector3(0, 1.20, 0.40), Vector3(0.72, 0.09, 0.10), Color(0.42, 0.49, 0.48), false)
 	_box("StreetBinHandle", pos + Vector3(0, 1.28, -0.34), Vector3(0.34, 0.07, 0.12), Color(0.12, 0.15, 0.14), false)
+	_box("StreetBinServicePlate", pos + Vector3(0, 0.88, -0.515), Vector3(0.42, 0.18, 0.025), Color(0.045, 0.08, 0.09), false)
 	for x in [-0.34, 0.34]:
-		_cylinder("StreetBinWheel", pos + Vector3(x, 0.16, 0.36), 0.14, 0.11, Color(0.035, 0.04, 0.04), true)
+		var wheel := _cylinder("StreetBinWheel", pos + Vector3(x, 0.16, 0.36), 0.14, 0.11, Color(0.035, 0.04, 0.04), true)
+		wheel.rotation_degrees.z = 90.0
+		var hub := _cylinder("StreetBinWheelHub", pos + Vector3(x + signf(x) * 0.07, 0.16, 0.36), 0.065, 0.035, Color(0.48, 0.54, 0.52), false)
+		hub.rotation_degrees.z = 90.0
 
 func _make_bin(pos: Vector3, color: Color, label_text: String) -> void:
 	# Wheeled commercial recycling container with sloped lid, molded ribs and handle.
-	_box("BinBody", pos + Vector3(0, 0.72, 0), Vector3(1.42, 1.42, 1.35), color, true)
+	_box("BinBody", pos + Vector3(0, 0.72, 0), Vector3(1.42, 1.42, 1.35), color.darkened(0.06), true)
 	_box("BinFrontPanel", pos + Vector3(0, 0.83, -0.69), Vector3(1.12, 0.86, 0.045), color.lightened(0.12), false)
+	_box("BinHazardBand", pos + Vector3(0, 0.37, -0.72), Vector3(1.18, 0.12, 0.045), Color(0.94, 0.62, 0.13), false)
+	_box("BinIntakeSlot", pos + Vector3(0, 1.57, -0.34), Vector3(0.82, 0.045, 0.68), Color(0.025, 0.04, 0.045), false)
+	for side_x in [-0.70, 0.70]:
+		_box("BinCornerArmor", pos + Vector3(side_x, 0.78, -0.64), Vector3(0.10, 1.35, 0.10), Color(0.36, 0.43, 0.43), false)
 	for x in [-0.52, -0.26, 0.0, 0.26, 0.52]:
 		_box("BinMoldedRib", pos + Vector3(x, 0.72, -0.725), Vector3(0.035, 1.05, 0.035), color.darkened(0.18), false)
 	var lid := _box("BinLid", pos + Vector3(0, 1.48, 0.02), Vector3(1.58, 0.18, 1.48), Color(0.075, 0.11, 0.12), false)
 	lid.rotation_degrees.x = -4
 	_box("BinLidGrip", pos + Vector3(0, 1.60, -0.48), Vector3(0.55, 0.09, 0.16), Color(0.18, 0.22, 0.22), false)
 	for x in [-0.53, 0.53]:
-		_cylinder("BinWheel", pos + Vector3(x, 0.20, 0.57), 0.23, 0.16, Color(0.035, 0.045, 0.05), true)
+		var wheel := _cylinder("BinWheel", pos + Vector3(x, 0.20, 0.57), 0.23, 0.16, Color(0.035, 0.045, 0.05), true)
+		wheel.rotation_degrees.z = 90.0
+		var hub := _cylinder("BinWheelHub", pos + Vector3(x + signf(x) * 0.09, 0.20, 0.57), 0.10, 0.04, Color(0.50, 0.56, 0.55), false)
+		hub.rotation_degrees.z = 90.0
 	_box("BinLabelPlate", pos + Vector3(0, 1.02, -0.755), Vector3(0.88, 0.30, 0.035), Color(0.035, 0.08, 0.09), false)
 	_label_3d(label_text, pos + Vector3(0, 1.02, -0.79), 0.18)
 
