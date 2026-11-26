@@ -4116,7 +4116,9 @@ func _build_recycling_mega_factory() -> void:
 		product_label.modulate = Color(0.72, 1.0, 0.90)
 		add_child(product_label)
 
-		_build_factory_row_main_conveyor(row)
+		# A production-line conveyor appears only after its first machine is installed.
+		if mega_factory_built_count >= row * 3 + 1:
+			_build_factory_row_main_conveyor(row)
 		for machine_index in range(3):
 			var x := 151.0 + float(machine_index) * 13.0
 			var station_index := row * 3 + machine_index
@@ -4469,6 +4471,9 @@ func _process_mega_factory_build(delta: float) -> void:
 			mega_factory_machine_labels[index].text = "BUILDING\n%.0f / %.0f ZC" % [mega_factory_build_paid, cost]
 	if mega_factory_build_paid >= cost - 0.001:
 		_build_mega_factory_machine(index)
+		# Unlock this line's conveyor only when its first machine is fully built.
+		if column == 0 and row > 0:
+			_build_factory_row_main_conveyor(row)
 		_build_mega_factory_machine_connections(index)
 		if column > 0:
 			_clear_factory_row_belt_visuals(row)
