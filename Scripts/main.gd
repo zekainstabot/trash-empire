@@ -115,6 +115,7 @@ var robot_anim_time := 0.0
 var conveyor_time := 0.0
 var conveyor_rollers: Array[MeshInstance3D] = []
 var conveyor_slats: Array[Node3D] = []
+var factory_conveyor_slats: Array[Node3D] = []
 var conveyor_item_count := 0
 var factory_stage := 1
 var factory_built_stage := 1
@@ -4222,8 +4223,7 @@ func _build_recycling_mega_factory() -> void:
 
 		# Dedicated output pad on the far end of each production line.
 		_box("FactoryProductOutputPad", Vector3(198.0, 0.34, z), Vector3(5.0, 0.22, 4.8), dark_steel, false)
-		if mega_factory_built_count >= row * 3 + 3:
-			_build_factory_finished_product(row)
+		# Finished goods are represented by the real moving products on the belt.
 
 	# Utility equipment remains grouped in the rear service strip.
 	# Decorative recycling storage silos and caps were removed to clear the view beside line one.
@@ -4503,13 +4503,16 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 		var roller_x := start_x + 0.45 + float(roller_i) * ((belt_length - 0.90) / float(roller_count - 1))
 		var roller := _cylinder("FactoryMainConveyorRoller%d_%d" % [row, roller_i], Vector3(roller_x, 0.875, z), 0.075, 1.20, steel, false)
 		roller.rotation_degrees.x = 90.0
-	# Raised transverse rubber cleats visibly travel with the belt and keep loose material from sliding.
-	var cleat_count := 30
+		conveyor_rollers.append(roller)
+	# Low-profile transverse cleats move with the belt instead of looking like fixed ribs.
+	var cleat_count := 18
 	for cleat_i in range(cleat_count):
-		var cleat_x := start_x + 0.65 + float(cleat_i) * ((belt_length - 1.30) / float(cleat_count - 1))
-		_box("FactoryMainConveyorCleat%d_%d" % [row, cleat_i], Vector3(cleat_x, 0.985, z), Vector3(0.11, 0.055, 1.12), Color(0.10, 0.13, 0.14), false)
-	# Keep the conveyor ends flush: remove the protruding return-drum geometry.
-	# The belt frame and rollers terminate cleanly without exposed drum pieces.
+		var cleat := _box("FactoryMainConveyorCleat%d_%d" % [row, cleat_i], Vector3(start_x + 0.65 + float(cleat_i) * 2.75, 0.985, z), Vector3(0.13, 0.035, 1.08), Color(0.10, 0.13, 0.14), false)
+		cleat.set_meta("factory_belt_start", start_x + 0.65)
+		cleat.set_meta("factory_belt_length", belt_length - 1.30)
+		cleat.set_meta("factory_belt_phase", float(cleat_i) * 2.75)
+		factory_conveyor_slats.append(cleat)
+	# Keep the conveyor ends flush and the moving belt surface visually continuous.
 
 func _build_mega_factory_machine_connections(index: int) -> void:
 	# Legacy hook: the continuous row conveyor is built once for each production row.
@@ -4550,8 +4553,7 @@ func _process_mega_factory_build(delta: float) -> void:
 		mega_factory_build_timer = 0.0
 		if index < mega_factory_machine_labels.size() and is_instance_valid(mega_factory_machine_labels[index]):
 			mega_factory_machine_labels[index].text = "BUILT"
-		if mega_factory_built_count % 3 == 0:
-			_build_factory_finished_product(int(index / 3))
+		# Do not spawn a second static display of three oversized products at the belt exit.
 		_set_message("Machine %d installed. Production and truck delivery updated for its line." % mega_factory_built_count)
 		_update_ui()
 		_save_game()
@@ -5644,6 +5646,12 @@ func _animate_conveyor(delta: float) -> void:
 		if is_instance_valid(roller):
 			# The cylinder's local Y axis is its axle after its placement rotation.
 			roller.rotate_object_local(Vector3.UP, delta * 5.0 * conveyor_speed)
+	for slat in factory_conveyor_slats:
+		if is_instance_valid(slat):
+			var belt_start := float(slat.get_meta("factory_belt_start", 148.0))
+			var belt_length := float(slat.get_meta("factory_belt_length", 49.0))
+			var phase := float(slat.get_meta("factory_belt_phase", 0.0))
+			slat.position.x = belt_start + fposmod(phase + conveyor_time * 2.6, belt_length)
 	for i in range(conveyor_slats.size()):
 		var slat := conveyor_slats[i]
 		if is_instance_valid(slat):
