@@ -6095,10 +6095,18 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	# Deep side frame with a clearly separate moving rubber belt.
 	_box("FactoryMainConveyorFrame%d" % row, Vector3(center_x, 0.68, z), Vector3(belt_length, 0.42, 1.66), frame_color, false)
 	_box("FactoryMainConveyorBelt%d" % row, Vector3(center_x, 0.925, z), Vector3(belt_length - 0.28, 0.075, 1.30), rubber, false)
-	# Rounded discharge nose: the half-disc sits under the straight belt edge
-	# and exposes a smooth semicircular return instead of a blunt square cut.
+	# Proper transverse discharge pulley: its axle runs across the belt width,
+	# with a compact drum tangent to the belt surface (not a flat disc on top).
 	var nose_center_x := end_x - 0.14
-	var nose := _cylinder("FactoryMainConveyorEndNose%d" % row, Vector3(nose_center_x, 0.925, z), 0.65, 0.075, rubber, false)
+	var nose := _cylinder("FactoryMainConveyorEndNose%d" % row, Vector3(nose_center_x, 0.84, z), 0.13, 1.34, rubber, false)
+	nose.rotation_degrees.x = 90.0
+	# Reinforced bearing housings support both ends of the discharge pulley.
+	for bearing_side in [-1.0, 1.0]:
+		_box("FactoryMainConveyorEndBearing%d" % row, Vector3(nose_center_x, 0.84, z + bearing_side * 0.73), Vector3(0.34, 0.40, 0.22), frame_color, false)
+		_cylinder("FactoryMainConveyorEndBearingCap%d" % row, Vector3(nose_center_x, 0.84, z + bearing_side * 0.855), 0.105, 0.035, steel, false)
+	# A short discharge lip bridges the belt edge to the marked output pad.
+	_box("FactoryMainConveyorDischargeLip%d" % row, Vector3(end_x + 0.12, 0.91, z), Vector3(0.38, 0.12, 1.22), steel, false)
+	_box("FactoryMainConveyorDischargeWearPlate%d" % row, Vector3(end_x + 0.13, 0.985, z), Vector3(0.34, 0.025, 1.16), rubber, false)
 	# Wrap the two side guards around the rounded nose in short aligned sections.
 	var nose_guard_radius := 0.79
 	var nose_guard_segments := 12
@@ -6150,7 +6158,11 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 		cleat.set_meta("factory_belt_length", belt_length - 1.30)
 		cleat.set_meta("factory_belt_phase", float(cleat_i) * 2.75)
 		factory_conveyor_slats.append(cleat)
-	# Keep the conveyor ends flush and the moving belt surface visually continuous.
+	# Finish each discharge with a guarded, inspectable service zone and clear
+	# lane marking on the output pad; all five production rows share this geometry.
+	_box("FactoryMainConveyorEndWarning%d" % row, Vector3(end_x - 0.55, 1.265, z), Vector3(0.72, 0.025, 0.045), safety_yellow, false)
+	_box("FactoryMainConveyorEndWarning%d" % row, Vector3(end_x - 0.55, 1.265, z + 0.34), Vector3(0.72, 0.025, 0.045), safety_yellow, false)
+	_box("FactoryMainConveyorEndServicePlate%d" % row, Vector3(end_x - 0.45, 0.79, z + 0.93), Vector3(0.62, 0.035, 0.22), steel, false)
 
 func _build_mega_factory_machine_connections(index: int) -> void:
 	# Legacy hook: the continuous row conveyor is built once for each production row.
