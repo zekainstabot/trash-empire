@@ -181,8 +181,6 @@ var fleet_upgrade_level := 0
 var truck_capacity_upgrade_level := 0
 var packaging_upgrade_level := 0
 var delivery_trucks: Array[Node3D] = []
-var city_truck: Node3D
-var city_trucks: Array[Node3D] = []
 var sorting_robot_upgrade_level := 0
 var conveyor_speed_upgrade_level := 0
 var waste_tank_unload_upgrade_level := 0
@@ -190,13 +188,6 @@ var repair_robot_level := 0
 var machine_broken := false
 var machine_work_timer := 0.0
 var machine_repair_timer := 0.0
-var city_fleet_upgrade_level := 0
-var city_trash_reserved := 0
-var city_truck_phase := 3
-var city_truck_timer := 0.0
-var city_truck_upgrade_level := 0
-var city_truck_start := Vector3(-7.2, 0.0, 33.0)
-var city_truck_dump := Vector3(124.8, 0.0, 0.0)
 var refill_world_button: Node3D
 var main_menu_panel: Control
 var main_menu_open := true
@@ -2644,18 +2635,12 @@ func _start_new_world() -> void:
 		suction_tool.visible = false
 	_refresh_sorting_district()
 	dispatch_upgrade_level = 0
-	city_truck_upgrade_level = 0
-	city_fleet_upgrade_level = 0
-	city_truck_phase = 0
-	city_truck_timer = 0.0
-	city_trash_reserved = 0
 	waste_tank_built = false
 	if is_instance_valid(waste_tank_root):
 		waste_tank_root.queue_free()
 	waste_tank_root = null
 	if is_instance_valid(waste_tank_build_label):
 		waste_tank_build_label.visible = true
-	_reset_city_truck_fleet()
 	fleet_upgrade_level = 0
 	truck_capacity_upgrade_level = 0
 	packaging_upgrade_level = 0
@@ -2676,7 +2661,6 @@ func _start_new_world() -> void:
 	recycling_bonus = 1.0
 	collection_range = 2.0
 	yard_stage = 4
-	_reset_city_truck_fleet()
 	factory_stage = 1
 	factory_built_stage = 1
 	teddy_stock_values.clear()
@@ -2880,7 +2864,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"capacity":"BACKPACK CAPACITY","speed":"MOVEMENT SPEED","range":"PICKUP RANGE","unload":"RECYCLING SPEED",
 		"technology":"TECHNOLOGY","value":"TRASH VALUE","supply":"TRASH SUPPLY","auto":"AUTO PICKUP",
 		"bulk_pickup":"MULTI PICKUP","respawn":"AUTO RESPAWN","luck":"LUCKY FINDS","rare_drops":"SILVER & GOLD FINDS","magnet_power":"MAGNET POWER","suction":"VACUUM SUCTION",
-		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","ground_robot":"GROUND COLLECTOR","sorting_robot":"SORTING ROBOT EFFICIENCY","city_truck":"CITY TRUCK FREQUENCY","city_fleet":"CITY TRUCK FLEET","dispatch":"TRUCK FREQUENCY",
+		"drones":"HELPER DRONES","drone_speed":"DRONE FLIGHT SPEED","drone_capacity":"DRONE CARGO CAPACITY","ground_robot":"GROUND COLLECTOR","sorting_robot":"SORTING ROBOT EFFICIENCY","dispatch":"TRUCK FREQUENCY",
 		"fleet":"HIRE TRUCKS","truck_capacity":"TRUCK CAPACITY","packaging":"PACKAGING SPEED","conveyor_speed":"CONVEYOR & FACTORY SPEED","waste_tank_unload":"WASTE TANK DISCHARGE","waste_tank_capacity":"WASTE TANK CAPACITY","factory_truck_interval":"FACTORY TRUCK ARRIVAL"
 	}
 	var descriptions := {
@@ -2902,7 +2886,7 @@ func _build_skill_tree(parent: Control) -> void:
 		"drone_speed":"Make every helper drone fly faster on collection and return trips.",
 		"drone_capacity":"Increase how much waste each helper drone carries before returning to its own station.",
 		"ground_robot":"Deploy a four-wheel autonomous collection rover. Each level improves its speed and cargo capacity.",
-		"sorting_robot":"Increase all built sorting robots’ travel speed and search radius.","city_truck":"Shorten the interval between municipal waste collection trucks.","city_fleet":"Add more municipal trucks so multiple deliveries can be queued at the depot.",
+		"sorting_robot":"Increase all built sorting robots’ travel speed and search radius.",
 		"dispatch":"Send product delivery trucks more frequently.",
 		"fleet":"Hire extra delivery trucks to ship products.",
 		"truck_capacity":"Let each delivery truck carry more boxes.",
@@ -3214,8 +3198,6 @@ func _skill_level(branch: String) -> int:
 		"waste_tank_unload": return waste_tank_unload_upgrade_level
 		"waste_tank_capacity": return waste_tank_capacity_upgrade_level
 		"repair_robot": return repair_robot_level
-		"city_truck": return city_truck_upgrade_level
-		"city_fleet": return city_fleet_upgrade_level
 		"dispatch": return dispatch_upgrade_level
 		"fleet": return fleet_upgrade_level
 		"truck_capacity": return truck_capacity_upgrade_level
@@ -3260,8 +3242,6 @@ func _purchase_skill_node(branch: String, level: int) -> void:
 		"waste_tank_unload": await _upgrade_waste_tank_unload()
 		"waste_tank_capacity": await _upgrade_waste_tank_capacity()
 		"repair_robot": await _upgrade_repair_robot()
-		"city_truck": await _upgrade_city_truck_frequency()
-		"city_fleet": await _upgrade_city_fleet()
 		"dispatch": await _upgrade_dispatch()
 		"fleet": await _upgrade_fleet()
 		"truck_capacity": await _upgrade_truck_capacity()
@@ -5037,8 +5017,6 @@ func _save_game() -> void:
 	save.set_value("progress", "machine_broken", machine_broken)
 	save.set_value("progress", "machine_repair_timer", machine_repair_timer)
 	save.set_value("progress", "dispatch_upgrade_level", dispatch_upgrade_level)
-	save.set_value("progress", "city_truck_upgrade_level", city_truck_upgrade_level)
-	save.set_value("progress", "city_fleet_upgrade_level", city_fleet_upgrade_level)
 	save.set_value("progress", "fleet_upgrade_level", fleet_upgrade_level)
 	save.set_value("progress", "truck_capacity_upgrade_level", truck_capacity_upgrade_level)
 	save.set_value("progress", "packaging_upgrade_level", packaging_upgrade_level)
@@ -5102,8 +5080,6 @@ func _load_game() -> void:
 	machine_broken = false # Ignore old saves that recorded a breakdown.
 	machine_repair_timer = float(save.get_value("progress", "machine_repair_timer", 0.0))
 	dispatch_upgrade_level = clampi(int(save.get_value("progress", "dispatch_upgrade_level", 0)), 0, 3)
-	city_truck_upgrade_level = clampi(int(save.get_value("progress", "city_truck_upgrade_level", 0)), 0, 3)
-	city_fleet_upgrade_level = clampi(int(save.get_value("progress", "city_fleet_upgrade_level", 0)), 0, 3)
 	fleet_upgrade_level = clampi(int(save.get_value("progress", "fleet_upgrade_level", 0)), 0, 3)
 	truck_capacity_upgrade_level = clampi(int(save.get_value("progress", "truck_capacity_upgrade_level", 0)), 0, 3)
 	packaging_upgrade_level = clampi(int(save.get_value("progress", "packaging_upgrade_level", 0)), 0, 3)
@@ -5882,7 +5858,6 @@ func _build_city_dump_area() -> void:
 		_build_waste_tank_structure()
 		waste_tank_build_label.visible = false
 	_build_drone_station()
-	# No city garbage trucks are spawned; the player supplies the tank.
 
 func _on_waste_tank_build_entered(body: Node3D) -> void:
 	if body != player:
@@ -5998,156 +5973,6 @@ func _refresh_factory_machine_status() -> void:
 		var output_name: String = output_names[clampi(stage, 0, 3)]
 		factory_machine_status_label.text = "RAW %d | M1 %d | M2 %d | %s %d" % [factory_row_input_stock[0], factory_row_stage1_stock[0], factory_row_stage2_stock[0], output_name, output_stock]
 
-func _create_city_truck(index: int) -> Node3D:
-	var truck := Node3D.new()
-	truck.name = "MunicipalGarbageTruck%d" % (index + 1)
-	truck.position = city_truck_start
-	truck.visible = false
-	truck.set_meta("phase", 0)
-	truck.set_meta("timer", maxf(0.0, _city_truck_interval() - float(index) * 12.0))
-	truck.set_meta("queue_position", Vector3(-7.2, 0.0, -15.0 + float(index) * 3.8))
-	truck.set_meta("load", _city_truck_load())
-	truck.set_meta("reserved", false)
-	add_child(truck)
-	# Rounded chassis and sculpted cab replace the old block-like toy silhouette.
-	_city_truck_sphere(truck, "TruckChassis", Vector3(0, 0.72, 0.0), Vector3(1.02, 0.19, 1.78), Color(0.10, 0.13, 0.14))
-	_city_truck_sphere(truck, "TruckCabLower", Vector3(0, 1.18, -1.12), Vector3(0.91, 0.48, 0.70), Color(0.76, 0.56, 0.29))
-	_city_truck_sphere(truck, "TruckCabRoof", Vector3(0, 1.72, -1.17), Vector3(0.88, 0.43, 0.66), Color(0.82, 0.64, 0.36))
-	_city_truck_sphere(truck, "TruckHood", Vector3(0, 1.08, -1.73), Vector3(0.88, 0.30, 0.42), Color(0.72, 0.51, 0.27))
-	_city_truck_sphere(truck, "TruckWindshield", Vector3(0, 1.53, -1.72), Vector3(0.70, 0.29, 0.035), Color(0.10, 0.22, 0.27))
-	_city_truck_add_driver(truck)
-	_city_truck_box(truck, "TruckGrille", Vector3(0, 0.96, -2.08), Vector3(0.78, 0.30, 0.045), Color(0.16, 0.20, 0.21))
-	# Open-top cargo bed: a floor and four raised sides keep collected litter visibly inside.
-	_city_truck_box(truck, "TruckCargoFloor", Vector3(0, 0.88, 0.72), Vector3(1.82, 0.12, 1.78), Color(0.16, 0.25, 0.22))
-	_city_truck_box(truck, "TruckCargoSideLeft", Vector3(-0.91, 1.34, 0.72), Vector3(0.10, 0.92, 1.82), Color(0.20, 0.34, 0.29))
-	_city_truck_box(truck, "TruckCargoSideRight", Vector3(0.91, 1.34, 0.72), Vector3(0.10, 0.92, 1.82), Color(0.20, 0.34, 0.29))
-	_city_truck_box(truck, "TruckCargoFrontWall", Vector3(0, 1.34, -0.18), Vector3(1.82, 0.92, 0.10), Color(0.20, 0.34, 0.29))
-	_city_truck_box(truck, "TruckCargoRearWall", Vector3(0, 1.34, 1.62), Vector3(1.82, 0.92, 0.10), Color(0.20, 0.34, 0.29))
-	var wheels: Array[Node3D] = []
-	for side in [-1.0, 1.0]:
-		for wheel_z in [-1.18, 1.12]:
-			# Each wheel spins around the axle (local X), while the tire itself
-			# is a solid cylinder whose axis also runs across the truck.
-			var wheel_pivot := Node3D.new()
-			wheel_pivot.name = "TruckWheelPivot"
-			wheel_pivot.position = Vector3(side * 1.04, 0.42, wheel_z)
-			truck.add_child(wheel_pivot)
-
-			var tire := MeshInstance3D.new()
-			tire.name = "TruckRubberTire"
-			var tire_mesh := CylinderMesh.new()
-			tire_mesh.top_radius = 0.40
-			tire_mesh.bottom_radius = 0.40
-			tire_mesh.height = 0.34
-			tire_mesh.radial_segments = 32
-			tire.mesh = tire_mesh
-			tire.rotation_degrees.z = 90.0
-			tire.material_override = _mat(Color(0.025, 0.031, 0.034))
-			wheel_pivot.add_child(tire)
-
-			# Deep sidewall rim, recessed into the tire so it cannot float outside it.
-			var rim := MeshInstance3D.new()
-			rim.name = "TruckWheelRim"
-			var rim_mesh := CylinderMesh.new()
-			rim_mesh.top_radius = 0.255
-			rim_mesh.bottom_radius = 0.255
-			rim_mesh.height = 0.035
-			rim_mesh.radial_segments = 32
-			rim.mesh = rim_mesh
-			rim.position.x = side * 0.174
-			rim.rotation_degrees.z = 90.0
-			rim.material_override = _mat(Color(0.29, 0.34, 0.35))
-			wheel_pivot.add_child(rim)
-
-			var hub := MeshInstance3D.new()
-			hub.name = "TruckWheelHub"
-			var hub_mesh := CylinderMesh.new()
-			hub_mesh.top_radius = 0.12
-			hub_mesh.bottom_radius = 0.12
-			hub_mesh.height = 0.045
-			hub_mesh.radial_segments = 24
-			hub.mesh = hub_mesh
-			hub.position.x = side * 0.185
-			hub.rotation_degrees.z = 90.0
-			hub.material_override = _mat(Color(0.68, 0.71, 0.68))
-			wheel_pivot.add_child(hub)
-
-			wheels.append(wheel_pivot)
-	truck.set_meta("wheels", wheels)
-	_city_truck_box(truck, "TruckLogo", Vector3(0, 1.45, 1.68), Vector3(0.9, 0.32, 0.035), Color(0.72, 0.66, 0.48))
-	# Rounded industrial details break up the toy-like rectangular silhouette.
-	_city_truck_sphere(truck, "FrontSteelBumper", Vector3(0, 0.69, -2.10), Vector3(1.00, 0.10, 0.10), Color(0.28, 0.32, 0.33))
-	_city_truck_sphere(truck, "CabRoofHighlight", Vector3(0, 2.02, -1.15), Vector3(0.72, 0.045, 0.52), Color(0.91, 0.73, 0.43))
-	_city_truck_box(truck, "LeftMirrorArm", Vector3(-1.02, 1.48, -1.35), Vector3(0.28, 0.07, 0.08), Color(0.18, 0.21, 0.21))
-	_city_truck_box(truck, "RightMirrorArm", Vector3(1.02, 1.48, -1.35), Vector3(0.28, 0.07, 0.08), Color(0.18, 0.21, 0.21))
-	for side in [-1.0, 1.0]:
-		_city_truck_box(truck, "CargoSideRib", Vector3(side * 0.985, 1.38, 0.72), Vector3(0.07, 0.92, 1.55), Color(0.12, 0.23, 0.20))
-		_city_truck_box(truck, "CabStep", Vector3(side * 0.91, 0.73, -0.72), Vector3(0.22, 0.12, 0.72), Color(0.34, 0.38, 0.37))
-		for wheel_z in [-1.18, 1.12]:
-			var fender := MeshInstance3D.new()
-			fender.name = "TruckWheelFender"
-			var fender_mesh := TorusMesh.new()
-			fender_mesh.inner_radius = 0.32
-			fender_mesh.outer_radius = 0.46
-			fender_mesh.rings = 12
-			fender_mesh.ring_segments = 20
-			fender.mesh = fender_mesh
-			fender.position = Vector3(side * 1.045, 0.43, wheel_z)
-			# TorusMesh is oriented around local Y by default. Rotate it onto
-			# the wheel plane (normal along X), not around Y where it lies flat.
-			fender.rotation_degrees.z = 90.0
-			fender.material_override = _mat(Color(0.22, 0.27, 0.27))
-			truck.add_child(fender)
-	for x in [-0.68, 0.68]:
-		var lamp := MeshInstance3D.new()
-		lamp.name = "TruckHeadlight"
-		var lamp_mesh := SphereMesh.new()
-		lamp_mesh.radius = 0.13
-		lamp_mesh.height = 0.20
-		lamp.mesh = lamp_mesh
-		lamp.position = Vector3(x, 1.02, -2.12)
-		lamp.material_override = _mat(Color(0.96, 0.84, 0.48))
-		truck.add_child(lamp)
-	return truck
-
-func _city_truck_sphere(parent: Node3D, node_name: String, pos: Vector3, dimensions: Vector3, color: Color) -> void:
-	var mesh := MeshInstance3D.new()
-	mesh.name = node_name
-	var shape := SphereMesh.new()
-	shape.radial_segments = 32
-	shape.rings = 16
-	mesh.mesh = shape
-	mesh.position = pos
-	mesh.scale = dimensions
-	var material := _mat(color)
-	if node_name == "TruckWindshield":
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.albedo_color = Color(color.r, color.g, color.b, 0.42)
-	mesh.material_override = material
-	parent.add_child(mesh)
-
-func _city_truck_add_driver(truck: Node3D) -> void:
-	# A seated municipal driver, visible through the slightly tinted windshield.
-	_city_truck_sphere(truck, "TruckDriverTorso", Vector3(0.0, 1.34, -1.28), Vector3(0.34, 0.43, 0.25), Color(0.16, 0.29, 0.48))
-	_city_truck_sphere(truck, "TruckDriverHead", Vector3(0.0, 1.76, -1.34), Vector3(0.25, 0.29, 0.24), Color(0.72, 0.51, 0.36))
-	_city_truck_sphere(truck, "TruckDriverHair", Vector3(0.0, 1.91, -1.33), Vector3(0.26, 0.13, 0.25), Color(0.12, 0.10, 0.085))
-	_city_truck_sphere(truck, "TruckDriverLeftArm", Vector3(-0.27, 1.39, -1.48), Vector3(0.13, 0.30, 0.13), Color(0.16, 0.29, 0.48))
-	_city_truck_sphere(truck, "TruckDriverRightArm", Vector3(0.27, 1.39, -1.48), Vector3(0.13, 0.30, 0.13), Color(0.16, 0.29, 0.48))
-	_city_truck_sphere(truck, "TruckDriverLeftHand", Vector3(-0.22, 1.30, -1.62), Vector3(0.10, 0.10, 0.09), Color(0.72, 0.51, 0.36))
-	_city_truck_sphere(truck, "TruckDriverRightHand", Vector3(0.22, 1.30, -1.62), Vector3(0.10, 0.10, 0.09), Color(0.72, 0.51, 0.36))
-	var steering_wheel := MeshInstance3D.new()
-	steering_wheel.name = "TruckSteeringWheel"
-	var steering_mesh := TorusMesh.new()
-	steering_mesh.inner_radius = 0.16
-	steering_mesh.outer_radius = 0.205
-	steering_mesh.rings = 10
-	steering_mesh.ring_segments = 20
-	steering_wheel.mesh = steering_mesh
-	steering_wheel.position = Vector3(0.0, 1.31, -1.64)
-	steering_wheel.rotation_degrees.x = 90.0
-	steering_wheel.material_override = _mat(Color(0.055, 0.065, 0.07))
-	truck.add_child(steering_wheel)
-
 func _city_truck_box(parent: Node3D, node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = node_name
@@ -6157,33 +5982,6 @@ func _city_truck_box(parent: Node3D, node_name: String, pos: Vector3, size: Vect
 	mesh.position = pos
 	mesh.material_override = _mat(color)
 	parent.add_child(mesh)
-
-func _refresh_city_truck_fleet() -> void:
-	_reset_city_truck_fleet()
-
-func _reset_city_truck_fleet() -> void:
-	# Municipal garbage collection is retired; only product-delivery trucks remain.
-	city_trash_reserved = 0
-	for truck in city_trucks:
-		if is_instance_valid(truck):
-			truck.queue_free()
-	city_trucks.clear()
-	city_truck = null
-	city_truck_phase = 0
-	city_truck_timer = 0.0
-
-func _process_city_truck(_delta: float) -> void:
-	# Municipal garbage collection is retired; factory input is player supplied.
-	return
-
-func _move_city_truck(truck: Node3D, target: Vector3, delta: float, move_speed: float = 3.8) -> bool:
-	var direction := target - truck.position
-	direction.y = 0.0
-	if direction.length() > 0.06:
-		var desired_yaw := atan2(-direction.x, -direction.z)
-		truck.rotation.y = lerp_angle(truck.rotation.y, desired_yaw, minf(1.0, delta * 4.5))
-	truck.position = truck.position.move_toward(target, delta * move_speed)
-	return truck.position.distance_to(target) < 0.07
 
 func _upgrade_factory_truck_interval() -> void:
 	if factory_truck_interval_upgrade_level >= 3:
@@ -6196,14 +5994,6 @@ func _upgrade_factory_truck_interval() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Factory trucks now arrive every %.0f seconds after loading." % _factory_truck_arrival_interval())
-
-func _city_truck_interval() -> float:
-	var intervals := [300.0, 240.0, 180.0, 120.0]
-	return intervals[clampi(city_truck_upgrade_level, 0, 3)]
-
-func _city_truck_load() -> int:
-	# Every municipal truck delivers a full 500-piece load.
-	return 500
 
 func _city_dump_capacity() -> int:
 	# The bunker holds exactly three full municipal truckloads.
@@ -6455,15 +6245,10 @@ func _refill_first_district() -> void:
 	_update_ui()
 	_set_message("RESPAWN COMPLETE: %d new trash | City supply: %d / 1,000" % [spawned, alive_count + spawned])
 
-func _is_city_truck_lane_position(point: Vector3) -> bool:
-	var on_service_road := point.x >= -9.2 and point.x <= -5.2 and point.z >= -8.5 and point.z <= 34.0
-	var depot_entrance := point.x >= -7.8 and point.x <= -3.8 and point.z >= -13.5 and point.z <= -5.0
-	return on_service_road or depot_entrance
-
 func _is_clear_trash_spawn(point: Vector3) -> bool:
 	# Public ground is valid spawn space: streets, alleys, sidewalks, parks and shop fronts.
 	# Only reject actual building/object footprints so trash never appears on roofs or inside meshes.
-	if point.distance_to(SELL_POINT) < 4.0 or _is_city_truck_lane_position(point):
+	if point.distance_to(SELL_POINT) < 4.0:
 		return false
 	if point.x < -13.0 or point.x > 111.0 or point.z < -36.0 or point.z > 36.0:
 		return false
@@ -7420,31 +7205,6 @@ func _depart_delivery_truck(truck_index: int) -> void:
 		depart.tween_callback(_finish_delivery_truck_dispatch)
 	else:
 		_finish_delivery_truck_dispatch()
-
-func _upgrade_city_truck_frequency() -> void:
-	if city_truck_upgrade_level >= 3:
-		_set_message("City truck frequency is already at maximum.")
-		return
-	var cost := _upgrade_cost(60.0, city_truck_upgrade_level + 1)
-	if not await _pay_gradually(cost):
-		return
-	city_truck_upgrade_level = mini(city_truck_upgrade_level + 1, 3)
-	_refresh_upgrade_prices()
-	_save_game()
-	_set_message("City trucks now arrive every %.0f minutes!" % (_city_truck_interval() / 60.0))
-
-func _upgrade_city_fleet() -> void:
-	if city_fleet_upgrade_level >= 3:
-		_set_message("City truck fleet is already at maximum.")
-		return
-	var cost := _upgrade_cost(85.0, city_fleet_upgrade_level + 1)
-	if not await _pay_gradually(cost):
-		return
-	city_fleet_upgrade_level = mini(city_fleet_upgrade_level + 1, 3)
-	_refresh_city_truck_fleet()
-	_refresh_upgrade_prices()
-	_save_game()
-	_set_message("City fleet expanded: %d trucks. Extra trucks will queue at the depot." % city_trucks.size())
 
 func _upgrade_dispatch() -> void:
 	var cost := _upgrade_cost(45.0, dispatch_upgrade_level + 1)
