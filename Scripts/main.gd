@@ -160,6 +160,7 @@ var waste_tank_build_label: Label3D
 var waste_tank_inventory_label: Label3D
 var waste_feed_timer := 0.0
 var waste_feed_busy := false
+var waste_feed_conveyor_network_built := false
 var waste_feed_line_index := 0
 var factory_upgrade_button: Node3D
 var yard_stage := 1
@@ -5433,74 +5434,9 @@ func _build_recycling_mega_factory() -> void:
 
 	# Open-air factory: no roof, walls, or structural columns.
 
-	# The tank-to-machine feed network is revealed only after storage is built.
 	if waste_tank_built:
-		# Dedicated transfer conveyor links the central cross-feed spine directly to the main waste tank.
-		# Its left end meets the tank outlet and its right end meets the middle of the five-row feed spine.
-		_box("WasteFeedMainFrame", Vector3(137.7, 0.68, 0.0), Vector3(18.6, 0.30, 1.8), dark_steel, false)
-		_box("WasteFeedMainBelt", Vector3(137.7, 0.925, 0.0), Vector3(18.35, 0.08, 1.35), belt_color, false)
-		# Keep the final section of the trunk open where it meets the distributor.
-		for side_z in [-0.78, 0.78]:
-			_box("WasteFeedMainRail", Vector3(135.55, 1.08, side_z), Vector3(14.05, 0.28, 0.08), steel, false)
-		for transfer_x in range(129, 145, 2):
-			var transfer_roller := _cylinder("WasteFeedMainRoller", Vector3(float(transfer_x), 0.88, 0.0), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
-			transfer_roller.rotation_degrees.x = 90.0
-		# Reinforced intake lip makes the physical connection to the tank outlet visible.
-		_box("WasteTankConveyorIntakeFrame", Vector3(128.55, 0.68, 0.0), Vector3(1.25, 0.34, 1.95), dark_steel, false)
-		_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.925, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
-		_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
-		_box("WasteFeedDistributorBelt", Vector3(147.0, 0.925, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
-		# Split the distributor guard rails around every branch junction so the belts read as one connected path.
-		var distributor_gaps: Array[float] = []
-		for row in range(5):
-			distributor_gaps.append(_factory_row_z(row))
-		var gap_half_width := 1.65
-		var rail_cursor := -26.75
-		for gap_center in distributor_gaps:
-			var gap_start: float = gap_center - gap_half_width
-			var segment_length: float = gap_start - rail_cursor
-			if segment_length > 0.25:
-				for side_x in [146.12, 147.88]:
-					_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + segment_length * 0.5), Vector3(0.08, 0.28, segment_length), steel, false)
-			rail_cursor = gap_center + gap_half_width
-		var final_length := 26.75 - rail_cursor
-		if final_length > 0.25:
-			for side_x in [146.12, 147.88]:
-				_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + final_length * 0.5), Vector3(0.08, 0.28, final_length), steel, false)
-	
-		# Use the existing distributor spine; avoid a duplicate parallel conveyor.
-	
-		# Keep quarter-turn elbows only at the two outer ends of the distributor.
-		# The three middle row connections stay straight; they do not need extra bends.
-		for row in range(5):
-			var feed_z := _factory_row_z(row)
-			if row == 0 or row == 4:
-				var bend_radius := 1.15
-				var bend_start_x := 147.0
-				var bend_start_z := feed_z - bend_radius
-				var bend_segments := 24
-				var segment_len := (bend_radius * PI * 0.5 / float(bend_segments)) * 1.12
-				for bend_i in range(bend_segments):
-					var t := (float(bend_i) + 0.5) / float(bend_segments)
-					var angle := t * PI * 0.5
-					var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
-					var bend_z := bend_start_z + bend_radius * sin(angle)
-					var bend_rotation: float = rad_to_deg(angle) - 90.0
-					var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.42), dark_steel, false)
-					bend_frame.rotation_degrees.y = bend_rotation
-					var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len * 1.04, 0.08, 1.18), belt_color, false)
-					bend_belt.rotation_degrees.y = bend_rotation
-					for side in [-1.0, 1.0]:
-						var rail_x: float = bend_x + cos(angle) * 0.72 * side
-						var rail_z: float = bend_z - sin(angle) * 0.72 * side
-						var bend_rail := _box("FactoryFirstMachineFeedBendRail%d_%d_%d" % [row, bend_i, int(side)], Vector3(rail_x, 1.075, rail_z), Vector3(segment_len * 1.08, 0.24, 0.085), steel, false)
-						bend_rail.rotation_degrees.y = bend_rotation
-			# All five branch belts remain straight after leaving the distributor.
-			_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.35, 0.68, feed_z), Vector3(2.85, 0.30, 1.45), dark_steel, false)
-			_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(2.90, 0.08, 1.22), belt_color, false)
-			for side_z in [feed_z - 0.72, feed_z + 0.72]:
-				_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(149.55, 1.075, side_z), Vector3(2.45, 0.24, 0.085), steel, false)
-	
+		_build_waste_feed_conveyor_network()
+
 	mega_factory_machine_labels.clear()
 	for row in range(5):
 		var z := _factory_row_z(row)
@@ -5953,6 +5889,81 @@ func _build_mega_factory_machine(index: int) -> void:
 			_box("MegaMachineDischargeGuard%d" % index, Vector3(x + 2.78, 1.30, z + discharge_side * 0.70), Vector3(0.78, 0.30, 0.10), steel, false)
 	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 4.31, z - 2.0), 0.13)
 
+func _build_waste_feed_conveyor_network() -> void:
+	if waste_feed_conveyor_network_built:
+		return
+	waste_feed_conveyor_network_built = true
+	var steel := Color(0.16, 0.22, 0.24)
+	var dark_steel := Color(0.055, 0.085, 0.095)
+	var belt_color := Color(0.035, 0.055, 0.06)
+	# Dedicated transfer conveyor links the central cross-feed spine directly to the main waste tank.
+	# Its left end meets the tank outlet and its right end meets the middle of the five-row feed spine.
+	_box("WasteFeedMainFrame", Vector3(137.7, 0.68, 0.0), Vector3(18.6, 0.30, 1.8), dark_steel, false)
+	_box("WasteFeedMainBelt", Vector3(137.7, 0.925, 0.0), Vector3(18.35, 0.08, 1.35), belt_color, false)
+	# Keep the final section of the trunk open where it meets the distributor.
+	for side_z in [-0.78, 0.78]:
+		_box("WasteFeedMainRail", Vector3(135.55, 1.08, side_z), Vector3(14.05, 0.28, 0.08), steel, false)
+	for transfer_x in range(129, 145, 2):
+		var transfer_roller := _cylinder("WasteFeedMainRoller", Vector3(float(transfer_x), 0.88, 0.0), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
+		transfer_roller.rotation_degrees.x = 90.0
+	# Reinforced intake lip makes the physical connection to the tank outlet visible.
+	_box("WasteTankConveyorIntakeFrame", Vector3(128.55, 0.68, 0.0), Vector3(1.25, 0.34, 1.95), dark_steel, false)
+	_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.925, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
+	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
+	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.925, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
+	# Split the distributor guard rails around every branch junction so the belts read as one connected path.
+	var distributor_gaps: Array[float] = []
+	for row in range(5):
+		distributor_gaps.append(_factory_row_z(row))
+	var gap_half_width := 1.65
+	var rail_cursor := -26.75
+	for gap_center in distributor_gaps:
+		var gap_start: float = gap_center - gap_half_width
+		var segment_length: float = gap_start - rail_cursor
+		if segment_length > 0.25:
+			for side_x in [146.12, 147.88]:
+				_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + segment_length * 0.5), Vector3(0.08, 0.28, segment_length), steel, false)
+		rail_cursor = gap_center + gap_half_width
+	var final_length := 26.75 - rail_cursor
+	if final_length > 0.25:
+		for side_x in [146.12, 147.88]:
+			_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + final_length * 0.5), Vector3(0.08, 0.28, final_length), steel, false)
+	
+	# Use the existing distributor spine; avoid a duplicate parallel conveyor.
+	
+	# Keep quarter-turn elbows only at the two outer ends of the distributor.
+	# The three middle row connections stay straight; they do not need extra bends.
+	for row in range(5):
+		var feed_z := _factory_row_z(row)
+		if row == 0 or row == 4:
+			var bend_radius := 1.15
+			var bend_start_x := 147.0
+			var bend_start_z := feed_z - bend_radius
+			var bend_segments := 24
+			var segment_len := (bend_radius * PI * 0.5 / float(bend_segments)) * 1.12
+			for bend_i in range(bend_segments):
+				var t := (float(bend_i) + 0.5) / float(bend_segments)
+				var angle := t * PI * 0.5
+				var bend_x := bend_start_x + bend_radius * (1.0 - cos(angle))
+				var bend_z := bend_start_z + bend_radius * sin(angle)
+				var bend_rotation: float = rad_to_deg(angle) - 90.0
+				var bend_frame := _box("FactoryFirstMachineFeedBendFrame%d_%d" % [row, bend_i], Vector3(bend_x, 0.69, bend_z), Vector3(segment_len, 0.28, 1.42), dark_steel, false)
+				bend_frame.rotation_degrees.y = bend_rotation
+				var bend_belt := _box("FactoryFirstMachineFeedBendBelt%d_%d" % [row, bend_i], Vector3(bend_x, 0.925, bend_z), Vector3(segment_len * 1.04, 0.08, 1.18), belt_color, false)
+				bend_belt.rotation_degrees.y = bend_rotation
+				for side in [-1.0, 1.0]:
+					var rail_x: float = bend_x + cos(angle) * 0.72 * side
+					var rail_z: float = bend_z - sin(angle) * 0.72 * side
+					var bend_rail := _box("FactoryFirstMachineFeedBendRail%d_%d_%d" % [row, bend_i, int(side)], Vector3(rail_x, 1.075, rail_z), Vector3(segment_len * 1.08, 0.24, 0.085), steel, false)
+					bend_rail.rotation_degrees.y = bend_rotation
+		# All five branch belts remain straight after leaving the distributor.
+		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.35, 0.68, feed_z), Vector3(3.45, 0.30, 1.45), dark_steel, false)
+		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(3.50, 0.08, 1.22), belt_color, false)
+		for side_z in [feed_z - 0.72, feed_z + 0.72]:
+			_box("FactoryFirstMachineFeedBranchRail%d" % row, Vector3(149.55, 1.075, side_z), Vector3(2.75, 0.24, 0.085), steel, false)
+	
+
+
 func _build_factory_row_main_conveyor(row: int) -> void:
 	var z := _factory_row_z(row)
 	# Industrial conveyor palette: graphite rubber, galvanized steel and restrained safety-yellow details.
@@ -6117,6 +6128,7 @@ func _on_waste_tank_build_entered(body: Node3D) -> void:
 	money -= BUILD_COST
 	waste_tank_built = true
 	_build_waste_tank_structure()
+	_build_waste_feed_conveyor_network()
 	if is_instance_valid(waste_tank_build_label):
 		waste_tank_build_label.visible = false
 	_update_ui()
