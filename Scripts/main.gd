@@ -1813,7 +1813,8 @@ func _refresh_factory_build_zones() -> void:
 	factory_build_label = Label3D.new()
 	factory_build_label.name = "FactoryBuildProgressLabel"
 	# Lay the payment instructions directly on the build pad, like painted floor text.
-	factory_build_label.position = Vector3(7.5, 0.105, z)
+	# Move the remaining-cost readout to the player-facing edge so the conveyor cannot cover it.
+	factory_build_label.position = Vector3(7.5, 0.105, z + 1.25)
 	factory_build_label.rotation_degrees.x = -90.0
 	factory_build_label.font_size = 23
 	factory_build_label.pixel_size = 0.008
