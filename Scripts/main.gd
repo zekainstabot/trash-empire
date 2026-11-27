@@ -5834,11 +5834,14 @@ func _append_factory_truck_route_leg(tween: Tween, truck: Node3D, target: Vector
 	var target_yaw := atan2(direction.z, -direction.x)
 	var yaw_delta := wrapf(target_yaw - truck.rotation.y, -PI, PI)
 	var final_yaw := truck.rotation.y + yaw_delta
-	var turn_time := clampf(absf(yaw_delta) / 3.2, 0.08, 0.65)
-	if absf(yaw_delta) > 0.16:
-		_flash_factory_truck_turn_signals(truck, turn_time)
-	tween.tween_property(truck, "rotation:y", final_yaw, turn_time)
 	var safe_travel_time := maxf(0.05, travel_time)
+	# A real vehicle steers while it is moving. Rotate the chassis during
+	# the same route leg instead of turning in place before translating.
+	# This makes cornering a smooth forward arc and prevents sideways-looking
+	# or reverse-looking movement at 90-degree bends.
+	if absf(yaw_delta) > 0.16:
+		_flash_factory_truck_turn_signals(truck, safe_travel_time)
+		tween.parallel().tween_property(truck, "rotation:y", final_yaw, safe_travel_time)
 	tween.tween_property(truck, "position", target, safe_travel_time)
 	# All route legs are forward in the truck's local -X direction. Spin all
 	# six wheels by distance/radius in parallel with chassis translation.
