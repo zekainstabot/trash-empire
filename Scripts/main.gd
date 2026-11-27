@@ -5781,8 +5781,11 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	factory_row_belt_items[row] = queue
 	_factory_row_remove_sellable_stock(row, 3)
 	_reposition_factory_belt_queue(row)
-	var truck := _create_factory_row_truck(row)
 	var z := _factory_row_z(row)
+	var exit_side_z := 38.0 if z >= 0.0 else -38.0
+	var truck := _create_factory_row_truck(row)
+	# Trucks approach from the open side apron; never spawn inside the warehouse.
+	truck.position = Vector3(242.0, 0.0, exit_side_z)
 	var stage_names := ["RAW", "PREPARATION", "PROCESSING", "FINISHED"]
 	var stage_name: String = stage_names[clampi(sell_stage, 0, 3)]
 	var door_left := _box("FactoryDoorMovingLeft", Vector3(207.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
@@ -5792,7 +5795,11 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(door_left, "position:z", z - 3.0, 0.55)
 	tween.parallel().tween_property(door_right, "position:z", z + 3.0, 0.55)
-	tween.tween_property(truck, "position:x", 210.0, 1.0)
+	# Approach the dock from beyond the warehouse's south/north wall, then
+	# move along the clear west apron into the assigned loading lane.
+	_append_factory_truck_route_leg(tween, truck, Vector3(210.0, 0.0, exit_side_z), 1.35)
+	_append_factory_truck_route_leg(tween, truck, Vector3(210.0, 0.0, z), 1.05)
+	tween.tween_property(truck, "rotation:y", 0.0, 0.30)
 	for package_index in range(loaded_products.size()):
 		var product := loaded_products[package_index]
 		var target := Vector3(211.15, 2.35, z + float(package_index - 1) * 0.82)
@@ -5809,16 +5816,26 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	)
 	tween.tween_interval(0.35)
 	tween.tween_interval(0.25)
-	_append_factory_truck_route_leg(tween, truck, Vector3(220.0, 0.0, z + 5.0), 0.45)
-	_append_factory_truck_route_leg(tween, truck, Vector3(234.0, 0.0, z + 5.0), 1.0)
-	_append_factory_truck_route_leg(tween, truck, Vector3(234.0, 0.0, 12.0), 0.65)
-	_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, 12.0), 1.2)
-	_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, 22.0), 0.55)
-	_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, 22.0), 1.1)
-	_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, 34.0), 0.65)
-	_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, 34.0), 1.1)
-	_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, 46.0), 0.55)
-	_append_factory_truck_route_leg(tween, truck, Vector3(298.0, 0.0, 46.0), 1.2)
+	# Leave the loading bay on the open west apron, clear the warehouse side
+	# wall, then merge onto the outbound road outside the building footprint.
+	_append_factory_truck_route_leg(tween, truck, Vector3(210.0, 0.0, exit_side_z), 1.10)
+	_append_factory_truck_route_leg(tween, truck, Vector3(242.0, 0.0, exit_side_z), 1.35)
+	if exit_side_z > 0.0:
+		_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, 38.0), 0.65)
+		_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, 22.0), 0.65)
+		_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, 22.0), 1.1)
+		_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, 34.0), 0.65)
+		_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, 34.0), 1.1)
+		_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, 46.0), 0.55)
+		_append_factory_truck_route_leg(tween, truck, Vector3(298.0, 0.0, 46.0), 1.2)
+	else:
+		_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, -38.0), 0.65)
+		_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, -22.0), 0.65)
+		_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, -22.0), 1.1)
+		_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, -34.0), 0.65)
+		_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, -34.0), 1.1)
+		_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, -46.0), 0.55)
+		_append_factory_truck_route_leg(tween, truck, Vector3(298.0, 0.0, -46.0), 1.2)
 	tween.tween_callback(func():
 		truck.queue_free()
 		door_left.queue_free()
