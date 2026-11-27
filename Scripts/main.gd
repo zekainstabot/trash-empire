@@ -2901,6 +2901,7 @@ func _start_new_world() -> void:
 	conveyor_rollers.clear()
 	conveyor_slats.clear()
 	factory_conveyor_slats.clear()
+	waste_feed_conveyor_network_built = false
 	mega_factory_machine_labels.clear()
 	# A fresh world starts with only the first machine and its connected belt.
 	_build_mega_factory_machine(0)
@@ -5956,6 +5957,40 @@ func _build_waste_feed_conveyor_network() -> void:
 					var rail_z: float = bend_z - sin(angle) * 0.72 * side
 					var bend_rail := _box("FactoryFirstMachineFeedBendRail%d_%d_%d" % [row, bend_i, int(side)], Vector3(rail_x, 1.075, rail_z), Vector3(segment_len * 1.08, 0.24, 0.085), steel, false)
 					bend_rail.rotation_degrees.y = bend_rotation
+
+	# Powered roller beds make the trunk, distributor and all five branches read as one machine.
+	for roller_i in range(9):
+		var trunk_x := 129.0 + float(roller_i) * 1.9
+		var trunk_roller := _cylinder("WasteFeedTrunkRoller", Vector3(trunk_x, 0.875, 0.0), 0.065, 1.18, Color(0.38, 0.44, 0.45), false)
+		trunk_roller.rotation_degrees.x = 90.0
+		conveyor_rollers.append(trunk_roller)
+	for roller_i in range(35):
+		var distributor_z := -25.5 + float(roller_i) * 1.5
+		var distributor_roller := _cylinder("WasteFeedDistributorRoller", Vector3(147.0, 0.875, distributor_z), 0.065, 1.10, Color(0.38, 0.44, 0.45), false)
+		distributor_roller.rotation_degrees.z = 90.0
+		conveyor_rollers.append(distributor_roller)
+	# Moving cross-cleats follow the distributor's vertical run.
+	for cleat_i in range(18):
+		var distributor_cleat := _box("WasteFeedDistributorCleat", Vector3(147.0, 0.985, -25.0 + float(cleat_i) * 2.8), Vector3(1.02, 0.035, 0.13), Color(0.12, 0.16, 0.17), false)
+		distributor_cleat.set_meta("factory_belt_axis", "z")
+		distributor_cleat.set_meta("factory_belt_start", -25.0)
+		distributor_cleat.set_meta("factory_belt_length", 50.0)
+		distributor_cleat.set_meta("factory_belt_phase", float(cleat_i) * 2.8)
+		factory_conveyor_slats.append(distributor_cleat)
+	for row in range(5):
+		var feed_z := _factory_row_z(row)
+		for roller_i in range(3):
+			var branch_x := 148.0 + float(roller_i) * 1.25
+			var branch_roller := _cylinder("WasteFeedBranchRoller%d" % row, Vector3(branch_x, 0.875, feed_z), 0.055, 1.05, Color(0.38, 0.44, 0.45), false)
+			branch_roller.rotation_degrees.x = 90.0
+			conveyor_rollers.append(branch_roller)
+		for cleat_i in range(2):
+			var branch_cleat := _box("WasteFeedBranchCleat%d" % row, Vector3(147.8 + float(cleat_i) * 1.9, 0.985, feed_z), Vector3(0.12, 0.035, 1.02), Color(0.12, 0.16, 0.17), false)
+			branch_cleat.set_meta("factory_belt_axis", "x")
+			branch_cleat.set_meta("factory_belt_start", 147.35)
+			branch_cleat.set_meta("factory_belt_length", 3.8)
+			branch_cleat.set_meta("factory_belt_phase", float(cleat_i) * 1.9)
+			factory_conveyor_slats.append(branch_cleat)
 		# All five branch belts remain straight after leaving the distributor.
 		_box("FactoryFirstMachineFeedBranchFrame%d" % row, Vector3(149.35, 0.68, feed_z), Vector3(3.45, 0.30, 1.45), dark_steel, false)
 		_box("FactoryFirstMachineFeedBranchBelt%d" % row, Vector3(149.35, 0.925, feed_z), Vector3(3.50, 0.08, 1.22), belt_color, false)
@@ -6812,9 +6847,9 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	var bend_radius := 1.15
 	var bend_start_z := target_z - bend_radius
 	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_trans(Tween.TRANS_LINEAR)
 	tween.set_ease(Tween.EASE_IN_OUT)
-	# Follow the physical trunk belt from the tank to the distributor.
+	# Follow the physical trunk belt from the tank to the distributor at a steady pace.
 	tween.tween_property(selected_item, "global_position", Vector3(137.0, belt_y, 0.0), 0.8 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	tween.tween_property(selected_item, "global_position", Vector3(146.4, belt_y, 0.0), 0.9 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	# Travel down the distributor. Only the first and last rows have a physical elbow.
@@ -7076,7 +7111,11 @@ func _animate_conveyor(delta: float) -> void:
 			var belt_start := float(slat.get_meta("factory_belt_start", 148.0))
 			var belt_length := float(slat.get_meta("factory_belt_length", 49.0))
 			var phase := float(slat.get_meta("factory_belt_phase", 0.0))
-			slat.position.x = belt_start + fposmod(phase + conveyor_time * 2.6, belt_length)
+			var travel_position := belt_start + fposmod(phase + conveyor_time * 2.6, belt_length)
+			if str(slat.get_meta("factory_belt_axis", "x")) == "z":
+				slat.position.z = travel_position
+			else:
+				slat.position.x = travel_position
 	for i in range(conveyor_slats.size()):
 		var slat := conveyor_slats[i]
 		if is_instance_valid(slat):
