@@ -7175,6 +7175,21 @@ func _create_delivery_truck(index: int) -> void:
 	_delivery_truck_box(truck, "DeliveryTruckRearDoor", Vector3(1.79, 1.44, 0.0), Vector3(0.08, 1.55, 2.55), Color(0.40, 0.48, 0.48))
 	_delivery_truck_box(truck, "DeliveryTruckRearDoorSplit", Vector3(1.84, 1.44, 0.0), Vector3(0.035, 1.45, 0.045), Color(0.12, 0.19, 0.21))
 	_delivery_truck_box(truck, "DeliveryTruckRearHazardStripe", Vector3(1.86, 0.68, 0.0), Vector3(0.035, 0.16, 2.38), Color(0.95, 0.64, 0.14))
+	# Premium fleet finish: reinforced cargo locks, tie-down rails, reflective
+	# corner guards and service hardware make the loading body read as real machinery.
+	for side in [-1.0, 1.0]:
+		_delivery_truck_box(truck, "DeliveryTruckUpperCornerGuard", Vector3(0.0, 2.25, side * 1.60), Vector3(3.35, 0.08, 0.08), Color(0.48, 0.56, 0.56))
+		_delivery_truck_box(truck, "DeliveryTruckLowerRubRail", Vector3(0.0, 0.93, side * 1.61), Vector3(3.25, 0.10, 0.08), Color(0.16, 0.24, 0.26))
+		for lock_x in [-1.48, 1.48]:
+			_delivery_truck_box(truck, "DeliveryTruckCargoLatch", Vector3(lock_x, 1.18, side * 1.64), Vector3(0.13, 0.24, 0.07), Color(0.70, 0.75, 0.70))
+		for marker_x in [-1.15, -0.38, 0.38, 1.15]:
+			_delivery_truck_box(truck, "DeliveryTruckReflector", Vector3(marker_x, 0.83, side * 1.665), Vector3(0.24, 0.07, 0.025), Color(0.98, 0.72, 0.20))
+	for tie_x in [-1.18, 1.18]:
+		_delivery_truck_box(truck, "DeliveryTruckCargoTieDown", Vector3(tie_x, 2.12, 0.0), Vector3(0.10, 0.07, 2.85), Color(0.12, 0.18, 0.20))
+		_delivery_truck_box(truck, "DeliveryTruckTieDownAnchor", Vector3(tie_x, 0.90, 0.0), Vector3(0.16, 0.10, 0.16), Color(0.72, 0.76, 0.70))
+	_delivery_truck_box(truck, "DeliveryTruckCabRoofPanel", Vector3(-2.08, 2.20, 0.0), Vector3(1.20, 0.08, 1.85), Color(0.70, 0.39, 0.10))
+	_delivery_truck_box(truck, "DeliveryTruckFrontStep", Vector3(-2.10, 0.52, 1.58), Vector3(0.85, 0.12, 0.18), Color(0.24, 0.31, 0.33))
+	_delivery_truck_box(truck, "DeliveryTruckFrontStep", Vector3(-2.10, 0.52, -1.58), Vector3(0.85, 0.12, 0.18), Color(0.24, 0.31, 0.33))
 	_delivery_truck_cylinder(truck, "DeliveryTruckRoofBeacon", Vector3(-2.0, 2.25, 0.0), 0.14, 0.22, Color(0.98, 0.58, 0.12))
 	var sign := Label3D.new()
 	sign.text = "ZEKA LOGISTICS  #%d" % (index + 1)
