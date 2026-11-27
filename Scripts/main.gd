@@ -2103,34 +2103,54 @@ func _animate_robot(delta: float) -> void:
 	if not is_instance_valid(robot_visual):
 		return
 	robot_anim_time += delta
-	var moving := Vector2(player.velocity.x, player.velocity.z).length() > 0.25
-	var stride := sin(robot_anim_time * 10.0) if moving else 0.0
-	# Idle breathing must never lower the feet through the floor.
-	var bob := absf(stride) * 0.045 if moving else 0.0
+	var planar_speed := Vector2(player.velocity.x, player.velocity.z).length()
+	var moving := planar_speed > 0.25
+	var gait_amount := clampf(inverse_lerp(0.25, 4.0, planar_speed), 0.0, 1.0) if moving else 0.0
+	var gait_phase := robot_anim_time * lerpf(7.5, 11.5, gait_amount)
+	var stride := sin(gait_phase) * gait_amount
+	var opposite_stride := sin(gait_phase + PI) * gait_amount
+
+	# A weighted industrial gait: restrained body counter-sway and alternating steps.
+	var bob := absf(sin(gait_phase * 2.0)) * 0.035 * gait_amount
 	robot_visual.position.y = bob
-	robot_visual.rotation.z = sin(robot_anim_time * 5.0) * 0.025 if moving else sin(robot_anim_time * 1.5) * 0.012
-	robot_left_arm.rotation.x = stride * 0.65
+	robot_visual.rotation.z = sin(gait_phase) * 0.018 * gait_amount
+	robot_visual.rotation.x = -absf(stride) * 0.012
+	robot_visual.rotation.y = sin(gait_phase * 0.5) * 0.018 * gait_amount
+
 	var magnet_is_working := suction_level <= 0 and auto_pickup_level > 0 and is_instance_valid(auto_pickup_target)
 	var vacuum_is_working := suction_level > 0 and is_instance_valid(suction_target)
 	var tool_is_working := magnet_is_working or vacuum_is_working
-	var normal_right_arm := -stride * 0.65 - (0.18 if auto_pickup_level > 0 or suction_level > 0 else 0.0)
-	# The equipped attachment reaches forward while it pulls a selected item.
-	var arm_target_angle := 1.12 if tool_is_working else normal_right_arm
-	robot_right_arm.rotation.x = lerp_angle(robot_right_arm.rotation.x, arm_target_angle, clampf(delta * (13.0 if tool_is_working else 8.0), 0.0, 1.0))
+	var tool_equipped := auto_pickup_level > 0 or suction_level > 0
+
+	# Left arm counter-swings naturally; right arm transitions into a deliberate
+	# reach pose when the collector locks onto waste.
+	var left_swing := stride * 0.52
+	var right_swing := -stride * 0.52 - (0.14 if tool_equipped else 0.0)
+	var right_target := 1.08 if tool_is_working else right_swing
+	robot_left_arm.rotation.x = lerp_angle(robot_left_arm.rotation.x, left_swing, clampf(delta * 9.0, 0.0, 1.0))
+	robot_left_arm.rotation.z = lerp_angle(robot_left_arm.rotation.z, -0.035 - absf(stride) * 0.035, clampf(delta * 7.0, 0.0, 1.0))
+	robot_right_arm.rotation.x = lerp_angle(robot_right_arm.rotation.x, right_target, clampf(delta * (12.0 if tool_is_working else 8.0), 0.0, 1.0))
+	var right_roll_target := -0.10 if tool_is_working else 0.025 + stride * 0.035
+	robot_right_arm.rotation.z = lerp_angle(robot_right_arm.rotation.z, right_roll_target, clampf(delta * 8.0, 0.0, 1.0))
+
+	# Collector extension eases in/out instead of snapping, keeping both tools
+	# rigidly aligned to the wrist through the full working animation.
 	var extension_target := 0.34 if tool_is_working else 0.0
-	collection_tool_extension = lerpf(collection_tool_extension, extension_target, clampf(delta * 10.0, 0.0, 1.0))
-	# Extend the collector along the forearm/hand axis (local -Y), not sideways
-	# along local Z. Both attachments remain rigidly aligned with the wrist as the
-	# arm swings forward during collection.
+	collection_tool_extension = lerpf(collection_tool_extension, extension_target, clampf(delta * 8.5, 0.0, 1.0))
 	if is_instance_valid(magnet_tool):
 		magnet_tool.position.y = -0.43 - collection_tool_extension
 		magnet_tool.position.z = -0.015
 	if is_instance_valid(suction_tool):
 		suction_tool.position.y = -0.43 - collection_tool_extension
 		suction_tool.position.z = -0.015
-	robot_left_leg.rotation.x = -stride * 0.48
-	robot_right_leg.rotation.x = stride * 0.48
-	robot_head.rotation.y = sin(robot_anim_time * 1.3) * 0.045
+
+	robot_left_leg.rotation.x = -stride * 0.42
+	robot_right_leg.rotation.x = opposite_stride * 0.42
+	# The head scans subtly while idle and steadies its gaze during collection.
+	var head_scan := sin(robot_anim_time * 1.15) * 0.055 if not moving else sin(gait_phase * 0.5) * 0.025
+	if tool_is_working:
+		head_scan = lerpf(head_scan, -0.035, 0.65)
+	robot_head.rotation.y = lerpf(robot_head.rotation.y, head_scan, clampf(delta * 4.5, 0.0, 1.0))
 
 func _add_robot_box(parent: Node3D, part_name: String, pos: Vector3, dimensions: Vector3, color: Color) -> MeshInstance3D:
 	var part := MeshInstance3D.new()
