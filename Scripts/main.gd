@@ -298,6 +298,25 @@ func _finish_boot_sequence() -> void:
 			get_tree().quit(1)
 			return
 
+		# Verify AUTO PICKUP reserves, smoothly pulls, and collects an unobstructed item.
+		auto_pickup_level = 1
+		var auto_test_item := Node3D.new()
+		auto_test_item.set_script(TRASH_SCRIPT)
+		auto_test_item.global_position = player.global_position + (-player.global_transform.basis.z * 1.55)
+		add_child(auto_test_item)
+		trash_nodes.append(auto_test_item)
+		await get_tree().physics_frame
+		var carried_before_auto_test := carried
+		for auto_test_step in range(60):
+			_process_auto_pickup(0.05)
+			await get_tree().physics_frame
+			if carried > carried_before_auto_test:
+				break
+		if carried <= carried_before_auto_test:
+			push_error("GAMEPLAY_SMOKE_TEST_FAILED: AUTO PICKUP did not pull and collect nearby unobstructed litter.")
+			get_tree().quit(1)
+			return
+
 		player.global_position = STARTER_SELL_POINT
 		player.velocity = Vector3.ZERO
 		unload_timer = 0.0
@@ -3952,6 +3971,21 @@ func _collect_nearby() -> void:
 	else:
 		_set_message("Get closer to trash that fits in your backpack.")
 
+func _auto_pickup_path_clear(item: Node3D, pickup_point: Vector3) -> bool:
+	if not is_instance_valid(item) or not is_instance_valid(player):
+		return false
+	var ray_start := item.global_position + Vector3.UP * 0.24
+	var ray_end := pickup_point + Vector3.UP * 0.32
+	var query := PhysicsRayQueryParameters3D.create(ray_start, ray_end)
+	query.collision_mask = 0xFFFFFFFF
+	query.collide_with_areas = false
+	var excluded: Array[RID] = [item.get_rid()]
+	if player is CollisionObject3D:
+		excluded.append((player as CollisionObject3D).get_rid())
+	query.exclude = excluded
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+
 func _process_auto_pickup(delta: float) -> void:
 	# The vacuum replaces the magnet as the active hand collector once purchased.
 	if suction_level > 0 or auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
@@ -3974,6 +4008,8 @@ func _process_auto_pickup(delta: float) -> void:
 		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.75 + float(magnet_power_level - 1) * 0.7
 		var best_distance := magnet_range
 		var player_xz := Vector2(player.global_position.x, player.global_position.z)
+		var pickup_forward := -player.global_transform.basis.z
+		var scan_pickup_point := Vector3(player.global_position.x + pickup_forward.x * 0.78, player.global_position.y + 0.32, player.global_position.z + pickup_forward.z * 0.78)
 		for item in trash_nodes:
 			if not is_instance_valid(item) or item == suction_target or not _can_collect_city_dump_trash(item):
 				continue
@@ -3985,7 +4021,8 @@ func _process_auto_pickup(delta: float) -> void:
 			# nearby pieces appear out of range forever.
 			var item_xz := Vector2(item.global_position.x, item.global_position.z)
 			var distance := player_xz.distance_to(item_xz)
-			if distance < best_distance:
+			# Do not magnetize litter through walls, machinery, or solid props.
+			if distance < best_distance and _auto_pickup_path_clear(item, scan_pickup_point):
 				best_distance = distance
 				auto_pickup_target = item
 				auto_pickup_target.set_meta("drone_reserved", -4)
@@ -4013,7 +4050,16 @@ func _process_auto_pickup(delta: float) -> void:
 	var pickup_xz := Vector2(pickup_point.x, pickup_point.z)
 	var distance_to_target := item_xz.distance_to(pickup_xz)
 	if distance_to_target > 0.72:
-		auto_pickup_target.global_position = auto_pickup_target.global_position.move_toward(pickup_point, pull_speed * delta)
+		if not _auto_pickup_path_clear(auto_pickup_target, pickup_point + Vector3.UP * 0.32):
+			auto_pickup_target.set_meta("drone_reserved", -1)
+			auto_pickup_target = null
+			auto_pickup_timer = 0.0
+			auto_pickup_scan_timer = 0.0
+			return
+		# Ease the pull near the collector so small litter does not snap or jitter.
+		var pull_distance := clampf(distance_to_target, 0.0, 4.0)
+		var eased_pull_speed := pull_speed * lerpf(0.58, 1.0, pull_distance / 4.0)
+		auto_pickup_target.global_position = auto_pickup_target.global_position.move_toward(pickup_point, eased_pull_speed * delta)
 		auto_pickup_timer = 0.0
 		return
 
