@@ -875,7 +875,7 @@ func _spawn_sorting_station(station_index: int) -> void:
 
 
 func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
-	var robot := Node3D.new()
+	var robot := CharacterBody3D.new()
 	robot.name = "SortingRobot_%d" % category_index
 	# Compact autonomous loader-truck: enclosed cab, rear cargo body and a front bucket.
 	var dark := Color(0.055, 0.075, 0.08)
@@ -943,6 +943,13 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 		_add_robot_box(robot, "LoaderRearReflector", Vector3(side * 0.36, 0.60, 0.90), Vector3(0.18, 0.08, 0.035), Color(0.95, 0.28, 0.12))
 	_add_robot_box(robot, "LoaderCabRoofPanel", Vector3(0, 1.64, -0.47), Vector3(0.58, 0.025, 0.46), metal)
 	_add_robot_box(robot, "LoaderFrontBrandPanel", Vector3(0, 0.92, -0.94), Vector3(0.34, 0.08, 0.025), robot_color.lightened(0.30))
+	var robot_collision := CollisionShape3D.new()
+	var robot_collision_shape := CapsuleShape3D.new()
+	robot_collision_shape.radius = 0.58
+	robot_collision_shape.height = 1.45
+	robot_collision.shape = robot_collision_shape
+	robot_collision.position.y = 0.72
+	robot.add_child(robot_collision)
 	robot.set_meta("wheels", robot_wheels)
 	robot.set_meta("category_index", category_index)
 	robot.set_meta("target", null)
@@ -1039,7 +1046,7 @@ func _process_sorting_robots(delta: float) -> void:
 		if mode == "return":
 			var drop_point := _factory_waste_drop_point()
 			drop_point.y = robot.global_position.y
-			robot.global_position = robot.global_position.move_toward(drop_point, _sorting_robot_speed() * delta)
+			_move_autonomous_ground_robot(robot, drop_point, _sorting_robot_speed() * delta)
 			if robot.global_position.distance_to(drop_point) < 0.8:
 				var cargo := _get_meta_node(robot, "cargo")
 				if is_instance_valid(cargo):
@@ -1087,11 +1094,11 @@ func _process_sorting_robots(delta: float) -> void:
 		if not is_instance_valid(target):
 			var idle_point: Vector3 = sorting_pad_positions[i] + Vector3(0, 0, 1.7)
 			idle_point.y = robot.global_position.y
-			robot.global_position = robot.global_position.move_toward(idle_point, _sorting_robot_speed() * 0.43 * delta)
+			_move_autonomous_ground_robot(robot, idle_point, _sorting_robot_speed() * 0.43 * delta)
 			continue
 		var destination := target.global_position + Vector3(0, 0.55, 0)
 		destination.y = robot.global_position.y
-		robot.global_position = robot.global_position.move_toward(destination, _sorting_robot_speed() * delta)
+		_move_autonomous_ground_robot(robot, destination, _sorting_robot_speed() * delta)
 		if robot.global_position.distance_to(destination) <= 0.65:
 			_register_final_cleanup_pickup(target)
 			var keep_transform := target.global_transform
@@ -3972,7 +3979,7 @@ func _refresh_helper_drone_visibility() -> void:
 func _build_ground_collector() -> void:
 	if is_instance_valid(ground_collector):
 		ground_collector.queue_free()
-	ground_collector = Node3D.new()
+	ground_collector = CharacterBody3D.new()
 	ground_collector.name = "GroundTrashCollector"
 	add_child(ground_collector)
 	# Low, four-wheel autonomous collection rover with a front loading scoop.
@@ -4023,6 +4030,13 @@ func _build_ground_collector() -> void:
 			ground_collector.add_child(wheel)
 			_add_robot_sphere(wheel, "RoverWheelHub", Vector3.ZERO, 0.105, Color(0.54, 0.61, 0.60))
 			rover_wheels.append(wheel)
+	var rover_collision := CollisionShape3D.new()
+	var rover_collision_shape := CapsuleShape3D.new()
+	rover_collision_shape.radius = 0.62
+	rover_collision_shape.height = 1.15
+	rover_collision.shape = rover_collision_shape
+	rover_collision.position.y = 0.57
+	ground_collector.add_child(rover_collision)
 	ground_collector.set_meta("wheels", rover_wheels)
 	ground_collector.visible = ground_robot_level > 0
 	ground_collector.global_position = Vector3(144.0, 0.0, 10.0)
@@ -4155,6 +4169,27 @@ func _process_helper_drones(delta: float) -> void:
 				target.set_meta("drone_reserved", -1)
 				drone.set_meta("target", null)
 
+func _move_autonomous_ground_robot(actor: Node3D, destination: Vector3, max_distance: float) -> void:
+	if not is_instance_valid(actor) or max_distance <= 0.0:
+		return
+	var offset := destination - actor.global_position
+	offset.y = 0.0
+	var distance := offset.length()
+	if distance <= 0.001:
+		return
+	var motion := offset.normalized() * minf(max_distance, distance)
+	if actor is CharacterBody3D:
+		var body := actor as CharacterBody3D
+		var collision := body.move_and_collide(motion)
+		if collision != null:
+			# Slide along an obstacle instead of driving into it or freezing at the first contact.
+			var slide_motion := motion.slide(collision.get_normal())
+			if slide_motion.length_squared() > 0.0001:
+				body.move_and_collide(slide_motion)
+	else:
+		actor.global_position += motion
+
+
 func _get_meta_node(node: Object, key: String) -> Node3D:
 	if node == null or not is_instance_valid(node) or not node.has_meta(key):
 		return null
@@ -4190,7 +4225,7 @@ func _process_ground_collector(delta: float) -> void:
 	if bool(rover.get_meta("returning", false)):
 		var home := _factory_waste_drop_point()
 		_face_travel_direction(rover, home, delta, 6.0)
-		rover.global_position = rover.global_position.move_toward(home, speed * delta)
+		_move_autonomous_ground_robot(rover, home, speed * delta)
 		if Vector2(rover.global_position.x - home.x, rover.global_position.z - home.z).length() < 1.4:
 			_ground_collector_deposit_cycle(rover, delta)
 		return
@@ -4232,7 +4267,7 @@ func _process_ground_collector(delta: float) -> void:
 	var destination := target.global_position + Vector3(0, 0.05, 0)
 	var rover_destination := Vector3(destination.x, rover.global_position.y, destination.z)
 	_face_travel_direction(rover, rover_destination, delta, 7.0)
-	rover.global_position = rover.global_position.move_toward(rover_destination, speed * delta)
+	_move_autonomous_ground_robot(rover, rover_destination, speed * delta)
 	if Vector2(rover.global_position.x - destination.x, rover.global_position.z - destination.z).length() > 0.72:
 		return
 
