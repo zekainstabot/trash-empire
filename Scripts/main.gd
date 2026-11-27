@@ -4090,8 +4090,8 @@ func _play_auto_pickup_feedback(world_position: Vector3) -> void:
 	audio.stream = stream
 	audio.volume_db = -7.0
 	audio.max_distance = 18.0
-	audio.global_position = world_position
 	add_child(audio)
+	audio.global_position = world_position
 	audio.finished.connect(audio.queue_free)
 	audio.play()
 
@@ -4122,15 +4122,15 @@ func _spawn_auto_pickup_effect(world_position: Vector3) -> void:
 	particle_material.emission_energy_multiplier = 1.8
 	particle_mesh.material = particle_material
 	burst.mesh = particle_mesh
-	burst.global_position = world_position + Vector3.UP * 0.18
 	add_child(burst)
+	burst.global_position = world_position + Vector3.UP * 0.18
 	burst.emitting = true
 	var flash := OmniLight3D.new()
 	flash.light_color = Color(0.18, 1.0, 0.78)
 	flash.light_energy = 1.4
 	flash.omni_range = 2.4
-	flash.global_position = burst.global_position
 	add_child(flash)
+	flash.global_position = burst.global_position
 	var tween := create_tween()
 	tween.tween_property(flash, "light_energy", 0.0, 0.32)
 	tween.tween_callback(flash.queue_free)
@@ -4869,8 +4869,8 @@ func _process_auto_sell(delta: float) -> void:
 	unload_timer += delta
 	# Feed the tank steadily without making the player wait several seconds per piece.
 	var seconds_per_item := maxf(0.12, 0.45 - float(unload_upgrade_level - 1) * 0.05)
-	if unload_timer >= seconds_per_item:
-		unload_timer = 0.0
+	while unload_timer >= seconds_per_item and carried > 0:
+		unload_timer -= seconds_per_item
 		if waste_tank_built:
 			if waste_tank_inventory >= _waste_tank_capacity():
 				_set_message("Factory tank is full. Conveyor will resume when space is available.")
