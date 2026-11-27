@@ -5503,6 +5503,23 @@ func _build_recycling_mega_factory() -> void:
 		var tx := 181.0 + float(tank_index) * 4.0
 		_cylinder("WaterTreatmentTank", Vector3(tx, 1.65, 29.0), 1.35, 3.2, Color(0.18, 0.38, 0.42), false)
 
+	# Dedicated perimeter freight road: it stays outside the warehouse walls,
+	# production rows, conveyor network and the marked factory boundary.
+	var freight_asphalt := Color(0.105, 0.115, 0.12)
+	var freight_edge := Color(0.92, 0.68, 0.16)
+	_box("FactoryFreightPerimeterRoad", Vector3(183.5, 0.035, 38.0), Vector3(131.0, 0.07, 7.6), freight_asphalt, false)
+	_box("FactoryFreightPerimeterRoad", Vector3(183.5, 0.035, -38.0), Vector3(131.0, 0.07, 7.6), freight_asphalt, false)
+	_box("FactoryFreightAccessConnector", Vector3(119.0, 0.035, 0.0), Vector3(7.6, 0.07, 76.0), freight_asphalt, false)
+	for side in [-1.0, 1.0]:
+		for road_z in [-41.55, -34.45, 34.45, 41.55]:
+			_box("FactoryFreightRoadEdge", Vector3(183.5, 0.082, road_z), Vector3(130.0, 0.025, 0.10), freight_edge, false)
+		_box("FactoryFreightConnectorEdge", Vector3(115.45 if side < 0.0 else 122.55, 0.082, 0.0), Vector3(0.10, 0.025, 75.0), freight_edge, false)
+	for dash_x in range(124, 247, 12):
+		for road_z in [-38.0, 38.0]:
+			_box("FactoryFreightLaneDash", Vector3(float(dash_x), 0.083, road_z), Vector3(5.0, 0.018, 0.10), Color(0.88, 0.89, 0.84), false)
+	for dash_z in range(-30, 31, 12):
+		_box("FactoryFreightConnectorDash", Vector3(119.0, 0.083, float(dash_z)), Vector3(0.10, 0.018, 5.0), Color(0.88, 0.89, 0.84), false)
+
 	# Shared truck loading yard is placed beside the right-hand ends of all five lines.
 	_box("FactoryLoadingDock", Vector3(211.0, 0.22, 0.0), Vector3(14.0, 0.28, 64.0), Color(0.25, 0.29, 0.29), false)
 	for z in [-26.0, -13.0, 0.0, 13.0, 26.0]:
@@ -5820,22 +5837,12 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	# wall, then merge onto the outbound road outside the building footprint.
 	_append_factory_truck_route_leg(tween, truck, Vector3(210.0, 0.0, exit_side_z), 1.10)
 	_append_factory_truck_route_leg(tween, truck, Vector3(242.0, 0.0, exit_side_z), 1.35)
-	if exit_side_z > 0.0:
-		_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, 38.0), 0.65)
-		_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, 22.0), 0.65)
-		_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, 22.0), 1.1)
-		_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, 34.0), 0.65)
-		_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, 34.0), 1.1)
-		_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, 46.0), 0.55)
-		_append_factory_truck_route_leg(tween, truck, Vector3(298.0, 0.0, 46.0), 1.2)
-	else:
-		_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, -38.0), 0.65)
-		_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, -22.0), 0.65)
-		_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, -22.0), 1.1)
-		_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, -34.0), 0.65)
-		_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, -34.0), 1.1)
-		_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, -46.0), 0.55)
-		_append_factory_truck_route_leg(tween, truck, Vector3(298.0, 0.0, -46.0), 1.2)
+	# Follow the marked perimeter freight road back to the city access junction.
+	_append_factory_truck_route_leg(tween, truck, Vector3(119.0, 0.0, exit_side_z), 3.2)
+	_append_factory_truck_route_leg(tween, truck, Vector3(119.0, 0.0, 0.0), 1.15)
+	_append_factory_truck_route_leg(tween, truck, Vector3(100.0, 0.0, 0.0), 0.75)
+	_append_factory_truck_route_leg(tween, truck, Vector3(49.0, 0.0, 0.0), 1.8)
+	_append_factory_truck_route_leg(tween, truck, Vector3(0.0, 0.0, 0.0), 1.7)
 	tween.tween_callback(func():
 		truck.queue_free()
 		door_left.queue_free()
