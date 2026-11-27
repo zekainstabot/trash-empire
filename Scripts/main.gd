@@ -5769,17 +5769,21 @@ func _reposition_factory_belt_queue(row: int) -> void:
 		slide.tween_property(item, "position", target, 0.35)
 
 func _append_factory_truck_route_leg(tween: Tween, truck: Node3D, target: Vector3, travel_time: float) -> void:
-	# Factory trucks have their cab on local -X. Turn the chassis toward each
-	# road segment before moving so every leg is driven nose-first, never sideways
-	# or in reverse. Keeping the turn as part of the same tween preserves route order.
+	# The cab faces local -X. Convert the road direction to yaw, then rotate
+	# through the shortest angular path. Tweening directly to target_yaw can
+	# make a truck spin almost a full circle when the angle crosses +/- PI.
 	var direction := target - truck.position
 	direction.y = 0.0
 	if direction.length_squared() <= 0.0001:
 		return
 	var target_yaw := atan2(direction.z, -direction.x)
-	var turn_time := minf(0.32, maxf(0.12, travel_time * 0.22))
-	tween.tween_property(truck, "rotation:y", target_yaw, turn_time)
-	tween.tween_property(truck, "position", target, travel_time)
+	var yaw_delta := wrapf(target_yaw - truck.rotation.y, -PI, PI)
+	var final_yaw := truck.rotation.y + yaw_delta
+	# Scale steering time to the actual corner angle: straight legs barely
+	# correct heading, while 90/180-degree turns get enough time to look smooth.
+	var turn_time := clampf(absf(yaw_delta) / 3.2, 0.08, 0.65)
+	tween.tween_property(truck, "rotation:y", final_yaw, turn_time)
+	tween.tween_property(truck, "position", target, maxf(0.05, travel_time))
 
 
 func _dispatch_factory_row_truck(row: int) -> void:
