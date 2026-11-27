@@ -5739,6 +5739,13 @@ func _ensure_factory_row_belt_visuals(row: int) -> void:
 	factory_row_belt_items[row] = valid_queue
 	queue = valid_queue
 	var expected := _factory_row_sellable_stock(row)
+	# Keep the visual belt queue in exact sync with authoritative inventory.
+	# Extra visuals can otherwise become phantom cargo after a recovery/rebuild.
+	while queue.size() > expected:
+		var excess: Node3D = queue.pop_back()
+		if is_instance_valid(excess):
+			excess.queue_free()
+	factory_row_belt_items[row] = queue
 	var stage := maxi(0, _factory_row_sell_stage(row) - 1)
 	while queue.size() < expected:
 		_spawn_factory_stage_item(row, stage, true)
@@ -5813,6 +5820,8 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	if row < 0 or row >= 5 or mega_factory_built_count < row * 3 + 1:
 		return
 	var sell_stage := _factory_row_sell_stage(row)
+	# Reconcile visuals even when dispatch is invoked outside the normal scheduler.
+	_ensure_factory_row_belt_visuals(row)
 	# A freed visual must never count as cargo or trigger payment for a load
 	# that contains fewer than three real products.
 	var queue: Array = factory_row_belt_items[row]
