@@ -123,6 +123,7 @@ var conveyor_time := 0.0
 var conveyor_rollers: Array[MeshInstance3D] = []
 var conveyor_slats: Array[Node3D] = []
 var factory_conveyor_slats: Array[Node3D] = []
+var factory_link_slats: Array[Node3D] = []
 var conveyor_item_count := 0
 var factory_stage := 1
 var factory_built_stage := 1
@@ -2045,6 +2046,26 @@ func _build_factory_link(start_pos: Vector3, end_pos: Vector3) -> void:
 			_box_child(conveyor_root, "FactoryConveyorSupportLeg", Vector3(support_side * 0.62, 0.34, support_z), Vector3(0.13, 0.68, 0.14), Color(0.15, 0.20, 0.21))
 		_box_child(conveyor_root, "FactoryConveyorSupportCrossbar", Vector3(0.0, 0.12, support_z), Vector3(1.20, 0.12, 0.14), Color(0.38, 0.44, 0.43))
 
+	# End pulleys wrap the belt around the transfer section; bearings stay visible outside the rails.
+	for end_sign in [-1.0, 1.0]:
+		var pulley := MeshInstance3D.new()
+		pulley.name = "FactoryConveyorEndPulley"
+		var pulley_mesh := CylinderMesh.new()
+		pulley_mesh.top_radius = 0.145
+		pulley_mesh.bottom_radius = 0.145
+		pulley_mesh.height = 1.40
+		pulley.mesh = pulley_mesh
+		pulley.position = Vector3(0.0, 0.84, end_sign * (length * 0.5 - 0.10))
+		pulley.rotation_degrees.z = 90.0
+		pulley.material_override = _mat(Color(0.30, 0.37, 0.38))
+		conveyor_root.add_child(pulley)
+		conveyor_rollers.append(pulley)
+		for bearing_side in [-1.0, 1.0]:
+			var bearing := _cylinder("FactoryConveyorPulleyBearing", Vector3(bearing_side * 0.77, 0.84, end_sign * (length * 0.5 - 0.10)), 0.16, 0.10, Color(0.72, 0.76, 0.72), false)
+			bearing.rotation_degrees.z = 90.0
+		# Subtle yellow service marks identify the two guarded pulley zones.
+		_box_child(conveyor_root, "FactoryConveyorPulleyWarning", Vector3(0.0, 1.235, end_sign * (length * 0.5 - 0.22)), Vector3(1.30, 0.035, 0.055), Color(0.92, 0.61, 0.12))
+
 	# Rollers are children of the rotated root, so their axles stay perpendicular to travel.
 	var roller_count := maxi(2, int(ceil(length / 0.65)) + 1)
 	for i in range(roller_count):
@@ -2061,6 +2082,15 @@ func _build_factory_link(start_pos: Vector3, end_pos: Vector3) -> void:
 		roller.material_override = _mat(Color(0.55, 0.60, 0.58))
 		conveyor_root.add_child(roller)
 		conveyor_rollers.append(roller)
+
+	# Moving cross-cleats make belt travel readable even when no waste item is on it.
+	var cleat_count := maxi(3, int(ceil(length / 1.45)))
+	for cleat_i in range(cleat_count):
+		var cleat := _box_child(conveyor_root, "FactoryConveyorMovingCleat", Vector3(0.0, 1.012, 0.0), Vector3(1.22, 0.035, 0.10), Color(0.17, 0.22, 0.23))
+		cleat.set_meta("factory_link_length", length)
+		cleat.set_meta("factory_link_phase", float(cleat_i) * length / float(cleat_count))
+		cleat.position.z = -length * 0.5 + float(cleat_i) * length / float(cleat_count)
+		factory_link_slats.append(cleat)
 
 func _create_world_action_button(node_name: String, title: String, world_position: Vector3, dimensions: Vector3, action: Callable, color: Color) -> Node3D:
 	var root := Node3D.new()
@@ -7429,6 +7459,11 @@ func _animate_conveyor(delta: float) -> void:
 				slat.position.z = travel_position
 			else:
 				slat.position.x = travel_position
+	for slat in factory_link_slats:
+		if is_instance_valid(slat):
+			var link_length := float(slat.get_meta("factory_link_length", 1.0))
+			var link_phase := float(slat.get_meta("factory_link_phase", 0.0))
+			slat.position.z = -link_length * 0.5 + fposmod(link_phase + conveyor_time * 1.8, link_length)
 	for i in range(conveyor_slats.size()):
 		var slat := conveyor_slats[i]
 		if is_instance_valid(slat):
