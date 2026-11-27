@@ -5511,6 +5511,10 @@ func _build_recycling_mega_factory() -> void:
 	_box("FactoryFreightPerimeterRoad", Vector3(183.5, 0.035, 38.0), Vector3(131.0, 0.07, 7.6), freight_asphalt, false)
 	_box("FactoryFreightPerimeterRoad", Vector3(183.5, 0.035, -38.0), Vector3(131.0, 0.07, 7.6), freight_asphalt, false)
 	_box("FactoryFreightAccessConnector", Vector3(119.0, 0.035, 0.0), Vector3(7.6, 0.07, 76.0), freight_asphalt, false)
+	# Widen both T-junctions so the full truck body can sweep through the turn
+	# without clipping the road edge or cutting across the painted shoulder.
+	for junction_z in [-38.0, 38.0]:
+		_box("FactoryFreightTurningApron", Vector3(119.0, 0.038, junction_z), Vector3(14.0, 0.076, 14.0), freight_asphalt, false)
 	for side in [-1.0, 1.0]:
 		for road_z in [-41.55, -34.45, 34.45, 41.55]:
 			_box("FactoryFreightRoadEdge", Vector3(183.5, 0.082, road_z), Vector3(130.0, 0.025, 0.10), freight_edge, false)
@@ -5649,6 +5653,7 @@ func _create_factory_row_truck(row: int) -> Node3D:
 		_box_child(truck, "TruckHeadlight", Vector3(-3.09, 1.18, side_z), Vector3(0.07, 0.30, 0.42), Color(1.0, 0.86, 0.48))
 		_box_child(truck, "TruckTailLight", Vector3(3.20, 1.12, side_z), Vector3(0.08, 0.38, 0.30), Color(0.82, 0.08, 0.06))
 	# Six tires with visible metal hubs and dark wheel arches.
+	var factory_truck_wheels: Array[Node3D] = []
 	for wheel_x in [-2.45, 0.0, 2.45]:
 		for wheel_z in [-1.48, 1.48]:
 			var wheel := MeshInstance3D.new()
@@ -5661,6 +5666,7 @@ func _create_factory_row_truck(row: int) -> Node3D:
 			wheel.rotation_degrees.x = 90.0
 			wheel.material_override = _mat(rubber)
 			truck.add_child(wheel)
+			factory_truck_wheels.append(wheel)
 			var hub := MeshInstance3D.new()
 			var hub_mesh := CylinderMesh.new()
 			hub_mesh.top_radius = 0.23
@@ -5682,6 +5688,15 @@ func _create_factory_row_truck(row: int) -> Node3D:
 			hub_cap.material_override = _mat(dark_paint)
 			truck.add_child(hub_cap)
 	_box_child(truck, "TruckFuelTank", Vector3(-0.95, 0.76, 1.18), Vector3(0.90, 0.38, 0.34), metal)
+	# Four dedicated amber indicators blink only while the truck is cornering.
+	var factory_truck_signals: Array[Node3D] = []
+	for signal_z in [-0.98, 0.98]:
+		factory_truck_signals.append(_box_child(truck, "TruckFrontTurnSignal", Vector3(-3.145, 1.48, signal_z), Vector3(0.075, 0.16, 0.22), Color(1.0, 0.48, 0.06)))
+		factory_truck_signals.append(_box_child(truck, "TruckRearTurnSignal", Vector3(3.255, 1.38, signal_z), Vector3(0.075, 0.16, 0.22), Color(1.0, 0.48, 0.06)))
+	for signal_light in factory_truck_signals:
+		signal_light.visible = false
+	truck.set_meta("factory_truck_wheels", factory_truck_wheels)
+	truck.set_meta("factory_truck_signals", factory_truck_signals)
 	var sign := Label3D.new()
 	sign.text = _factory_row_product(row)
 	sign.position = Vector3(1.15, 2.12, 1.48)
@@ -5768,6 +5783,28 @@ func _reposition_factory_belt_queue(row: int) -> void:
 		slide.set_ease(Tween.EASE_OUT)
 		slide.tween_property(item, "position", target, 0.35)
 
+func _flash_factory_truck_turn_signals(truck: Node3D, duration: float) -> void:
+	if not truck.has_meta("factory_truck_signals"):
+		return
+	var signal_lights: Array = truck.get_meta("factory_truck_signals")
+	for signal_light in signal_lights:
+		if not is_instance_valid(signal_light):
+			continue
+		var light: Node3D = signal_light
+		var blink := create_tween()
+		for flash_index in range(2):
+			blink.tween_callback(func():
+				if is_instance_valid(light):
+					light.visible = true
+			)
+			blink.tween_interval(maxf(0.08, duration * 0.22))
+			blink.tween_callback(func():
+				if is_instance_valid(light):
+					light.visible = false
+			)
+			blink.tween_interval(maxf(0.06, duration * 0.12))
+
+
 func _append_factory_truck_route_leg(tween: Tween, truck: Node3D, target: Vector3, travel_time: float) -> void:
 	# The cab faces local -X. Convert the road direction to yaw, then rotate
 	# through the shortest angular path. Tweening directly to target_yaw can
@@ -5779,11 +5816,20 @@ func _append_factory_truck_route_leg(tween: Tween, truck: Node3D, target: Vector
 	var target_yaw := atan2(direction.z, -direction.x)
 	var yaw_delta := wrapf(target_yaw - truck.rotation.y, -PI, PI)
 	var final_yaw := truck.rotation.y + yaw_delta
-	# Scale steering time to the actual corner angle: straight legs barely
-	# correct heading, while 90/180-degree turns get enough time to look smooth.
 	var turn_time := clampf(absf(yaw_delta) / 3.2, 0.08, 0.65)
+	if absf(yaw_delta) > 0.16:
+		_flash_factory_truck_turn_signals(truck, turn_time)
 	tween.tween_property(truck, "rotation:y", final_yaw, turn_time)
-	tween.tween_property(truck, "position", target, maxf(0.05, travel_time))
+	var safe_travel_time := maxf(0.05, travel_time)
+	tween.tween_property(truck, "position", target, safe_travel_time)
+	# All route legs are forward in the truck's local -X direction. Spin all
+	# six wheels by distance/radius in parallel with chassis translation.
+	if truck.has_meta("factory_truck_wheels"):
+		var wheels: Array = truck.get_meta("factory_truck_wheels")
+		var wheel_angle := -direction.length() / 0.48
+		for wheel in wheels:
+			if is_instance_valid(wheel):
+				tween.parallel().tween_property(wheel, "rotation:z", wheel.rotation.z + wheel_angle, safe_travel_time)
 
 
 func _dispatch_factory_row_truck(row: int) -> void:
