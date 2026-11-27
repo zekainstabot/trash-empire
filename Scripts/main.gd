@@ -603,8 +603,16 @@ func _build_city_rework_layout() -> void:
 	for street_x in [16.0, 48.0, 80.0, 104.0]:
 		_box("CityCrossStreet", Vector3(street_x, 0.028, 0.0), Vector3(6.8, 0.056, 74.0), road_asphalt, false)
 		for side in [-1.0, 1.0]:
-			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 74.0), curb, false)
+			# Break the raised curb at the boulevard crossings for wheelchair access.
+			for curb_segment in [[-37.0, -8.0], [-4.0, 4.0], [8.0, 37.0]]:
+				var curb_start: float = curb_segment[0]
+				var curb_end: float = curb_segment[1]
+				_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, (curb_start + curb_end) * 0.5), Vector3(0.22, 0.18, curb_end - curb_start), curb, false)
 			_add_sidewalk_z_segments("CrossStreetWalkway", -37.0, 37.0, 0.075, 0.15, street_x + side * 5.0, 2.7, sidewalk, [Vector2(-29.0, 9.0), Vector2(-22.0, 9.0), Vector2(0.0, 16.0), Vector2(22.0, 9.0), Vector2(29.0, 9.0)], 8.0)
+			# Flush ramp landing and tactile warning strip at both boulevard crossings.
+			for ramp_z in [-6.0, 6.0]:
+				_box("AccessibleCurbRamp", Vector3(street_x + side * 3.78, 0.045, ramp_z), Vector3(0.62, 0.09, 2.4), Color(0.55, 0.39, 0.26), false)
+				_box("RampTactileWarning", Vector3(street_x + side * 4.35, 0.084, ramp_z), Vector3(0.32, 0.018, 2.15), Color(0.86, 0.70, 0.43), false)
 			# Continue the tiled sidewalk through every boulevard-junction corner.
 			# The four corner pads meet both sidewalk runs and cover the exposed grass,
 			# while staying outside the asphalt road footprint.
