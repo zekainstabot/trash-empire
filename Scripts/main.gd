@@ -5847,7 +5847,10 @@ func _append_factory_truck_route_leg(tween: Tween, truck: Node3D, target: Vector
 		var wheel_angle := -direction.length() / 0.48
 		for wheel in wheels:
 			if is_instance_valid(wheel):
-				tween.parallel().tween_property(wheel, "rotation:z", wheel.rotation.z + wheel_angle, safe_travel_time)
+				# Cylinder wheels are tilted 90 degrees around X, so their axle
+				# remains on local Y. Roll around that axle, not local Z (which
+				# makes the tires look like they steer sideways by 90 degrees).
+				tween.parallel().tween_property(wheel, "rotation:y", wheel.rotation.y + wheel_angle, safe_travel_time)
 
 
 func _dispatch_factory_row_truck(row: int) -> void:
