@@ -623,6 +623,16 @@ func _build_city_rework_layout() -> void:
 				# sidewalk edge at X=+/-6.5 to the cross-street walk at X=+/-3.65.
 				_sidewalk_detailed_segment_x("IntersectionSidewalkCorner", corner_x - 1.55, corner_x + 1.55, 0.075, 0.15, corner_z, 3.2, sidewalk)
 
+		# High-visibility zebra crossings connect both sidewalk approaches across each side street.
+		for crossing_side in [-1.0, 1.0]:
+			var crossing_center_z: float = crossing_side * 6.0
+			for stripe_index in range(6):
+				var stripe_z: float = crossing_center_z + (float(stripe_index) - 2.5) * 0.62
+				_box("CrossStreetZebraStripe", Vector3(street_x, 0.067, stripe_z), Vector3(5.85, 0.026, 0.34), road_white, false)
+			# Stop line is set back from the crossing, outside the pedestrian path.
+			var stop_z: float = crossing_side * 9.2
+			_box("CrossStreetStopBar", Vector3(street_x, 0.067, stop_z), Vector3(5.85, 0.026, 0.14), road_white, false)
+
 		for offset in [-0.13, 0.13]:
 			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
 				var line_start: float = segment[0]
