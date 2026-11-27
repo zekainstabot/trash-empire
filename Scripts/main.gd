@@ -3489,8 +3489,18 @@ func _build_street_sweeper() -> void:
 
 
 func _make_street_sweeper() -> Node3D:
-	var root := Node3D.new()
+	# Use a physics body so the sweeper respects the same world obstacles as vehicles.
+	var root := CharacterBody3D.new()
 	root.name = "AutonomousStreetSweeper"
+	var body_collision := CollisionShape3D.new()
+	body_collision.name = "SweeperBodyCollision"
+	var body_shape := BoxShape3D.new()
+	body_shape.size = Vector3(1.78, 1.18, 3.62)
+	body_collision.shape = body_shape
+	body_collision.position = Vector3(0.0, 1.12, 0.0)
+	root.add_child(body_collision)
+	root.floor_snap_length = 0.0
+	root.safe_margin = 0.08
 	var yellow := Color(0.94, 0.62, 0.08)
 	var dark_yellow := Color(0.66, 0.39, 0.045)
 	var glass := Color(0.10, 0.22, 0.27)
@@ -3564,6 +3574,21 @@ func _make_street_sweeper() -> Node3D:
 	return root
 
 
+func _drive_street_sweeper(sweeper: Node3D, target: Vector3, speed: float) -> void:
+	if not is_instance_valid(sweeper):
+		return
+	var direction := target - sweeper.global_position
+	direction.y = 0.0
+	if direction.length_squared() <= 0.0001:
+		return
+	if sweeper is CharacterBody3D:
+		var body := sweeper as CharacterBody3D
+		body.velocity = direction.normalized() * speed
+		body.move_and_slide()
+	else:
+		sweeper.global_position = sweeper.global_position.move_toward(target, speed * get_process_delta_time())
+
+
 func _process_street_sweeper(delta: float) -> void:
 	for sweeper in street_sweepers:
 		if not is_instance_valid(sweeper):
@@ -3584,7 +3609,7 @@ func _process_street_sweeper(delta: float) -> void:
 			var dump_point := _factory_waste_drop_point()
 			dump_point.y = sweeper.global_position.y
 			_face_travel_direction(sweeper, dump_point, delta, 5.0)
-			sweeper.global_position = sweeper.global_position.move_toward(dump_point, delta * 5.0)
+			_drive_street_sweeper(sweeper, dump_point, 5.0)
 			if sweeper.global_position.distance_to(dump_point) <= 1.1:
 				if waste_tank_built and waste_tank_inventory < _waste_tank_capacity():
 					var delivered := mini(cargo, _waste_tank_capacity() - waste_tank_inventory)
@@ -3611,7 +3636,7 @@ func _process_street_sweeper(delta: float) -> void:
 		var travel := waypoint - sweeper.global_position
 		if travel.length() > 0.10:
 			_face_travel_direction(sweeper, waypoint, delta, 3.0)
-			sweeper.global_position = sweeper.global_position.move_toward(waypoint, delta * 3.6)
+			_drive_street_sweeper(sweeper, waypoint, 3.6)
 		else:
 			sweeper.set_meta("route_index", (route_index + 1) % street_sweeper_route.size())
 		# Brushes only pick up litter physically placed on the asphalt surface.
