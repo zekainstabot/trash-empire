@@ -968,38 +968,75 @@ func _drone_dock_point(drone: Node3D) -> Vector3:
 
 func _build_drone_station() -> void:
 	var dock := _drone_station_point()
-	var dark := Color(0.075, 0.11, 0.13)
-	var metal := Color(0.20, 0.27, 0.29)
-	var teal := Color(0.10, 0.42, 0.39)
-	var glow := Color(0.24, 0.95, 0.72)
+	var dark := Color(0.045, 0.075, 0.09)
+	var graphite := Color(0.12, 0.18, 0.21)
+	var metal := Color(0.31, 0.40, 0.43)
+	var light_metal := Color(0.56, 0.65, 0.65)
+	var teal := Color(0.035, 0.32, 0.34)
+	var glow := Color(0.18, 0.95, 0.78)
+	var amber := Color(1.0, 0.62, 0.16)
+	var concrete := Color(0.25, 0.31, 0.33)
 
-	# Three separated landing bays on a compact, self-contained service pad.
-	_box("DroneDepotFoundation", dock + Vector3(0, 0.08, 0), Vector3(8.4, 0.16, 9.4), dark, false)
-	_box("DroneDepotDeck", dock + Vector3(0, 0.19, 0), Vector3(8.05, 0.08, 9.05), Color(0.31, 0.36, 0.36), false)
+	# Expanded industrial apron with a raised, armored perimeter.
+	_box("DroneDepotFoundation", dock + Vector3(0, 0.08, 0), Vector3(12.8, 0.16, 12.2), dark, false)
+	_box("DroneDepotDeck", dock + Vector3(0, 0.19, 0), Vector3(12.45, 0.08, 11.85), concrete, false)
+	_box("DroneDepotFrontApron", dock + Vector3(0, 0.12, 6.45), Vector3(9.2, 0.12, 1.0), graphite, false)
+	for side in [-1.0, 1.0]:
+		_box("DroneDepotPerimeterRail", dock + Vector3(side * 6.12, 0.42, 0), Vector3(0.16, 0.48, 11.5), metal, false)
+		_box("DroneDepotPerimeterStripe", dock + Vector3(side * 6.02, 0.68, 0), Vector3(0.035, 0.035, 11.1), amber, false)
+		_box("DroneDepotApronStripe", dock + Vector3(side * 4.95, 0.245, 6.0), Vector3(0.10, 0.025, 0.72), amber, false)
+
+	# Three individually marked landing and charging lanes.
 	for slot in range(3):
 		var bay_z := (float(slot) - 1.0) * 2.65
-		var bay := dock + Vector3(-1.65, 0.25, bay_z)
-		_box("DroneBayBase", bay, Vector3(2.65, 0.055, 2.35), Color(0.10, 0.19, 0.20), false)
-		_box("DroneBayInset", bay + Vector3(0, 0.035, 0), Vector3(2.35, 0.025, 2.05), teal, false)
+		var bay := dock + Vector3(0.0, 0.25, bay_z)
+		_box("DroneBayBase", bay, Vector3(3.15, 0.07, 2.42), dark, false)
+		_box("DroneBayInset", bay + Vector3(0, 0.045, 0), Vector3(2.86, 0.025, 2.16), teal, false)
+		_box("DroneBayCenterPad", bay + Vector3(0, 0.065, 0), Vector3(1.72, 0.025, 1.55), graphite, false)
 		for edge in [-1.0, 1.0]:
-			_box("DroneBayGuide", bay + Vector3(edge * 1.08, 0.055, 0), Vector3(0.055, 0.025, 1.85), glow, false)
-		_box("DroneBayNoseMark", bay + Vector3(0, 0.06, -0.82), Vector3(0.85, 0.025, 0.07), Color(0.95, 0.72, 0.20), false)
-		_box("DroneChargePost", bay + Vector3(1.25, 0.48, 0.78), Vector3(0.18, 0.78, 0.18), dark, false)
-		_box("DroneChargeLight", bay + Vector3(1.25, 0.88, 0.78), Vector3(0.12, 0.12, 0.12), glow, false)
+			_box("DroneBayGuide", bay + Vector3(edge * 1.34, 0.075, 0), Vector3(0.055, 0.035, 1.96), glow, false)
+			_box("DroneBaySideMarker", bay + Vector3(edge * 1.48, 0.075, 0), Vector3(0.045, 0.035, 2.15), amber, false)
+		_box("DroneBayNoseMark", bay + Vector3(0, 0.085, -0.91), Vector3(1.02, 0.035, 0.075), amber, false)
+		_box("DroneBayTailMark", bay + Vector3(0, 0.085, 0.91), Vector3(0.72, 0.035, 0.055), glow, false)
+		# Raised charging pylons and articulated overhead charging rails.
+		_box("DroneChargePost", bay + Vector3(1.78, 0.55, 0.78), Vector3(0.20, 0.92, 0.20), metal, false)
+		_box("DroneChargeLight", bay + Vector3(1.78, 1.04, 0.78), Vector3(0.14, 0.12, 0.14), glow, false)
+		_box("DroneChargeArm", bay + Vector3(1.20, 1.02, 0.78), Vector3(0.98, 0.10, 0.12), light_metal, false)
+		_box("DroneBayNumberPanel", bay + Vector3(-1.20, 0.12, 0.78), Vector3(0.32, 0.035, 0.34), amber, false)
+		_label_3d("BAY 0%d" % (slot + 1), bay + Vector3(-1.20, 0.18, 0.78), 0.10)
 
-	# Low-profile canopy stays within the station footprint.
-	for px in [-3.85, 3.85]:
-		for pz in [-4.35, 4.35]:
-			_box("DroneHangarColumn", dock + Vector3(px, 1.55, pz), Vector3(0.24, 3.1, 0.24), metal, false)
-	_box("DroneHangarRoof", dock + Vector3(0, 3.18, 0), Vector3(8.55, 0.22, 9.5), dark, false)
-	_box("DroneHangarFrontFascia", dock + Vector3(0, 2.93, 4.62), Vector3(8.2, 0.34, 0.22), metal, false)
-	_box("DroneHangarSignPanel", dock + Vector3(0, 2.95, -4.62), Vector3(4.4, 0.32, 0.16), teal, false)
-	for px in [-2.7, 0.0, 2.7]:
-		_box("DroneHangarLamp", dock + Vector3(px, 3.02, 0), Vector3(0.72, 0.045, 0.18), glow, false)
-	_box("DroneServiceConsole", dock + Vector3(3.05, 0.72, -3.45), Vector3(0.72, 1.25, 1.05), dark, false)
-	_box("DroneServiceScreen", dock + Vector3(2.67, 1.05, -3.45), Vector3(0.035, 0.48, 0.68), glow, false)
-	_cylinder("DroneDepotBeacon", dock + Vector3(3.1, 2.05, -3.45), 0.12, 0.32, Color(1.0, 0.62, 0.16), false)
-	_label_3d("AUTONOMOUS DRONE HUB", dock + Vector3(0, 3.48, -4.35), 0.20)
+	# Heavy portal-frame hangar canopy with visible cross-bracing.
+	for px in [-5.65, 5.65]:
+		for pz in [-5.15, 5.15]:
+			_box("DroneHangarColumnFoot", dock + Vector3(px, 0.42, pz), Vector3(0.72, 0.20, 0.72), dark, false)
+			_box("DroneHangarColumn", dock + Vector3(px, 1.82, pz), Vector3(0.34, 3.0, 0.34), metal, false)
+			_box("DroneHangarColumnFace", dock + Vector3(px - signf(px) * 0.19, 1.85, pz), Vector3(0.045, 2.55, 0.19), light_metal, false)
+	for pz in [-5.15, 5.15]:
+		_box("DroneHangarRoofBeam", dock + Vector3(0, 3.22, pz), Vector3(11.7, 0.42, 0.42), graphite, false)
+	for px in [-5.65, 5.65]:
+		_box("DroneHangarSideBeam", dock + Vector3(px, 3.22, 0), Vector3(0.42, 0.42, 10.5), graphite, false)
+	_box("DroneHangarRoof", dock + Vector3(0, 3.48, 0), Vector3(12.2, 0.20, 11.0), dark, false)
+	for roof_x in [-4.2, -2.1, 0.0, 2.1, 4.2]:
+		_box("DroneHangarRoofRib", dock + Vector3(roof_x, 3.60, 0), Vector3(0.075, 0.055, 10.2), metal, false)
+	for pz in [-3.9, 0.0, 3.9]:
+		_box("DroneHangarRoofTruss", dock + Vector3(0, 3.08, pz), Vector3(10.9, 0.14, 0.18), light_metal, false)
+	_box("DroneHangarFrontFascia", dock + Vector3(0, 2.98, 5.18), Vector3(11.3, 0.48, 0.24), graphite, false)
+	_box("DroneHangarSignPanel", dock + Vector3(0, 3.00, -5.18), Vector3(6.2, 0.52, 0.20), teal, false)
+	_label_3d("ZEKA // AUTONOMOUS FLIGHT OPERATIONS", dock + Vector3(0, 3.34, -5.12), 0.15)
+	for px in [-4.3, -2.15, 0.0, 2.15, 4.3]:
+		_box("DroneHangarLampHousing", dock + Vector3(px, 3.02, 0), Vector3(0.92, 0.12, 0.34), graphite, false)
+		_box("DroneHangarLamp", dock + Vector3(px, 2.94, 0), Vector3(0.72, 0.045, 0.18), glow, false)
+
+	# Dedicated maintenance bay, diagnostics console and safety equipment.
+	_box("DroneServiceCabinet", dock + Vector3(4.75, 0.82, -3.75), Vector3(1.25, 1.55, 1.05), graphite, false)
+	_box("DroneServiceCabinetDoor", dock + Vector3(4.75, 0.82, -3.20), Vector3(0.92, 1.28, 0.045), metal, false)
+	_box("DroneServiceScreen", dock + Vector3(4.10, 1.20, -3.20), Vector3(0.055, 0.48, 0.68), glow, false)
+	_box("DroneServiceStatusStrip", dock + Vector3(4.10, 0.78, -3.20), Vector3(0.06, 0.12, 0.68), amber, false)
+	_box("DroneServiceWorktop", dock + Vector3(4.35, 1.48, -2.35), Vector3(1.75, 0.12, 0.72), light_metal, false)
+	_box("DroneServiceToolRack", dock + Vector3(5.20, 1.92, -2.35), Vector3(0.12, 0.72, 0.68), dark, false)
+	_cylinder("DroneDepotBeacon", dock + Vector3(5.35, 2.22, -4.30), 0.16, 0.42, amber, false)
+	_box("DroneDepotSafetyMark", dock + Vector3(0, 0.27, 5.55), Vector3(3.8, 0.035, 0.12), amber, false)
+	_label_3d("AUTHORIZED UAV SERVICE ZONE", dock + Vector3(0, 0.42, 5.62), 0.12)
 
 
 func _refresh_sorting_district() -> void:
