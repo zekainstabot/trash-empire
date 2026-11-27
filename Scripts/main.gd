@@ -2885,10 +2885,7 @@ func _start_new_world() -> void:
 		"MegaProcessMachine", "FactoryMainConveyor",
 		"FactoryWasteConveyorItem", "FactorySpecificProduct", "FactoryProductTruck",
 		"FactoryDoorMoving", "DeliveryConveyor", "TeddyShippingPackage",
-		"FinishedPlasticBottle", "PlasticBottleCap", "FinishedCardboardBox",
-		"CardboardBoxTape", "FinishedMetalComponent", "MetalComponentCore",
-		"FinishedGlassJar", "GlassJarRim", "RefurbishedElectronicUnit",
-		"ElectronicDisplay", "FactoryRowTruck"
+		"FactoryRowTruck"
 	]
 	for row_items in factory_row_belt_items:
 		for product in row_items:
@@ -5400,27 +5397,7 @@ func _factory_row_machine_name(row: int, column: int) -> String:
 	]
 	return machine_names[clampi(row, 0, 4)][clampi(column, 0, 2)]
 
-func _remove_legacy_factory_output_products(node: Node) -> void:
-	# Remove the old oversized static product display from every production-line exit.
-	var legacy_prefixes := [
-		"FactoryProductOutputStand", "FinishedPlasticBottle", "PlasticBottleCap",
-		"FinishedCardboardBox", "CardboardBoxTape", "FinishedMetalComponent",
-		"MetalComponentCore", "FinishedGlassJar", "GlassJarRim",
-		"RefurbishedElectronicUnit", "ElectronicDisplay"
-	]
-	for child in node.get_children():
-		var remove_child := false
-		for prefix in legacy_prefixes:
-			if child.name.begins_with(prefix):
-				remove_child = true
-				break
-		if remove_child:
-			child.queue_free()
-		else:
-			_remove_legacy_factory_output_products(child)
-
 func _build_recycling_mega_factory() -> void:
-	_remove_legacy_factory_output_products(self)
 	# Clean, open industrial hall: five parallel lines with clear service lanes.
 	var steel := Color(0.16, 0.22, 0.24)
 	var dark_steel := Color(0.055, 0.085, 0.095)
