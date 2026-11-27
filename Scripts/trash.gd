@@ -232,6 +232,12 @@ func _make_mobile_trash(rng: RandomNumberGenerator, item_roll: int) -> void:
 			visual_position.y = 0.12
 			visual_rotation.x = PI * 0.5
 			metallic = 0.30
+		10:
+			shape = _mobile_gear_mesh()
+			base_color = Color.WHITE
+			visual_position.y = 0.12
+			visual_rotation.x = PI * 0.5
+			metallic = 0.72
 		11, 12, 16:
 			var tool := CylinderMesh.new()
 			tool.top_radius = 0.055 if item_roll == 11 else 0.11
@@ -344,6 +350,46 @@ func _mobile_bottle_mesh(item_roll: int) -> ArrayMesh:
 	surface.generate_normals()
 	return surface.commit()
 
+
+
+func _mobile_gear_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const SEGMENTS := 32
+	const INNER := 0.19
+	const ROOT := 0.34
+	const TOOTH := 0.43
+	var metal_colors: Array[Color] = [Color(0.46, 0.49, 0.48), Color(0.67, 0.69, 0.66), Color(0.36, 0.39, 0.39)]
+	for i in range(SEGMENTS):
+		var a0: float = TAU * float(i) / float(SEGMENTS)
+		var a1: float = TAU * float(i + 1) / float(SEGMENTS)
+		var radius0: float = TOOTH if i % 4 in [1, 2] else ROOT
+		var radius1: float = TOOTH if (i + 1) % 4 in [1, 2] else ROOT
+		var outer0 := Vector3(cos(a0) * radius0, 0.0, sin(a0) * radius0)
+		var outer1 := Vector3(cos(a1) * radius1, 0.0, sin(a1) * radius1)
+		var inner0 := Vector3(cos(a0) * INNER, 0.0, sin(a0) * INNER)
+		var inner1 := Vector3(cos(a1) * INNER, 0.0, sin(a1) * INNER)
+		surface.set_color(metal_colors[i % metal_colors.size()])
+		surface.add_vertex(inner0); surface.add_vertex(outer0); surface.add_vertex(inner1)
+		surface.add_vertex(inner1); surface.add_vertex(outer0); surface.add_vertex(outer1)
+		# Narrow raised face strips simulate machined bevels without extra draw calls.
+		var bevel0 := Vector3(cos(a0) * (radius0 - 0.035), 0.035, sin(a0) * (radius0 - 0.035))
+		var bevel1 := Vector3(cos(a1) * (radius1 - 0.035), 0.035, sin(a1) * (radius1 - 0.035))
+		surface.set_color(metal_colors[(i + 1) % metal_colors.size()])
+		surface.add_vertex(outer0); surface.add_vertex(bevel0); surface.add_vertex(outer1)
+	# A recessed central bore ring is visually readable from either side.
+	for i in range(SEGMENTS):
+		var a0: float = TAU * float(i) / float(SEGMENTS)
+		var a1: float = TAU * float(i + 1) / float(SEGMENTS)
+		var p0 := Vector3(cos(a0) * 0.13, 0.018, sin(a0) * 0.13)
+		var p1 := Vector3(cos(a1) * 0.13, 0.018, sin(a1) * 0.13)
+		var q0 := Vector3(cos(a0) * INNER, 0.018, sin(a0) * INNER)
+		var q1 := Vector3(cos(a1) * INNER, 0.018, sin(a1) * INNER)
+		surface.set_color(Color(0.28, 0.31, 0.32))
+		surface.add_vertex(p0); surface.add_vertex(q0); surface.add_vertex(p1)
+		surface.add_vertex(p1); surface.add_vertex(q0); surface.add_vertex(q1)
+	surface.generate_normals()
+	return surface.commit()
 
 func _mobile_crushed_can_mesh(rng: RandomNumberGenerator) -> ArrayMesh:
 	var surface := SurfaceTool.new()
@@ -1287,24 +1333,19 @@ func _make_old_shoe(rng: RandomNumberGenerator) -> void:
 	add_child(shoe)
 
 func _make_gear(rng: RandomNumberGenerator) -> void:
-	# Rusty steel cogwheel with a central opening and chunky teeth.
-	var ring := MeshInstance3D.new()
-	var torus := TorusMesh.new()
-	torus.inner_radius = 0.22
-	torus.outer_radius = 0.42
-	ring.mesh = torus
-	ring.position.y = 0.12
-	ring.rotation_degrees.x = 90.0
-	ring.material_override = _material(Color(0.48, 0.43, 0.34))
-	add_child(ring)
-	for i in range(8):
-		var tooth := _flat_box(Vector3(0.16, 0.10, 0.13), Vector3(0, 0.12, -0.40), Color(0.52, 0.48, 0.39))
-		tooth.rotation.y = float(i) * TAU / 8.0
-		add_child(tooth)
-	var hub := _cylinder_piece(0.14, 0.14, 0.12, Vector3(0, 0.13, 0), Color(0.34, 0.39, 0.40))
-	hub.rotation_degrees.x = 90.0
-	add_child(hub)
-	rotation.y = rng.randf_range(0.0, TAU)
+	var gear := MeshInstance3D.new()
+	gear.name = "MachinedRustyGear"
+	gear.mesh = _mobile_gear_mesh()
+	gear.position.y = 0.12
+	gear.rotation_degrees.x = 90.0
+	gear.rotation.y = rng.randf_range(0.0, TAU)
+	var material := _material(Color.WHITE)
+	material.vertex_color_use_as_albedo = true
+	material.metallic = 0.72
+	material.roughness = 0.62
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	gear.material_override = material
+	add_child(gear)
 
 func _make_screws(rng: RandomNumberGenerator) -> void:
 	for i in range(3):
