@@ -5601,6 +5601,7 @@ func _build_first_machine_feed_trigger() -> void:
 	factory_machine_status_label.pixel_size = 0.009
 	factory_machine_status_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	factory_machine_status_label.modulate = Color(0.68, 1.0, 0.82)
+	factory_machine_status_label.visible = false # Keep production counts updated internally without displaying them in the world.
 	add_child(factory_machine_status_label)
 	_refresh_factory_machine_status()
 
