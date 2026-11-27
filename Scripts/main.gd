@@ -1098,6 +1098,37 @@ func _build_drone_station() -> void:
 	_box("DroneDepotSafetyMark", dock + Vector3(0, 0.27, 5.55), Vector3(3.8, 0.035, 0.12), amber, false)
 	_label_3d("AUTHORIZED UAV SERVICE ZONE", dock + Vector3(0, 0.42, 5.62), 0.12)
 
+	# Battery exchange wall: three ready packs and a dedicated depleted-pack return slot.
+	_box("DroneBatteryExchangeRack", dock + Vector3(-4.85, 1.05, -3.65), Vector3(1.35, 2.05, 1.05), dark, false)
+	_box("DroneBatteryRackHeader", dock + Vector3(-4.85, 2.16, -3.65), Vector3(1.42, 0.22, 1.12), teal, false)
+	_label_3d("BATTERY EXCHANGE", dock + Vector3(-4.85, 2.34, -3.65), 0.10)
+	for pack_slot in range(4):
+		var pack_y: float = 0.55 + float(pack_slot) * 0.39
+		var pack_z: float = -4.02
+		_box("DroneSpareBatteryTray", dock + Vector3(-4.85, pack_y, pack_z), Vector3(0.94, 0.28, 0.58), metal, false)
+		_box("DroneSpareBatteryPack", dock + Vector3(-4.85, pack_y + 0.10, pack_z - 0.04), Vector3(0.70, 0.15, 0.42), graphite, false)
+		_box("DroneBatteryChargeIndicator", dock + Vector3(-4.85, pack_y + 0.12, pack_z - 0.265), Vector3(0.34, 0.035, 0.025), glow if pack_slot < 3 else amber, false)
+
+	# Two articulated-looking maintenance manipulators work from the clear side lanes.
+	for arm_side in [-1.0, 1.0]:
+		var arm_base := dock + Vector3(arm_side * 4.72, 0.30, 0.15)
+		_box("DroneMaintenanceArmPedestal", arm_base + Vector3(0, 0.58, 0), Vector3(0.66, 1.16, 0.66), dark, false)
+		_box("DroneMaintenanceArmTurntable", arm_base + Vector3(0, 1.20, 0), Vector3(0.82, 0.16, 0.82), amber, false)
+		_box("DroneMaintenanceArmUpper", arm_base + Vector3(-arm_side * 0.42, 1.78, 0), Vector3(0.18, 1.12, 0.18), metal, false)
+		_box("DroneMaintenanceArmForearm", arm_base + Vector3(-arm_side * 0.78, 2.22, 0.12), Vector3(0.78, 0.16, 0.18), light_metal, false)
+		_box("DroneMaintenanceToolHead", arm_base + Vector3(-arm_side * 1.12, 2.22, 0.12), Vector3(0.22, 0.30, 0.32), teal, false)
+		_box("DroneMaintenanceToolLight", arm_base + Vector3(-arm_side * 1.12, 2.24, 0.29), Vector3(0.10, 0.08, 0.035), glow, false)
+
+	# Marked one-way approach and departure lane; kept south of the active landing pads.
+	_box("DroneTaxiLaneBase", dock + Vector3(0, 0.115, 7.30), Vector3(8.8, 0.055, 1.55), graphite, false)
+	for lane_edge in [-1.0, 1.0]:
+		_box("DroneTaxiLaneEdge", dock + Vector3(lane_edge * 4.20, 0.155, 7.30), Vector3(0.09, 0.025, 1.45), amber, false)
+	for lane_dash in range(5):
+		_box("DroneTaxiLaneDash", dock + Vector3(-3.0 + float(lane_dash) * 1.5, 0.16, 7.30), Vector3(0.72, 0.025, 0.07), glow, false)
+	_box("DroneTaxiDirectionArrowStem", dock + Vector3(0, 0.17, 7.30), Vector3(0.10, 0.035, 0.82), glow, false)
+	_box("DroneTaxiDirectionArrowHead", dock + Vector3(0, 0.17, 7.70), Vector3(0.62, 0.035, 0.12), glow, false)
+	_label_3d("UAV IN / OUT", dock + Vector3(0, 0.38, 8.15), 0.12)
+
 
 func _refresh_sorting_district() -> void:
 	for i in range(mini(4, sorting_robots.size())):
