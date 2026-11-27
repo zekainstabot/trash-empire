@@ -9,6 +9,15 @@ class_name TrashPlayer
 var move_input := Vector2.ZERO
 var camera_pivot: Node3D
 
+func _ready() -> void:
+	# Keep the capsule grounded and allow it to slide cleanly around corners
+	# instead of catching on tiny seams between nearby collision shapes.
+	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
+	floor_snap_length = 0.28
+	max_slides = 8
+	safe_margin = 0.02
+
 func _physics_process(delta: float) -> void:
 	var input_dir := move_input
 	if input_dir.length_squared() < 0.0001:
