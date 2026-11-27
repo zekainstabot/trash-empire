@@ -3779,6 +3779,13 @@ func _build_helper_drones() -> void:
 				blade_b.rotation_degrees.y = 90.0
 				_add_robot_sphere(drone, "MotorCap", rotor_pos + Vector3(0, 0.105, 0), 0.035, Color(0.13, 0.82, 0.70))
 				rotor_assemblies.append(rotor)
+		# Protective rotor rings and high-visibility side stripes for a finished industrial drone silhouette.
+		for sx in [-1.0, 1.0]:
+			for sz in [-1.0, 1.0]:
+				var guard_pos := Vector3(sx * 0.39, 0.045, sz * 0.36)
+				_add_robot_sphere(drone, "RotorGuardRing", guard_pos + Vector3(0, 0.055, 0), 0.105, Color(0.25, 0.33, 0.35))
+				_add_robot_box(drone, "RotorGuardSafetyStripe", guard_pos + Vector3(0, 0.13, 0), Vector3(0.09, 0.025, 0.09), Color(0.96, 0.65, 0.16))
+		_add_robot_box(drone, "DroneSideBrandStripe", Vector3(0.0, -0.12, 0.20), Vector3(0.24, 0.035, 0.09), Color(0.96, 0.65, 0.16))
 		drone.set_meta("rotors", rotor_assemblies)
 
 		# Reinforced landing skids and a visible lifting winch.
