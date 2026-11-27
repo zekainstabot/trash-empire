@@ -3548,9 +3548,7 @@ func _process_street_sweeper(delta: float) -> void:
 		if returning:
 			var dump_point := _factory_waste_drop_point()
 			dump_point.y = sweeper.global_position.y
-			var direction := dump_point - sweeper.global_position
-			if direction.length() > 0.12:
-				sweeper.rotation.y = atan2(-direction.x, -direction.z)
+			_face_travel_direction(sweeper, dump_point, delta, 5.0)
 			sweeper.global_position = sweeper.global_position.move_toward(dump_point, delta * 5.0)
 			if sweeper.global_position.distance_to(dump_point) <= 1.1:
 				if waste_tank_built and waste_tank_inventory < _waste_tank_capacity():
@@ -3577,7 +3575,7 @@ func _process_street_sweeper(delta: float) -> void:
 		var waypoint: Vector3 = street_sweeper_route[route_index]
 		var travel := waypoint - sweeper.global_position
 		if travel.length() > 0.10:
-			sweeper.rotation.y = lerp_angle(sweeper.rotation.y, atan2(-travel.x, -travel.z), minf(1.0, delta * 3.0))
+			_face_travel_direction(sweeper, waypoint, delta, 3.0)
 			sweeper.global_position = sweeper.global_position.move_toward(waypoint, delta * 3.6)
 		else:
 			sweeper.set_meta("route_index", (route_index + 1) % street_sweeper_route.size())
@@ -4043,6 +4041,7 @@ func _process_helper_drones(delta: float) -> void:
 				scan_light.scale.y = 0.7 + 0.3 * (0.5 + 0.5 * sin(visual_phase + float(scan_index) * PI))
 		if drone.get_meta("returning", false):
 			var return_pos := _drone_dock_point(drone)
+			_face_travel_direction(drone, return_pos, delta, 5.0)
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
 			if drone.global_position.distance_to(return_pos) <= 2.5:
 				drone.set_meta("deposited", true)
@@ -4104,8 +4103,8 @@ func _process_helper_drones(delta: float) -> void:
 			drone.global_position = drone.global_position.move_toward(idle_pos, drone_speed * delta)
 			continue
 		var destination := target.global_position + Vector3(0, 0.20, 0)
+		_face_travel_direction(drone, destination, delta, 7.0)
 		drone.global_position = drone.global_position.move_toward(destination, drone_speed * delta)
-		drone.look_at(target.global_position, Vector3.UP)
 		var pickup_timer := float(drone.get_meta("pickup_timer", 0.0)) + delta
 		drone.set_meta("pickup_timer", pickup_timer)
 		if drone.global_position.distance_to(destination) < 0.42 and pickup_timer >= interval:
@@ -4134,6 +4133,18 @@ func _get_meta_node(node: Object, key: String) -> Node3D:
 	return node.get_meta(key) as Node3D
 
 
+func _face_travel_direction(actor: Node3D, destination: Vector3, delta: float, turn_speed: float = 7.0) -> void:
+	if not is_instance_valid(actor):
+		return
+	var direction := destination - actor.global_position
+	direction.y = 0.0
+	if direction.length_squared() <= 0.0001:
+		return
+	# All ground robots are modeled nose-forward along local -Z.
+	var desired_yaw := atan2(-direction.x, -direction.z)
+	actor.rotation.y = lerp_angle(actor.rotation.y, desired_yaw, minf(1.0, delta * turn_speed))
+
+
 func _process_ground_collector(delta: float) -> void:
 	if ground_robot_level <= 0 or not is_instance_valid(ground_collector):
 		return
@@ -4150,6 +4161,7 @@ func _process_ground_collector(delta: float) -> void:
 	rover.set_meta("previous_position", rover.global_position)
 	if bool(rover.get_meta("returning", false)):
 		var home := _factory_waste_drop_point()
+		_face_travel_direction(rover, home, delta, 6.0)
 		rover.global_position = rover.global_position.move_toward(home, speed * delta)
 		if Vector2(rover.global_position.x - home.x, rover.global_position.z - home.z).length() < 1.4:
 			_ground_collector_deposit_cycle(rover, delta)
@@ -4191,9 +4203,9 @@ func _process_ground_collector(delta: float) -> void:
 
 	var destination := target.global_position + Vector3(0, 0.05, 0)
 	var rover_destination := Vector3(destination.x, rover.global_position.y, destination.z)
+	_face_travel_direction(rover, rover_destination, delta, 7.0)
 	rover.global_position = rover.global_position.move_toward(rover_destination, speed * delta)
 	if Vector2(rover.global_position.x - destination.x, rover.global_position.z - destination.z).length() > 0.72:
-		rover.look_at(Vector3(destination.x, rover.global_position.y, destination.z), Vector3.UP)
 		return
 
 	var weight := 2 if target.has_meta("bulky") else 1
