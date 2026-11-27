@@ -152,6 +152,7 @@ var factory_shipping_timer := 0.0
 var factory_shipping_cooldown := 0.0
 var factory_truck_interval_upgrade_level := 0
 var factory_shipping_busy := false
+var factory_shipping_truck: Node3D = null
 var factory_shipping_row := 0
 var factory_shipping_trucks: Array[Node3D] = []
 var waste_tank_built := false
@@ -5697,9 +5698,16 @@ func _factory_truck_arrival_interval() -> float:
 	return intervals[clampi(factory_truck_interval_upgrade_level, 0, 3)]
 
 func _process_factory_row_shipping(delta: float) -> void:
-	# A full three-piece load dispatches immediately; there is no artificial
-	# cooldown between trucks. Products stay visible at the end of each belt.
-	if mega_factory_built_count < 1 or factory_shipping_busy:
+	# One shared dispatch lock serializes the entire freight loop. This prevents
+	# two trucks entering the single-width perimeter road from opposite docks.
+	if factory_shipping_busy:
+		if is_instance_valid(factory_shipping_truck):
+			return
+		# Recover safely if a truck was removed while its route tween was active.
+		factory_shipping_truck = null
+		factory_shipping_busy = false
+		factory_shipping_timer = 0.0
+	if mega_factory_built_count < 1:
 		return
 	factory_shipping_timer += delta
 	if factory_shipping_timer < 0.12:
@@ -5790,6 +5798,8 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	if _factory_row_sellable_stock(row) < 3 or queue.size() < 3:
 		return
 	factory_shipping_busy = true
+	# Reserve the shared freight corridor before creating the truck. No second
+	# truck may enter until this vehicle has completed the full outbound route.
 	# Remove exactly three valid product objects from the belt queue.
 	var loaded_products: Array[Node3D] = []
 	for package_index in range(3):
@@ -5803,6 +5813,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 	var truck := _create_factory_row_truck(row)
 	# Trucks approach from the open side apron; never spawn inside the warehouse.
 	truck.position = Vector3(242.0, 0.0, exit_side_z)
+	factory_shipping_truck = truck
 	var stage_names := ["RAW", "PREPARATION", "PROCESSING", "FINISHED"]
 	var stage_name: String = stage_names[clampi(sell_stage, 0, 3)]
 	var door_left := _box("FactoryDoorMovingLeft", Vector3(207.15, 3.0, z - 1.35), Vector3(0.24, 5.7, 2.7), Color(0.08, 0.48, 0.48), false)
@@ -5847,6 +5858,7 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		truck.queue_free()
 		door_left.queue_free()
 		door_right.queue_free()
+		factory_shipping_truck = null
 		factory_shipping_busy = false
 		factory_shipping_cooldown = 0.0
 		_set_message("%s truck delivered. Next full load will dispatch immediately." % _factory_row_product(row))
