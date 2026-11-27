@@ -611,7 +611,9 @@ func _build_city_rework_layout() -> void:
 			for boulevard_side in [-1.0, 1.0]:
 				var corner_x := street_x + side * 5.0
 				var corner_z := boulevard_side * 6.0
-				_sidewalk_detailed_segment_x("IntersectionSidewalkCorner", corner_x - 1.35, corner_x + 1.35, 0.075, 0.15, corner_z, 3.2, sidewalk)
+				# Span the full curb-to-curb corner: 3.1 m joins the boulevard
+				# sidewalk edge at X=+/-6.5 to the cross-street walk at X=+/-3.65.
+				_sidewalk_detailed_segment_x("IntersectionSidewalkCorner", corner_x - 1.55, corner_x + 1.55, 0.075, 0.15, corner_z, 3.2, sidewalk)
 
 		for offset in [-0.13, 0.13]:
 			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
