@@ -4151,8 +4151,10 @@ func _process_auto_pickup(delta: float) -> void:
 		if _pickup_trash_item(picked):
 			_spawn_auto_pickup_effect(pickup_effect_position)
 			_update_ui()
-		_save_game()
-		_set_message("AUTO MAGNET  +1")
+			_save_game()
+			_set_message("AUTO PICKUP  +1")
+		else:
+			auto_pickup_scan_timer = 0.0
 	elif carried < capacity:
 		# If another system claimed the piece during the final pickup frame,
 		# the next scan immediately chooses a fresh available item.
