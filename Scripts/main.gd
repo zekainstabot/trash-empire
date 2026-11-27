@@ -6125,8 +6125,42 @@ func _build_waste_tank_structure() -> void:
 	_box("BunkerHydraulicServiceBox", Vector3(-7.65, 1.45, -25.30), Vector3(0.62, 0.78, 0.48), Color(0.18, 0.24, 0.25), false)
 	_box("BunkerHydraulicPanel", Vector3(-7.65, 1.45, -25.04), Vector3(0.42, 0.50, 0.04), Color(0.43, 0.50, 0.49), false)
 	_box("BunkerInspectionPlate", Vector3(-4.8, 1.80, -19.22), Vector3(1.10, 0.30, 0.045), Color(0.12, 0.19, 0.20), false)
+
+	# Industrial receiving hopper: reinforced rim, removable safety grate and inspection lights.
+	_box("WasteHopperRimFront", Vector3(-4.8, 2.30, -18.92), Vector3(6.9, 0.18, 0.24), Color(0.39, 0.47, 0.47), false)
+	_box("WasteHopperRimBack", Vector3(-4.8, 2.30, -26.08), Vector3(6.9, 0.18, 0.24), Color(0.39, 0.47, 0.47), false)
+	for grate_x in [-7.55, -6.65, -5.75, -4.85, -3.95, -3.05, -2.15]:
+		_box("WasteHopperSafetyGrate", Vector3(grate_x, 2.20, -19.45), Vector3(0.075, 0.06, 0.92), Color(0.14, 0.20, 0.21), false)
+		_box("WasteHopperGrateCrossbar", Vector3(grate_x, 2.20, -19.45), Vector3(0.07, 0.06, 0.92), Color(0.14, 0.20, 0.21), false)
+	# Hydraulic ram and its exposed guide rails sit above the rear wall, clear of the player approach.
+	_box("WasteCompactorRamColumn", Vector3(-4.8, 2.85, -25.25), Vector3(0.42, 1.30, 0.48), Color(0.16, 0.22, 0.24), false)
+	_box("WasteCompactorRamCylinder", Vector3(-4.8, 3.48, -25.25), Vector3(0.25, 0.82, 0.28), Color(0.52, 0.59, 0.58), false)
+	_box("WasteCompactorRamPiston", Vector3(-4.8, 2.78, -24.55), Vector3(0.18, 0.70, 0.18), Color(0.73, 0.77, 0.72), false)
+	for ram_side in [-1.0, 1.0]:
+		_box("WasteCompactorGuideRail", Vector3(-4.8 + ram_side * 0.62, 2.90, -25.15), Vector3(0.10, 1.55, 0.12), Color(0.36, 0.44, 0.45), false)
+		_box("WasteCompactorGuideFoot", Vector3(-4.8 + ram_side * 0.62, 2.20, -24.65), Vector3(0.32, 0.16, 0.42), Color(0.22, 0.29, 0.30), false)
+	# A short enclosed transfer chute visually joins the bunker outlet to the existing feed conveyor.
+	_box("WasteTankOutletCollar", Vector3(-0.72, 0.92, -22.5), Vector3(0.52, 0.72, 1.72), Color(0.12, 0.18, 0.19), false)
+	_box("WasteTankTransferChute", Vector3(-0.12, 0.70, -22.5), Vector3(0.92, 0.34, 1.52), Color(0.25, 0.34, 0.35), false)
+	_box("WasteTankTransferBelt", Vector3(0.10, 0.91, -22.5), Vector3(0.98, 0.07, 1.16), Color(0.035, 0.055, 0.06), false)
+	for chute_rail_z in [-23.18, -21.82]:
+		_box("WasteTankTransferRail", Vector3(0.08, 1.12, chute_rail_z), Vector3(1.02, 0.28, 0.08), Color(0.43, 0.51, 0.51), false)
+	# Inspection walkway, access ladder and a guarded control station.
+	_box("WasteTankInspectionWalkway", Vector3(-4.8, 2.48, -27.10), Vector3(5.8, 0.14, 1.05), Color(0.20, 0.28, 0.29), false)
+	for rail_x in [-7.55, -2.05]:
+		_box("WasteTankWalkwayRailPost", Vector3(rail_x, 2.95, -27.10), Vector3(0.10, 0.92, 0.10), Color(0.46, 0.54, 0.53), false)
+		_box("WasteTankWalkwayHandrail", Vector3(rail_x, 3.40, -27.10), Vector3(0.12, 0.10, 1.05), Color(0.46, 0.54, 0.53), false)
+	for ladder_y in range(5):
+		_box("WasteTankAccessLadderRung", Vector3(-1.45, 0.55 + float(ladder_y) * 0.42, -26.55), Vector3(0.75, 0.075, 0.09), Color(0.56, 0.63, 0.61), false)
+	for ladder_side in [-1.0, 1.0]:
+		_box("WasteTankAccessLadderRail", Vector3(-1.45 + ladder_side * 0.39, 1.35, -26.55), Vector3(0.075, 2.25, 0.10), Color(0.31, 0.40, 0.41), false)
+	_box("WasteTankLevelGaugeHousing", Vector3(-1.75, 1.45, -22.5), Vector3(0.16, 1.72, 0.48), Color(0.09, 0.14, 0.15), false)
+	_box("WasteTankLevelGaugeWindow", Vector3(-1.64, 1.45, -22.5), Vector3(0.05, 1.28, 0.25), Color(0.12, 0.67, 0.58), false)
+	_box("WasteTankControlConsole", Vector3(-1.55, 1.25, -24.45), Vector3(0.62, 1.05, 0.55), Color(0.12, 0.19, 0.21), false)
+	_box("WasteTankControlScreen", Vector3(-1.22, 1.48, -24.45), Vector3(0.035, 0.38, 0.40), Color(0.10, 0.74, 0.66), false)
+	_label_3d("INTAKE / COMPACTION / FEED", Vector3(-4.8, 3.05, -18.82), 0.11)
 	# Move all geometry helpers, which create at scene root, under the tank transform.
-	var tank_names := ["CityDumpApproachApron", "CityDumpConcrete", "CityDumpMarking", "DumpBunkerSideRibL", "DumpBunkerSideRibR", "DumpBunkerTopRailBack", "DumpBunkerTopRailLeft", "DumpBunkerTopRailRight", "DumpCompactorHousing", "DumpCompactorServicePanel", "CityDumpBackWall", "CityDumpLeftWall", "CityDumpRightWall", "DepotConcreteJoint", "DepotDrainChannel", "DepotDrainSlot", "CityDumpHazardStripe", "CityDumpSignPostL", "CityDumpSignPostR", "CityDumpSign", "DepotSafetyBollard", "DepotFloodlightHousing", "DepotFloodlightLens", "DepotElectricalCabinet", "DepotCabinetDoor", "BunkerFrontReinforcement", "BunkerFrontWarningMark", "BunkerHydraulicServiceBox", "BunkerHydraulicPanel", "BunkerInspectionPlate"]
+	var tank_names := ["WasteHopperRimFront", "WasteHopperRimBack", "WasteHopperSafetyGrate", "WasteHopperGrateCrossbar", "WasteCompactorRamColumn", "WasteCompactorRamCylinder", "WasteCompactorRamPiston", "WasteCompactorGuideRail", "WasteCompactorGuideFoot", "WasteTankOutletCollar", "WasteTankTransferChute", "WasteTankTransferBelt", "WasteTankTransferRail", "WasteTankInspectionWalkway", "WasteTankWalkwayRailPost", "WasteTankWalkwayHandrail", "WasteTankAccessLadderRung", "WasteTankAccessLadderRail", "WasteTankLevelGaugeHousing", "WasteTankLevelGaugeWindow", "WasteTankControlConsole", "WasteTankControlScreen", "CityDumpApproachApron", "CityDumpConcrete", "CityDumpMarking", "DumpBunkerSideRibL", "DumpBunkerSideRibR", "DumpBunkerTopRailBack", "DumpBunkerTopRailLeft", "DumpBunkerTopRailRight", "DumpCompactorHousing", "DumpCompactorServicePanel", "CityDumpBackWall", "CityDumpLeftWall", "CityDumpRightWall", "DepotConcreteJoint", "DepotDrainChannel", "DepotDrainSlot", "CityDumpHazardStripe", "CityDumpSignPostL", "CityDumpSignPostR", "CityDumpSign", "DepotSafetyBollard", "DepotFloodlightHousing", "DepotFloodlightLens", "DepotElectricalCabinet", "DepotCabinetDoor", "BunkerFrontReinforcement", "BunkerFrontWarningMark", "BunkerHydraulicServiceBox", "BunkerHydraulicPanel", "BunkerInspectionPlate"]
 	for child in get_children():
 		if child is Node3D and tank_names.has(child.name):
 			remove_child(child)
