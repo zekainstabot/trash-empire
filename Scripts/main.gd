@@ -5438,6 +5438,17 @@ func _build_mega_factory_machine(index: int) -> void:
 	_cylinder("MegaProcessMachineBeacon%d" % index, Vector3(x + 1.72, 4.10, z - 1.22), 0.12, 0.22, Color(0.98, 0.56, 0.12), false)
 	for wheel_x in [x - 1.5, x + 1.5]:
 		_cylinder("MegaProcessMachineDrum%d" % index, Vector3(wheel_x, 0.84, z + 2.0), 0.38, 0.22, accent, true)
+	# Machine exterior upgrade: framed access doors, exhaust and warning geometry.
+	_box("MegaMachineAccessFrame%d" % index, Vector3(x - 1.45, 2.45, z - 1.76), Vector3(0.88, 1.30, 0.08), accent.darkened(0.22), false)
+	_box("MegaMachineAccessDoor%d" % index, Vector3(x - 1.45, 2.45, z - 1.81), Vector3(0.72, 1.12, 0.04), steel.lightened(0.12), false)
+	for door_y in [1.95, 2.95]:
+		_box("MegaMachineDoorHandle%d" % index, Vector3(x - 1.45, door_y, z - 1.85), Vector3(0.10, 0.16, 0.04), Color(0.72, 0.78, 0.74), false)
+	_box("MegaMachineSafetyBand%d" % index, Vector3(x, 0.66, z - 1.55), Vector3(4.5, 0.09, 0.12), accent, false)
+	_box("MegaMachineTopRidge%d" % index, Vector3(x, 4.00, z), Vector3(3.8, 0.08, 0.20), Color(0.38, 0.45, 0.46), false)
+	for exhaust_x in [-0.85, 0.85]:
+		_box("MegaMachineExhaustBase%d" % index, Vector3(x + exhaust_x, 4.13, z + 0.58), Vector3(0.48, 0.18, 0.48), dark_steel, false)
+		_box("MegaMachineExhaustStack%d" % index, Vector3(x + exhaust_x, 4.38, z + 0.58), Vector3(0.30, 0.42, 0.30), steel, false)
+		_box("MegaMachineExhaustCap%d" % index, Vector3(x + exhaust_x, 4.61, z + 0.58), Vector3(0.40, 0.08, 0.40), accent, false)
 	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 4.31, z - 2.0), 0.13)
 
 func _build_factory_row_main_conveyor(row: int) -> void:
