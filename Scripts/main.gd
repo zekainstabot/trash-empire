@@ -73,6 +73,8 @@ var collection_tool_extension := 0.0
 var magnet_field_ring: MeshInstance3D
 var vacuum_rotor: Node3D
 var vacuum_status_light: MeshInstance3D
+var suction_intake_ring: MeshInstance3D
+var suction_pressure_light: OmniLight3D
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -2276,26 +2278,57 @@ func _build_player() -> void:
 	magnet_tool.add_child(magnet_field_ring)
 	magnet_tool.visible = (auto_pickup_level > 0 or magnet_power_level > 1) and suction_level <= 0
 
-	# Separate vacuum attachment on the opposite arm, unlocked by suction upgrades.
+	# Modular industrial vacuum head: armored turbine, reinforced hose and guarded intake.
 	suction_tool = Node3D.new()
-	suction_tool.name = "ArmMountedVacuum"
+	suction_tool.name = "IndustrialVacuumModule"
 	suction_tool.position = Vector3(0.0, -0.43, -0.015)
 	robot_right_arm.add_child(suction_tool)
-	_add_robot_box(suction_tool, "VacuumMotor", Vector3(0, -0.02, 0.02), Vector3(0.24, 0.25, 0.28), Color(0.12, 0.22, 0.25))
-	_add_robot_box(suction_tool, "VacuumTube", Vector3(0, -0.10, -0.20), Vector3(0.13, 0.12, 0.34), Color(0.48, 0.58, 0.59))
-	_add_robot_box(suction_tool, "VacuumMouth", Vector3(0, -0.12, -0.40), Vector3(0.34, 0.16, 0.12), Color(0.10, 0.75, 0.68))
-	# Guarded intake, spinning impeller and live status lamp.
-	_add_robot_box(suction_tool, "IntakeGuardTop", Vector3(0, -0.035, -0.475), Vector3(0.31, 0.035, 0.045), Color(0.68, 0.76, 0.74))
-	_add_robot_box(suction_tool, "IntakeGuardBottom", Vector3(0, -0.205, -0.475), Vector3(0.31, 0.035, 0.045), Color(0.68, 0.76, 0.74))
-	vacuum_status_light = _add_robot_sphere(suction_tool, "VacuumStatus", Vector3(0.13, 0.015, -0.13), 0.035, Color(0.16, 0.95, 0.70))
+	_add_robot_box(suction_tool, "TurbineHousing", Vector3(0, -0.015, 0.025), Vector3(0.34, 0.30, 0.31), Color(0.075, 0.13, 0.16))
+	_add_robot_box(suction_tool, "HousingArmorFront", Vector3(0, -0.025, -0.145), Vector3(0.29, 0.23, 0.055), Color(0.22, 0.34, 0.36))
+	_add_robot_box(suction_tool, "HousingTopArmor", Vector3(0, 0.145, 0.025), Vector3(0.28, 0.045, 0.30), Color(0.72, 0.77, 0.70))
+	_add_robot_box(suction_tool, "HousingWarningStripe", Vector3(0, -0.15, -0.137), Vector3(0.22, 0.025, 0.018), Color(0.96, 0.62, 0.16))
+	# Reinforced intake duct and two metal couplings.
+	_add_robot_box(suction_tool, "DuctCouplingUpper", Vector3(0, -0.12, -0.20), Vector3(0.19, 0.16, 0.10), Color(0.68, 0.75, 0.72))
+	_add_robot_box(suction_tool, "VacuumDuct", Vector3(0, -0.13, -0.31), Vector3(0.15, 0.15, 0.22), Color(0.12, 0.27, 0.29))
+	_add_robot_box(suction_tool, "DuctCouplingLower", Vector3(0, -0.13, -0.405), Vector3(0.22, 0.18, 0.075), Color(0.72, 0.78, 0.73))
+	_add_robot_box(suction_tool, "IntakeNozzle", Vector3(0, -0.13, -0.475), Vector3(0.39, 0.22, 0.12), Color(0.08, 0.55, 0.52))
+	_add_robot_box(suction_tool, "NozzleRimTop", Vector3(0, -0.015, -0.535), Vector3(0.39, 0.035, 0.045), Color(0.76, 0.83, 0.78))
+	_add_robot_box(suction_tool, "NozzleRimBottom", Vector3(0, -0.245, -0.535), Vector3(0.39, 0.035, 0.045), Color(0.76, 0.83, 0.78))
+	_add_robot_box(suction_tool, "NozzleSideL", Vector3(-0.19, -0.13, -0.535), Vector3(0.035, 0.20, 0.045), Color(0.76, 0.83, 0.78))
+	_add_robot_box(suction_tool, "NozzleSideR", Vector3(0.19, -0.13, -0.535), Vector3(0.035, 0.20, 0.045), Color(0.76, 0.83, 0.78))
+	# Dark recessed intake gives the nozzle a readable opening.
+	_add_robot_box(suction_tool, "IntakeRecess", Vector3(0, -0.13, -0.542), Vector3(0.29, 0.115, 0.012), Color(0.012, 0.035, 0.04))
+	suction_intake_ring = MeshInstance3D.new()
+	suction_intake_ring.name = "IntakeEnergyRing"
+	var intake_ring_mesh := TorusMesh.new()
+	intake_ring_mesh.inner_radius = 0.115
+	intake_ring_mesh.outer_radius = 0.135
+	suction_intake_ring.mesh = intake_ring_mesh
+	suction_intake_ring.position = Vector3(0, -0.13, -0.555)
+	suction_intake_ring.rotation.x = PI * 0.5
+	suction_intake_ring.material_override = _mat(Color(0.12, 0.95, 0.78))
+	suction_tool.add_child(suction_intake_ring)
+	# Side-mounted pressure gauge, status beacon and exposed fasteners.
+	_add_robot_box(suction_tool, "PressureGaugeHousing", Vector3(0.19, 0.045, -0.08), Vector3(0.08, 0.12, 0.12), Color(0.035, 0.07, 0.08))
+	vacuum_status_light = _add_robot_sphere(suction_tool, "VacuumStatus", Vector3(0.20, 0.055, -0.15), 0.035, Color(0.16, 0.95, 0.70))
+	for bolt_x in [-0.13, 0.13]:
+		for bolt_y in [-0.10, 0.09]:
+			_add_robot_sphere(suction_tool, "ArmorFastener", Vector3(bolt_x, bolt_y, -0.18), 0.018, Color(0.82, 0.87, 0.81))
 	vacuum_rotor = Node3D.new()
-	vacuum_rotor.name = "Impeller"
+	vacuum_rotor.name = "HighSpeedImpeller"
 	vacuum_rotor.position = Vector3(0, -0.02, -0.23)
 	suction_tool.add_child(vacuum_rotor)
-	_add_robot_sphere(vacuum_rotor, "ImpellerHub", Vector3.ZERO, 0.045, Color(0.78, 0.86, 0.82))
+	_add_robot_sphere(vacuum_rotor, "ImpellerHub", Vector3.ZERO, 0.052, Color(0.82, 0.89, 0.84))
 	for blade_angle in [0.0, TAU / 3.0, TAU * 2.0 / 3.0]:
-		var blade := _add_robot_box(vacuum_rotor, "ImpellerBlade", Vector3(0, 0.0, -0.055), Vector3(0.035, 0.025, 0.13), Color(0.20, 0.72, 0.66))
+		var blade := _add_robot_box(vacuum_rotor, "ImpellerBlade", Vector3(0, 0.0, -0.055), Vector3(0.045, 0.025, 0.14), Color(0.18, 0.86, 0.73))
 		blade.rotation.z = blade_angle
+	suction_pressure_light = OmniLight3D.new()
+	suction_pressure_light.name = "VacuumPressureGlow"
+	suction_pressure_light.light_color = Color(0.12, 1.0, 0.75)
+	suction_pressure_light.light_energy = 0.0
+	suction_pressure_light.omni_range = 1.15
+	suction_pressure_light.position = Vector3(0, -0.13, -0.60)
+	suction_tool.add_child(suction_pressure_light)
 	suction_tool.visible = suction_level > 0
 	if suction_level > 0:
 		magnet_tool.visible = false
@@ -2430,7 +2463,13 @@ func _animate_robot(delta: float) -> void:
 		vacuum_rotor.rotation.z += delta * (22.0 if vacuum_is_working else 1.2)
 	if is_instance_valid(vacuum_status_light):
 		vacuum_status_light.visible = suction_level > 0
-		vacuum_status_light.scale = Vector3.ONE * (1.0 + (sin(robot_anim_time * 10.0) * 0.18 if vacuum_is_working else 0.0))
+		vacuum_status_light.scale = Vector3.ONE * (1.0 + (sin(robot_anim_time * 10.0) * 0.22 if vacuum_is_working else 0.0))
+	if is_instance_valid(suction_intake_ring):
+		suction_intake_ring.visible = suction_level > 0
+		suction_intake_ring.scale = Vector3.ONE * (1.0 + (sin(robot_anim_time * 15.0) * 0.10 if vacuum_is_working else 0.025))
+		suction_intake_ring.rotation.z += delta * (2.4 if vacuum_is_working else 0.35)
+	if is_instance_valid(suction_pressure_light):
+		suction_pressure_light.light_energy = (0.8 + sin(robot_anim_time * 12.0) * 0.22) if vacuum_is_working else (0.12 if suction_level > 0 else 0.0)
 
 	var extension_target := 0.34 if tool_is_working else 0.0
 	collection_tool_extension = lerpf(collection_tool_extension, extension_target, clampf(delta * 8.5, 0.0, 1.0))
