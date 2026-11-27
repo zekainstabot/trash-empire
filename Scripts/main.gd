@@ -3986,6 +3986,80 @@ func _auto_pickup_path_clear(item: Node3D, pickup_point: Vector3) -> bool:
 	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
+func _play_auto_pickup_feedback(world_position: Vector3) -> void:
+	# Short industrial chime generated locally; no external audio asset required.
+	var audio := AudioStreamPlayer3D.new()
+	var stream := AudioStreamWAV.new()
+	stream.mix_rate = 22050
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.stereo = false
+	var samples := PackedByteArray()
+	var sample_count := 2205
+	for index in range(sample_count):
+		var t := float(index) / float(stream.mix_rate)
+		var envelope := exp(-t * 13.0)
+		var frequency := lerpf(980.0, 1480.0, t / 0.1)
+		var sample := sin(TAU * frequency * t) * envelope * 0.16
+		samples.append_array(PackedByteArray([0, 0]))
+		var value := clampi(int(sample * 32767.0), -32768, 32767)
+		samples[samples.size() - 2] = value & 0xFF
+		samples[samples.size() - 1] = (value >> 8) & 0xFF
+	stream.data = samples
+	audio.stream = stream
+	audio.volume_db = -7.0
+	audio.max_distance = 18.0
+	audio.global_position = world_position
+	add_child(audio)
+	audio.finished.connect(audio.queue_free)
+	audio.play()
+
+
+func _spawn_auto_pickup_effect(world_position: Vector3) -> void:
+	var burst := CPUParticles3D.new()
+	burst.name = "AutoPickupBurst"
+	burst.amount = 14
+	burst.lifetime = 0.42
+	burst.one_shot = true
+	burst.explosiveness = 0.92
+	burst.direction = Vector3.UP
+	burst.spread = 180.0
+	burst.gravity = Vector3(0.0, -1.8, 0.0)
+	burst.initial_velocity_min = 1.0
+	burst.initial_velocity_max = 2.6
+	burst.scale_amount_min = 0.035
+	burst.scale_amount_max = 0.085
+	burst.color = Color(0.28, 0.95, 0.78, 1.0)
+	var particle_mesh := SphereMesh.new()
+	particle_mesh.radius = 0.055
+	particle_mesh.height = 0.11
+	var particle_material := StandardMaterial3D.new()
+	particle_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	particle_material.albedo_color = Color(0.28, 0.95, 0.78, 1.0)
+	particle_material.emission_enabled = true
+	particle_material.emission = Color(0.12, 0.9, 0.72, 1.0)
+	particle_material.emission_energy_multiplier = 1.8
+	particle_mesh.material = particle_material
+	burst.mesh = particle_mesh
+	burst.global_position = world_position + Vector3.UP * 0.18
+	add_child(burst)
+	burst.emitting = true
+	var flash := OmniLight3D.new()
+	flash.light_color = Color(0.18, 1.0, 0.78)
+	flash.light_energy = 1.4
+	flash.omni_range = 2.4
+	flash.global_position = burst.global_position
+	add_child(flash)
+	var tween := create_tween()
+	tween.tween_property(flash, "light_energy", 0.0, 0.32)
+	tween.tween_callback(flash.queue_free)
+	get_tree().create_timer(0.7).timeout.connect(burst.queue_free)
+	_play_auto_pickup_feedback(world_position)
+
+
+func _auto_pickup_range() -> float:
+	return collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.75 + float(magnet_power_level - 1) * 0.7
+
+
 func _process_auto_pickup(delta: float) -> void:
 	# The vacuum replaces the magnet as the active hand collector once purchased.
 	if suction_level > 0 or auto_pickup_level <= 0 or not is_instance_valid(player) or carried >= capacity:
@@ -4005,7 +4079,7 @@ func _process_auto_pickup(delta: float) -> void:
 			auto_pickup_target.set_meta("drone_reserved", -1)
 		auto_pickup_target = null
 		auto_pickup_scan_timer = 0.24
-		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.75 + float(magnet_power_level - 1) * 0.7
+		var magnet_range := _auto_pickup_range()
 		var best_distance := magnet_range
 		var player_xz := Vector2(player.global_position.x, player.global_position.z)
 		var pickup_forward := -player.global_transform.basis.z
@@ -4072,8 +4146,11 @@ func _process_auto_pickup(delta: float) -> void:
 	auto_pickup_target = null
 	if is_instance_valid(picked) and picked.get_meta("drone_reserved", -1) == -4:
 		picked.set_meta("drone_reserved", -1)
-	if is_instance_valid(picked) and trash_nodes.has(picked) and _pickup_trash_item(picked):
-		_update_ui()
+	if is_instance_valid(picked) and trash_nodes.has(picked):
+		var pickup_effect_position := picked.global_position
+		if _pickup_trash_item(picked):
+			_spawn_auto_pickup_effect(pickup_effect_position)
+			_update_ui()
 		_save_game()
 		_set_message("AUTO MAGNET  +1")
 	elif carried < capacity:
