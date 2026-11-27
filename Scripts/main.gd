@@ -466,7 +466,8 @@ func _build_industrial_road_fixtures() -> void:
 func _build_ground_robot_service_station() -> void:
 	# Dedicated autonomous rover service bay. All meshes are decorative and
 	# non-colliding; the rover's home/dispatch coordinates remain unchanged.
-	var center := Vector3(144.0, 0.0, 10.0)
+	# Moved west of the factory line entrances to keep the fourth main conveyor clear.
+	var center := Vector3(135.0, 0.0, 10.0)
 	var steel := Color(0.13, 0.19, 0.21)
 	var frame := Color(0.34, 0.43, 0.44)
 	var safety := Color(0.96, 0.64, 0.13)
