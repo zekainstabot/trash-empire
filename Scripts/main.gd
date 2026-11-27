@@ -5512,6 +5512,52 @@ func _build_recycling_mega_factory() -> void:
 	for z in [-26.0, -13.0, 0.0, 13.0, 26.0]:
 		_box("FactoryTruckLane", Vector3(211.0, 0.39, z), Vector3(12.0, 0.035, 0.14), safety, false)
 
+	# Central logistics warehouse: the truck apron remains completely open in front.
+	var warehouse_dark := Color(0.055, 0.085, 0.095)
+	var warehouse_steel := Color(0.20, 0.28, 0.30)
+	var warehouse_light := Color(0.43, 0.52, 0.52)
+	var warehouse_teal := Color(0.035, 0.34, 0.35)
+	_box("CentralWarehouseFoundation", Vector3(228.5, 0.12, 0.0), Vector3(18.0, 0.24, 68.0), Color(0.22, 0.27, 0.27), false)
+	_box("CentralWarehouseRearWall", Vector3(237.2, 4.65, 0.0), Vector3(0.35, 9.0, 67.0), warehouse_dark, false)
+	_box("CentralWarehouseNorthWall", Vector3(228.5, 4.65, -33.2), Vector3(17.2, 9.0, 0.35), warehouse_steel, false)
+	_box("CentralWarehouseSouthWall", Vector3(228.5, 4.65, 33.2), Vector3(17.2, 9.0, 0.35), warehouse_steel, false)
+	_box("CentralWarehouseRoof", Vector3(228.5, 9.25, 0.0), Vector3(18.6, 0.42, 68.8), warehouse_dark, false)
+	for roof_rib_z in range(-30, 31, 6):
+		_box("CentralWarehouseRoofRib", Vector3(228.5, 9.50, float(roof_rib_z)), Vector3(18.1, 0.10, 0.16), warehouse_light, false)
+	_box("CentralWarehouseFrontHeader", Vector3(219.45, 7.55, 0.0), Vector3(0.42, 1.65, 67.0), warehouse_steel, false)
+	_box("CentralWarehouseBrandPanel", Vector3(219.18, 8.25, 0.0), Vector3(0.12, 0.72, 10.5), warehouse_teal, false)
+	_label_3d("ZEKA // CENTRAL LOGISTICS", Vector3(218.98, 8.28, 0.0), 0.18)
+	for bay_index in range(5):
+		var bay_z: float = _factory_row_z(bay_index)
+		# Five separate roll-up doors align with the five production lines.
+		_box("WarehouseLoadingDoorRecess", Vector3(219.30, 2.65, bay_z), Vector3(0.16, 4.85, 6.4), warehouse_dark, false)
+		for jamb_z in [-3.35, 3.35]:
+			_box("WarehouseLoadingDoorJamb", Vector3(219.08, 2.55, bay_z + jamb_z), Vector3(0.32, 5.0, 0.28), warehouse_light, false)
+		_box("WarehouseLoadingDoorHeader", Vector3(219.08, 5.12, bay_z), Vector3(0.32, 0.30, 6.95), warehouse_light, false)
+		for shutter_y in range(6):
+			_box("WarehouseRollupShutterSlat", Vector3(219.16, 0.72 + float(shutter_y) * 0.68, bay_z), Vector3(0.10, 0.055, 6.15), warehouse_steel, false)
+		_box("WarehouseDockCanopy", Vector3(218.35, 5.35, bay_z), Vector3(2.15, 0.18, 7.5), warehouse_dark, false)
+		_box("WarehouseDockCanopyEdge", Vector3(217.28, 5.23, bay_z), Vector3(0.12, 0.22, 7.5), safety, false)
+		for bumper_z in [-2.65, 2.65]:
+			_box("WarehouseDockBumper", Vector3(218.72, 0.62, bay_z + bumper_z), Vector3(0.34, 1.05, 0.42), Color(0.10, 0.14, 0.15), false)
+		_box("WarehouseDockNumberPlate", Vector3(218.98, 5.75, bay_z - 2.75), Vector3(0.08, 0.42, 0.78), warehouse_teal, false)
+		_label_3d("BAY %02d" % (bay_index + 1), Vector3(218.82, 5.76, bay_z - 2.75), 0.11)
+		_box("WarehouseDockSignalHousing", Vector3(218.98, 4.85, bay_z + 2.72), Vector3(0.18, 0.62, 0.38), warehouse_dark, false)
+		_box("WarehouseDockSignalGreen", Vector3(218.86, 4.98, bay_z + 2.72), Vector3(0.055, 0.13, 0.22), Color(0.12, 0.88, 0.48), false)
+		_box("WarehouseDockSignalAmber", Vector3(218.86, 4.72, bay_z + 2.72), Vector3(0.055, 0.13, 0.22), safety, false)
+		# Painted reversing guides and wheel-stop marks on the open truck apron.
+		_box("WarehouseTruckGuideLeft", Vector3(211.0, 0.415, bay_z - 3.55), Vector3(12.0, 0.025, 0.09), safety, false)
+		_box("WarehouseTruckGuideRight", Vector3(211.0, 0.415, bay_z + 3.55), Vector3(12.0, 0.025, 0.09), safety, false)
+		_box("WarehouseTruckStopLine", Vector3(216.0, 0.42, bay_z), Vector3(0.12, 0.025, 5.9), warehouse_light, false)
+	# Structural columns and service equipment stay behind the dock face.
+	for wall_z in [-31.5, -16.0, 0.0, 16.0, 31.5]:
+		_box("CentralWarehouseFrontPier", Vector3(219.65, 4.55, wall_z), Vector3(0.48, 8.9, 0.48), warehouse_dark, false)
+	for vent_z in [-27.0, -21.0, 21.0, 27.0]:
+		_box("CentralWarehouseVent", Vector3(237.0, 6.2, vent_z), Vector3(0.12, 1.2, 3.6), warehouse_light, false)
+		_box("CentralWarehouseVentGrille", Vector3(236.90, 6.2, vent_z), Vector3(0.06, 0.82, 2.8), warehouse_dark, false)
+	_box("CentralWarehouseSafetyStripe", Vector3(219.04, 0.34, 0.0), Vector3(0.06, 0.05, 65.0), safety, false)
+	_label_3d("RECEIVING  //  SORT  //  DISPATCH", Vector3(218.88, 6.35, 0.0), 0.14)
+
 	# Front loading area is fully open: remove canopy roof and support columns.
 	_build_first_machine_feed_trigger()
 
