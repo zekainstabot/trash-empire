@@ -5472,6 +5472,21 @@ func _build_mega_factory_machine(index: int) -> void:
 		_box("MegaMachineExhaustBase%d" % index, Vector3(x + exhaust_x, 4.13, z + 0.58), Vector3(0.48, 0.18, 0.48), dark_steel, false)
 		_box("MegaMachineExhaustStack%d" % index, Vector3(x + exhaust_x, 4.38, z + 0.58), Vector3(0.30, 0.42, 0.30), steel, false)
 		_box("MegaMachineExhaustCap%d" % index, Vector3(x + exhaust_x, 4.61, z + 0.58), Vector3(0.40, 0.08, 0.40), accent, false)
+	# Physical-looking infeed throat: tapered guide cheeks and a reinforced receiving lip.
+	_box("MegaMachineInfeedLip%d" % index, Vector3(x - 2.34, 1.02, z), Vector3(0.34, 0.16, 1.52), accent, false)
+	for guide_side in [-1.0, 1.0]:
+		var guide := _box("MegaMachineInfeedGuide%d" % index, Vector3(x - 2.18, 1.18, z + guide_side * 0.78), Vector3(0.72, 0.12, 0.12), steel, false)
+		guide.rotation_degrees.y = -guide_side * 18.0
+	# Short visible roller throat bridges the branch belt to the machine mouth.
+	for throat_i in range(3):
+		var throat_roller := _cylinder("MegaMachineInfeedRoller%d_%d" % [index, throat_i], Vector3(x - 2.45 + float(throat_i) * 0.22, 1.00, z), 0.075, 1.18, Color(0.55, 0.61, 0.59), false)
+		throat_roller.rotation_degrees.x = 90.0
+	# The final machine in each row gets a guarded discharge chute toward the product dock.
+	if column == 2:
+		_box("MegaMachineDischargeNeck%d" % index, Vector3(x + 2.34, 1.65, z), Vector3(0.62, 0.42, 1.34), dark_steel, false)
+		_box("MegaMachineDischargeTray%d" % index, Vector3(x + 2.78, 1.12, z), Vector3(0.72, 0.12, 1.50), accent.darkened(0.15), false)
+		for discharge_side in [-1.0, 1.0]:
+			_box("MegaMachineDischargeGuard%d" % index, Vector3(x + 2.78, 1.30, z + discharge_side * 0.70), Vector3(0.78, 0.30, 0.10), steel, false)
 	_label_3d(_factory_row_machine_name(row, column), Vector3(x, 4.31, z - 2.0), 0.13)
 
 func _build_factory_row_main_conveyor(row: int) -> void:
