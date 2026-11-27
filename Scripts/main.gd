@@ -5388,12 +5388,13 @@ func _factory_row_product(row: int) -> String:
 	return products[clampi(row, 0, 4)]
 
 func _factory_row_machine_name(row: int, column: int) -> String:
+	# Short, technically clear equipment names sized for physical machine plaques.
 	var machine_names := [
-		["PLASTIC SHREDDER", "PLASTIC GRANULATOR", "BOTTLE MOLDER"],
-		["PAPER PULPER", "SHEET PRESS", "CARTON FORMER"],
-		["METAL SORTER & SHREDDER", "SMELTING FURNACE", "CASTING & PRESS"],
-		["GLASS CRUSHER", "GLASS MELTING FURNACE", "GLASS MOLDER"],
-		["E-WASTE DISASSEMBLER", "METAL & PARTS RECOVERY", "ELECTRONICS ASSEMBLY"]
+		["PLASTIC SHREDDER", "POLYMER GRANULATOR", "BOTTLE FORMING PRESS"],
+		["PAPER PULPER", "FIBER SHEET PRESS", "CARTON FORMING PRESS"],
+		["METAL SORTER", "INDUCTION FURNACE", "METAL CASTING PRESS"],
+		["GLASS CRUSHER", "GLASS MELTING FURNACE", "GLASS FORMING PRESS"],
+		["E-WASTE DISASSEMBLER", "MATERIAL RECOVERY UNIT", "DEVICE REASSEMBLY"]
 	]
 	return machine_names[clampi(row, 0, 4)][clampi(column, 0, 2)]
 
@@ -5456,14 +5457,20 @@ func _build_recycling_mega_factory() -> void:
 					for marker_z in [z - 2.02, z + 2.02]:
 						_box("MegaProcessBuildCorner", Vector3(marker_x, 0.48, marker_z), Vector3(0.34, 0.24, 0.34), safety, false)
 			_box("MegaProcessPadAccent", Vector3(x, 0.385, z - 2.10), Vector3(4.9, 0.025, 0.10), pad_edge, false)
+			# Premium equipment ID plaque: dark enamel panel, precision accent rail,
+			# and compact high-contrast typography mounted on the machine front.
+			_box("MegaFactoryMachinePlaque%d" % station_index, Vector3(x, 3.48, z - 1.91), Vector3(3.55, 0.72, 0.16), Color(0.025, 0.055, 0.062), false)
+			_box("MegaFactoryMachinePlaqueAccent%d" % station_index, Vector3(x - 1.70, 3.48, z - 2.005), Vector3(0.075, 0.58, 0.035), Color(0.08, 0.68, 0.63) if machine_built else safety, false)
 			var build_label := Label3D.new()
 			build_label.name = "MegaFactoryMachineLabel%d" % station_index
-			build_label.text = ("MACHINE %02d  |  %s" % [station_index + 1, _factory_row_machine_name(row, machine_index)]) if machine_built else ("BUILD MACHINE %02d\n%s\n%.0f ZC" % [station_index + 1, _factory_row_machine_name(row, machine_index), _mega_factory_machine_cost(station_index)])
-			build_label.position = Vector3(x, 2.45, z + 3.05)
-			build_label.font_size = 28
-			build_label.pixel_size = 0.012
+			build_label.text = ("%02d  /  %s" % [station_index + 1, _factory_row_machine_name(row, machine_index)]) if machine_built else ("INSTALL  %02d\n%s\n%.0f ZC" % [station_index + 1, _factory_row_machine_name(row, machine_index), _mega_factory_machine_cost(station_index)])
+			build_label.position = Vector3(x, 3.49, z - 2.025)
+			build_label.font_size = 24
+			build_label.pixel_size = 0.010
+			build_label.outline_size = 8
+			build_label.outline_modulate = Color(0.008, 0.018, 0.022, 1.0)
 			build_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-			build_label.modulate = Color(0.55, 1.0, 0.60) if machine_built else Color(1.0, 0.78, 0.12)
+			build_label.modulate = Color(0.78, 1.0, 0.94) if machine_built else Color(1.0, 0.82, 0.32)
 			add_child(build_label)
 			mega_factory_machine_labels.append(build_label)
 			if machine_built:
