@@ -2402,8 +2402,12 @@ func _animate_robot(delta: float) -> void:
 		suction_tool.position.y = -0.43 - collection_tool_extension
 		suction_tool.position.z = -0.015
 
-	robot_left_leg.rotation.x = -stride * 0.42
-	robot_right_leg.rotation.x = opposite_stride * 0.42
+	# Lift each boot during its forward swing so the feet visibly clear the
+	# ground instead of sliding through a flat pendulum motion.
+	robot_left_leg.rotation.x = -stride * 0.58
+	robot_right_leg.rotation.x = opposite_stride * 0.58
+	robot_left_leg.position.y = 0.52 + maxf(0.0, stride) * 0.12
+	robot_right_leg.position.y = 0.52 + maxf(0.0, opposite_stride) * 0.12
 	# The head scans subtly while idle and steadies its gaze during collection.
 	var head_scan := sin(robot_anim_time * 1.15) * 0.055 if not moving else sin(gait_phase * 0.5) * 0.025
 	if tool_is_working:
