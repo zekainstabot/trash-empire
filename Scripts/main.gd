@@ -609,8 +609,8 @@ func _build_city_rework_layout() -> void:
 			# The four corner pads meet both sidewalk runs and cover the exposed grass,
 			# while staying outside the asphalt road footprint.
 			for boulevard_side in [-1.0, 1.0]:
-				var corner_x := street_x + side * 5.0
-				var corner_z := boulevard_side * 6.0
+				var corner_x: float = street_x + side * 5.0
+				var corner_z: float = boulevard_side * 6.0
 				# Span the full curb-to-curb corner: 3.1 m joins the boulevard
 				# sidewalk edge at X=+/-6.5 to the cross-street walk at X=+/-3.65.
 				_sidewalk_detailed_segment_x("IntersectionSidewalkCorner", corner_x - 1.55, corner_x + 1.55, 0.075, 0.15, corner_z, 3.2, sidewalk)
