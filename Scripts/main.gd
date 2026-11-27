@@ -875,8 +875,67 @@ func _build_sorting_district() -> void:
 		sorting_bins.append(null)
 		if sorting_robot_levels[i] > 0:
 			_spawn_sorting_station(i)
+	_build_sorting_cell_visuals()
 	_refresh_sorting_district()
 
+
+
+func _build_sorting_cell_visuals() -> void:
+	# Four independent, open-sided sorting cells. All additions are visual-only:
+	# no new collision shapes, triggers, path blockers, or changes to robot routes.
+	var steel := Color(0.20, 0.27, 0.29)
+	var dark_steel := Color(0.075, 0.10, 0.11)
+	var bright_steel := Color(0.53, 0.61, 0.61)
+	var safety := Color(0.98, 0.66, 0.13)
+	for i in range(4):
+		var center: Vector3 = sorting_pad_positions[i]
+		var accent: Color = sorting_station_colors[i]
+		var cell := Node3D.new()
+		cell.name = "SortingCellVisual_%s" % sorting_station_categories[i]
+		sorting_area_root.add_child(cell)
+		# Raised machine frame stays above the loader's operating envelope.
+		for side_x in [-1.0, 1.0]:
+			for side_z in [-1.0, 1.0]:
+				_sorting_visual_box(cell, "CellColumn", center + Vector3(side_x * 1.86, 2.20, side_z * 1.55), Vector3(0.16, 4.40, 0.16), steel)
+				_sorting_visual_box(cell, "ColumnFoot", center + Vector3(side_x * 1.86, 0.16, side_z * 1.55), Vector3(0.42, 0.32, 0.42), dark_steel)
+			_sorting_visual_box(cell, "CanopySideBeam", center + Vector3(side_x * 1.86, 4.32, 0.0), Vector3(0.18, 0.18, 3.25), bright_steel)
+			_sorting_visual_box(cell, "SafetyRail", center + Vector3(side_x * 1.78, 0.72, 0.0), Vector3(0.07, 0.10, 2.65), safety)
+			_sorting_visual_box(cell, "SafetyRailMid", center + Vector3(side_x * 1.78, 0.43, 0.0), Vector3(0.06, 0.06, 2.65), steel)
+			# High-mounted robotic sorting arm and illuminated tool head.
+			_sorting_visual_box(cell, "SorterShoulder", center + Vector3(side_x * 1.52, 3.22, -0.18), Vector3(0.42, 0.48, 0.42), dark_steel)
+			_sorting_visual_box(cell, "SorterArm", center + Vector3(side_x * 0.98, 3.02, -0.18), Vector3(0.98, 0.14, 0.16), bright_steel)
+			_sorting_visual_box(cell, "SorterWrist", center + Vector3(side_x * 0.50, 2.82, -0.18), Vector3(0.16, 0.38, 0.16), steel)
+			_sorting_visual_box(cell, "SorterGripper", center + Vector3(side_x * 0.50, 2.60, -0.18), Vector3(0.34, 0.08, 0.28), accent)
+			_sorting_visual_box(cell, "ArmStatusLight", center + Vector3(side_x * 1.52, 3.58, -0.18), Vector3(0.20, 0.09, 0.20), accent)
+		_sorting_visual_box(cell, "CanopyFrontBeam", center + Vector3(0.0, 4.32, -1.55), Vector3(3.75, 0.18, 0.18), bright_steel)
+		_sorting_visual_box(cell, "CanopyRearBeam", center + Vector3(0.0, 4.32, 1.55), Vector3(3.75, 0.18, 0.18), bright_steel)
+		_sorting_visual_box(cell, "CanopyRoof", center + Vector3(0.0, 4.46, 0.0), Vector3(3.62, 0.10, 3.05), dark_steel)
+		_sorting_visual_box(cell, "CanopyAccent", center + Vector3(0.0, 4.53, -1.48), Vector3(2.10, 0.035, 0.08), accent)
+		# Clearly marked operating bay and a compact operator/control cabinet.
+		_sorting_visual_box(cell, "BayThreshold", center + Vector3(0.0, 0.13, -1.78), Vector3(2.80, 0.035, 0.12), safety)
+		_sorting_visual_box(cell, "ControlCabinet", center + Vector3(-1.52, 1.02, 1.08), Vector3(0.42, 1.35, 0.48), dark_steel)
+		_sorting_visual_box(cell, "ControlScreen", center + Vector3(-1.52, 1.30, 0.82), Vector3(0.28, 0.22, 0.035), Color(0.10, 0.72, 0.70))
+		_sorting_visual_box(cell, "ControlBeacon", center + Vector3(-1.52, 1.76, 1.08), Vector3(0.12, 0.10, 0.12), safety)
+		var bay_label := Label3D.new()
+		bay_label.name = "SortingCellLabel"
+		bay_label.text = "%s  /  AUTO SORT" % sorting_station_names[i]
+		bay_label.position = center + Vector3(0.0, 4.08, -1.68)
+		bay_label.font_size = 22
+		bay_label.pixel_size = 0.008
+		bay_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		bay_label.modulate = accent.lightened(0.35)
+		cell.add_child(bay_label)
+
+
+func _sorting_visual_box(parent: Node3D, node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
+	var visual := MeshInstance3D.new()
+	visual.name = node_name
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	visual.mesh = mesh
+	visual.position = pos
+	visual.material_override = _mat(color)
+	parent.add_child(visual)
 
 func _on_sorting_station_entered(body: Node3D, station_index: int) -> void:
 	if body != player or station_index < 0 or station_index >= 4:
