@@ -4057,7 +4057,11 @@ func _auto_pickup_path_clear(item: Node3D, pickup_point: Vector3) -> bool:
 	var query := PhysicsRayQueryParameters3D.create(ray_start, ray_end)
 	query.collision_mask = 0xFFFFFFFF
 	query.collide_with_areas = false
-	var excluded: Array[RID] = [item.get_rid()]
+	# TrashItem extends Node3D, not CollisionObject3D, so it has no RID.
+	# Exclude only objects that actually expose a physics RID.
+	var excluded: Array[RID] = []
+	if item is CollisionObject3D:
+		excluded.append((item as CollisionObject3D).get_rid())
 	if player is CollisionObject3D:
 		excluded.append((player as CollisionObject3D).get_rid())
 	query.exclude = excluded
