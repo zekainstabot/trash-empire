@@ -4228,9 +4228,36 @@ func _face_travel_direction(actor: Node3D, destination: Vector3, delta: float, t
 	direction.y = 0.0
 	if direction.length_squared() <= 0.0001:
 		return
-	# All ground robots are modeled nose-forward along local -Z.
+	# Ground robot models have their scoop/nose along local -Z. Rotate the
+	# complete chassis toward its actual travel vector before advancing.
 	var desired_yaw := atan2(-direction.x, -direction.z)
-	actor.rotation.y = lerp_angle(actor.rotation.y, desired_yaw, minf(1.0, delta * turn_speed))
+	var turn_weight := clampf(delta * turn_speed, 0.0, 1.0)
+	actor.rotation.y = lerp_angle(actor.rotation.y, desired_yaw, turn_weight)
+
+
+func _ground_robot_forward_step(actor: Node3D, destination: Vector3, max_distance: float, delta: float, turn_speed: float = 9.0) -> void:
+	if not is_instance_valid(actor) or max_distance <= 0.0:
+		return
+	var direction := destination - actor.global_position
+	direction.y = 0.0
+	var distance := direction.length()
+	if distance <= 0.001:
+		return
+	_face_travel_direction(actor, destination, delta, turn_speed)
+	var forward := -actor.global_transform.basis.z
+	forward.y = 0.0
+	if forward.length_squared() <= 0.0001:
+		return
+	forward = forward.normalized()
+	var desired := direction.normalized()
+	# Do not translate sideways/backwards while the chassis is still turning.
+	var alignment := forward.dot(desired)
+	if alignment < 0.0:
+		return
+	var step := minf(max_distance, distance) * clampf(alignment, 0.0, 1.0)
+	if step <= 0.0001:
+		return
+	_move_autonomous_ground_robot(actor, actor.global_position + forward * step, step)
 
 
 func _process_ground_collector(delta: float) -> void:
@@ -4249,8 +4276,7 @@ func _process_ground_collector(delta: float) -> void:
 	rover.set_meta("previous_position", rover.global_position)
 	if bool(rover.get_meta("returning", false)):
 		var home := _factory_waste_drop_point()
-		_face_travel_direction(rover, home, delta, 6.0)
-		_move_autonomous_ground_robot(rover, home, speed * delta)
+		_ground_robot_forward_step(rover, home, speed * delta, delta, 9.0)
 		if Vector2(rover.global_position.x - home.x, rover.global_position.z - home.z).length() < 1.4:
 			_ground_collector_deposit_cycle(rover, delta)
 		return
@@ -4291,8 +4317,7 @@ func _process_ground_collector(delta: float) -> void:
 
 	var destination := target.global_position + Vector3(0, 0.05, 0)
 	var rover_destination := Vector3(destination.x, rover.global_position.y, destination.z)
-	_face_travel_direction(rover, rover_destination, delta, 7.0)
-	_move_autonomous_ground_robot(rover, rover_destination, speed * delta)
+	_ground_robot_forward_step(rover, rover_destination, speed * delta, delta, 10.0)
 	if Vector2(rover.global_position.x - destination.x, rover.global_position.z - destination.z).length() > 0.72:
 		return
 
