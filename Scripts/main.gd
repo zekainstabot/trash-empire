@@ -2062,6 +2062,35 @@ func _build_player() -> void:
 	_add_robot_box(robot_visual, "BackpackWarningPlate", Vector3(0.0, 0.76, 0.505), Vector3(0.30, 0.12, 0.035), Color(0.06, 0.12, 0.14))
 	_add_robot_sphere(robot_visual, "BackpackStatusBeacon", Vector3(0.27, 1.34, 0.28), 0.065, Color(1.0, 0.56, 0.12))
 
+	# Hero robot redesign: recognizable industrial rescue/recycling silhouette.
+	# Layered chest armor, framed power core and clear high-visibility identity.
+	_add_robot_box(robot_visual, "ChestOuterBezel", Vector3(0.0, 1.18, -0.365), Vector3(0.54, 0.39, 0.045), Color(0.075, 0.13, 0.15))
+	_add_robot_box(robot_visual, "ChestCoreGlass", Vector3(0.0, 1.19, -0.395), Vector3(0.34, 0.20, 0.025), Color(0.035, 0.24, 0.24))
+	_add_robot_sphere(robot_visual, "ChestCorePulse", Vector3(0.0, 1.20, -0.418), 0.065, Color(0.16, 1.0, 0.76))
+	_add_robot_box(robot_visual, "ChestLeftArmor", Vector3(-0.30, 1.34, -0.29), Vector3(0.18, 0.30, 0.12), Color(0.18, 0.38, 0.40))
+	_add_robot_box(robot_visual, "ChestRightArmor", Vector3(0.30, 1.34, -0.29), Vector3(0.18, 0.30, 0.12), Color(0.18, 0.38, 0.40))
+	# Helmet brow and cheek guards give the face a more purposeful industrial profile.
+	_add_robot_box(robot_head, "HelmetBrow", Vector3(0.0, 0.19, -0.33), Vector3(0.70, 0.09, 0.12), Color(0.30, 0.40, 0.41))
+	_add_robot_box(robot_head, "HelmetCheekL", Vector3(-0.34, -0.12, -0.30), Vector3(0.13, 0.22, 0.13), Color(0.22, 0.34, 0.36))
+	_add_robot_box(robot_head, "HelmetCheekR", Vector3(0.34, -0.12, -0.30), Vector3(0.13, 0.22, 0.13), Color(0.22, 0.34, 0.36))
+	_add_robot_box(robot_head, "LeftAudioModule", Vector3(-0.45, 0.02, 0.02), Vector3(0.14, 0.24, 0.30), Color(0.12, 0.21, 0.23))
+	_add_robot_box(robot_head, "RightAudioModule", Vector3(0.45, 0.02, 0.02), Vector3(0.14, 0.24, 0.30), Color(0.12, 0.21, 0.23))
+	_add_robot_sphere(robot_head, "LeftAudioIndicator", Vector3(-0.49, 0.03, -0.13), 0.045, Color(0.96, 0.62, 0.13))
+	_add_robot_sphere(robot_head, "RightAudioIndicator", Vector3(0.49, 0.03, -0.13), 0.045, Color(0.96, 0.62, 0.13))
+	# Armored forearms and knuckle plates remain attached to animated arm pivots.
+	for arm in [robot_left_arm, robot_right_arm]:
+		_add_robot_box(arm, "ForearmOuterShell", Vector3(0.0, -0.31, -0.205), Vector3(0.32, 0.23, 0.10), Color(0.34, 0.48, 0.48))
+		_add_robot_box(arm, "ForearmSafetyInset", Vector3(0.0, -0.31, -0.263), Vector3(0.19, 0.055, 0.025), Color(0.96, 0.62, 0.13))
+		_add_robot_sphere(arm, "WristBearing", Vector3(0.0, -0.48, -0.015), 0.105, Color(0.12, 0.20, 0.22))
+	# Reinforced boots, ankle rings and visible shin warning panels.
+	for leg in [robot_left_leg, robot_right_leg]:
+		_add_robot_box(leg, "ShinSafetyPlate", Vector3(0.0, -0.20, -0.165), Vector3(0.17, 0.16, 0.025), Color(0.96, 0.62, 0.13))
+		_add_robot_box(leg, "AnkleBearing", Vector3(0.0, -0.39, 0.0), Vector3(0.29, 0.09, 0.29), Color(0.12, 0.20, 0.22))
+	# Waist utility pods and rear battery frame finish the functional silhouette.
+	for pod_x in [-0.43, 0.43]:
+		_add_robot_box(robot_visual, "WaistUtilityPod", Vector3(pod_x, 0.68, -0.12), Vector3(0.17, 0.24, 0.27), Color(0.16, 0.28, 0.30))
+		_add_robot_box(robot_visual, "WaistPodLatch", Vector3(pod_x, 0.68, -0.265), Vector3(0.09, 0.06, 0.025), Color(0.92, 0.61, 0.14))
+
 	# Short entrance animation when the game starts.
 	robot_visual.scale = Vector3(0.15, 0.15, 0.15)
 	robot_visual.position.y = -0.45
