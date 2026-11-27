@@ -6948,11 +6948,14 @@ func _spawn_factory_stage_item(row: int, stage: int, at_loading_end: bool = fals
 		var slot := int(item_index / 3)
 		target_x = maxf(150.0, 198.0 - float(slot) * 1.05)
 		target_z += float(lane) * 0.38
-	var target := Vector3(target_x, 0.99, target_z)
+	# Finished goods ride above the main belt surface; intermediate
+	# material stays aligned with the next machine's lower infeed lip.
+	var product_belt_y := 1.42 if not next_machine_exists else 0.99
+	var target := Vector3(target_x, product_belt_y, target_z)
 	if at_loading_end:
 		item.position = target
 	else:
-		item.position = Vector3(stage_start_x, 0.99, _factory_row_z(row))
+		item.position = Vector3(stage_start_x, product_belt_y, _factory_row_z(row))
 		var travel := create_tween()
 		travel.set_trans(Tween.TRANS_SINE)
 		travel.set_ease(Tween.EASE_IN_OUT)
