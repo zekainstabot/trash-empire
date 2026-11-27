@@ -1508,11 +1508,11 @@ func _build_first_district_details() -> void:
 
 
 	# More realistic street treatment: curbs, lane markings, drains and manholes.
-	# Keep the service-road lane open where municipal trucks turn into the depot.
+	# Keep the service-road edge clear for player and robot access.
 	_box("RoadRaisedCurb", Vector3(-10.72, 0.10, 1.0), Vector3(0.22, 0.20, 54.0), Color(0.48, 0.50, 0.48), false)
 	_box("RoadCurbHighlight", Vector3(-10.72, 0.205, 1.0), Vector3(0.24, 0.025, 54.0), Color(0.55, 0.57, 0.55), false)
 	# Keep the curb only along the normal roadside. The depot approach is an open
-	# truck entrance, so no curb/highlight may cross into the garbage unloading bay.
+	# service entrance, so no curb/highlight crosses the unloading access.
 	var curb_segment := Vector3(-5.28, 0.10, 9.0)
 	var curb_length := 34.0
 	_box("RoadRaisedCurb", curb_segment, Vector3(0.22, 0.20, curb_length), Color(0.48, 0.50, 0.48), false)
@@ -3092,8 +3092,6 @@ func _skill_branch_color(branch: String) -> Color:
 		"suction": return Color(0.12, 0.82, 0.70)
 		"drones": return Color(0.65, 0.78, 0.30)
 		"ground_robot": return Color(0.96, 0.66, 0.16)
-		"city_truck": return Color(0.95, 0.72, 0.18)
-		"city_fleet": return Color(0.82, 0.58, 0.24)
 		"dispatch": return Color(0.16, 0.70, 0.82)
 		"fleet": return Color(0.90, 0.48, 0.22)
 		"truck_capacity": return Color(0.75, 0.52, 0.22)
@@ -3124,8 +3122,6 @@ func _skill_icon(branch: String) -> String:
 		"drone_capacity": return "📦"
 		"ground_robot": return "🚜"
 		"repair_robot": return "🛠"
-		"city_truck": return "🚛"
-		"city_fleet": return "🚚"
 		"dispatch": return "⏱️"
 		"fleet": return "🚚"
 		"truck_capacity": return "📦"
@@ -3485,21 +3481,21 @@ func _make_street_sweeper() -> Node3D:
 	var dark_yellow := Color(0.66, 0.39, 0.045)
 	var glass := Color(0.10, 0.22, 0.27)
 	var rubber := Color(0.025, 0.031, 0.034)
-	_city_truck_box(root, "SweeperLowerChassis", Vector3(0, 0.70, 0.0), Vector3(1.55, 0.32, 3.55), Color(0.12, 0.16, 0.16))
-	_city_truck_box(root, "SweeperCab", Vector3(0, 1.40, -1.05), Vector3(1.48, 1.25, 1.42), yellow)
-	_city_truck_box(root, "SweeperCabGlassFront", Vector3(0, 1.57, -1.78), Vector3(1.18, 0.76, 0.045), glass)
-	_city_truck_box(root, "SweeperCabGlassSideL", Vector3(-0.755, 1.57, -1.05), Vector3(0.035, 0.72, 0.92), glass)
-	_city_truck_box(root, "SweeperCabGlassSideR", Vector3(0.755, 1.57, -1.05), Vector3(0.035, 0.72, 0.92), glass)
-	_city_truck_box(root, "SweeperCabRoof", Vector3(0, 2.06, -1.05), Vector3(1.58, 0.16, 1.50), dark_yellow)
+	_add_utility_vehicle_box(root, "SweeperLowerChassis", Vector3(0, 0.70, 0.0), Vector3(1.55, 0.32, 3.55), Color(0.12, 0.16, 0.16))
+	_add_utility_vehicle_box(root, "SweeperCab", Vector3(0, 1.40, -1.05), Vector3(1.48, 1.25, 1.42), yellow)
+	_add_utility_vehicle_box(root, "SweeperCabGlassFront", Vector3(0, 1.57, -1.78), Vector3(1.18, 0.76, 0.045), glass)
+	_add_utility_vehicle_box(root, "SweeperCabGlassSideL", Vector3(-0.755, 1.57, -1.05), Vector3(0.035, 0.72, 0.92), glass)
+	_add_utility_vehicle_box(root, "SweeperCabGlassSideR", Vector3(0.755, 1.57, -1.05), Vector3(0.035, 0.72, 0.92), glass)
+	_add_utility_vehicle_box(root, "SweeperCabRoof", Vector3(0, 2.06, -1.05), Vector3(1.58, 0.16, 1.50), dark_yellow)
 	# Rear-mounted cylindrical debris hopper and its visible metal cover.
-	_city_truck_box(root, "SweeperHopper", Vector3(0, 1.32, 0.82), Vector3(1.68, 1.12, 1.72), Color(0.23, 0.29, 0.28))
-	_city_truck_box(root, "SweeperHopperTop", Vector3(0, 1.91, 0.82), Vector3(1.72, 0.12, 1.76), Color(0.34, 0.40, 0.38))
-	_city_truck_box(root, "SweeperHopperRear", Vector3(0, 1.34, 1.70), Vector3(1.48, 0.82, 0.06), Color(0.13, 0.19, 0.19))
-	_city_truck_box(root, "SweeperFrontBumper", Vector3(0, 0.60, -1.98), Vector3(1.82, 0.20, 0.22), Color(0.16, 0.19, 0.19))
+	_add_utility_vehicle_box(root, "SweeperHopper", Vector3(0, 1.32, 0.82), Vector3(1.68, 1.12, 1.72), Color(0.23, 0.29, 0.28))
+	_add_utility_vehicle_box(root, "SweeperHopperTop", Vector3(0, 1.91, 0.82), Vector3(1.72, 0.12, 1.76), Color(0.34, 0.40, 0.38))
+	_add_utility_vehicle_box(root, "SweeperHopperRear", Vector3(0, 1.34, 1.70), Vector3(1.48, 0.82, 0.06), Color(0.13, 0.19, 0.19))
+	_add_utility_vehicle_box(root, "SweeperFrontBumper", Vector3(0, 0.60, -1.98), Vector3(1.82, 0.20, 0.22), Color(0.16, 0.19, 0.19))
 	var sweeper_wheels: Array[Node3D] = []
 	for side in [-1.0, 1.0]:
-		_city_truck_box(root, "SweeperHeadlight", Vector3(side * 0.57, 1.05, -1.80), Vector3(0.25, 0.19, 0.08), Color(1.0, 0.88, 0.52))
-		_city_truck_box(root, "SweeperAmberBeacon", Vector3(side * 0.48, 2.20, -1.05), Vector3(0.16, 0.12, 0.16), Color(1.0, 0.42, 0.04))
+		_add_utility_vehicle_box(root, "SweeperHeadlight", Vector3(side * 0.57, 1.05, -1.80), Vector3(0.25, 0.19, 0.08), Color(1.0, 0.88, 0.52))
+		_add_utility_vehicle_box(root, "SweeperAmberBeacon", Vector3(side * 0.48, 2.20, -1.05), Vector3(0.16, 0.12, 0.16), Color(1.0, 0.42, 0.04))
 		for axle_z in [-1.15, 1.22]:
 			var wheel := MeshInstance3D.new()
 			wheel.name = "SweeperWheel"
@@ -3525,7 +3521,7 @@ func _make_street_sweeper() -> Node3D:
 			hub.material_override = _mat(Color(0.58, 0.60, 0.56))
 			wheel.add_child(hub)
 		# Side brush assemblies: yellow guards and black radial bristles.
-		_city_truck_box(root, "BrushArm", Vector3(side * 1.02, 0.34, -1.18), Vector3(0.52, 0.10, 0.24), Color(0.28, 0.31, 0.29))
+		_add_utility_vehicle_box(root, "BrushArm", Vector3(side * 1.02, 0.34, -1.18), Vector3(0.52, 0.10, 0.24), Color(0.28, 0.31, 0.29))
 		var brush := Node3D.new()
 		brush.name = "RotatingStreetBrush"
 		brush.position = Vector3(side * 1.30, 0.19, -1.43)
@@ -3549,7 +3545,7 @@ func _make_street_sweeper() -> Node3D:
 			bristle.material_override = _mat(Color(0.045, 0.052, 0.048))
 			brush.add_child(bristle)
 		brush.set_meta("side", side)
-	_city_truck_box(root, "SweeperSuctionMouth", Vector3(0, 0.30, -1.80), Vector3(0.78, 0.12, 0.30), Color(0.08, 0.10, 0.10))
+	_add_utility_vehicle_box(root, "SweeperSuctionMouth", Vector3(0, 0.30, -1.80), Vector3(0.78, 0.12, 0.30), Color(0.08, 0.10, 0.10))
 	root.set_meta("wheels", sweeper_wheels)
 	return root
 
@@ -5973,7 +5969,7 @@ func _refresh_factory_machine_status() -> void:
 		var output_name: String = output_names[clampi(stage, 0, 3)]
 		factory_machine_status_label.text = "RAW %d | M1 %d | M2 %d | %s %d" % [factory_row_input_stock[0], factory_row_stage1_stock[0], factory_row_stage2_stock[0], output_name, output_stock]
 
-func _city_truck_box(parent: Node3D, node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
+func _add_utility_vehicle_box(parent: Node3D, node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = node_name
 	var shape := BoxMesh.new()
@@ -5994,10 +5990,6 @@ func _upgrade_factory_truck_interval() -> void:
 	_refresh_upgrade_prices()
 	_save_game()
 	_set_message("Factory trucks now arrive every %.0f seconds after loading." % _factory_truck_arrival_interval())
-
-func _city_dump_capacity() -> int:
-	# The bunker holds exactly three full municipal truckloads.
-	return _city_truck_load() * 3
 
 func _city_dump_trash_count() -> int:
 	var count := 0
