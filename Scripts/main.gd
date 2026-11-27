@@ -605,6 +605,9 @@ func _build_city_rework_layout() -> void:
 		for side in [-1.0, 1.0]:
 			_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, 0.0), Vector3(0.22, 0.18, 74.0), curb, false)
 			_add_sidewalk_z_segments("CrossStreetWalkway", -37.0, 37.0, 0.075, 0.15, street_x + side * 5.0, 2.7, sidewalk, [Vector2(-29.0, 9.0), Vector2(-22.0, 9.0), Vector2(0.0, 16.0), Vector2(22.0, 9.0), Vector2(29.0, 9.0)], 8.0)
+			# Pave the four sidewalk corner connections; never leave exposed grass squares at junctions.
+			for boulevard_side in [-1.0, 1.0]:
+				_box("IntersectionSidewalkCorner", Vector3(street_x + side * 5.0, 0.075, boulevard_side * 6.0), Vector3(2.7, 0.15, 3.2), sidewalk, false)
 
 		for offset in [-0.13, 0.13]:
 			for segment in [[-37.0, -32.5], [-25.0, -19.0], [-4.0, 4.0], [19.0, 25.0], [32.5, 37.0]]:
