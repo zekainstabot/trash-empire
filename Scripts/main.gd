@@ -6158,7 +6158,6 @@ func _build_waste_tank_structure() -> void:
 	_box("WasteTankLevelGaugeWindow", Vector3(-1.64, 1.45, -22.5), Vector3(0.05, 1.28, 0.25), Color(0.12, 0.67, 0.58), false)
 	_box("WasteTankControlConsole", Vector3(-1.55, 1.25, -24.45), Vector3(0.62, 1.05, 0.55), Color(0.12, 0.19, 0.21), false)
 	_box("WasteTankControlScreen", Vector3(-1.22, 1.48, -24.45), Vector3(0.035, 0.38, 0.40), Color(0.10, 0.74, 0.66), false)
-	_label_3d("INTAKE / COMPACTION / FEED", Vector3(-4.8, 3.05, -18.82), 0.11)
 	# Move all geometry helpers, which create at scene root, under the tank transform.
 	var tank_names := ["WasteHopperRimFront", "WasteHopperRimBack", "WasteHopperSafetyGrate", "WasteHopperGrateCrossbar", "WasteCompactorRamColumn", "WasteCompactorRamCylinder", "WasteCompactorRamPiston", "WasteCompactorGuideRail", "WasteCompactorGuideFoot", "WasteTankOutletCollar", "WasteTankTransferChute", "WasteTankTransferBelt", "WasteTankTransferRail", "WasteTankInspectionWalkway", "WasteTankWalkwayRailPost", "WasteTankWalkwayHandrail", "WasteTankAccessLadderRung", "WasteTankAccessLadderRail", "WasteTankLevelGaugeHousing", "WasteTankLevelGaugeWindow", "WasteTankControlConsole", "WasteTankControlScreen", "CityDumpApproachApron", "CityDumpConcrete", "CityDumpMarking", "DumpBunkerSideRibL", "DumpBunkerSideRibR", "DumpBunkerTopRailBack", "DumpBunkerTopRailLeft", "DumpBunkerTopRailRight", "DumpCompactorHousing", "DumpCompactorServicePanel", "CityDumpBackWall", "CityDumpLeftWall", "CityDumpRightWall", "DepotConcreteJoint", "DepotDrainChannel", "DepotDrainSlot", "CityDumpHazardStripe", "CityDumpSignPostL", "CityDumpSignPostR", "CityDumpSign", "DepotSafetyBollard", "DepotFloodlightHousing", "DepotFloodlightLens", "DepotElectricalCabinet", "DepotCabinetDoor", "BunkerFrontReinforcement", "BunkerFrontWarningMark", "BunkerHydraulicServiceBox", "BunkerHydraulicPanel", "BunkerInspectionPlate"]
 	for child in get_children():
@@ -6177,6 +6176,16 @@ func _build_waste_tank_structure() -> void:
 	waste_tank_inventory_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	waste_tank_inventory_label.modulate = Color(0.72, 1.0, 0.86)
 	waste_tank_root.add_child(waste_tank_inventory_label)
+
+	var intake_process_label := Label3D.new()
+	intake_process_label.name = "WasteTankProcessLabel"
+	intake_process_label.text = "INTAKE  /  COMPACTION  /  FEED"
+	intake_process_label.position = Vector3(124.8, 3.05, -18.82)
+	intake_process_label.font_size = 18
+	intake_process_label.pixel_size = 0.009
+	intake_process_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	intake_process_label.modulate = Color(0.95, 0.98, 0.91)
+	waste_tank_root.add_child(intake_process_label)
 
 func _refresh_waste_tank_inventory_label() -> void:
 	if is_instance_valid(waste_tank_inventory_label):
