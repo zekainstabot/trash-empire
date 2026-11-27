@@ -5911,14 +5911,14 @@ func _build_waste_feed_conveyor_network() -> void:
 	# Reinforced intake lip makes the physical connection to the tank outlet visible.
 	_box("WasteTankConveyorIntakeFrame", Vector3(128.55, 0.68, 0.0), Vector3(1.25, 0.34, 1.95), dark_steel, false)
 	_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.925, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
-	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 54.0), dark_steel, false)
-	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.925, 0.0), Vector3(1.25, 0.08, 53.5), belt_color, false)
+	_box("WasteFeedDistributorFrame", Vector3(147.0, 0.68, 0.0), Vector3(1.65, 0.30, 55.5), dark_steel, false)
+	_box("WasteFeedDistributorBelt", Vector3(147.0, 0.925, 0.0), Vector3(1.25, 0.08, 55.0), belt_color, false)
 	# Split the distributor guard rails around every branch junction so the belts read as one connected path.
 	var distributor_gaps: Array[float] = []
 	for row in range(5):
 		distributor_gaps.append(_factory_row_z(row))
 	var gap_half_width := 1.65
-	var rail_cursor := -26.75
+	var rail_cursor := -27.5
 	for gap_center in distributor_gaps:
 		var gap_start: float = gap_center - gap_half_width
 		var segment_length: float = gap_start - rail_cursor
@@ -5926,7 +5926,7 @@ func _build_waste_feed_conveyor_network() -> void:
 			for side_x in [146.12, 147.88]:
 				_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + segment_length * 0.5), Vector3(0.08, 0.28, segment_length), steel, false)
 		rail_cursor = gap_center + gap_half_width
-	var final_length := 26.75 - rail_cursor
+	var final_length := 27.5 - rail_cursor
 	if final_length > 0.25:
 		for side_x in [146.12, 147.88]:
 			_box("WasteFeedDistributorRail", Vector3(side_x, 1.08, rail_cursor + final_length * 0.5), Vector3(0.08, 0.28, final_length), steel, false)
@@ -5960,8 +5960,8 @@ func _build_waste_feed_conveyor_network() -> void:
 					bend_rail.rotation_degrees.y = bend_rotation
 
 	# Powered roller beds make the trunk, distributor and all five branches read as one machine.
-	for roller_i in range(35):
-		var distributor_z := -25.5 + float(roller_i) * 1.5
+	for roller_i in range(37):
+		var distributor_z := -27.0 + float(roller_i) * 1.5
 		var distributor_roller := _cylinder("WasteFeedDistributorRoller", Vector3(147.0, 0.875, distributor_z), 0.065, 1.10, Color(0.38, 0.44, 0.45), false)
 		distributor_roller.rotation_degrees.z = 90.0
 		conveyor_rollers.append(distributor_roller)
@@ -6858,7 +6858,7 @@ func _process_waste_feed_conveyor(delta: float) -> void:
 	else:
 		tween.tween_property(selected_item, "global_position", Vector3(147.0, belt_y, target_z), maxf(0.35, absf(target_z) / 12.0) / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	# All rows then use a straight branch belt into the first machine.
-	tween.tween_property(selected_item, "global_position", Vector3(150.4, belt_y, target_z), 0.35 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
+	tween.tween_property(selected_item, "global_position", Vector3(148.65, belt_y, target_z), 0.35 / (_conveyor_speed_multiplier() * _waste_tank_discharge_multiplier()))
 	tween.tween_callback(_finish_waste_feed_item.bind(selected_item, selected_row))
 
 func _finish_waste_feed_item(item: Node3D, row: int) -> void:
