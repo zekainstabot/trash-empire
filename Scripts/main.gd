@@ -1071,8 +1071,7 @@ func _process_sorting_robots(delta: float) -> void:
 			target.reparent(robot)
 			target.global_transform = keep_transform
 			# Keep collected waste inside the rear hopper, behind the cab roof.
-			target.position = Vector3(0, 1.34 + float(robot.get_meta("cargo_stack", 0)) * 0.10, 0.58)
-			robot.set_meta("cargo_stack", int(robot.get_meta("cargo_stack", 0)) + 1)
+			target.position = Vector3(0, 1.34, 0.58)
 			robot.set_meta("cargo", target)
 			robot.set_meta("target", null)
 			trash_nodes.erase(target)
