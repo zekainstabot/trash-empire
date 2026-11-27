@@ -5573,6 +5573,20 @@ func _reposition_factory_belt_queue(row: int) -> void:
 		slide.set_ease(Tween.EASE_OUT)
 		slide.tween_property(item, "position", target, 0.35)
 
+func _append_factory_truck_route_leg(tween: Tween, truck: Node3D, target: Vector3, travel_time: float) -> void:
+	# Factory trucks have their cab on local -X. Turn the chassis toward each
+	# road segment before moving so every leg is driven nose-first, never sideways
+	# or in reverse. Keeping the turn as part of the same tween preserves route order.
+	var direction := target - truck.position
+	direction.y = 0.0
+	if direction.length_squared() <= 0.0001:
+		return
+	var target_yaw := atan2(direction.z, -direction.x)
+	var turn_time := minf(0.32, maxf(0.12, travel_time * 0.22))
+	tween.tween_property(truck, "rotation:y", target_yaw, turn_time)
+	tween.tween_property(truck, "position", target, travel_time)
+
+
 func _dispatch_factory_row_truck(row: int) -> void:
 	if row < 0 or row >= 5 or mega_factory_built_count < row * 3 + 1:
 		return
@@ -5624,18 +5638,17 @@ func _dispatch_factory_row_truck(row: int) -> void:
 		_set_message("%s: truck loaded 3 %s products. Payment +%.0f ZC!" % [_factory_row_product(row), stage_name, loading_revenue])
 	)
 	tween.tween_interval(0.35)
-	tween.tween_property(truck, "position:x", 220.0, 0.9)
 	tween.tween_interval(0.25)
-	tween.tween_property(truck, "position:z", z + 5.0, 0.45)
-	tween.tween_property(truck, "position:x", 234.0, 1.0)
-	tween.tween_property(truck, "position:z", 12.0, 0.65)
-	tween.tween_property(truck, "position:x", 250.0, 1.2)
-	tween.tween_property(truck, "position:z", 22.0, 0.55)
-	tween.tween_property(truck, "position:x", 266.0, 1.1)
-	tween.tween_property(truck, "position:z", 34.0, 0.65)
-	tween.tween_property(truck, "position:x", 282.0, 1.1)
-	tween.tween_property(truck, "position:z", 46.0, 0.55)
-	tween.tween_property(truck, "position:x", 298.0, 1.2)
+	_append_factory_truck_route_leg(tween, truck, Vector3(220.0, 0.0, z + 5.0), 0.45)
+	_append_factory_truck_route_leg(tween, truck, Vector3(234.0, 0.0, z + 5.0), 1.0)
+	_append_factory_truck_route_leg(tween, truck, Vector3(234.0, 0.0, 12.0), 0.65)
+	_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, 12.0), 1.2)
+	_append_factory_truck_route_leg(tween, truck, Vector3(250.0, 0.0, 22.0), 0.55)
+	_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, 22.0), 1.1)
+	_append_factory_truck_route_leg(tween, truck, Vector3(266.0, 0.0, 34.0), 0.65)
+	_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, 34.0), 1.1)
+	_append_factory_truck_route_leg(tween, truck, Vector3(282.0, 0.0, 46.0), 0.55)
+	_append_factory_truck_route_leg(tween, truck, Vector3(298.0, 0.0, 46.0), 1.2)
 	tween.tween_callback(func():
 		truck.queue_free()
 		door_left.queue_free()
