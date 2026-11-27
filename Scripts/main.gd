@@ -305,8 +305,8 @@ func _finish_boot_sequence() -> void:
 		auto_pickup_level = 1
 		var auto_test_item := Node3D.new()
 		auto_test_item.set_script(TRASH_SCRIPT)
-		auto_test_item.global_position = player.global_position + (-player.global_transform.basis.z * 1.55)
 		add_child(auto_test_item)
+		auto_test_item.global_position = player.global_position + (-player.global_transform.basis.z * 1.55)
 		trash_nodes.append(auto_test_item)
 		await get_tree().physics_frame
 		var carried_before_auto_test := carried
