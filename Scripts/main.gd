@@ -5907,6 +5907,7 @@ func _build_waste_feed_conveyor_network() -> void:
 	for transfer_x in range(129, 145, 2):
 		var transfer_roller := _cylinder("WasteFeedMainRoller", Vector3(float(transfer_x), 0.88, 0.0), 0.045, 1.05, Color(0.12, 0.16, 0.17), false)
 		transfer_roller.rotation_degrees.x = 90.0
+		conveyor_rollers.append(transfer_roller)
 	# Reinforced intake lip makes the physical connection to the tank outlet visible.
 	_box("WasteTankConveyorIntakeFrame", Vector3(128.55, 0.68, 0.0), Vector3(1.25, 0.34, 1.95), dark_steel, false)
 	_box("WasteTankConveyorIntakeBelt", Vector3(128.55, 0.925, 0.0), Vector3(1.15, 0.08, 1.42), belt_color, false)
@@ -5959,11 +5960,6 @@ func _build_waste_feed_conveyor_network() -> void:
 					bend_rail.rotation_degrees.y = bend_rotation
 
 	# Powered roller beds make the trunk, distributor and all five branches read as one machine.
-	for roller_i in range(9):
-		var trunk_x := 129.0 + float(roller_i) * 1.9
-		var trunk_roller := _cylinder("WasteFeedTrunkRoller", Vector3(trunk_x, 0.875, 0.0), 0.065, 1.18, Color(0.38, 0.44, 0.45), false)
-		trunk_roller.rotation_degrees.x = 90.0
-		conveyor_rollers.append(trunk_roller)
 	for roller_i in range(35):
 		var distributor_z := -25.5 + float(roller_i) * 1.5
 		var distributor_roller := _cylinder("WasteFeedDistributorRoller", Vector3(147.0, 0.875, distributor_z), 0.065, 1.10, Color(0.38, 0.44, 0.45), false)
