@@ -905,6 +905,14 @@ func _make_sorting_robot(category_index: int, robot_color: Color) -> Node3D:
 			hub.position = Vector3.ZERO
 			hub.material_override = _mat(Color(0.40, 0.48, 0.47))
 			wheel.add_child(hub)
+	# Industrial finish pass: raised side service panels, vents and warning markings.
+	for side in [-1.0, 1.0]:
+		_add_robot_box(robot, "LoaderSideServicePanel", Vector3(side * 0.505, 0.92, -0.05), Vector3(0.035, 0.30, 0.46), metal)
+		for vent_index in range(4):
+			_add_robot_box(robot, "LoaderSideVent", Vector3(side * 0.53, 1.02, -0.18 + float(vent_index) * 0.09), Vector3(0.018, 0.025, 0.055), dark)
+		_add_robot_box(robot, "LoaderRearReflector", Vector3(side * 0.36, 0.60, 0.90), Vector3(0.18, 0.08, 0.035), Color(0.95, 0.28, 0.12))
+	_add_robot_box(robot, "LoaderCabRoofPanel", Vector3(0, 1.64, -0.47), Vector3(0.58, 0.025, 0.46), metal)
+	_add_robot_box(robot, "LoaderFrontBrandPanel", Vector3(0, 0.92, -0.94), Vector3(0.34, 0.08, 0.025), robot_color.lightened(0.30))
 	robot.set_meta("wheels", robot_wheels)
 	robot.set_meta("category_index", category_index)
 	robot.set_meta("target", null)
