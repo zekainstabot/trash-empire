@@ -70,6 +70,9 @@ var skill_scroll_tween: Tween
 var skill_touch_last_position := Vector2.ZERO
 var skill_touch_moved := false
 var collection_tool_extension := 0.0
+var magnet_field_ring: MeshInstance3D
+var vacuum_rotor: Node3D
+var vacuum_status_light: MeshInstance3D
 var unload_timer := 0.0
 var upgrade_panel: Panel
 var bag_upgrade_button: Button
@@ -2013,6 +2016,20 @@ func _build_player() -> void:
 	_add_robot_box(magnet_tool, "MagnetLeftPole", Vector3(-0.12, -0.14, 0), Vector3(0.10, 0.22, 0.16), Color(0.88, 0.20, 0.18))
 	_add_robot_box(magnet_tool, "MagnetRightPole", Vector3(0.12, -0.14, 0), Vector3(0.10, 0.22, 0.16), Color(0.18, 0.42, 0.92))
 	_add_robot_box(magnet_tool, "MagnetGrip", Vector3(0, 0.10, 0), Vector3(0.12, 0.10, 0.18), Color(0.65, 0.72, 0.73))
+	# Exposed induction coil and a subtle animated field loop make the magnet
+	# read as a powered industrial tool, not a plain colored block.
+	var magnet_coil := _add_robot_sphere(magnet_tool, "InductionCoil", Vector3(0, -0.12, -0.105), 0.075, Color(0.18, 0.92, 0.82))
+	magnet_coil.scale = Vector3(1.0, 1.0, 0.48)
+	magnet_field_ring = MeshInstance3D.new()
+	magnet_field_ring.name = "MagneticFieldLoop"
+	var field_mesh := TorusMesh.new()
+	field_mesh.inner_radius = 0.105
+	field_mesh.outer_radius = 0.125
+	magnet_field_ring.mesh = field_mesh
+	magnet_field_ring.position = Vector3(0, -0.17, -0.10)
+	magnet_field_ring.rotation.x = PI * 0.5
+	magnet_field_ring.material_override = _mat(Color(0.12, 0.82, 0.76, 0.72))
+	magnet_tool.add_child(magnet_field_ring)
 	magnet_tool.visible = (auto_pickup_level > 0 or magnet_power_level > 1) and suction_level <= 0
 
 	# Separate vacuum attachment on the opposite arm, unlocked by suction upgrades.
@@ -2023,6 +2040,18 @@ func _build_player() -> void:
 	_add_robot_box(suction_tool, "VacuumMotor", Vector3(0, -0.02, 0.02), Vector3(0.24, 0.25, 0.28), Color(0.12, 0.22, 0.25))
 	_add_robot_box(suction_tool, "VacuumTube", Vector3(0, -0.10, -0.20), Vector3(0.13, 0.12, 0.34), Color(0.48, 0.58, 0.59))
 	_add_robot_box(suction_tool, "VacuumMouth", Vector3(0, -0.12, -0.40), Vector3(0.34, 0.16, 0.12), Color(0.10, 0.75, 0.68))
+	# Guarded intake, spinning impeller and live status lamp.
+	_add_robot_box(suction_tool, "IntakeGuardTop", Vector3(0, -0.035, -0.475), Vector3(0.31, 0.035, 0.045), Color(0.68, 0.76, 0.74))
+	_add_robot_box(suction_tool, "IntakeGuardBottom", Vector3(0, -0.205, -0.475), Vector3(0.31, 0.035, 0.045), Color(0.68, 0.76, 0.74))
+	vacuum_status_light = _add_robot_sphere(suction_tool, "VacuumStatus", Vector3(0.13, 0.015, -0.13), 0.035, Color(0.16, 0.95, 0.70))
+	vacuum_rotor = Node3D.new()
+	vacuum_rotor.name = "Impeller"
+	vacuum_rotor.position = Vector3(0, -0.02, -0.23)
+	suction_tool.add_child(vacuum_rotor)
+	_add_robot_sphere(vacuum_rotor, "ImpellerHub", Vector3.ZERO, 0.045, Color(0.78, 0.86, 0.82))
+	for blade_angle in [0.0, TAU / 3.0, TAU * 2.0 / 3.0]:
+		var blade := _add_robot_box(vacuum_rotor, "ImpellerBlade", Vector3(0, 0.0, -0.055), Vector3(0.035, 0.025, 0.13), Color(0.20, 0.72, 0.66))
+		blade.rotation.z = blade_angle
 	suction_tool.visible = suction_level > 0
 	if suction_level > 0:
 		magnet_tool.visible = false
@@ -2135,6 +2164,20 @@ func _animate_robot(delta: float) -> void:
 
 	# Collector extension eases in/out instead of snapping, keeping both tools
 	# rigidly aligned to the wrist through the full working animation.
+	# Tool-specific motion: the induction loop pulses while locked on, and the
+	# vacuum impeller spins only when suction is actively pulling an item.
+	if is_instance_valid(magnet_field_ring):
+		var field_active := magnet_is_working
+		var field_pulse := 1.0 + (sin(robot_anim_time * 12.0) * 0.10 if field_active else 0.025)
+		magnet_field_ring.scale = Vector3.ONE * field_pulse
+		magnet_field_ring.visible = auto_pickup_level > 0 and suction_level <= 0
+		magnet_field_ring.rotation.y += delta * (2.8 if field_active else 0.35)
+	if is_instance_valid(vacuum_rotor):
+		vacuum_rotor.rotation.z += delta * (22.0 if vacuum_is_working else 1.2)
+	if is_instance_valid(vacuum_status_light):
+		vacuum_status_light.visible = suction_level > 0
+		vacuum_status_light.scale = Vector3.ONE * (1.0 + (sin(robot_anim_time * 10.0) * 0.18 if vacuum_is_working else 0.0))
+
 	var extension_target := 0.34 if tool_is_working else 0.0
 	collection_tool_extension = lerpf(collection_tool_extension, extension_target, clampf(delta * 8.5, 0.0, 1.0))
 	if is_instance_valid(magnet_tool):
