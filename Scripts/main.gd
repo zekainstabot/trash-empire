@@ -4220,7 +4220,7 @@ func _process_ground_collector(delta: float) -> void:
 		target.reparent(rover)
 		target.global_transform = keep_transform
 		# Load the rover's rear cargo bin, not the chassis roof.
-			target.position = Vector3(0, 1.18 + float(cargo_items.size()) * 0.10, 0.68)
+		target.position = Vector3(0, 1.18 + float(cargo_items.size()) * 0.10, 0.68)
 		cargo_items.append(target)
 		rover.set_meta("cargo_items", cargo_items)
 		trash_nodes.erase(target)
