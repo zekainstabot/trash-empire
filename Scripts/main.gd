@@ -7215,6 +7215,8 @@ func _dispatch_truck_fleet() -> void:
 		var truck := delivery_trucks[index]
 		if not is_instance_valid(truck):
 			continue
+		# Trucks face local -X. Reset their heading before driving into the dock.
+		truck.rotation.y = 0.0
 		dispatch_trucks_remaining += 1
 		var dock_z := 30.25 + (float(index) - float(_truck_fleet_size() - 1) * 0.5) * 3.1
 		var arrive := create_tween()
@@ -7284,6 +7286,9 @@ func _depart_delivery_truck(truck_index: int) -> void:
 	if is_instance_valid(truck):
 		var depart := create_tween()
 		depart.set_trans(Tween.TRANS_SINE)
+		depart.set_ease(Tween.EASE_IN_OUT)
+		# The truck arrived facing -X; turn it around before moving toward +X.
+		depart.tween_property(truck, "rotation:y", PI, 0.75)
 		depart.set_ease(Tween.EASE_IN)
 		depart.tween_property(truck, "position:x", 17.4, 2.0)
 		depart.tween_callback(_finish_delivery_truck_dispatch)
