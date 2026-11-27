@@ -579,7 +579,7 @@ func _build_city_rework_layout() -> void:
 	for patch_x in range(-10, 111, 18):
 		_box("BoulevardAsphaltPatch", Vector3(float(patch_x), 0.052, 0.0), Vector3(8.0, 0.006, 7.65), road_worn, false)
 	for side in [-1.0, 1.0]:
-		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(126.0, 0.18, 0.28), curb, false)
+		_box("BoulevardCurb", Vector3(49.0, 0.09, side * 4.25), Vector3(126.0, 0.18, 0.28), curb, true)
 		_box("BoulevardEdgeLine", Vector3(49.0, 0.061, side * 3.72), Vector3(126.0, 0.025, 0.12), road_white, false)
 		_add_sidewalk_x_segments("BoulevardSidewalk", -14.0, 112.0, 0.075, 0.15, side * 6.0, 3.2, sidewalk, [16.0, 48.0, 80.0, 104.0], 13.0)
 		_add_sidewalk_x_segments("BoulevardGrassVerge", -14.0, 112.0, 0.025, 0.05, side * 8.45, 0.9, grass.lightened(0.08), [16.0, 48.0, 80.0, 104.0], 13.0)
@@ -607,7 +607,7 @@ func _build_city_rework_layout() -> void:
 			for curb_segment in [[-37.0, -8.0], [-4.0, 4.0], [8.0, 37.0]]:
 				var curb_start: float = curb_segment[0]
 				var curb_end: float = curb_segment[1]
-				_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, (curb_start + curb_end) * 0.5), Vector3(0.22, 0.18, curb_end - curb_start), curb, false)
+				_box("CrossStreetCurb", Vector3(street_x + side * 3.55, 0.09, (curb_start + curb_end) * 0.5), Vector3(0.22, 0.18, curb_end - curb_start), curb, true)
 			_add_sidewalk_z_segments("CrossStreetWalkway", -37.0, 37.0, 0.075, 0.15, street_x + side * 5.0, 2.7, sidewalk, [Vector2(-29.0, 9.0), Vector2(-22.0, 9.0), Vector2(0.0, 16.0), Vector2(22.0, 9.0), Vector2(29.0, 9.0)], 8.0)
 			# Flush ramp landing and tactile warning strip at both boulevard crossings.
 			for ramp_z in [-6.0, 6.0]:
