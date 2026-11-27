@@ -129,6 +129,7 @@ var factory_build_zones_root: Node3D
 var factory_build_label: Label3D
 var factory_build_paid := 0.0
 var factory_build_save_timer := 0.0
+var factory_build_charge_triggered := false
 var mega_factory_built_count := 1
 var factory_row_input_stock: Array = [0, 0, 0, 0, 0]
 var factory_row_stage1_stock: Array = [0, 0, 0, 0, 0]
@@ -1829,7 +1830,7 @@ func _refresh_factory_build_zones() -> void:
 		factory_build_zones_root.add_child(new_node)
 	_update_factory_build_label()
 
-func _process_factory_build(delta: float) -> void:
+func _process_factory_build(_delta: float) -> void:
 	if payment_active or factory_stage >= 5 or not is_instance_valid(player):
 		return
 	var z_positions := [0.0, 0.0, 0.0, 10.0, 20.0, 30.0]
@@ -1837,23 +1838,28 @@ func _process_factory_build(delta: float) -> void:
 	var target := Vector3(7.5, 0.0, z_positions[stage])
 	var player_flat := Vector2(player.global_position.x, player.global_position.z)
 	if player_flat.distance_to(Vector2(target.x, target.z)) > 2.15:
+		factory_build_charge_triggered = false
 		return
+	if factory_build_charge_triggered:
+		return
+	factory_build_charge_triggered = true
 	var costs := [0.0, 20.0, 55.0, 110.0, 190.0]
 	var cost: float = costs[factory_stage]
-	var payment := minf(money, minf(delta * _spending_speed_multiplier(), cost - factory_build_paid))
+	var remaining_cost := maxf(0.0, cost - factory_build_paid)
+	var payment := minf(money, remaining_cost)
 	if payment > 0.0:
 		money -= payment
 		factory_build_paid += payment
 		_update_ui()
-		factory_build_save_timer += delta
-		if factory_build_save_timer >= 1.0:
-			factory_build_save_timer = 0.0
-			_save_game()
+		_save_game()
 		_update_factory_build_label()
+	if factory_build_paid < cost - 0.001:
+		_set_message("Paid %.1f ZC. %.1f ZC remaining. Leave and return after earning more." % [payment, cost - factory_build_paid])
 	if factory_build_paid >= cost - 0.001:
 		factory_stage += 1
 		factory_build_paid = 0.0
 		factory_build_save_timer = 0.0
+		factory_build_charge_triggered = false
 		_build_factory_expansion()
 		# Move the player clear of the newly spawned machine collision immediately.
 		player.global_position = Vector3(143.0, maxf(player.global_position.y, 0.0), minf(z_positions[factory_stage] + 2.8, 37.2))
