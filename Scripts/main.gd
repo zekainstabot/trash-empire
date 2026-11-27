@@ -115,6 +115,8 @@ var robot_left_leg: Node3D
 var robot_right_leg: Node3D
 var robot_head: Node3D
 var robot_anim_time := 0.0
+var robot_gait_phase := 0.0
+var robot_gait_blend := 0.0
 var conveyor_time := 0.0
 var conveyor_rollers: Array[MeshInstance3D] = []
 var conveyor_slats: Array[Node3D] = []
@@ -2348,18 +2350,28 @@ func _animate_robot(delta: float) -> void:
 		return
 	robot_anim_time += delta
 	var planar_speed := Vector2(player.velocity.x, player.velocity.z).length()
-	var moving := planar_speed > 0.25
-	var gait_amount := clampf(inverse_lerp(0.25, 4.0, planar_speed), 0.0, 1.0) if moving else 0.0
-	var gait_phase := robot_anim_time * lerpf(7.5, 11.5, gait_amount)
+	var target_gait := clampf(inverse_lerp(0.35, 4.2, planar_speed), 0.0, 1.0)
+	# Smoothly blend the gait in and out so tiny velocity changes do not make
+	# the legs twitch when starting, stopping, or brushing against obstacles.
+	robot_gait_blend = move_toward(robot_gait_blend, target_gait, delta * (4.5 if target_gait > robot_gait_blend else 6.5))
+	var gait_amount := robot_gait_blend
+	var moving := gait_amount > 0.06
+	# Integrate phase from speed instead of multiplying total elapsed time by a
+	# changing frequency; this prevents sudden phase jumps during acceleration.
+	var gait_frequency := lerpf(5.8, 10.8, clampf(planar_speed / 4.2, 0.0, 1.0))
+	if moving:
+		robot_gait_phase = fposmod(robot_gait_phase + delta * gait_frequency, TAU)
+	var gait_phase := robot_gait_phase
 	var stride := sin(gait_phase) * gait_amount
 	var opposite_stride := sin(gait_phase + PI) * gait_amount
 
-	# A weighted industrial gait: restrained body counter-sway and alternating steps.
-	var bob := absf(sin(gait_phase * 2.0)) * 0.035 * gait_amount
-	robot_visual.position.y = bob
-	robot_visual.rotation.z = sin(gait_phase) * 0.018 * gait_amount
-	robot_visual.rotation.x = -absf(stride) * 0.012
-	robot_visual.rotation.y = sin(gait_phase * 0.5) * 0.018 * gait_amount
+	# A weighted industrial gait: subtle vertical travel, counter-sway and
+	# reduced idle movement keep the robot planted rather than floating.
+	var bob := absf(sin(gait_phase * 2.0)) * 0.028 * gait_amount
+	robot_visual.position.y = lerpf(robot_visual.position.y, bob, clampf(delta * 12.0, 0.0, 1.0))
+	robot_visual.rotation.z = lerpf(robot_visual.rotation.z, sin(gait_phase) * 0.014 * gait_amount, clampf(delta * 8.0, 0.0, 1.0))
+	robot_visual.rotation.x = lerpf(robot_visual.rotation.x, -absf(stride) * 0.009, clampf(delta * 8.0, 0.0, 1.0))
+	robot_visual.rotation.y = lerpf(robot_visual.rotation.y, sin(gait_phase * 0.5) * 0.014 * gait_amount, clampf(delta * 7.0, 0.0, 1.0))
 
 	var magnet_is_working := suction_level <= 0 and auto_pickup_level > 0 and is_instance_valid(auto_pickup_target)
 	var vacuum_is_working := suction_level > 0 and is_instance_valid(suction_target)
@@ -2404,10 +2416,12 @@ func _animate_robot(delta: float) -> void:
 
 	# Lift each boot during its forward swing so the feet visibly clear the
 	# ground instead of sliding through a flat pendulum motion.
-	robot_left_leg.rotation.x = -stride * 0.58
-	robot_right_leg.rotation.x = opposite_stride * 0.58
-	robot_left_leg.position = Vector3(-0.29, 0.52 + maxf(0.0, stride) * 0.16, 0)
-	robot_right_leg.position = Vector3(0.29, 0.52 + maxf(0.0, opposite_stride) * 0.16, 0)
+	var left_lift := maxf(0.0, stride) * 0.13
+	var right_lift := maxf(0.0, opposite_stride) * 0.13
+	robot_left_leg.rotation.x = lerpf(robot_left_leg.rotation.x, -stride * 0.52, clampf(delta * 10.0, 0.0, 1.0))
+	robot_right_leg.rotation.x = lerpf(robot_right_leg.rotation.x, opposite_stride * 0.52, clampf(delta * 10.0, 0.0, 1.0))
+	robot_left_leg.position = robot_left_leg.position.lerp(Vector3(-0.29, 0.52 + left_lift, 0), clampf(delta * 12.0, 0.0, 1.0))
+	robot_right_leg.position = robot_right_leg.position.lerp(Vector3(0.29, 0.52 + right_lift, 0), clampf(delta * 12.0, 0.0, 1.0))
 	# The head scans subtly while idle and steadies its gaze during collection.
 	var head_scan := sin(robot_anim_time * 1.15) * 0.055 if not moving else sin(gait_phase * 0.5) * 0.025
 	if tool_is_working:
