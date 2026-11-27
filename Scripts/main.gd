@@ -1773,6 +1773,29 @@ func _build_factory_link(start_pos: Vector3, end_pos: Vector3) -> void:
 	for side in [-1.0, 1.0]:
 		_box_child(conveyor_root, "FactoryConveyorRail", Vector3(side * 0.82, 1.18, 0.0), Vector3(0.10, 0.40, length), Color(0.48, 0.54, 0.52))
 
+	# Compact drive assembly: guarded motor, gearbox and service-side coupling.
+	_box_child(conveyor_root, "FactoryConveyorDriveGuard", Vector3(1.12, 0.70, -length * 0.5 + minf(0.95, length * 0.25)), Vector3(0.42, 0.62, 0.72), Color(0.13, 0.19, 0.20))
+	_box_child(conveyor_root, "FactoryConveyorGearbox", Vector3(1.40, 0.76, -length * 0.5 + minf(0.95, length * 0.25)), Vector3(0.28, 0.40, 0.42), Color(0.38, 0.44, 0.43))
+	var drive_motor := MeshInstance3D.new()
+	drive_motor.name = "FactoryConveyorDriveMotor"
+	var drive_motor_mesh := CylinderMesh.new()
+	drive_motor_mesh.top_radius = 0.22
+	drive_motor_mesh.bottom_radius = 0.22
+	drive_motor_mesh.height = 0.48
+	drive_motor.mesh = drive_motor_mesh
+	drive_motor.position = Vector3(1.34, 0.72, -length * 0.5 + minf(0.95, length * 0.25))
+	drive_motor.rotation_degrees.z = 90.0
+	drive_motor.material_override = _mat(Color(0.20, 0.29, 0.30))
+	conveyor_root.add_child(drive_motor)
+	_box_child(conveyor_root, "FactoryConveyorMotorLabel", Vector3(1.36, 1.02, -length * 0.5 + minf(0.95, length * 0.25)), Vector3(0.30, 0.035, 0.24), Color(0.94, 0.62, 0.13))
+	# Repeated support feet and diagonal bracing keep long transfer links grounded.
+	var support_count := maxi(2, int(floor(length / 3.5)))
+	for support_i in range(support_count):
+		var support_z := (float(support_i) + 0.5) / float(support_count) * length - length * 0.5
+		for support_side in [-1.0, 1.0]:
+			_box_child(conveyor_root, "FactoryConveyorSupportLeg", Vector3(support_side * 0.62, 0.34, support_z), Vector3(0.13, 0.68, 0.14), Color(0.15, 0.20, 0.21))
+		_box_child(conveyor_root, "FactoryConveyorSupportCrossbar", Vector3(0.0, 0.12, support_z), Vector3(1.20, 0.12, 0.14), Color(0.38, 0.44, 0.43))
+
 	# Rollers are children of the rotated root, so their axles stay perpendicular to travel.
 	var roller_count := maxi(2, int(ceil(length / 0.65)) + 1)
 	for i in range(roller_count):
