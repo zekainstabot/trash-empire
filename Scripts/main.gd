@@ -3910,6 +3910,20 @@ func _build_helper_drones() -> void:
 		_add_robot_box(drone, "WinchHousing", Vector3(0, -0.245, 0.025), Vector3(0.16, 0.09, 0.16), Color(0.12, 0.19, 0.21))
 		_add_robot_box(drone, "WinchCable", Vector3(0, -0.335, 0.025), Vector3(0.025, 0.13, 0.025), Color(0.64, 0.69, 0.66))
 		_add_robot_box(drone, "CargoHook", Vector3(0, -0.415, 0.025), Vector3(0.12, 0.045, 0.10), Color(0.94, 0.62, 0.15))
+		# Mission-grade sensor package: raised lidar mast, protected side scanners,
+		# and a high-visibility status beacon. These remain decorative and lightweight.
+		var lidar_mast := _add_robot_box(drone, "DroneLidarMast", Vector3(0, 0.235, 0.17), Vector3(0.035, 0.13, 0.035), Color(0.22, 0.31, 0.33))
+		var lidar_head := _add_robot_sphere(drone, "DroneLidarHead", Vector3(0, 0.315, 0.17), 0.055, Color(0.16, 0.92, 0.82))
+		var nav_beacon := _add_robot_sphere(drone, "DroneNavigationBeacon", Vector3(0, 0.205, -0.12), 0.045, Color(1.0, 0.58, 0.13))
+		var scan_lights: Array[Node3D] = []
+		for scan_x in [-1.0, 1.0]:
+			var scan_light := _add_robot_box(drone, "DroneSideScanner", Vector3(scan_x * 0.205, -0.015, -0.12), Vector3(0.035, 0.045, 0.11), Color(0.12, 0.88, 0.95))
+			scan_lights.append(scan_light)
+		drone.set_meta("lidar_mast", lidar_mast)
+		drone.set_meta("lidar_head", lidar_head)
+		drone.set_meta("navigation_beacon", nav_beacon)
+		drone.set_meta("scan_lights", scan_lights)
+		drone.set_meta("visual_phase", float(i) * 1.7)
 
 		drone.visible = i < drone_level
 		drone.global_position = _drone_dock_point(drone)
@@ -4013,6 +4027,20 @@ func _process_helper_drones(delta: float) -> void:
 		for rotor in drone.get_meta("rotors", []):
 			if is_instance_valid(rotor):
 				rotor.rotation.y = fposmod(rotor.rotation.y + delta * 48.0, TAU)
+		# Subtle telemetry animation communicates active scanning without changing flight logic.
+		var visual_phase := float(drone.get_meta("visual_phase", 0.0)) + delta * 3.4
+		drone.set_meta("visual_phase", visual_phase)
+		var scan_pulse := 0.72 + 0.28 * (0.5 + 0.5 * sin(visual_phase))
+		var lidar_head := _get_meta_node(drone, "lidar_head")
+		if is_instance_valid(lidar_head):
+			lidar_head.scale = Vector3.ONE * scan_pulse
+		var nav_beacon := _get_meta_node(drone, "navigation_beacon")
+		if is_instance_valid(nav_beacon):
+			nav_beacon.scale = Vector3.ONE * (0.78 + 0.32 * (0.5 + 0.5 * sin(visual_phase * 1.8)))
+		for scan_index in range(drone.get_meta("scan_lights", []).size()):
+			var scan_light = drone.get_meta("scan_lights", [])[scan_index]
+			if is_instance_valid(scan_light):
+				scan_light.scale.y = 0.7 + 0.3 * (0.5 + 0.5 * sin(visual_phase + float(scan_index) * PI))
 		if drone.get_meta("returning", false):
 			var return_pos := _drone_dock_point(drone)
 			drone.global_position = drone.global_position.move_toward(return_pos, drone_speed * delta)
