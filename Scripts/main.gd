@@ -3971,7 +3971,7 @@ func _process_auto_pickup(delta: float) -> void:
 			auto_pickup_target.set_meta("drone_reserved", -1)
 		auto_pickup_target = null
 		auto_pickup_scan_timer = 0.24
-		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.85 + float(magnet_power_level - 1) * 0.7
+		var magnet_range := collection_range + 1.2 + float(maxi(auto_pickup_level - 1, 0)) * 0.75 + float(magnet_power_level - 1) * 0.7
 		var best_distance := magnet_range
 		var player_xz := Vector2(player.global_position.x, player.global_position.z)
 		for item in trash_nodes:
