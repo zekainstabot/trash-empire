@@ -1070,7 +1070,9 @@ func _process_sorting_robots(delta: float) -> void:
 			var keep_transform := target.global_transform
 			target.reparent(robot)
 			target.global_transform = keep_transform
-			target.position = Vector3(0, 1.85, -0.55)
+			# Keep collected waste inside the rear hopper, behind the cab roof.
+			target.position = Vector3(0, 1.34 + float(robot.get_meta("cargo_stack", 0)) * 0.10, 0.58)
+			robot.set_meta("cargo_stack", int(robot.get_meta("cargo_stack", 0)) + 1)
 			robot.set_meta("cargo", target)
 			robot.set_meta("target", null)
 			trash_nodes.erase(target)
@@ -4218,7 +4220,8 @@ func _process_ground_collector(delta: float) -> void:
 		var keep_transform := target.global_transform
 		target.reparent(rover)
 		target.global_transform = keep_transform
-		target.position = Vector3(0, 0.88 + float(cargo_items.size()) * 0.12, 0.0)
+		# Load the rover's rear cargo bin, not the chassis roof.
+			target.position = Vector3(0, 1.18 + float(cargo_items.size()) * 0.10, 0.68)
 		cargo_items.append(target)
 		rover.set_meta("cargo_items", cargo_items)
 		trash_nodes.erase(target)
