@@ -3841,6 +3841,16 @@ func _build_ground_collector() -> void:
 	_add_robot_box(ground_collector, "RoverRearCargoBin", Vector3(0, 0.98, 0.68), Vector3(0.58, 0.28, 0.30), Color(0.10, 0.17, 0.19))
 	_add_robot_box(ground_collector, "RoverRearCargoRim", Vector3(0, 1.14, 0.68), Vector3(0.64, 0.06, 0.34), Color(0.46, 0.54, 0.53))
 	_add_robot_sphere(ground_collector, "RoverWarningBeacon", Vector3(0.0, 1.10, -0.05), 0.075, Color(0.98, 0.57, 0.12))
+	# Industrial finish: segmented armor, service fasteners and reinforced scoop edges.
+	for sx in [-1.0, 1.0]:
+		for panel_z in [-0.28, 0.30]:
+			_add_robot_box(ground_collector, "RoverArmorPanel", Vector3(sx * 0.575, 0.50, panel_z), Vector3(0.025, 0.18, 0.22), Color(0.28, 0.39, 0.40))
+		for bolt_z in [-0.36, 0.36]:
+			_add_robot_sphere(ground_collector, "RoverArmorFastener", Vector3(sx * 0.59, 0.60, bolt_z), 0.025, Color(0.70, 0.76, 0.72))
+	for rib_z in [0.56, 0.66, 0.76, 0.86]:
+		_add_robot_box(ground_collector, "RoverCargoBinRib", Vector3(0, 1.14, rib_z), Vector3(0.50, 0.045, 0.025), Color(0.30, 0.39, 0.40))
+	_add_robot_box(ground_collector, "RoverScoopWearEdge", Vector3(0, 0.145, -0.94), Vector3(0.90, 0.035, 0.07), Color(0.90, 0.65, 0.18))
+	_add_robot_box(ground_collector, "RoverRearServicePlate", Vector3(0, 0.72, 0.72), Vector3(0.44, 0.16, 0.035), Color(0.31, 0.40, 0.41))
 	var rover_wheels: Array[Node3D] = []
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
