@@ -6103,7 +6103,8 @@ func _build_factory_row_main_conveyor(row: int) -> void:
 	# Reinforced bearing housings support both ends of the discharge pulley.
 	for bearing_side in [-1.0, 1.0]:
 		_box("FactoryMainConveyorEndBearing%d" % row, Vector3(nose_center_x, 0.84, z + bearing_side * 0.73), Vector3(0.34, 0.40, 0.22), frame_color, false)
-		_cylinder("FactoryMainConveyorEndBearingCap%d" % row, Vector3(nose_center_x, 0.84, z + bearing_side * 0.855), 0.105, 0.035, steel, false)
+		var bearing_cap := _cylinder("FactoryMainConveyorEndBearingCap%d" % row, Vector3(nose_center_x, 0.84, z + bearing_side * 0.855), 0.105, 0.035, steel, false)
+		bearing_cap.rotation_degrees.x = 90.0
 	# A short discharge lip bridges the belt edge to the marked output pad.
 	_box("FactoryMainConveyorDischargeLip%d" % row, Vector3(end_x + 0.12, 0.91, z), Vector3(0.38, 0.12, 1.22), steel, false)
 	_box("FactoryMainConveyorDischargeWearPlate%d" % row, Vector3(end_x + 0.13, 0.985, z), Vector3(0.34, 0.025, 1.16), rubber, false)
