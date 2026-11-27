@@ -2426,8 +2426,13 @@ func _animate_robot(delta: float) -> void:
 	# ground instead of sliding through a flat pendulum motion.
 	var left_lift := maxf(0.0, stride) * 0.13
 	var right_lift := maxf(0.0, opposite_stride) * 0.13
-	robot_left_leg.rotation.x = lerpf(robot_left_leg.rotation.x, -stride * 0.52, clampf(delta * 10.0, 0.0, 1.0))
-	robot_right_leg.rotation.x = lerpf(robot_right_leg.rotation.x, opposite_stride * 0.52, clampf(delta * 10.0, 0.0, 1.0))
+	# Alternate the legs in true opposition: when the left leg swings forward,
+	# the right leg moves backward, then they exchange roles on the next half-step.
+	# The previous right-leg sign made both pivots rotate in the same direction.
+	var leg_swing := 0.62
+	var leg_blend := clampf(delta * 13.0, 0.0, 1.0)
+	robot_left_leg.rotation.x = lerpf(robot_left_leg.rotation.x, -stride * leg_swing, leg_blend)
+	robot_right_leg.rotation.x = lerpf(robot_right_leg.rotation.x, -opposite_stride * leg_swing, leg_blend)
 	robot_left_leg.position = robot_left_leg.position.lerp(Vector3(-0.29, 0.52 + left_lift, 0), clampf(delta * 12.0, 0.0, 1.0))
 	robot_right_leg.position = robot_right_leg.position.lerp(Vector3(0.29, 0.52 + right_lift, 0), clampf(delta * 12.0, 0.0, 1.0))
 	# The head scans subtly while idle and steadies its gaze during collection.
