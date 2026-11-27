@@ -6899,6 +6899,14 @@ func _build_delivery_conveyor(start_point: Vector3, end_point: Vector3) -> void:
 	for i in range(9):
 		var z_offset := -length * 0.5 + length * float(i + 1) / 10.0
 		_box_child(base, "Support_%d" % i, Vector3(0, -0.62, z_offset), Vector3(1.25, 0.78, 0.16), Color(0.24, 0.27, 0.30))
+	# Add maintenance-access and structural detail without cluttering the belt path.
+	for side in [-1.0, 1.0]:
+		_box_child(base, "ConveyorOuterFrame", Vector3(side * 0.53, -0.02, 0), Vector3(0.08, 0.12, length - 0.22), Color(0.38, 0.44, 0.45))
+		_box_child(base, "ConveyorSafetyStripe", Vector3(side * 0.68, 0.50, 0), Vector3(0.055, 0.025, length * 0.82), Color(0.96, 0.65, 0.17))
+		for support_i in range(0, 9, 2):
+			var brace_z := -length * 0.5 + length * float(support_i + 1) / 10.0
+			_box_child(base, "SupportBrace", Vector3(side * 0.40, -0.55, brace_z), Vector3(0.10, 0.10, 0.22), Color(0.35, 0.40, 0.42))
+	_box_child(base, "ConveyorServicePlate", Vector3(0, 0.16, -length * 0.40), Vector3(0.48, 0.04, 0.24), Color(0.44, 0.51, 0.51))
 
 func _delivery_truck_box(parent: Node3D, part_name: String, local_position: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var part := MeshInstance3D.new()
