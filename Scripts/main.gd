@@ -5839,10 +5839,14 @@ func _append_factory_truck_route_leg(tween: Tween, truck: Node3D, target: Vector
 	# the same route leg instead of turning in place before translating.
 	# This makes cornering a smooth forward arc and prevents sideways-looking
 	# or reverse-looking movement at 90-degree bends.
+	# Start translation first, then explicitly parallelize steering with
+	# this same movement step. Calling parallel() before position would
+	# pair the rotation with the PREVIOUS tween step, making the truck
+	# slide sideways before its nose catches up.
+	tween.tween_property(truck, "position", target, safe_travel_time)
 	if absf(yaw_delta) > 0.16:
 		_flash_factory_truck_turn_signals(truck, safe_travel_time)
 		tween.parallel().tween_property(truck, "rotation:y", final_yaw, safe_travel_time)
-	tween.tween_property(truck, "position", target, safe_travel_time)
 	# All route legs are forward in the truck's local -X direction. Spin all
 	# six wheels by distance/radius in parallel with chassis translation.
 	if truck.has_meta("factory_truck_wheels"):
