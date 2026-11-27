@@ -1455,7 +1455,7 @@ func _build_neighborhood_furniture() -> void:
 		_cylinder("StreetHydrantBase", hydrant_pos + Vector3(0, 0.20, 0), 0.20, 0.40, Color(0.72, 0.18, 0.12), false)
 		_cylinder("StreetHydrantBody", hydrant_pos + Vector3(0, 0.52, 0), 0.13, 0.48, Color(0.82, 0.22, 0.15), false)
 		_cylinder("StreetHydrantCap", hydrant_pos + Vector3(0, 0.80, 0), 0.18, 0.12, Color(0.88, 0.72, 0.28), false)
-		_cylinder("StreetHydrantOutlet", hydrant_pos + Vector3(0.20, 0.52, 0), 0.09, 0.20, Color(0.82, 0.22, 0.15), false)
+		_cylinder("StreetHydrantOutlet", hydrant_pos + Vector3(0.29, 0.52, 0), 0.09, 0.20, Color(0.82, 0.22, 0.15), false)
 
 
 func _build_decorative_residence(center: Vector3, apartment: bool, index: int) -> void:
@@ -2270,7 +2270,7 @@ func _build_player() -> void:
 	suction_tool.visible = suction_level > 0
 	if suction_level > 0:
 		magnet_tool.visible = false
-	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.20, 0.52, 0))
+	robot_left_leg = _robot_leg(robot_visual, "LeftLeg", Vector3(-0.29, 0.52, 0))
 	robot_right_leg = _robot_leg(robot_visual, "RightLeg", Vector3(0.20, 0.52, 0))
 	_build_helper_drones()
 
@@ -2406,8 +2406,8 @@ func _animate_robot(delta: float) -> void:
 	# ground instead of sliding through a flat pendulum motion.
 	robot_left_leg.rotation.x = -stride * 0.58
 	robot_right_leg.rotation.x = opposite_stride * 0.58
-	robot_left_leg.position.y = 0.52 + maxf(0.0, stride) * 0.12
-	robot_right_leg.position.y = 0.52 + maxf(0.0, opposite_stride) * 0.12
+	robot_left_leg.position = Vector3(-0.29, 0.52 + maxf(0.0, stride) * 0.16, 0)
+	robot_right_leg.position = Vector3(0.29, 0.52 + maxf(0.0, opposite_stride) * 0.16, 0)
 	# The head scans subtly while idle and steadies its gaze during collection.
 	var head_scan := sin(robot_anim_time * 1.15) * 0.055 if not moving else sin(gait_phase * 0.5) * 0.025
 	if tool_is_working:
@@ -2456,8 +2456,8 @@ func _robot_leg(parent: Node3D, part_name: String, pos: Vector3) -> Node3D:
 	_add_robot_box(pivot, "Shin", Vector3(0, -0.20, 0), Vector3(0.24, 0.40, 0.25), Color(0.25, 0.36, 0.39))
 	_add_robot_box(pivot, "ShinFrontArmor", Vector3(0, -0.20, -0.135), Vector3(0.27, 0.27, 0.035), Color(0.43, 0.55, 0.54))
 	_add_robot_sphere(pivot, "KneeJoint", Vector3(0, -0.025, -0.015), 0.13, Color(0.08, 0.14, 0.16))
-	_add_robot_box(pivot, "Boot", Vector3(0, -0.42, -0.09), Vector3(0.34, 0.16, 0.43), Color(0.07, 0.12, 0.15))
-	_add_robot_box(pivot, "BootSole", Vector3(0, -0.505, -0.09), Vector3(0.36, 0.035, 0.45), Color(0.025, 0.04, 0.05))
+	_add_robot_box(pivot, "Boot", Vector3(0, -0.42, -0.09), Vector3(0.32, 0.16, 0.43), Color(0.07, 0.12, 0.15))
+	_add_robot_box(pivot, "BootSole", Vector3(0, -0.505, -0.09), Vector3(0.34, 0.035, 0.45), Color(0.025, 0.04, 0.05))
 	return pivot
 
 func _build_trash() -> void:
