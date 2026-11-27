@@ -5675,8 +5675,16 @@ func _build_waste_tank_structure() -> void:
 		waste_tank_root.add_child(lamp)
 	_box("DepotElectricalCabinet", Vector3(-1.75, 0.95, -24.6), Vector3(0.48, 1.6, 0.34), Color(0.34, 0.39, 0.38), true)
 	_box("DepotCabinetDoor", Vector3(-1.75, 0.95, -24.41), Vector3(0.38, 1.42, 0.035), Color(0.24, 0.29, 0.29), false)
+	# Add realistic bunker reinforcement, inspection markings and hydraulic service details.
+	for rib_x in [-6.9, -5.8, -4.8, -3.8, -2.7]:
+		_box("BunkerFrontReinforcement", Vector3(rib_x, 1.02, -19.25), Vector3(0.12, 1.85, 0.16), Color(0.36, 0.42, 0.42), false)
+	for stripe_x in [-7.4, -6.8, -6.2, -5.6, -5.0, -4.4, -3.8, -3.2, -2.6, -2.0]:
+		_box("BunkerFrontWarningMark", Vector3(stripe_x, 0.16, -19.25), Vector3(0.22, 0.025, 0.10), Color(0.96, 0.65, 0.16), false)
+	_box("BunkerHydraulicServiceBox", Vector3(-7.65, 1.45, -25.30), Vector3(0.62, 0.78, 0.48), Color(0.18, 0.24, 0.25), false)
+	_box("BunkerHydraulicPanel", Vector3(-7.65, 1.45, -25.04), Vector3(0.42, 0.50, 0.04), Color(0.43, 0.50, 0.49), false)
+	_box("BunkerInspectionPlate", Vector3(-4.8, 1.80, -19.22), Vector3(1.10, 0.30, 0.045), Color(0.12, 0.19, 0.20), false)
 	# Move all geometry helpers, which create at scene root, under the tank transform.
-	var tank_names := ["CityDumpApproachApron", "CityDumpConcrete", "CityDumpMarking", "DumpBunkerSideRibL", "DumpBunkerSideRibR", "DumpBunkerTopRailBack", "DumpBunkerTopRailLeft", "DumpBunkerTopRailRight", "DumpCompactorHousing", "DumpCompactorServicePanel", "CityDumpBackWall", "CityDumpLeftWall", "CityDumpRightWall", "DepotConcreteJoint", "DepotDrainChannel", "DepotDrainSlot", "CityDumpHazardStripe", "CityDumpSignPostL", "CityDumpSignPostR", "CityDumpSign", "DepotSafetyBollard", "DepotFloodlightHousing", "DepotFloodlightLens", "DepotElectricalCabinet", "DepotCabinetDoor"]
+	var tank_names := ["CityDumpApproachApron", "CityDumpConcrete", "CityDumpMarking", "DumpBunkerSideRibL", "DumpBunkerSideRibR", "DumpBunkerTopRailBack", "DumpBunkerTopRailLeft", "DumpBunkerTopRailRight", "DumpCompactorHousing", "DumpCompactorServicePanel", "CityDumpBackWall", "CityDumpLeftWall", "CityDumpRightWall", "DepotConcreteJoint", "DepotDrainChannel", "DepotDrainSlot", "CityDumpHazardStripe", "CityDumpSignPostL", "CityDumpSignPostR", "CityDumpSign", "DepotSafetyBollard", "DepotFloodlightHousing", "DepotFloodlightLens", "DepotElectricalCabinet", "DepotCabinetDoor", "BunkerFrontReinforcement", "BunkerFrontWarningMark", "BunkerHydraulicServiceBox", "BunkerHydraulicPanel", "BunkerInspectionPlate"]
 	for child in get_children():
 		if child is Node3D and tank_names.has(child.name):
 			remove_child(child)
