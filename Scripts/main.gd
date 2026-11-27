@@ -412,6 +412,7 @@ func _build_world() -> void:
 	_build_street_sweeper()
 	_build_city_dump_area()
 	_build_recycling_mega_factory()
+	_build_ground_robot_service_station()
 	_build_industrial_campus_details()
 	_build_starter_dropoff_pad()
 	_build_sorting_district()
@@ -456,6 +457,65 @@ func _build_industrial_road_fixtures() -> void:
 		_box("IndustrialAccessRoadDrain", Vector3(119.25, 0.075, side * 3.88), Vector3(21.5, 0.035, 0.22), drain_steel, false)
 		for slot in range(22):
 			_box("IndustrialAccessDrainSlot", Vector3(108.8 + float(slot) * 0.98, 0.098, side * 3.88), Vector3(0.035, 0.012, 0.16), drain_dark, false)
+
+
+func _build_ground_robot_service_station() -> void:
+	# Dedicated autonomous rover service bay. All meshes are decorative and
+	# non-colliding; the rover's home/dispatch coordinates remain unchanged.
+	var center := Vector3(144.0, 0.0, 10.0)
+	var steel := Color(0.13, 0.19, 0.21)
+	var frame := Color(0.34, 0.43, 0.44)
+	var safety := Color(0.96, 0.64, 0.13)
+	var dark := Color(0.045, 0.075, 0.082)
+	var cyan := Color(0.10, 0.86, 0.78)
+	var floor := Color(0.20, 0.27, 0.28)
+
+	_box("RoverServiceFoundation", center + Vector3(0, 0.045, 0), Vector3(7.2, 0.09, 7.0), steel, false)
+	_box("RoverServiceBayFloor", center + Vector3(0, 0.105, 0), Vector3(6.5, 0.035, 6.3), floor, false)
+	for side in [-1.0, 1.0]:
+		_box("RoverServiceBayEdge", center + Vector3(side * 3.22, 0.14, 0), Vector3(0.10, 0.035, 6.25), safety, false)
+		_box("RoverServiceBayEdge", center + Vector3(0, 0.14, side * 3.10), Vector3(6.45, 0.035, 0.10), safety, false)
+		_box("RoverServiceWheelGuide", center + Vector3(side * 0.78, 0.17, 0), Vector3(0.09, 0.06, 4.65), Color(0.48, 0.58, 0.56), false)
+	for stripe_index in range(8):
+		_box("RoverServiceHazardStripe", center + Vector3(-2.65 + float(stripe_index) * 0.76, 0.17, -2.72), Vector3(0.42, 0.025, 0.28), safety, false)
+
+	# Four clear-span columns keep the rover's approach and turning envelope open.
+	for side_x in [-1.0, 1.0]:
+		for side_z in [-1.0, 1.0]:
+			var post := center + Vector3(side_x * 3.05, 2.15, side_z * 2.85)
+			_box("RoverServiceCanopyColumn", post, Vector3(0.22, 4.3, 0.22), frame, false)
+			_box("RoverServiceColumnFoot", post + Vector3(0, -1.98, 0), Vector3(0.58, 0.18, 0.58), steel, false)
+			_box("RoverServiceColumnSafetyBand", post + Vector3(0, -1.25, 0), Vector3(0.25, 0.32, 0.25), safety, false)
+	_box("RoverServiceCanopyBeamFront", center + Vector3(0, 4.28, -2.85), Vector3(6.35, 0.24, 0.24), frame, false)
+	_box("RoverServiceCanopyBeamRear", center + Vector3(0, 4.28, 2.85), Vector3(6.35, 0.24, 0.24), frame, false)
+	_box("RoverServiceCanopyBeamLeft", center + Vector3(-3.05, 4.28, 0), Vector3(0.24, 0.24, 5.7), frame, false)
+	_box("RoverServiceCanopyBeamRight", center + Vector3(3.05, 4.28, 0), Vector3(0.24, 0.24, 5.7), frame, false)
+	_box("RoverServiceRoof", center + Vector3(0, 4.48, 0), Vector3(6.35, 0.16, 5.95), dark, false)
+	_box("RoverServiceRoofPanel", center + Vector3(0, 4.575, 0), Vector3(5.85, 0.035, 5.45), Color(0.20, 0.30, 0.32), false)
+	for roof_rib in range(7):
+		_box("RoverServiceRoofRib", center + Vector3(-2.55 + float(roof_rib) * 0.85, 4.61, 0), Vector3(0.055, 0.045, 5.35), frame, false)
+
+	# Retractable service arms and charging couplers sit outside the rover footprint.
+	for side in [-1.0, 1.0]:
+		var arm_x: float = side * 2.45
+		_box("RoverServiceArmPedestal", center + Vector3(arm_x, 0.82, 0.15), Vector3(0.42, 1.55, 0.48), steel, false)
+		_box("RoverServiceArmShoulder", center + Vector3(side * 1.95, 1.62, 0.15), Vector3(1.05, 0.16, 0.18), frame, false)
+		_box("RoverServiceArmTool", center + Vector3(side * 1.48, 1.48, 0.15), Vector3(0.18, 0.42, 0.34), safety, false)
+		_box("RoverServiceChargePost", center + Vector3(arm_x, 1.45, 2.05), Vector3(0.28, 2.45, 0.28), frame, false)
+		_box("RoverServiceChargeHead", center + Vector3(arm_x, 2.55, 1.78), Vector3(0.42, 0.28, 0.62), dark, false)
+		_box("RoverServiceChargeIndicator", center + Vector3(arm_x, 2.58, 1.45), Vector3(0.22, 0.08, 0.035), cyan, false)
+
+	# Diagnostic kiosk and status signage are mounted on the rear service edge.
+	_box("RoverServiceControlCabinet", center + Vector3(0, 1.05, 3.65), Vector3(1.75, 2.05, 0.62), dark, false)
+	_box("RoverServiceControlScreen", center + Vector3(0, 1.38, 3.315), Vector3(1.18, 0.72, 0.045), Color(0.025, 0.20, 0.22), false)
+	_box("RoverServiceScreenGlow", center + Vector3(0, 1.39, 3.285), Vector3(0.92, 0.045, 0.018), cyan, false)
+	_label_3d("ZEKA ROVER SERVICE", center + Vector3(0, 2.35, 3.28), 0.18)
+	_box("RoverServiceStatusBeacon", center + Vector3(-1.25, 2.55, 3.55), Vector3(0.22, 0.42, 0.22), safety, false)
+	_box("RoverServiceStatusLight", center + Vector3(-1.25, 2.80, 3.55), Vector3(0.15, 0.08, 0.15), cyan, false)
+	for lamp_x in [-2.0, 2.0]:
+		_box("RoverServiceCanopyLamp", center + Vector3(lamp_x, 4.30, 0), Vector3(0.72, 0.08, 0.42), Color(0.78, 0.91, 0.84), false)
+	_box("RoverServiceIdentitySign", center + Vector3(0, 5.15, -2.96), Vector3(4.6, 0.78, 0.16), dark, false)
+	_label_3d("AUTONOMOUS FLEET / CHARGE + REPAIR", center + Vector3(0, 5.16, -2.84), 0.14)
 
 
 func _build_starter_dropoff_pad() -> void:
