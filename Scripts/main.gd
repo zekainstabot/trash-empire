@@ -5833,20 +5833,36 @@ func _append_factory_truck_route_leg(tween: Tween, truck: Node3D, target: Vector
 		return
 	var target_yaw := atan2(direction.z, -direction.x)
 	var yaw_delta := wrapf(target_yaw - truck.rotation.y, -PI, PI)
-	var final_yaw := truck.rotation.y + yaw_delta
 	var safe_travel_time := maxf(0.05, travel_time)
-	# A real vehicle steers while it is moving. Rotate the chassis during
-	# the same route leg instead of turning in place before translating.
-	# This makes cornering a smooth forward arc and prevents sideways-looking
-	# or reverse-looking movement at 90-degree bends.
-	# Start translation first, then explicitly parallelize steering with
-	# this same movement step. Calling parallel() before position would
-	# pair the rotation with the PREVIOUS tween step, making the truck
-	# slide sideways before its nose catches up.
-	tween.tween_property(truck, "position", target, safe_travel_time)
+	var start_position := truck.position
+	var start_yaw := truck.rotation.y
 	if absf(yaw_delta) > 0.16:
 		_flash_factory_truck_turn_signals(truck, safe_travel_time)
-		tween.parallel().tween_property(truck, "rotation:y", final_yaw, safe_travel_time)
+		# Follow a cubic steering arc: the path begins in the direction
+		# the cab is facing and ends aligned with the outgoing road. This
+		# prevents the chassis from sliding laterally while it rotates.
+		var start_forward := Vector3(-cos(start_yaw), 0.0, sin(start_yaw))
+		var end_forward := Vector3(-cos(target_yaw), 0.0, sin(target_yaw))
+		var handle := minf(direction.length() * 0.42, 5.0)
+		var control_a := start_position + start_forward * handle
+		var control_b := target - end_forward * handle
+		var move_curve := func(progress: float) -> void:
+			var t := clampf(progress, 0.0, 1.0)
+			var omt := 1.0 - t
+			var position := start_position * (omt * omt * omt)
+			position += control_a * (3.0 * omt * omt * t)
+			position += control_b * (3.0 * omt * t * t)
+			position += target * (t * t * t)
+			var tangent := (control_a - start_position) * (3.0 * omt * omt)
+			tangent += (control_b - control_a) * (6.0 * omt * t)
+			tangent += (target - control_b) * (3.0 * t * t)
+			tangent.y = 0.0
+			truck.position = position
+			if tangent.length_squared() > 0.0001:
+				truck.rotation.y = atan2(tangent.z, -tangent.x)
+		tween.tween_method(move_curve, 0.0, 1.0, safe_travel_time)
+	else:
+		tween.tween_property(truck, "position", target, safe_travel_time)
 	# All route legs are forward in the truck's local -X direction. Spin all
 	# six wheels by distance/radius in parallel with chassis translation.
 	if truck.has_meta("factory_truck_wheels"):
