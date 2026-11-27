@@ -2061,8 +2061,17 @@ func _build_factory_link(start_pos: Vector3, end_pos: Vector3) -> void:
 		conveyor_root.add_child(pulley)
 		conveyor_rollers.append(pulley)
 		for bearing_side in [-1.0, 1.0]:
-			var bearing := _cylinder("FactoryConveyorPulleyBearing", Vector3(bearing_side * 0.77, 0.84, end_sign * (length * 0.5 - 0.10)), 0.16, 0.10, Color(0.72, 0.76, 0.72), false)
+			var bearing := MeshInstance3D.new()
+			bearing.name = "FactoryConveyorPulleyBearing"
+			var bearing_mesh := CylinderMesh.new()
+			bearing_mesh.top_radius = 0.16
+			bearing_mesh.bottom_radius = 0.16
+			bearing_mesh.height = 0.10
+			bearing.mesh = bearing_mesh
+			bearing.position = Vector3(bearing_side * 0.77, 0.84, end_sign * (length * 0.5 - 0.10))
 			bearing.rotation_degrees.z = 90.0
+			bearing.material_override = _mat(Color(0.72, 0.76, 0.72))
+			conveyor_root.add_child(bearing)
 		# Subtle yellow service marks identify the two guarded pulley zones.
 		_box_child(conveyor_root, "FactoryConveyorPulleyWarning", Vector3(0.0, 1.235, end_sign * (length * 0.5 - 0.22)), Vector3(1.30, 0.035, 0.055), Color(0.92, 0.61, 0.12))
 
